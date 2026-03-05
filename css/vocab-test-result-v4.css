@@ -1,0 +1,294 @@
+/* 내벨업보카 결과 화면 - 커스텀 디자인 */
+
+/* 결과 컨테이너 */
+#vocabResultContainer,
+.vocab-result-container {
+    padding: 30px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* 점수 카드 */
+.vocab-score-card {
+    background: linear-gradient(135deg, #9480c5 0%, #b9a8d4 100%);
+    color: white;
+    padding: 30px;
+    margin-bottom: 25px;
+    text-align: center;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.3);
+}
+
+.vocab-score-title {
+    font-size: 15px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.vocab-score-percentage {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+.vocab-score-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+.vocab-stat-item {
+    text-align: center;
+}
+
+.vocab-stat-label {
+    font-size: 12px;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+
+.vocab-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* 결과 리스트 */
+.vocab-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vocab-results-header {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+/* 🎯 O/X 아이콘 - 동그라미 안에 체크/X */
+.status-icon-o {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #70aa64;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.status-icon-x {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e66e78;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* 개별 결과 아이템 */
+.vocab-result-item {
+    background: white;
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+.vocab-result-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 헤더: 표제어 + 상태 */
+.vocab-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.vocab-result-headword {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vocab-result-headword-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.vocab-result-status {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.vocab-result-status.correct {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.vocab-result-status.wrong {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+/* 🎯 동의어 비교 - 새로운 레이아웃 */
+.vocab-result-synonyms {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vocab-synonym-row {
+    display: grid;
+    grid-template-columns: 80px 70px 1fr 40px 60px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0; /* 🎯 배경 제거 */
+    font-size: 14px;
+}
+
+/* 동의어 N - 텍스트만 */
+.syn-label {
+    font-size: 13px;
+    color: #718096;
+    font-weight: 600;
+}
+
+/* "내 답안" 라벨 - 텍스트만 */
+.syn-my-label {
+    font-size: 12px;
+    color: #a0aec0;
+    font-weight: 500;
+}
+
+/* 🎯 내 답안 박스 - Italic + #f5f8fd 배경 */
+.syn-user-box {
+    font-weight: 600;
+    font-style: italic; /* 🎯 Italic */
+    color: #2d3748;
+    background: #f5f8fd; /* 🎯 연한 파랑 배경 */
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* 🎯 화살표 */
+.syn-arrow {
+    text-align: center;
+    color: #cbd5e0; /* 🎯 연한 회색 */
+    font-size: 16px;
+}
+
+/* "정답" 라벨 - 텍스트만 */
+.syn-correct-label {
+    font-size: 12px;
+    color: #a0aec0;
+    font-weight: 500;
+    text-align: right;
+}
+
+/* 🎯 정답 단어 - 정오답에 따라 배경색 변경 */
+.syn-correct {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.syn-correct.correct {
+    background: #e9f4e8; /* 🎯 연한 초록 배경 */
+    color: #698d54; /* 🎯 진한 초록 텍스트 */
+}
+
+.syn-correct.wrong {
+    background: #fde8e8; /* 🎯 연한 빨강 배경 */
+    color: #c53030; /* 🎯 진한 빨강 텍스트 */
+}
+
+.syn-correct.empty {
+    background: #fde8e8; /* 🎯 미입력도 오답 처리 */
+    color: #c53030;
+}
+
+/* 버튼 영역 */
+.vocab-result-actions {
+    margin-top: 30px;
+    text-align: center;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.vocab-result-actions button {
+    padding: 14px 30px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.vocab-result-actions button:hover {
+    transform: translateY(-2px);
+}
+
+.btn-restart-vocab,
+.btn-retry-vocab-test {
+    background: #9480c5;
+    color: white;
+}
+
+.btn-restart-vocab:hover,
+.btn-retry-vocab-test:hover {
+    background: #7d6ba8;
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.4);
+}
+
+.btn-back-schedule,
+.btn-back-to-schedule-result {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-back-schedule:hover,
+.btn-back-to-schedule-result:hover {
+    background: #cbd5e0;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .vocab-synonym-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    
+    .syn-correct-label {
+        text-align: left;
+    }
+    
+    .vocab-score-stats {
+        gap: 20px;
+    }
+    
+    .vocab-stat-value {
+        font-size: 20px;
+    }
+}

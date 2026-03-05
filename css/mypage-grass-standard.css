@@ -1,0 +1,53 @@
+/* ══════════════════════════════════════════
+   Standard (8주) 잔디 그리드 전용
+══════════════════════════════════════════ */
+
+/* 외부 그리드 */
+.grass-std-grid {
+  grid-template-columns: 56px repeat(6, 1fr);
+  row-gap: 5px;
+}
+
+/* 요일 헤더 */
+.grass-std-grid .g-head {
+  font-size: .78rem;
+  padding-bottom: 4px;
+}
+
+/* 내부 슬롯 */
+.grass-std-grid .g-day { gap: 3px; }
+.grass-std-grid .g-day-4 { grid-template-columns: repeat(4, 20px); }
+.grass-std-grid .g-day-3 { grid-template-columns: repeat(3, 20px); }
+.grass-std-grid .g-day-2 { grid-template-columns: repeat(2, 20px); }
+
+/* 잔디 셀 */
+.grass-std-grid .g {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 600px) {
+  .grass-std-grid {
+    column-gap: 8px;
+    row-gap: 4px;
+    grid-template-columns: 44px repeat(6, 1fr);
+  }
+  .grass-std-grid .g { width: 16px; height: 16px; border-radius: 3px; }
+  .grass-std-grid .g-day-4 { grid-template-columns: repeat(4, 16px); }
+  .grass-std-grid .g-day-3 { grid-template-columns: repeat(3, 16px); }
+  .grass-std-grid .g-day-2 { grid-template-columns: repeat(2, 16px); }
+}
+
+@media (max-width: 420px) {
+  .grass-std-grid {
+    column-gap: 4px;
+    row-gap: 3px;
+    grid-template-columns: 36px repeat(6, 1fr);
+  }
+  .grass-std-grid .g { width: 14px; height: 14px; border-radius: 3px; }
+  .grass-std-grid .g-day-4 { grid-template-columns: repeat(4, 14px); }
+  .grass-std-grid .g-day-3 { grid-template-columns: repeat(3, 14px); }
+  .grass-std-grid .g-day-2 { grid-template-columns: repeat(2, 14px); }
+}

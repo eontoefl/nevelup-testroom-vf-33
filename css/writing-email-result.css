@@ -1,0 +1,414 @@
+/* ================================================
+   이메일 작성 채점 화면 스타일
+================================================ */
+
+/* 결과 화면 헤더 */
+#writingEmailResultScreen .result-header {
+    margin-bottom: 20px;
+}
+
+#writingEmailResultScreen .result-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+/* 기본 결과 화면 컨테이너 */
+.result-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+/* 상단 요약 정보 */
+.email-result-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border: 1px solid #bae6fd;
+}
+
+.result-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #059669;
+}
+
+.result-status i {
+    font-size: 24px;
+}
+
+.result-word-count-box {
+    text-align: right;
+}
+
+.result-word-count {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-bottom: 5px;
+}
+
+.word-count-feedback {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.word-count-feedback.perfect {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.word-count-feedback.too-short {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.word-count-feedback.too-long {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+/* 섹션 공통 스타일 */
+.email-result-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* 토글 버튼 (문제 보기) */
+.email-result-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 15px 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.email-result-toggle:hover {
+    background: #e2e8f0;
+}
+
+.email-result-toggle i {
+    transition: transform 0.3s ease;
+    color: #64748b;
+}
+
+.email-result-toggle.active i {
+    transform: rotate(180deg);
+}
+
+/* 문제 영역 */
+.email-result-problem {
+    padding: 20px 0 0 0;
+}
+
+.email-problem-situation {
+    font-size: 16px;
+    line-height: 1.8;
+    color: #334155;
+    margin-bottom: 20px;
+    padding: 15px 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.email-problem-task {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 15px;
+}
+
+.email-problem-instructions {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+.email-problem-instructions li {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #475569;
+    padding: 8px 0 8px 30px;
+    position: relative;
+}
+
+.email-problem-instructions li::before {
+    content: "•";
+    position: absolute;
+    left: 12px;
+    color: #8b5cf6;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.email-problem-meta {
+    padding: 15px 20px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.email-problem-meta p {
+    margin: 5px 0;
+    font-size: 15px;
+    color: #475569;
+}
+
+.email-problem-meta strong {
+    color: #1e293b;
+}
+
+/* 섹션 라벨 */
+.email-result-label {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 내 답안 박스 */
+.email-result-answer-box {
+    padding: 0;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    min-height: 150px;
+    overflow: hidden;
+}
+
+/* 이메일 메타 정보 (내 답안용) */
+.email-result-answer-box .email-result-meta {
+    padding: 20px 25px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    border-bottom: 2px dashed #d1d5db;
+}
+
+.email-result-answer-box .email-result-meta p {
+    margin: 5px 0;
+    font-size: 15px;
+    color: #475569;
+}
+
+.email-result-answer-box .email-result-meta strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.email-result-answer-box pre {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #374151;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+    padding: 25px;
+    background: transparent;
+}
+
+/* 모범 답안 박스 */
+.email-result-sample-box {
+    padding: 0;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    min-height: 150px;
+    overflow: hidden;
+}
+
+/* 모범 답안 메타 정보 */
+.email-result-sample-box .email-result-meta {
+    padding: 20px 25px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    border-bottom: 2px dashed #86efac;
+}
+
+.email-result-sample-box .email-result-meta p {
+    margin: 5px 0;
+    font-size: 15px;
+    color: #166534;
+}
+
+.email-result-sample-box .email-result-meta strong {
+    color: #14532d;
+    font-weight: 600;
+}
+
+.email-result-sample-box pre {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #166534;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+    padding: 25px;
+    background: transparent;
+}
+
+/* Bullet 피드백 컨테이너 */
+.email-bullets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.bullet-item {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.bullet-header {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    padding: 12px 20px;
+}
+
+.bullet-number {
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+.bullet-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.bullet-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bullet-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bullet-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #374151;
+    padding: 12px 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.bullet-text.sample-text {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    color: #166534;
+    font-style: italic;
+}
+
+.bullet-text.key-text {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    font-weight: 600;
+}
+
+/* 모범 답안 Bullet 하이라이트 (클릭 가능) */
+.bullet-highlight {
+    color: #3b82f6;
+    border-bottom: 1px dotted #93c5fd;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline;
+}
+
+.bullet-highlight:hover {
+    background: #dbeafe;
+    border-bottom: 2px solid #3b82f6;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.bullet-highlight.active {
+    background: #bfdbfe;
+    border-bottom: 2px solid #2563eb;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+/* 피드백 박스 숨김/표시 */
+.email-bullets-container {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.email-bullets-container.show {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .result-container {
+        padding: 20px 15px;
+    }
+    
+    .email-result-summary {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .email-result-section {
+        padding: 20px 15px;
+    }
+    
+    .email-result-answer-box,
+    .email-result-sample-box {
+        padding: 20px 15px;
+    }
+}

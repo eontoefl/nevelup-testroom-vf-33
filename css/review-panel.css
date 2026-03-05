@@ -1,0 +1,261 @@
+/**
+ * review-panel.css
+ * Review 패널 스타일
+ */
+
+/* ============================
+   Review 패널 오버레이
+   ============================ */
+#reviewPanel {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f8f9fa;
+    z-index: 9999;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ============================
+   Review 헤더
+   ============================ */
+.review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    flex-shrink: 0;
+}
+
+.review-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.review-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.review-back-btn:hover {
+    background: #545b62;
+}
+
+#reviewPanelTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.review-summary {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.review-summary-item {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.review-summary-answered {
+    background: #d4edda;
+    color: #155724;
+}
+
+.review-summary-not-answered {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* ============================
+   Review 테이블 영역
+   ============================ */
+.review-table-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+}
+
+.review-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.review-table thead th {
+    position: sticky;
+    top: 0;
+    background: #1a1a2e;
+    color: #fff;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 1;
+}
+
+.review-table thead th:first-child {
+    width: 60px;
+    text-align: center;
+}
+
+.review-table thead th:last-child {
+    width: 140px;
+    text-align: center;
+}
+
+/* ============================
+   Review 행
+   ============================ */
+.review-row {
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.review-row:hover {
+    background: #e8f4fd !important;
+}
+
+.review-row.answered {
+    background: #fff;
+}
+
+.review-row.not-answered {
+    background: #fffef5;
+}
+
+.review-row-current {
+    background: #e3f2fd !important;
+    border-left: 4px solid #2196F3;
+}
+
+.review-row td {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #333;
+    vertical-align: middle;
+}
+
+/* 번호 셀 */
+.review-cell-num {
+    text-align: center;
+    font-weight: 700;
+    color: #555;
+    width: 60px;
+}
+
+/* 문제 텍스트 셀 */
+.review-cell-question {
+    line-height: 1.5;
+    color: #1a1a2e;
+}
+
+/* 상태 셀 */
+.review-cell-status {
+    text-align: center;
+    width: 140px;
+}
+
+.review-status-answered {
+    color: #28a745;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.review-status-not-answered {
+    color: #b8860b;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+/* ============================
+   Review 버튼 (헤더에 추가되는 버튼)
+   ============================ */
+.review-btn {
+    display: none; /* 기본 숨김, JS에서 제어 */
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 20px;
+    background: transparent;
+    color: var(--text-primary, #1e293b);
+    border: 1.5px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    min-width: 80px;
+    height: 36px;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.review-btn:hover {
+    border-color: var(--primary-color, #9480c5);
+    color: var(--primary-color, #9480c5);
+    background: rgba(102, 51, 153, 0.05);
+}
+
+.review-btn i {
+    font-size: 12px;
+}
+
+/* ============================
+   반응형
+   ============================ */
+@media (max-width: 768px) {
+    .review-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px 16px;
+    }
+
+    .review-table-wrapper {
+        padding: 8px 12px;
+    }
+
+    .review-table thead th,
+    .review-row td {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    .review-cell-question {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .review-summary {
+        gap: 8px;
+    }
+}

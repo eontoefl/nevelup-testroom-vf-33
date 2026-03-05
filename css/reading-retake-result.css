@@ -1,0 +1,371 @@
+/**
+ * Reading Module 2차 결과화면 CSS
+ * v003 - 2025-02-13
+ * - O/X 배경 제거, 체크/엑스 자체에 색상 입힘
+ * - 1차/2차 결과 O/X 디자인 통일
+ * - 문제번호 2px 아래로 이동 (padding-top: 2px)
+ * - 폰트 크기 증가 (16px)
+ */
+
+/* 전체 컨테이너 */
+#readingRetakeResultScreen {
+    padding: 30px 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* 리스닝도 리딩과 동일하게 */
+#listeningRetakeResultScreen {
+    padding: 30px 20px;
+    max-width: 1400px !important; /* .result-screen의 800px 제한 무시 */
+    margin: 0 auto;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* 헤더 */
+.retake-result-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.retake-result-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* 상단 요약 섹션 */
+.retake-summary-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+
+/* ============================= */
+/* 35문제 O/X 비교표 */
+/* ============================= */
+.question-comparison-table {
+    margin-bottom: 30px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    overflow: visible;
+}
+
+.comparison-row {
+    display: flex;
+    align-items: stretch;
+    min-height: 36px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.comparison-row:last-child {
+    border-bottom: none;
+}
+
+.comparison-header {
+    background: #f1f3f5;
+    font-weight: 600;
+    color: #495057;
+}
+
+.first-attempt-row {
+    background: #fffbf5;
+}
+
+.second-attempt-row {
+    background: #f5f9ff;
+}
+
+.row-label {
+    min-width: 80px;
+    width: 80px;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #495057;
+    border-right: 1px solid #dee2e6;
+    background: #fafbfc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.question-numbers,
+.question-results {
+    display: flex;
+    flex: 1;
+    padding: 4px;
+    gap: 2px;
+    flex-wrap: nowrap;
+    overflow: visible;
+}
+
+.question-number,
+.question-result {
+    flex: 1;
+    min-width: 0;
+    width: calc((100% - 34*2px) / 35); /* 35문제, 2px gap */
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.question-number {
+    color: #6c757d;
+    background: transparent;
+    font-size: 9px;
+    padding-top: 12px; /* 아래로 12px 이동 (기존 7px + 추가 5px) */
+}
+
+.question-result {
+    position: relative;
+    transition: all 0.2s;
+    font-size: 16px;
+    background: transparent;
+    font-weight: 700;
+}
+
+/* 1차, 2차 결과 통일 디자인 */
+.question-result.correct {
+    color: #28a745;
+    background: transparent;
+}
+
+.question-result.incorrect {
+    color: #dc3545;
+    background: transparent;
+}
+
+/* 개선된 문제 강조 (2차에서만 사용) */
+.question-result.improved {
+    color: #0c8a5e;
+    background: transparent;
+    text-shadow: 0 0 2px rgba(40, 167, 69, 0.3);
+}
+
+/* 여전히 틀린 문제 (2차에서만 사용) */
+.question-result.still-wrong {
+    color: #c82333;
+    background: transparent;
+    text-shadow: 0 0 2px rgba(220, 53, 69, 0.3);
+}
+
+/* 맞았다가 틀림 (2차에서만 사용) */
+.question-result.worsened {
+    color: #e67e22;
+    background: transparent;
+    text-shadow: 0 0 2px rgba(230, 126, 34, 0.3);
+}
+
+/* ============================= */
+/* 점수/정답률/레벨 비교표 */
+/* ============================= */
+.stats-comparison-table {
+    margin-bottom: 30px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+}
+
+.stats-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+    text-align: center;
+}
+
+.stats-header .stats-col {
+    padding: 12px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.stats-header .stats-col:last-child {
+    border-right: none;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 1px solid #dee2e6;
+    background: white;
+}
+
+.stats-row:last-child {
+    border-bottom: none;
+}
+
+.stats-row:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.stats-col {
+    padding: 15px;
+    text-align: center;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.stats-col:last-child {
+    border-right: none;
+}
+
+.stats-col.improvement {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    font-weight: 700;
+}
+
+.stats-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.stats-label {
+    font-size: 13px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.improvement-icon {
+    font-size: 18px;
+}
+
+/* ============================= */
+/* 축하/격려 메시지 */
+/* ============================= */
+.motivation-message {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(253, 203, 110, 0.2);
+    border: 1px solid #fdcb6e;
+}
+
+.motivation-message p {
+    margin: 6px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3436;
+    line-height: 1.5;
+}
+
+.motivation-message p:first-child {
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+/* 메시지 색상 변형 */
+.motivation-message.perfect {
+    background: linear-gradient(135deg, #a8e6cf 0%, #74b9ff 100%);
+    border-color: #74b9ff;
+}
+
+.motivation-message.no-improvement {
+    background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
+    border-color: #b2bec3;
+}
+
+.motivation-message.worsened {
+    background: linear-gradient(135deg, #fab1a0 0%, #ff7675 100%);
+    border-color: #ff7675;
+}
+
+/* ============================= */
+/* 네비게이션 */
+/* ============================= */
+.retake-navigation {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.retake-navigation .btn {
+    font-size: 16px;
+    padding: 12px 32px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+
+.retake-navigation .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ============================= */
+/* 반응형 */
+/* ============================= */
+@media (max-width: 1200px) {
+    .question-number,
+    .question-result {
+        font-size: 9px;
+        height: 24px;
+    }
+    
+    .question-result {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 768px) {
+    #readingRetakeResultScreen {
+        padding: 15px 10px;
+    }
+    
+    .retake-result-header h2 {
+        font-size: 18px;
+    }
+    
+    .retake-summary-section {
+        padding: 15px;
+    }
+    
+    .row-label {
+        min-width: 60px;
+        width: 60px;
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+    
+    .question-number,
+    .question-result {
+        height: 20px;
+        font-size: 8px;
+    }
+    
+    .question-result {
+        font-size: 10px;
+    }
+    
+    .stats-value {
+        font-size: 16px;
+    }
+    
+    .motivation-message p {
+        font-size: 13px;
+    }
+    
+    .motivation-message p:first-child {
+        font-size: 16px;
+    }
+}

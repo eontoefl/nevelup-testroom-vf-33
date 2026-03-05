@@ -1,0 +1,235 @@
+/**
+ * ================================================
+ * 2차 풀이 (이중채점) Floating UI 스타일
+ * ================================================
+ */
+
+/* Floating UI 컨테이너 */
+.retake-floating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    padding: 24px;
+    min-width: 280px;
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 맞은 문제 스타일 */
+.retake-floating.correct {
+    border: 3px solid #4CAF50;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+/* 틀린 문제 스타일 */
+.retake-floating.wrong {
+    border: 3px solid #FFC107;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+/* 내용 */
+.retake-floating-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+/* 아이콘 */
+.retake-icon {
+    font-size: 48px;
+    line-height: 1;
+}
+
+/* 메시지 */
+.retake-message {
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    color: #1a1a1a;
+    line-height: 1.5;
+}
+
+/* 버튼 컨테이너 */
+.retake-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+/* 이전 문제 버튼 */
+.retake-prev-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 2px solid #6c757d;
+    background: #fff;
+    color: #6c757d;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.retake-prev-btn:hover {
+    background: #6c757d;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* 다음 문제로 버튼 */
+.retake-next-btn {
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.retake-floating.correct .retake-next-btn {
+    background: #4CAF50;
+    color: #fff;
+}
+
+.retake-floating.correct .retake-next-btn:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.retake-floating.wrong .retake-next-btn {
+    background: #FFC107;
+    color: #000;
+}
+
+.retake-floating.wrong .retake-next-btn:hover {
+    background: #ffb300;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .retake-floating {
+        bottom: 10px;
+        right: 10px;
+        min-width: 240px;
+        padding: 20px;
+    }
+    
+    .retake-icon {
+        font-size: 40px;
+    }
+    
+    .retake-message {
+        font-size: 14px;
+    }
+    
+    .retake-next-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+/* 빈칸채우기 2차 풀이 스타일 */
+.fill-blank-input {
+    display: inline-block;
+    min-width: 80px;
+    max-width: 200px;
+    height: 24px;
+    padding: 2px 8px;
+    font-size: 16px;
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    border: none;
+    border-bottom: 2px solid #cbd5e1;
+    background: transparent;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.fill-blank-input:focus {
+    outline: none;
+    border-bottom-color: #3b82f6;
+    border-bottom-width: 3px;
+    background: #eff6ff;
+}
+
+.fill-blank-input.retake-input-correct {
+    color: #10b981 !important;
+    font-weight: 700;
+    background: #f0fdf4;
+    border-bottom-color: #10b981;
+    padding: 2px 6px;
+    border-radius: 4px;
+    pointer-events: none; /* 수정 불가 */
+}
+
+.fill-blank-input.retake-input-wrong {
+    color: #ef4444 !important;
+    font-weight: 700;
+    background: #fef2f2;
+    border-bottom-color: #ef4444;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.fill-blank-input.retake-input-wrong:hover {
+    background: #fee2e2;
+}
+
+.fillblank-retake-correct {
+    color: #4CAF50 !important;
+    font-weight: 700;
+    background: #f0fdf4;
+    padding: 2px 6px;
+    border-radius: 4px;
+    pointer-events: none; /* 수정 불가 */
+}
+
+.fillblank-retake-wrong {
+    color: #f44336 !important;
+    font-weight: 700;
+    background: #ffebee;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.fillblank-retake-wrong:hover {
+    background: #ffcdd2;
+}
+
+/* 일상리딩/아카데믹 2차 풀이 스타일 */
+.retake-option-correct::before {
+    content: '✅ ';
+    color: #4CAF50;
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.retake-option-correct {
+    font-weight: 700;
+    color: #4CAF50;
+    background: #f0fdf4;
+    border: 2px solid #4CAF50 !important;
+}

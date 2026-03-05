@@ -1,0 +1,520 @@
+/* ============================================
+   Final Explain Screen
+   #9480c5 | #77bf7e | #b9c9da | Pretendard
+   Ground Rule: NO border-left anywhere
+   ============================================ */
+
+#finalExplainScreen {
+    font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f7f6fb;
+    min-height: 100vh;
+    padding-bottom: 40px;
+    color: #1e1e2f;
+}
+
+/* ── 헤더 ── */
+#finalExplainScreen .final-header {
+    background: linear-gradient(135deg, #9480c5, #7a66b0);
+    padding: 24px 24px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+#finalExplainScreen .final-header h2 {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#finalExplainScreen .final-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* ── 통계 카드 ── */
+#finalExplainScreen .final-summary {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 20px 20px 0;
+}
+
+#finalExplainScreen .final-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(148,128,197,0.1);
+}
+
+#finalExplainScreen .final-stat-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 18px 8px;
+    border-right: 1px solid #f0edf5;
+}
+#finalExplainScreen .final-stat-box:last-child {
+    border-right: none;
+}
+
+#finalExplainScreen .final-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    letter-spacing: 0.5px;
+}
+
+#finalExplainScreen .final-stat-value {
+    font-size: 19px;
+    font-weight: 800;
+    color: #9480c5;
+}
+#finalExplainScreen .final-stat-value.first {
+    color: #8fa5bb;
+}
+#finalExplainScreen .final-stat-value.second {
+    color: #9480c5;
+}
+#finalExplainScreen .final-stat-box.improvement .final-stat-value {
+    color: #5ea065;
+}
+
+/* ── 컨텐츠 영역 ── */
+#finalExplainScreen .final-content {
+    max-width: 880px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+}
+
+/* ── 세트 헤더 ── */
+#finalExplainScreen .response-set-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    background: #faf9fd;
+    border-bottom: 1px solid #f0edf5;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+}
+
+#finalExplainScreen .response-set-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #9480c5;
+}
+
+#finalExplainScreen .response-set-badge i {
+    font-size: 14px;
+}
+
+#finalExplainScreen .response-set-meta {
+    font-size: 12px;
+    color: #999;
+    font-weight: 500;
+    margin-left: auto;
+}
+
+/* ── 문제 리스트 ── */
+#finalExplainScreen .questions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: #fff;
+    border-radius: 0 0 14px 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+}
+
+/* ── 문제 카드 ── */
+#finalExplainScreen .response-result-item {
+    padding: 16px 20px 16px;
+}
+
+#finalExplainScreen .response-result-item + .response-result-item {
+    border-top: 1px solid #f0edf5;
+}
+
+/* ── Q 헤더 ── */
+#finalExplainScreen .question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#finalExplainScreen .question-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e1e2f;
+}
+
+#finalExplainScreen .result-status i {
+    font-size: 18px;
+}
+
+/* ── 오디오 ── */
+#finalExplainScreen .audio-section {
+    padding: 0;
+    margin-bottom: 12px;
+}
+
+#finalExplainScreen .audio-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9480c5;
+    margin-bottom: 10px;
+}
+
+#finalExplainScreen .audio-player-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+#finalExplainScreen .audio-play-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #9480c5;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+}
+#finalExplainScreen .audio-play-btn:hover {
+    opacity: 0.85;
+}
+
+#finalExplainScreen .audio-seek-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#finalExplainScreen .audio-seek-bar {
+    width: 100%;
+    height: 4px;
+    background: #e8e4f0;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+}
+
+#finalExplainScreen .audio-seek-progress {
+    height: 100%;
+    background: #9480c5;
+    border-radius: 2px;
+    position: relative;
+}
+
+#finalExplainScreen .audio-seek-handle {
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #9480c5;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+#finalExplainScreen .audio-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #aaa;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 스크립트 */
+#finalExplainScreen .audio-script {
+    font-size: 14px;
+    line-height: 1.9;
+    color: #333;
+}
+
+#finalExplainScreen .audio-script strong {
+    color: #7a66b0;
+    font-weight: 700;
+}
+
+/* 키워드 하이라이트 */
+#finalExplainScreen .response-keyword-highlight {
+    color: #7a66b0;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: rgba(148,128,197,0.35);
+    text-underline-offset: 3px;
+    cursor: help;
+    position: relative;
+}
+#finalExplainScreen .response-keyword-highlight:hover {
+    text-decoration-color: rgba(148,128,197,0.7);
+}
+#finalExplainScreen .response-keyword-highlight:hover::after {
+    content: attr(data-translation) ' — ' attr(data-explanation);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2c2c3e;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 1000;
+}
+#finalExplainScreen .response-keyword-highlight:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100%);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #2c2c3e;
+    z-index: 1000;
+}
+
+/* ── 답변 비교 ── */
+#finalExplainScreen .answer-summary {
+    background: #f9f7ff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+#finalExplainScreen .response-answer-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+#finalExplainScreen .response-answer-row:last-child {
+    margin-bottom: 0;
+}
+
+#finalExplainScreen .response-answer-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8890a4;
+    white-space: nowrap;
+    min-width: 52px;
+}
+
+#finalExplainScreen .response-answer-value {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+#finalExplainScreen .response-answer-value.correct {
+    color: #77bf7e;
+}
+
+#finalExplainScreen .response-answer-value.incorrect {
+    color: #d94452;
+}
+
+/* ── 해설 토글 ── */
+#finalExplainScreen .options-explanation-section {
+    padding: 0;
+}
+
+#finalExplainScreen .toggle-explanation-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f5f3fa;
+    border: 1px solid rgba(148,128,197,0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    width: 100%;
+    cursor: pointer;
+    font-family: 'Pretendard Variable', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #9480c5;
+    transition: background 0.2s;
+}
+#finalExplainScreen .toggle-explanation-btn:hover {
+    background: #eee9f7;
+}
+#finalExplainScreen .toggle-explanation-btn .toggle-text {
+    flex: 1;
+    text-align: left;
+}
+
+/* ── 보기 해설 ── */
+#finalExplainScreen .options-details {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#finalExplainScreen .option-detail {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #f9f7ff;
+    border: 1px solid rgba(148,128,197,0.10);
+}
+
+#finalExplainScreen .option-detail.correct {
+    background: #f0faf1;
+    border-color: rgba(119,191,126,0.25);
+}
+
+#finalExplainScreen .option-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e1e2f;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+#finalExplainScreen .option-marker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #e8e4f0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9480c5;
+    flex-shrink: 0;
+}
+
+#finalExplainScreen .option-detail.correct .option-marker {
+    background: #d4f5d6;
+    color: #3a9142;
+}
+
+#finalExplainScreen .option-translation {
+    font-size: 12px;
+    color: #8890a4;
+    margin-bottom: 6px;
+    padding-left: 30px;
+}
+
+#finalExplainScreen .option-explanation {
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-left: 30px;
+}
+
+#finalExplainScreen .option-explanation.correct {
+    background: rgba(119,191,126,0.08);
+    color: #3a9142;
+}
+
+#finalExplainScreen .option-explanation.incorrect {
+    background: rgba(231,76,94,0.06);
+    color: #c0392b;
+}
+
+/* ── 하단 네비게이션 ── */
+#finalExplainScreen .final-navigation {
+    max-width: 880px;
+    margin: 32px auto 0;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#finalExplainScreen .final-navigation .btn {
+    font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#finalExplainScreen .final-navigation .btn-secondary {
+    background: #fff;
+    color: #9480c5;
+    border: 1.5px solid #d8d0eb;
+}
+#finalExplainScreen .final-navigation .btn-secondary:hover {
+    background: #f7f5fc;
+}
+
+#finalExplainScreen .final-navigation .btn-primary {
+    background: #9480c5;
+    color: #fff;
+}
+#finalExplainScreen .final-navigation .btn-primary:hover {
+    background: #7a66b0;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 640px) {
+    #finalExplainScreen .final-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    #finalExplainScreen .final-stat-box:nth-child(2) {
+        border-right: none;
+    }
+    #finalExplainScreen .final-stat-box:nth-child(1),
+    #finalExplainScreen .final-stat-box:nth-child(2) {
+        border-bottom: 1px solid #f0edf5;
+    }
+    #finalExplainScreen .final-navigation {
+        flex-direction: column;
+    }
+    #finalExplainScreen .final-navigation .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    #finalExplainScreen .audio-player-container {
+        gap: 10px;
+    }
+}
