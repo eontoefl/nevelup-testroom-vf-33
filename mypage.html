@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>마이페이지 – 학습 현황</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/mypage-style.css?v=008_score_chart" />
+  <link rel="stylesheet" href="css/mypage-grass-fast.css" />
+  <link rel="stylesheet" href="css/mypage-grass-standard.css" />
+</head>
+<body>
+
+  <!-- ───────────── TOP BAR ───────────── -->
+  <nav class="mp-topbar">
+    <button class="mp-back-btn" onclick="goBackToTestroom()">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>학습으로 돌아가기</span>
+    </button>
+    <span class="mp-topbar-title">마이페이지</span>
+    <button class="mp-logout-btn" onclick="handleLogout()">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+  </nav>
+
+  <!-- ───────────── LOADING ───────────── -->
+  <div class="mp-loading" id="loadingScreen">
+    <div class="mp-spinner"></div>
+    <p>학습 데이터를 불러오는 중...</p>
+  </div>
+
+  <!-- ───────────── NOT LOGGED IN ───────────── -->
+  <div class="mp-not-logged" id="notLoggedScreen" style="display:none;">
+    <i class="fa-solid fa-lock" style="font-size:3rem; color:var(--signature); margin-bottom:16px;"></i>
+    <h2>로그인이 필요합니다</h2>
+    <p>테스트룸에서 먼저 로그인해주세요.</p>
+    <button class="mp-cta-btn" onclick="goBackToTestroom()">
+      <i class="fa-solid fa-arrow-right"></i> 테스트룸으로 이동
+    </button>
+  </div>
+
+  <!-- ───────────── MAIN ───────────── -->
+  <main class="page-wrap" id="mainContent" style="display:none;">
+
+    <!-- 사용자 정보 -->
+    <div class="user-info-card">
+      <i class="fas fa-user-circle"></i>
+      <span><strong id="userName">-</strong>님</span>
+      <span class="program-badge" id="programBadge">-</span>
+    </div>
+
+    <!-- ① 학습 현황 요약 카드 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-chart-line"></i> 학습 현황 요약
+      </h2>
+
+      <div class="summary-grid">
+
+        <!-- 1칸: 오늘의 과제 -->
+        <div class="summary-card card-green">
+          <div class="sc-icon"><i class="fa-solid fa-list-check"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">📝 오늘의 과제</p>
+            <div id="todayTaskList" class="today-task-list">
+              <p class="sc-sub">로딩 중...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2칸: 챌린지 현황 -->
+        <div class="summary-card card-blue">
+          <div class="sc-icon"><i class="fa-solid fa-calendar-check"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">📅 챌린지 현황</p>
+            <p class="sc-value"><span id="challengeStatus">-</span></p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="challengeBar" style="width: 0%;"></div>
+            </div>
+            <p class="sc-sub" id="challengeSub">로딩 중...</p>
+            <p class="sc-hint" id="challengeStartDate"></p>
+          </div>
+        </div>
+
+        <!-- 2칸: 인증률 -->
+        <div class="summary-card card-purple">
+          <div class="sc-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">🎯 인증률</p>
+            <p class="sc-value"><span id="authRate">-</span><span class="sc-total" id="authRateUnit">%</span></p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="authBar" style="width: 0%;"></div>
+            </div>
+            <p class="sc-sub" id="authSub">로딩 중...</p>
+            <p class="sc-hint" id="authHint">각 과제의 모든 단계를 완료해야 인증 점수가 부여됩니다</p>
+          </div>
+        </div>
+
+        <!-- 4칸: 등급 & 환급 예상 -->
+        <div class="summary-card card-orange">
+          <div class="sc-icon"><i class="fa-solid fa-trophy"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">🏆 등급 & 환급</p>
+            <p class="sc-value grade-badge" id="currentGrade">-</p>
+            <p class="sc-sub" id="gradeRefund">로딩 중...</p>
+            <p class="sc-hint" id="gradeHint">매일 새 과제가 추가되므로 아침엔 등급이 낮아 보일 수 있어요. 초반엔 변동이 특히 커요. 최종 등급은 종료 시 확정!</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 데드라인 연장 알림 배너 (JS에서 동적 렌더링) -->
+    <div id="deadlineExtensionBanner"></div>
+
+    <!-- ② 잔디 심기 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-seedling"></i> 출석 잔디
+      </h2>
+
+      <!-- 플랜 잔디 (학생 프로그램 타입에 따라 자동 표시) -->
+
+      <!-- ===== FAST (1개월 · 4주) ===== -->
+      <div class="grass-wrap" id="grass-fast">
+        <p class="section-desc">Fast · 4주 과정 · 주 6일</p>
+        <div class="grass-grid grass-fast-grid">
+          <!-- 헤더 -->
+          <div class="g-label"></div>
+          <div class="g-head">일</div>
+          <div class="g-head">월</div>
+          <div class="g-head">화</div>
+          <div class="g-head">수</div>
+          <div class="g-head">목</div>
+          <div class="g-head">금</div>
+          <!-- W1 -->
+          <div class="g-label">Week 1</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="1" data-order="1" data-type="voca_test" title="Voca 5-7pg"></span><span class="g empty" data-day="1" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 1/3"></span><span class="g empty" data-day="1" data-order="3" data-type="reading_module" title="Reading Module 1"></span><span class="g empty" data-day="1" data-order="4" data-type="listening_module" title="Listening Module 1"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="2" data-order="1" data-type="voca_test" title="Voca 8-9pg"></span><span class="g empty" data-day="2" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 2/3"></span><span class="g empty" data-day="2" data-order="3" data-type="reading_module" title="Reading Module 2"></span><span class="g empty" data-day="2" data-order="4" data-type="speaking" title="Speaking 1"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="3" data-order="1" data-type="voca_test" title="Voca 10-12pg"></span><span class="g empty" data-day="3" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 3/3"></span><span class="g empty" data-day="3" data-order="3" data-type="listening_module" title="Listening Module 2"></span><span class="g empty" data-day="3" data-order="4" data-type="writing" title="Writing 1"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="4" data-order="1" data-type="voca_test" title="Voca 13-14pg"></span><span class="g empty" data-day="4" data-order="2" data-type="reading_module" title="Reading Module 3"></span><span class="g empty" data-day="4" data-order="3" data-type="writing" title="Writing 2"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="5" data-order="1" data-type="voca_test" title="Voca 15-17pg"></span><span class="g empty" data-day="5" data-order="2" data-type="listening_module" title="Listening Module 3"></span><span class="g empty" data-day="5" data-order="3" data-type="speaking" title="Speaking 2"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="6" data-order="1" data-type="voca_test" title="Voca 18-19pg"></span><span class="g empty" data-day="6" data-order="2" data-type="speaking" title="Speaking 3"></span><span class="g empty" data-day="6" data-order="3" data-type="writing" title="Writing 3"></span></div>
+          <!-- W2 -->
+          <div class="g-label">Week 2</div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="7" data-order="1" data-type="voca_test" title="Voca 20-22pg"></span><span class="g empty" data-day="7" data-order="2" data-type="reading_module" title="Reading Module 4"></span><span class="g empty" data-day="7" data-order="3" data-type="listening_module" title="Listening Module 4"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="8" data-order="1" data-type="voca_test" title="Voca 23-24pg"></span><span class="g empty" data-day="8" data-order="2" data-type="reading_module" title="Reading Module 5"></span><span class="g empty" data-day="8" data-order="3" data-type="speaking" title="Speaking 4"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="9" data-order="1" data-type="voca_test" title="Voca 25-27pg"></span><span class="g empty" data-day="9" data-order="2" data-type="listening_module" title="Listening Module 5"></span><span class="g empty" data-day="9" data-order="3" data-type="writing" title="Writing 4"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="10" data-order="1" data-type="voca_test" title="Voca 28-29pg"></span><span class="g empty" data-day="10" data-order="2" data-type="reading_module" title="Reading Module 6"></span><span class="g empty" data-day="10" data-order="3" data-type="writing" title="Writing 5"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="11" data-order="1" data-type="voca_test" title="Voca 30-32pg"></span><span class="g empty" data-day="11" data-order="2" data-type="listening_module" title="Listening Module 6"></span><span class="g empty" data-day="11" data-order="3" data-type="speaking" title="Speaking 5"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="12" data-order="1" data-type="voca_test" title="Voca 33-34pg"></span><span class="g empty" data-day="12" data-order="2" data-type="speaking" title="Speaking 6"></span><span class="g empty" data-day="12" data-order="3" data-type="writing" title="Writing 6"></span></div>
+          <!-- W3 -->
+          <div class="g-label">Week 3</div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="13" data-order="1" data-type="voca_test" title="Voca 35-37pg"></span><span class="g empty" data-day="13" data-order="2" data-type="reading_module" title="Reading Module 7"></span><span class="g empty" data-day="13" data-order="3" data-type="listening_module" title="Listening Module 7"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="14" data-order="1" data-type="voca_test" title="Voca 38-39pg"></span><span class="g empty" data-day="14" data-order="2" data-type="reading_module" title="Reading Module 8"></span><span class="g empty" data-day="14" data-order="3" data-type="speaking" title="Speaking 7"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="15" data-order="1" data-type="voca_test" title="Voca 40-42pg"></span><span class="g empty" data-day="15" data-order="2" data-type="listening_module" title="Listening Module 8"></span><span class="g empty" data-day="15" data-order="3" data-type="writing" title="Writing 7"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="16" data-order="1" data-type="voca_test" title="Voca 43-44pg"></span><span class="g empty" data-day="16" data-order="2" data-type="reading_module" title="Reading Module 9"></span><span class="g empty" data-day="16" data-order="3" data-type="writing" title="Writing 8"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="17" data-order="1" data-type="voca_test" title="Voca 45-47pg"></span><span class="g empty" data-day="17" data-order="2" data-type="listening_module" title="Listening Module 9"></span><span class="g empty" data-day="17" data-order="3" data-type="speaking" title="Speaking 8"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="18" data-order="1" data-type="voca_test" title="Voca 48-49pg"></span><span class="g empty" data-day="18" data-order="2" data-type="speaking" title="Speaking 9"></span><span class="g empty" data-day="18" data-order="3" data-type="writing" title="Writing 9"></span></div>
+          <!-- W4 -->
+          <div class="g-label">Week 4</div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="19" data-order="1" data-type="voca_test" title="Voca 50-52pg"></span><span class="g empty" data-day="19" data-order="2" data-type="reading_module" title="Reading Module 10"></span><span class="g empty" data-day="19" data-order="3" data-type="listening_module" title="Listening Module 10"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="20" data-order="1" data-type="voca_test" title="Voca 53-54pg"></span><span class="g empty" data-day="20" data-order="2" data-type="reading_module" title="Reading Module 11"></span><span class="g empty" data-day="20" data-order="3" data-type="speaking" title="Speaking 10"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="21" data-order="1" data-type="voca_test" title="Voca 55-57pg"></span><span class="g empty" data-day="21" data-order="2" data-type="listening_module" title="Listening Module 11"></span><span class="g empty" data-day="21" data-order="3" data-type="writing" title="Writing 10"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="22" data-order="1" data-type="voca_test" title="Voca 58-59pg"></span><span class="g empty" data-day="22" data-order="2" data-type="reading_module" title="Reading Module 12"></span><span class="g empty" data-day="22" data-order="3" data-type="writing" title="Writing 11"></span></div>
+          <div class="g-day g-day-3"><span class="g empty" data-day="23" data-order="1" data-type="voca_test" title="Voca 60-61pg"></span><span class="g empty" data-day="23" data-order="2" data-type="listening_module" title="Listening Module 12"></span><span class="g empty" data-day="23" data-order="3" data-type="speaking" title="Speaking 11"></span></div>
+          <div class="g-day g-day-2"><span class="g empty" data-day="24" data-order="1" data-type="speaking" title="Speaking 12"></span><span class="g empty" data-day="24" data-order="2" data-type="writing" title="Writing 12"></span></div>
+        </div>
+        <div class="grass-legend">
+          <span class="legend-item"><span class="legend-dot level-3"></span>100% 완료</span>
+          <span class="legend-item"><span class="legend-dot level-2"></span>1차+2차</span>
+          <span class="legend-item"><span class="legend-dot level-1"></span>1차만</span>
+          <span class="legend-item"><span class="legend-dot fail"></span>미제출</span>
+          <span class="legend-item"><span class="legend-dot empty"></span>예정</span>
+          <span class="legend-item"><span class="legend-dot extended"></span>연장</span>
+        </div>
+      </div>
+
+      <!-- ===== STANDARD (2개월 · 8주) ===== -->
+      <div class="grass-wrap" id="grass-standard" style="display:none;">
+        <p class="section-desc">Standard · 8주 과정 · 주 6일</p>
+        <div class="grass-grid grass-std-grid">
+          <!-- 헤더 -->
+          <div class="g-label"></div>
+          <div class="g-head">일</div>
+          <div class="g-head">월</div>
+          <div class="g-head">화</div>
+          <div class="g-head">수</div>
+          <div class="g-head">목</div>
+          <div class="g-head">금</div>
+          <!-- W1 -->
+          <div class="g-label">Week 1</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="1" data-order="1" data-type="voca_test" title="Voca 5-7pg"></span><span class="g empty" data-day="1" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 1/6"></span><span class="g empty" data-day="1" data-order="3" data-type="reading_module" title="Reading Module 1"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="2" data-order="1" data-type="voca_test" title="Voca 8-9pg"></span><span class="g empty" data-day="2" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 2/6"></span><span class="g empty" data-day="2" data-order="3" data-type="listening_module" title="Listening Module 1"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="3" data-order="1" data-type="voca_test" title="Voca 10-11pg"></span><span class="g empty" data-day="3" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 3/6"></span><span class="g empty" data-day="3" data-order="3" data-type="writing" title="Writing 1"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="4" data-order="1" data-type="voca_test" title="Voca 12-14pg"></span><span class="g empty" data-day="4" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 4/6"></span><span class="g empty" data-day="4" data-order="3" data-type="speaking" title="Speaking 1"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="5" data-order="1" data-type="voca_test" title="Voca 15-16pg"></span><span class="g empty" data-day="5" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 5/6"></span><span class="g empty" data-day="5" data-order="3" data-type="reading_module" title="Reading Module 2"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="6" data-order="1" data-type="voca_test" title="Voca 17-19pg"></span><span class="g empty" data-day="6" data-order="2" data-type="intro_reading" title="Read TOEFL Intro 6/6"></span><span class="g empty" data-day="6" data-order="3" data-type="listening_module" title="Listening Module 2"></span></div>
+          <!-- W2 -->
+          <div class="g-label">Week 2</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="7" data-order="1" data-type="voca_test" title="Voca 20-21pg"></span><span class="g empty" data-day="7" data-order="2" data-type="speaking" title="Speaking 2"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="8" data-order="1" data-type="voca_test" title="Voca 22-23pg"></span><span class="g empty" data-day="8" data-order="2" data-type="writing" title="Writing 2"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="9" data-order="1" data-type="voca_test" title="Voca 24-26pg"></span><span class="g empty" data-day="9" data-order="2" data-type="reading_module" title="Reading Module 3"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="10" data-order="1" data-type="voca_test" title="Voca 27-28pg"></span><span class="g empty" data-day="10" data-order="2" data-type="speaking" title="Speaking 3"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="11" data-order="1" data-type="voca_test" title="Voca 29-31pg"></span><span class="g empty" data-day="11" data-order="2" data-type="writing" title="Writing 3"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="12" data-order="1" data-type="voca_test" title="Voca 32-33pg"></span><span class="g empty" data-day="12" data-order="2" data-type="listening_module" title="Listening Module 3"></span></div>
+          <!-- W3 -->
+          <div class="g-label">Week 3</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="13" data-order="1" data-type="voca_test" title="Voca 34-35pg"></span><span class="g empty" data-day="13" data-order="2" data-type="reading_module" title="Reading Module 4"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="14" data-order="1" data-type="voca_test" title="Voca 36-38pg"></span><span class="g empty" data-day="14" data-order="2" data-type="speaking" title="Speaking 4"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="15" data-order="1" data-type="voca_test" title="Voca 39-40pg"></span><span class="g empty" data-day="15" data-order="2" data-type="listening_module" title="Listening Module 4"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="16" data-order="1" data-type="voca_test" title="Voca 41-42pg"></span><span class="g empty" data-day="16" data-order="2" data-type="reading_module" title="Reading Module 5"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="17" data-order="1" data-type="voca_test" title="Voca 43-45pg"></span><span class="g empty" data-day="17" data-order="2" data-type="listening_module" title="Listening Module 5"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="18" data-order="1" data-type="voca_test" title="Voca 46-47pg"></span><span class="g empty" data-day="18" data-order="2" data-type="writing" title="Writing 4"></span></div>
+          <!-- W4 -->
+          <div class="g-label">Week 4</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="19" data-order="1" data-type="voca_test" title="Voca 48-50pg"></span><span class="g empty" data-day="19" data-order="2" data-type="speaking" title="Speaking 5"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="20" data-order="1" data-type="voca_test" title="Voca 51-52pg"></span><span class="g empty" data-day="20" data-order="2" data-type="writing" title="Writing 5"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="21" data-order="1" data-type="voca_test" title="Voca 53-54pg"></span><span class="g empty" data-day="21" data-order="2" data-type="reading_module" title="Reading Module 6"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="22" data-order="1" data-type="voca_test" title="Voca 55-57pg"></span><span class="g empty" data-day="22" data-order="2" data-type="speaking" title="Speaking 6"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="23" data-order="1" data-type="voca_test" title="Voca 58-59pg"></span><span class="g empty" data-day="23" data-order="2" data-type="writing" title="Writing 6"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="24" data-order="1" data-type="voca_test" title="Voca 60-61pg"></span><span class="g empty" data-day="24" data-order="2" data-type="listening_module" title="Listening Module 6"></span></div>
+          <!-- W5 -->
+          <div class="g-label">Week 5</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="25" data-order="1" data-type="voca_test" title="Voca 5-7pg"></span><span class="g empty" data-day="25" data-order="2" data-type="reading_module" title="Reading Module 7"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="26" data-order="1" data-type="voca_test" title="Voca 8-9pg"></span><span class="g empty" data-day="26" data-order="2" data-type="speaking" title="Speaking 7"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="27" data-order="1" data-type="voca_test" title="Voca 10-12pg"></span><span class="g empty" data-day="27" data-order="2" data-type="listening_module" title="Listening Module 7"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="28" data-order="1" data-type="voca_test" title="Voca 13-14pg"></span><span class="g empty" data-day="28" data-order="2" data-type="reading_module" title="Reading Module 8"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="29" data-order="1" data-type="voca_test" title="Voca 15-16pg"></span><span class="g empty" data-day="29" data-order="2" data-type="listening_module" title="Listening Module 8"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="30" data-order="1" data-type="voca_test" title="Voca 17-19pg"></span><span class="g empty" data-day="30" data-order="2" data-type="writing" title="Writing 7"></span></div>
+          <!-- W6 -->
+          <div class="g-label">Week 6</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="31" data-order="1" data-type="voca_test" title="Voca 20-21pg"></span><span class="g empty" data-day="31" data-order="2" data-type="speaking" title="Speaking 8"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="32" data-order="1" data-type="voca_test" title="Voca 22-24pg"></span><span class="g empty" data-day="32" data-order="2" data-type="writing" title="Writing 8"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="33" data-order="1" data-type="voca_test" title="Voca 25-26pg"></span><span class="g empty" data-day="33" data-order="2" data-type="reading_module" title="Reading Module 9"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="34" data-order="1" data-type="voca_test" title="Voca 27-28pg"></span><span class="g empty" data-day="34" data-order="2" data-type="speaking" title="Speaking 9"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="35" data-order="1" data-type="voca_test" title="Voca 29-31pg"></span><span class="g empty" data-day="35" data-order="2" data-type="writing" title="Writing 9"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="36" data-order="1" data-type="voca_test" title="Voca 32-33pg"></span><span class="g empty" data-day="36" data-order="2" data-type="listening_module" title="Listening Module 9"></span></div>
+          <!-- W7 -->
+          <div class="g-label">Week 7</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="37" data-order="1" data-type="voca_test" title="Voca 34-35pg"></span><span class="g empty" data-day="37" data-order="2" data-type="reading_module" title="Reading Module 10"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="38" data-order="1" data-type="voca_test" title="Voca 36-38pg"></span><span class="g empty" data-day="38" data-order="2" data-type="speaking" title="Speaking 10"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="39" data-order="1" data-type="voca_test" title="Voca 39-40pg"></span><span class="g empty" data-day="39" data-order="2" data-type="listening_module" title="Listening Module 10"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="40" data-order="1" data-type="voca_test" title="Voca 41-43pg"></span><span class="g empty" data-day="40" data-order="2" data-type="reading_module" title="Reading Module 11"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="41" data-order="1" data-type="voca_test" title="Voca 44-45pg"></span><span class="g empty" data-day="41" data-order="2" data-type="listening_module" title="Listening Module 11"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="42" data-order="1" data-type="voca_test" title="Voca 46-47pg"></span><span class="g empty" data-day="42" data-order="2" data-type="writing" title="Writing 10"></span></div>
+          <!-- W8 -->
+          <div class="g-label">Week 8</div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="43" data-order="1" data-type="voca_test" title="Voca 48-50pg"></span><span class="g empty" data-day="43" data-order="2" data-type="speaking" title="Speaking 11"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="44" data-order="1" data-type="voca_test" title="Voca 51-52pg"></span><span class="g empty" data-day="44" data-order="2" data-type="writing" title="Writing 11"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="45" data-order="1" data-type="voca_test" title="Voca 53-55pg"></span><span class="g empty" data-day="45" data-order="2" data-type="reading_module" title="Reading Module 12"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="46" data-order="1" data-type="voca_test" title="Voca 56-57pg"></span><span class="g empty" data-day="46" data-order="2" data-type="speaking" title="Speaking 12"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="47" data-order="1" data-type="voca_test" title="Voca 58-59pg"></span><span class="g empty" data-day="47" data-order="2" data-type="writing" title="Writing 12"></span></div>
+          <div class="g-day g-day-4"><span class="g empty" data-day="48" data-order="1" data-type="voca_test" title="Voca 60-61pg"></span><span class="g empty" data-day="48" data-order="2" data-type="listening_module" title="Listening Module 12"></span></div>
+        </div>
+        <div class="grass-legend">
+          <span class="legend-item"><span class="legend-dot level-3"></span>100% 완료</span>
+          <span class="legend-item"><span class="legend-dot level-2"></span>1차+2차</span>
+          <span class="legend-item"><span class="legend-dot level-1"></span>1차만</span>
+          <span class="legend-item"><span class="legend-dot fail"></span>미제출</span>
+          <span class="legend-item"><span class="legend-dot empty"></span>예정</span>
+          <span class="legend-item"><span class="legend-dot extended"></span>연장</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ③ 점수 추이 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-chart-line"></i> 나의 성적 추이
+      </h2>
+      <p class="section-desc">모듈별 1차 레벨 점수 변화를 확인합니다</p>
+
+      <!-- 탭 -->
+      <div class="score-tabs">
+        <button class="score-tab active" data-tab="reading">
+          <i class="fa-solid fa-book-open"></i> Reading
+        </button>
+        <button class="score-tab" data-tab="listening">
+          <i class="fa-solid fa-headphones"></i> Listening
+        </button>
+      </div>
+
+      <!-- 차트 영역 -->
+      <div class="score-chart-wrap" id="scoreChartWrap">
+        <canvas id="scoreChart" height="300"></canvas>
+        <!-- 데이터 없을 때 표시 (JS에서 제어) -->
+        <div class="score-chart-empty" id="scoreChartEmpty" style="display:none;">
+          <i class="fa-solid fa-chart-line"></i>
+          <p>아직 완료한 과제가 없습니다</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════ 노트 모달 ══════════ -->
+  <div class="modal-overlay" id="noteModal">
+    <div class="modal-box note-modal">
+      <div class="modal-header">
+        <h3 id="noteTitle"><i class="fa-regular fa-note-sticky"></i> 학습 노트</h3>
+        <button class="modal-close" onclick="closeModal('noteModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="noteContent" class="note-content"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase 클라이언트 (공유) -->
+  <!-- 이동 중 로딩 오버레이 -->
+  <div id="loadingOverlay" style="
+    display:none; position:fixed; inset:0; z-index:99999;
+    background:rgba(255,255,255,.92);
+    flex-direction:column; align-items:center; justify-content:center; gap:16px;
+  ">
+    <i class="fa-solid fa-spinner fa-spin" style="font-size:32px; color:#6c5ce7;"></i>
+    <p id="loadingMessage" style="font-size:15px; font-weight:600; color:#333;">이동 중...</p>
+  </div>
+  <script>
+    function showLoadingOverlay(message) {
+        var overlay = document.getElementById('loadingOverlay');
+        var msg = document.getElementById('loadingMessage');
+        if (overlay) {
+            if (msg) msg.textContent = message || '이동 중...';
+            overlay.style.display = 'flex';
+        }
+    }
+  </script>
+
+  <script src="js/supabase-client.js"></script>
+  <!-- 스케줄 데이터 (과제 수 계산용) -->
+  <script src="js/schedule-data.js?v=001"></script>
+  <!-- 해설 다시보기 -->
+  <script src="js/result-replay.js?v=20260222_writing_fix"></script>
+  <!-- 마이페이지 전용 로직 -->
+  <script src="js/mypage.js?v=015_score_chart_label"></script>
+</body>
+</html>
