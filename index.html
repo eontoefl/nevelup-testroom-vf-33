@@ -2649,9 +2649,9 @@
     <!-- [V2] 중복 navigation.js 제거 — line 3400에서 로드 -->
     <script src="js/data.js?v=20250209-pages"></script>
     <script src="js/schedule-data.js?v=001"></script>
-    <script src="js/task-router.js?v=009_rawpoint"></script>
-    <!-- [V2] FlowController 제거 — stage-selector.js로 대체 -->
-<script src="js/stage-selector.js?v=001"></script>
+    <script src="js/task-router.js?v=010_v3_dashboard"></script>
+    <!-- [V3] 과제 대시보드 제어 (V2 stage-selector.js 대체) -->
+    <script src="js/task-dashboard.js?v=001"></script>
     <script src="js/tasks.js?v=002"></script>
     <!-- ===== Reading Section (js/reading/) ===== -->
     <script src="js/reading/utils.js"></script>
@@ -2672,7 +2672,7 @@
     <script src="js/reading/academic-loader.js"></script>
     <script src="js/reading/academic-result.js"></script>
     <!-- AudioPlayer -->
-    <script src="js/components/AudioPlayer.js?v=005_no_alert_0221"></script>
+    <script src="js/common/AudioPlayer.js?v=005_no_alert_0221"></script>
     <!-- 리스닝 - 응답고르기 (Response) -->
     <script src="js/listening/response-loader.js"></script>
     <script src="js/listening/response-component.js"></script>
@@ -2691,37 +2691,39 @@
     <script src="js/listening/lecture-result.js"></script>
     <!-- 단어배열 Component -->
     <script src="js/writing/arrange-loader.js"></script>
-    <script src="js/components/ArrangeComponent.js"></script>
+    <script src="js/writing/ArrangeComponent.js"></script>
     <script src="js/writing/arrange-result.js"></script>
     <!-- 이메일작성 Component -->
     <script src="js/writing/email-loader.js"></script>
-    <script src="js/components/EmailComponent.js"></script>
+    <script src="js/writing/EmailComponent.js"></script>
     <script src="js/writing/email-result.js"></script>
     <!-- 토론형글쓰기 Component -->
     <script src="js/writing/discussion-loader.js"></script>
-    <script src="js/components/DiscussionComponent.js"></script>
+    <script src="js/writing/DiscussionComponent.js"></script>
     <script src="js/writing/discussion-result.js"></script>
     <!-- 라이팅 한글 번역 -->
     <script src="js/writing-ko-data.js?v=003"></script>
     <!-- [V2] writing-flow 제거 — writing-flow-v2.js (아래)로 대체 -->
     <!-- 따라말하기 Component -->
-    <script src="js/components/RepeatComponent.js?v=002_skip_fix"></script>
-    <script src="js/speaking-repeat-logic.js?v=20250212-001"></script>
+    <script src="js/speaking/RepeatComponent.js?v=002_skip_fix"></script>
+    <!-- [V3-대기] speaking-repeat-logic.js — V3 speaking 모듈 컨트롤러에서 대체 예정 -->
+    <!-- <script src="js/speaking-repeat-logic.js?v=20250212-001"></script> -->
     <!-- 인터뷰 Component -->
-    <script src="js/components/InterviewComponent.js?v=004_column_fix"></script>
-    <script src="js/speaking-interview-logic.js?v=20250212-001"></script>
-    <!-- ComponentPatch: RepeatComponent, InterviewComponent에 init() 추가 -->
-    <script src="js/ComponentPatch.js?v=003"></script></script>
+    <script src="js/speaking/InterviewComponent.js?v=004_column_fix"></script>
+    <!-- [V3-대기] speaking-interview-logic.js — V3 speaking 모듈 컨트롤러에서 대체 예정 -->
+    <!-- <script src="js/speaking-interview-logic.js?v=20250212-001"></script> -->
+    <!-- [V3-대기] ComponentPatch.js — V3 모듈 컨트롤러에 init/onComplete 내장 예정 -->
+    <!-- <script src="js/ComponentPatch.js?v=003"></script> -->
     
     <!-- 모듈 시스템 -->
-    <script src="js/module-definitions.js?v=003_independent_setid"></script>
-    <!-- [V2] 원본 → V2 전용 복사본으로 교체 -->
-    <script src="js/module-controller-v2.js?v=001"></script>
-    <!-- [V2] auto-save.js 제거 — FlowController 미사용 -->
-    <script src="js/result-controller-v2.js?v=001"></script>
-    <!-- [V2] result-replay 제거 — result-viewer.js로 대체 -->
-    <!-- [V2] 라이팅 전용 플로우 (ModuleController 로드 후) -->
-    <script src="js/writing-flow-v2.js?v=001"></script>
+    <!-- [V3-대기] module-definitions.js — 현재 활성 코드에서 미참조, V3 모듈 컨트롤러 작성 시 재활용/참고 예정 -->
+    <!-- <script src="js/module-definitions.js?v=003_independent_setid"></script> -->
+    <!-- [V3-대기] module-controller-v2.js — V3 섹션별 모듈 컨트롤러로 대체 예정 -->
+    <!-- <script src="js/module-controller-v2.js?v=001"></script> -->
+    <!-- [V3-대기] result-controller-v2.js — V3 task-dashboard.js 점수 렌더링으로 대체 -->
+    <!-- <script src="js/result-controller-v2.js?v=001"></script> -->
+    <!-- [V3-대기] writing-flow-v2.js — V3 writing 모듈 컨트롤러로 대체 예정 -->
+    <!-- <script src="js/writing-flow-v2.js?v=001"></script> -->
     
     <!-- [V2] FlowController 기반 진입점 제거됨 -->
     <!-- [V2] 새 플로우: js/flow-v2/stage-selector.js 사용 -->
@@ -2734,13 +2736,15 @@
 <script src="js/auth.js?v=1002"></script>
     <!-- 🔔 알림 시스템 -->
     <script src="js/notification.js?v=001"></script>
-    <!-- [V2] 학습 결과 Supabase 저장 모듈 -->
-    <script src="js/study-save.js?v=001"></script>
+    <!-- [V3-대기] study-save.js — V3 supabase-client.js에 study_results_v3 함수로 대체 예정 -->
+    <!-- <script src="js/study-save.js?v=001"></script> -->
     
-    <!-- [V2] 해설보기 — 별도 파일 -->
-    <script src="js/explain-viewer-v2.js?v=001"></script>
-<script src="js/final-explain-screen.js?v=001"></script>
-<script src="js/review-panel.js?v=001"></script>
+    <!-- [V3-대기] explain-viewer-v2.js — V3 explain-viewer.js로 대체 예정 -->
+    <!-- <script src="js/explain-viewer-v2.js?v=001"></script> -->
+    <!-- [V3-대기] final-explain-screen.js — V3 explain-viewer.js에 통합 예정 -->
+    <!-- <script src="js/final-explain-screen.js?v=001"></script> -->
+    <!-- [V3-대기] review-panel.js — V3 섹션별 모듈 컨트롤러에 내장 예정 -->
+    <!-- <script src="js/review-panel.js?v=001"></script> -->
 <!-- [V2] auth-monitor.js 제거 — FlowController 미사용으로 비활성 -->
 <!-- [V2] fraud-filter.js 제거 — FlowController 미사용으로 비활성 -->
 <script src="js/error-note.js?v=009_fallback_retry"></script>
