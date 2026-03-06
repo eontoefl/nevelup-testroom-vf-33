@@ -1,0 +1,345 @@
+/* 내벨업보카 시험 - 미니멀 모던 디자인 (NO BRACES) */
+
+/* 인트로 화면 - 심플하고 깔끔하게 */
+.vocab-intro {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.vocab-intro-content {
+    max-width: 600px;
+    /* width: 100% 제거 - 박스가 중앙 정렬되도록 */
+    text-align: center;
+    background: white;
+    padding: 50px 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    margin: 0 auto; /* 🎯 중앙 정렬 추가 */
+}
+
+.intro-week-day {
+    font-size: 16px;
+    color: #9480c5; /* 🎯 변경 */
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.intro-page-info {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.vocab-intro-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+}
+
+.vocab-intro-content h2 {
+    font-size: 32px;
+    color: #2d3748;
+    margin-bottom: 30px;
+    font-weight: 700;
+}
+
+.vocab-intro-description {
+    text-align: center;
+    background: #f7fafc;
+    padding: 25px;
+    margin-bottom: 35px;
+}
+
+.vocab-intro-description p {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #4a5568;
+    margin-bottom: 15px;
+    text-align: center; /* 🎯 중앙 정렬 추가 */
+}
+
+.vocab-intro-description strong {
+    color: #9480c5; /* 🎯 주의사항 색상 */
+    font-weight: 700; /* 🎯 굵기 한 단계 업 (600 → 700) */
+}
+
+.vocab-intro-description ul {
+    margin: 15px 0;
+    padding-left: 0;
+    list-style: none;
+    text-align: center; /* 🎯 중앙 정렬 추가 */
+}
+
+.vocab-intro-description li {
+    font-size: 14px;
+    line-height: 2;
+    color: #4a5568;
+    margin-bottom: 8px;
+    text-align: center; /* 🎯 중앙 정렬 */
+}
+
+/* 🎯 bullet 제거 - 깔끔하게 */
+
+.btn-start-vocab-test {
+    background: #77bf7e; /* 🎯 변경 */
+    color: white;
+    border: none;
+    padding: 16px 40px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 10px; /* 🎯 둥근 모서리 추가 */
+}
+
+.btn-start-vocab-test i {
+    margin-right: 8px; /* 🎯 아이콘과 텍스트 간격 */
+}
+
+.btn-start-vocab-test:hover {
+    background: #6aaf74; /* 🎯 hover 색상 조정 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(119, 191, 126, 0.4);
+}
+
+/* 시험 메인 화면 */
+.vocab-main {
+    padding: 40px 20px;
+    max-width: 900px; /* 🎯 1000px → 900px 변경 */
+    margin: 0 auto;
+}
+
+.vocab-progress {
+    background: transparent; /* 🎯 배경 투명 */
+    padding: 15px 30px;
+    margin-bottom: 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    animation: slideDown 0.4s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.vocab-progress-text {
+    font-size: 16px;
+    color: #4a5568; /* 🎯 어두운 회색 텍스트 */
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+/* 🎯 진행 상태 각 요소 스타일 */
+.vocab-progress-page {
+    font-weight: 700;
+    font-size: 17px;
+    color: #9480c5; /* 보라색 강조 */
+}
+
+.vocab-progress-divider {
+    opacity: 0.4;
+    font-size: 12px;
+}
+
+.vocab-progress-count {
+    background: #f7fafc;
+    color: #9480c5;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.vocab-progress-words {
+    font-size: 15px;
+    opacity: 0.7;
+}
+
+.vocab-container {
+    display: grid;
+    gap: 13px; /* 🎯 20px → 13px */
+}
+
+/* 🎯 컬럼 헤더 */
+.vocab-header {
+    display: grid;
+    grid-template-columns: 360px 1fr; /* vocab-item과 동일한 비율 */
+    gap: 40px;
+    padding: 12px 30px;
+    background: #f7fafc;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 5px;
+}
+
+.vocab-header-headword,
+.vocab-header-synonyms {
+    font-size: 14px;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center; /* 🎯 가운데 정렬 */
+}
+
+/* 문제 카드 - NO BRACES, 깔끔한 라인 */
+.vocab-item {
+    background: white;
+    padding: 15px 30px; /* 🎯 위아래 30px → 15px로 축소, 좌우는 30px 유지 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    display: grid;
+    grid-template-columns: 360px 1fr; /* 🎯 280px → 360px (4:6 비율) */
+    gap: 40px;
+    align-items: center;
+    border-radius: 6px; /* 🎯 모서리 둥글기 추가 */
+}
+
+.vocab-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 표제어 영역 - NO BRACES */
+.vocab-headword {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 🎯 .vocab-headword-label 제거 - 더 이상 사용 안 함 */
+
+.vocab-headword-text {
+    font-size: 22px; /* 🎯 28px → 22px */
+    font-weight: 700;
+    color: #2d3748;
+    word-break: break-word;
+}
+
+/* 동의어 입력 영역 - 중앙 정렬 */
+.vocab-synonyms {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+}
+
+.vocab-synonym-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* 🎯 10px → 5px */
+}
+
+/* 🎯 .vocab-synonym-label 제거 - 더 이상 사용 안 함 */
+
+.vocab-synonym-input {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.2s ease;
+    background: white;
+    border-radius: 4px; /* 🎯 아주 약간의 둥글기 */
+}
+
+.vocab-synonym-input:focus {
+    outline: none;
+    border-color: #9480c5; /* 🎯 포커스 색상도 보라색으로 */
+    box-shadow: 0 0 0 3px rgba(148, 128, 197, 0.1);
+}
+
+.vocab-synonym-input::placeholder {
+    color: #cbd5e0;
+    font-size: 14px; /* 🎯 placeholder 크기 축소 */
+}
+
+/* 제출 버튼 */
+.vocab-submit-section {
+    margin-top: 20px; /* 🎯 40px → 20px */
+    text-align: center;
+    padding: 20px 0; /* 🎯 30px → 20px */
+    display: flex; /* 🎯 버튼들을 나란히 배치 */
+    justify-content: center;
+    gap: 12px;
+}
+
+.vocab-submit-btn,
+.vocab-prev-btn {
+    background: #9480c5; /* 🎯 색상 변경 */
+    color: white;
+    border: none;
+    padding: 14px 20px; /* 🎯 아이콘만 있으므로 패딩 축소 */
+    font-size: 20px; /* 🎯 아이콘 크기 */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 50%; /* 🎯 원형 버튼 */
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vocab-prev-btn {
+    background: #e2e8f0; /* 🎯 이전 버튼은 회색 */
+    color: #4a5568;
+}
+
+.vocab-submit-btn:hover {
+    background: #7d6ba8; /* 🎯 hover 색상 조정 */
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.4);
+}
+
+.vocab-prev-btn:hover {
+    background: #cbd5e0;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .vocab-intro-content {
+        padding: 40px 30px;
+    }
+    
+    .vocab-intro-content h2 {
+        font-size: 28px;
+    }
+    
+    .vocab-item {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 25px;
+    }
+    
+    .vocab-headword-text {
+        font-size: 24px;
+    }
+    
+    .vocab-synonym-input-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .vocab-synonym-label {
+        text-align: left;
+        min-width: auto;
+    }
+}

@@ -1,0 +1,208 @@
+/* 입문서 정독 PDF 모달 스타일 */
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    background-color: #ffffff;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    position: relative;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: 300;
+    color: #94a3b8;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.modal-close:hover {
+    background-color: #f1f5f9;
+    color: #64748b;
+}
+
+.modal-header {
+    padding: 32px 32px 24px 32px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-header i {
+    font-size: 28px;
+    color: #9480c5;
+}
+
+.modal-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.modal-body {
+    padding: 32px;
+}
+
+.intro-book-description {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #475569;
+    margin-bottom: 24px;
+}
+
+.intro-book-info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 28px;
+}
+
+.intro-book-info p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #334155;
+}
+
+.intro-book-info strong {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.intro-book-info span {
+    color: #9480c5;
+    font-weight: 600;
+}
+
+.intro-book-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 20px;
+}
+
+.intro-book-link i {
+    font-size: 18px;
+}
+
+.intro-book-note {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #64748b;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.intro-book-note i {
+    color: #9480c5;
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.modal-footer {
+    padding: 20px 32px 32px 32px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-large {
+    padding: 16px 32px;
+    font-size: 16px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .modal-header {
+        padding: 24px 20px 20px 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 20px;
+    }
+
+    .modal-body {
+        padding: 24px 20px;
+    }
+
+    .modal-footer {
+        padding: 16px 20px 24px 20px;
+    }
+
+    .intro-book-link {
+        padding: 14px 20px;
+        font-size: 15px;
+    }
+}

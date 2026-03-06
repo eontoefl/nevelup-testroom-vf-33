@@ -1,0 +1,296 @@
+/* ============================= */
+/* V3 과제 대시보드 스타일        */
+/* ============================= */
+
+/* 헤더 */
+.task-dashboard-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.task-dashboard-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.task-dashboard-subtitle {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+/* 메인 레이아웃 */
+.task-dashboard-body {
+    display: flex;
+    gap: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 20px;
+    min-height: calc(100vh - 56px);
+}
+
+/* 좌측: 버튼 영역 */
+.task-dashboard-left {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* 우측: 채점 결과 */
+.task-dashboard-right {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 섹션 카드 */
+.task-dashboard-section {
+    background: var(--surface-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+}
+
+/* 섹션 라벨 (풀이, 해설, 채점 결과) */
+.task-dashboard-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.task-dashboard-section-label h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.section-label-bar {
+    width: 4px;
+    height: 20px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.section-label-bar.bar-purple {
+    background: #7C5CBF;
+}
+
+.section-label-bar.bar-orange {
+    background: #E8913A;
+}
+
+/* 버튼 */
+.task-dashboard-btn {
+    width: 100%;
+    padding: 20px 16px;
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.task-dashboard-btn:not(:disabled):hover {
+    border-color: var(--primary-color);
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.task-dashboard-btn:not(:disabled):active {
+    transform: translateY(0);
+}
+
+.task-dashboard-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.task-btn-icon {
+    width: 48px;
+    height: 48px;
+    background: #EEF2FF;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.task-btn-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.task-btn-status {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.task-btn-status.done {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+/* 마감 배너 */
+.task-dashboard-deadline-banner {
+    background: #FFF7ED;
+    border: 1px solid #FED7AA;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.task-dashboard-deadline-banner i {
+    color: var(--warning-color);
+    font-size: 16px;
+    margin-top: 2px;
+}
+
+.task-dashboard-deadline-banner p {
+    font-size: 13px;
+    color: #92400E;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* 채점 결과 패널 */
+.task-dashboard-score-panel {
+    background: var(--surface-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 80px;
+}
+
+/* 점수 블록 (실전풀이 / 다시풀기) */
+.score-block {
+    margin-top: 16px;
+}
+
+.score-block + .score-block {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.score-block-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.score-block-content {
+    background: var(--bg-color);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.score-empty-msg {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 0;
+}
+
+/* 점수 목록 (JS가 동적으로 채울 영역) */
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+}
+
+.score-item + .score-item {
+    border-top: 1px solid var(--border-color);
+}
+
+.score-item-label {
+    color: var(--text-secondary);
+}
+
+.score-item-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.score-item-value.correct {
+    color: var(--success-color);
+}
+
+/* 총점 행 */
+.score-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 2px solid var(--border-color);
+}
+
+.score-total-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.score-total-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.score-total-level {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: 8px;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .task-dashboard-body {
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    .task-dashboard-left {
+        flex: none;
+        width: 100%;
+    }
+
+    .task-dashboard-right {
+        width: 100%;
+    }
+
+    .task-dashboard-score-panel {
+        position: static;
+    }
+}

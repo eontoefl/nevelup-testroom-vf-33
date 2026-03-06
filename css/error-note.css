@@ -1,0 +1,511 @@
+/* ================================================
+   오답노트 플로팅 UI 스타일
+   ================================================ */
+
+/* 플로팅 패널 */
+.error-note-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 360px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 9000;
+    overflow: visible;
+    transition: box-shadow 0.3s ease;
+    border: 1px solid rgba(74, 144, 217, 0.2);
+}
+
+.error-note-panel-open {
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 헤더 */
+.error-note-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #4A90D9, #5B6ABF);
+    color: white;
+    cursor: pointer;
+    user-select: none;
+}
+
+.error-note-title {
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.error-note-title i {
+    font-size: 14px;
+}
+
+.error-note-toggle {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: background 0.2s;
+}
+
+.error-note-toggle:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.error-note-toggle i {
+    font-size: 12px;
+}
+
+/* 본문 */
+.error-note-body {
+    padding: 16px 18px;
+    display: none;
+}
+
+/* 안내 문구 */
+.error-note-guide {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+    line-height: 1.5;
+    padding: 10px 12px;
+    background: #f8f9fb;
+    border-radius: 8px;
+    border-left: 3px solid #4A90D9;
+}
+
+/* 텍스트 영역 */
+.error-note-textarea {
+    width: 100%;
+    height: 160px;
+    padding: 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+    font-family: 'Inter', -apple-system, sans-serif;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    color: #333;
+}
+
+.error-note-textarea:focus {
+    outline: none;
+    border-color: #4A90D9;
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
+}
+
+.error-note-textarea::placeholder {
+    color: #aab;
+    font-size: 13px;
+}
+
+.error-note-textarea.error-note-readonly {
+    background: #f8f9fb;
+    color: #555;
+    cursor: default;
+}
+
+/* 하단 (단어 수 + 제출 버튼) */
+.error-note-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+}
+
+/* 단어 수 안내 */
+.error-note-notice {
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.error-note-notice i {
+    color: #4A90D9;
+    font-size: 11px;
+}
+
+/* 제출 버튼 */
+.error-note-submit-btn {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #4A90D9, #5B6ABF);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.error-note-submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 144, 217, 0.3);
+}
+
+.error-note-submit-btn:active {
+    transform: translateY(0);
+}
+
+.error-note-submit-btn:disabled {
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+}
+
+.error-note-submit-btn.error-note-submitted {
+    background: linear-gradient(135deg, #4CAF50, #43A047);
+}
+
+.error-note-submit-btn.error-note-failed {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    animation: error-note-shake 0.5s ease;
+}
+
+@keyframes error-note-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+}
+
+/* 드래그 리사이즈 핸들 */
+.error-note-resize-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 16px;
+    cursor: ns-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.error-note-panel-open .error-note-resize-handle {
+    display: flex;
+}
+
+.error-note-resize-handle .resize-bar {
+    width: 40px;
+    height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+    transition: background 0.2s;
+}
+
+.error-note-resize-handle:hover .resize-bar {
+    background: #999;
+}
+
+/* ========================================
+   경고 팝업
+   ======================================== */
+
+.error-note-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9500;
+    display: none;
+}
+
+.error-note-warning-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9600;
+    animation: errorNotePopupIn 0.25s ease;
+}
+
+@keyframes errorNotePopupIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.error-note-warning-content {
+    background: white;
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+    max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.error-note-warning-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    background: #FFF3CD;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.error-note-warning-icon i {
+    font-size: 24px;
+    color: #F39C12;
+}
+
+.error-note-warning-content h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 12px;
+}
+
+.error-note-warning-content p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+    margin: 0 0 24px;
+}
+
+.error-note-warning-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.error-note-btn-edit {
+    flex: 1;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #4A90D9, #5B6ABF);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.error-note-btn-edit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 144, 217, 0.3);
+}
+
+.error-note-btn-force {
+    flex: 1;
+    padding: 12px 16px;
+    background: #f5f5f5;
+    color: #888;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.error-note-btn-force:hover {
+    background: #eee;
+    color: #666;
+}
+
+/* ========================================
+   Speaking 녹음 파일 업로드
+   ======================================== */
+
+.speaking-upload-section {
+    margin-top: 12px;
+    padding: 14px;
+    background: #f0ecfa;
+    border: 1px solid #d8cff0;
+    border-radius: 10px;
+}
+
+.speaking-upload-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #5B4A9E;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.speaking-upload-title i {
+    color: #9480c5;
+}
+
+.speaking-upload-desc {
+    font-size: 11px;
+    color: #8a7ab8;
+    margin-bottom: 12px;
+}
+
+.speaking-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.speaking-upload-row:last-child {
+    margin-bottom: 0;
+}
+
+.speaking-upload-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #5B4A9E;
+    min-width: 52px;
+    flex-shrink: 0;
+}
+
+.speaking-upload-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: white;
+    border: 1.5px dashed #b9a0df;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #7a68aa;
+    cursor: pointer;
+    transition: all 0.18s;
+    overflow: hidden;
+}
+
+.speaking-upload-btn:hover {
+    border-color: #9480c5;
+    background: #f7f5fd;
+}
+
+.speaking-upload-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.speaking-upload-btn-selected {
+    background: #e8e0f7;
+    border-style: solid;
+    border-color: #9480c5;
+    color: #5B4A9E;
+    font-weight: 600;
+}
+
+.speaking-upload-btn-selected i {
+    color: #22c55e;
+}
+
+.speaking-upload-remove {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fee2e2;
+    border: none;
+    border-radius: 50%;
+    color: #dc2626;
+    font-size: 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.speaking-upload-remove:hover {
+    background: #fca5a5;
+}
+
+/* 파일 첨부 상태 표시 */
+.speaking-file-status {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.speaking-file-status-empty {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.speaking-file-status-partial {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+}
+
+.speaking-file-status-ok {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+/* Speaking 경고 팝업 아이콘 */
+.speaking-file-warning-icon {
+    background: #fef2f2 !important;
+}
+
+.speaking-file-warning-icon i {
+    color: #dc2626 !important;
+}
+
+/* ========================================
+   반응형 (모바일)
+   ======================================== */
+
+@media (max-width: 480px) {
+    .error-note-panel {
+        width: calc(100% - 24px);
+        right: 12px;
+        bottom: 12px;
+        border-radius: 14px;
+    }
+
+    .error-note-textarea {
+        height: 120px;
+        font-size: 13px;
+    }
+
+    .error-note-warning-content {
+        max-width: calc(100vw - 40px);
+        padding: 24px 20px;
+    }
+
+    .error-note-warning-buttons {
+        flex-direction: column;
+    }
+}

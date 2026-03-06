@@ -1,0 +1,246 @@
+
+/* Writing - 토론형 스타일 */
+.discussion-layout {
+    display: grid !important;
+    grid-template-columns: 35% 65% !important;
+    gap: 20px !important;
+    padding: 15px 30px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    height: calc(100vh - 80px) !important;
+    overflow-y: auto !important;
+}
+
+.discussion-task-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.discussion-task-box {
+    background: linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%);
+    border: 1px solid #e8eef5;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    height: 100%;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.discussion-context {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #2d3748;
+    margin-bottom: 20px;
+}
+
+.discussion-instruction {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #e8eef5;
+}
+
+.discussion-instruction-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 12px;
+}
+
+.discussion-instructions {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 12px;
+}
+
+.discussion-instructions li {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2d3748;
+    margin-bottom: 8px;
+    padding-left: 20px;
+    position: relative;
+}
+
+.discussion-instructions li::before {
+    content: "•";
+    position: absolute;
+    left: 5px;
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.discussion-note {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #718096;
+    margin: 0;
+}
+
+.professor-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    min-height: 120px;
+}
+
+.professor-image {
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    margin-bottom: 20px;
+}
+
+.discussion-topic {
+    width: 100%;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #2d3748;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    overflow: visible;
+    max-height: none;
+    min-height: 120px;
+}
+
+.discussion-response-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 100%;
+    min-height: 0;
+}
+
+.student-opinions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.student-opinion {
+    background: white;
+    border: 1px solid #e8eef5;
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.student-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.student-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e8eef5;
+    flex-shrink: 0;
+}
+
+.student-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0 0 2px 0;
+    line-height: 1.2;
+}
+
+.student-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #2d3748;
+    margin: 0;
+    padding: 0;
+}
+
+.discussion-editor-box {
+    background: white;
+    border: 2px solid #e8eef5;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.discussion-editor-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: linear-gradient(to bottom, #f8fafb 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.discussion-textarea {
+    width: 100%;
+    flex: 1;
+    padding: 20px;
+    border: none;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #2d3748;
+    resize: none;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    overflow-y: auto;
+    min-height: 350px !important;
+}
+
+.discussion-textarea:focus {
+    outline: none;
+}
+
+.discussion-textarea::placeholder {
+    color: #a0aec0;
+    font-style: italic;
+}
+
+.discussion-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 15px;
+    flex-shrink: 0;
+    background: #fafbfc;
+    border-top: 1px solid #e8eef5;
+    border-radius: 0 0 12px 12px;
+}
+
+/* 반응형 - 토론형 */
+@media (max-width: 900px) {
+    .discussion-layout {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+        height: auto !important;
+    }
+    
+    .discussion-task-box {
+        max-height: 400px;
+    }
+    
+    .student-text {
+        padding-left: 0;
+    }
+}
