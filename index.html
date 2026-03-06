@@ -519,14 +519,8 @@
                 </div>
             </div>
 
-            <div class="start-options">
-                <button class="btn btn-primary btn-large" onclick="startFullTest()">
-                    <i class="fas fa-play"></i> 전체 시험 시작
-                </button>
-                <button class="btn btn-secondary btn-large" onclick="showSectionSelect()">
-                    <i class="fas fa-list"></i> 섹션별 연습
-                </button>
-            </div>
+            <!-- [V3] 삭제됨: startFullTest, showSectionSelect 버튼 — V1 프로토타입 전용 -->
+            <div class="start-options" style="display:none;"></div>
         </div>
     </div>
 
@@ -2652,7 +2646,8 @@
     <script src="js/task-router.js?v=010_v3_dashboard"></script>
     <!-- [V3] 과제 대시보드 제어 (V2 stage-selector.js 대체) -->
     <script src="js/task-dashboard.js?v=001"></script>
-    <script src="js/tasks.js?v=002"></script>
+    <!-- [V3-삭제] tasks.js — V1 프로토타입 전용 (demoTasks 참조), 활성 코드에서 미사용 -->
+<!-- <script src="js/tasks.js?v=002"></script> -->
     <!-- ===== Reading Section (js/reading/) ===== -->
     <script src="js/reading/utils.js"></script>
     <!-- 빈칸채우기 -->
