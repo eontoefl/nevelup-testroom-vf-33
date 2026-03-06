@@ -14,13 +14,9 @@
     <link rel="stylesheet" href="css/style.css?v=107_badge_fix">
     
     <link rel="stylesheet" href="css/result-screen.css?v=003_scoped">
-    <!-- [V2] 2차 풀이 Floating UI 스타일 (retake-popup.css) -->
-    <link rel="stylesheet" href="css/retake-popup.css?v=003">
 <link rel="stylesheet" href="css/reading-daily1-result.css?v=daily2_fix_001">
 <link rel="stylesheet" href="css/reading-daily2-result.css?v=20260215_002">
 <link rel="stylesheet" href="css/reading-academic-result.css?v=academic_fix_001">
-<link rel="stylesheet" href="css/reading-retake-result.css?v=20260215_006">
-<link rel="stylesheet" href="css/reading-retake-detail.css?v=daily2_fix_001">
 <link rel="stylesheet" href="css/final-explain-screen.css?v=030_designer_clean">
 <link rel="stylesheet" href="css/listening-response-result.css?v=030_designer_clean">
 <link rel="stylesheet" href="css/listening-conver-result-v2.css?v=20260221_v2">
@@ -42,34 +38,10 @@
     <link rel="stylesheet" href="css/intro-book-modal.css?v=001">
     <link rel="stylesheet" href="css/review-panel.css?v=001">
     <link rel="stylesheet" href="css/error-note.css?v=003_retry">
+    <link rel="stylesheet" href="css/task-dashboard.css?v=001">
+    <link rel="stylesheet" href="css/explain-viewer.css?v=001">
     
-    <!-- [V2] Stage Selector 스타일 -->
-    <style>
-        /* 풀이/해설 버튼 hover */
-        #stageSelectScreen button:hover {
-            border-color: var(--primary-color) !important;
-            background: #fff !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        #stageSelectScreen button:active {
-            transform: translateY(0);
-        }
-        /* 완료 상태 표시 */
-        .stage-status-done {
-            color: var(--success-color) !important;
-            font-weight: 600 !important;
-        }
-        /* 모바일 대응 */
-        @media (max-width: 768px) {
-            #stageSelectScreen > div:nth-child(2) {
-                flex-direction: column !important;
-            }
-            #stageSelectScreen > div:nth-child(2) > div:last-child {
-                width: 100% !important;
-            }
-        }
-    </style>
+    <!-- [V3] 삭제됨: V2 Stage Selector 인라인 스타일 -->
 
     <!-- INLINE STYLES FOR DISCUSSION - 직접 삽입 -->
     <style>
@@ -559,200 +531,190 @@
     </div>
 
     <!-- 섹션 선택 화면 -->
-    <div id="sectionSelectScreen" class="screen">
-        <!-- 상단 네비게이션 바 (container 밖) -->
-        <div class="top-nav-bar">
-            <div class="top-nav-left">
-                <button class="btn-back" onclick="backToSchedule()" title="뒤로가기">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-                <div class="user-info">
-                    <i class="fas fa-user-circle"></i>
-                    <span><strong id="sectionSelectUserName"></strong>님</span>
-                    <span class="program-badge" id="sectionSelectProgramBadge"></span>
-                </div>
-            </div>
-            <button class="logout-btn" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                로그아웃
+    <!-- [V3] 삭제됨: sectionSelectScreen (V2 섹션 선택 화면 → 스케줄에서 바로 진입) -->
+
+    <!-- [V3] 삭제됨: stageSelectScreen (V2 단계 선택 화면 → V3 과제 대시보드로 교체 예정) -->
+
+    <!-- ============================= -->
+    <!-- [V3] 과제 대시보드 -->
+    <!-- ============================= -->
+    <div id="taskDashboardScreen" class="screen">
+        <!-- 헤더 -->
+        <div class="task-dashboard-header">
+            <button class="btn-back-to-schedule" onclick="backToScheduleFromDashboard()">
+                <i class="fas fa-arrow-left"></i> 학습 일정
             </button>
-        </div>
-        
-        <div class="container" style="position: relative;">
-            <h1>연습할 섹션을 선택하세요</h1>
-            
-            <div class="section-select-grid">
-                <div class="section-select-card" onclick="startSection('reading')">
-                    <i class="fas fa-book-open"></i>
-                    <h3>Reading</h3>
-                    <p>지문 독해 및 문제 풀이</p>
-                    <span class="duration">54분</span>
-                </div>
-                <div class="section-select-card" onclick="startSection('listening')">
-                    <i class="fas fa-headphones"></i>
-                    <h3>Listening</h3>
-                    <p>대화 및 강의 듣기</p>
-                    <span class="duration">41분</span>
-                </div>
-                <div class="section-select-card" onclick="startSection('writing')">
-                    <i class="fas fa-pen"></i>
-                    <h3>Writing</h3>
-                    <p>에세이 작성</p>
-                    <span class="duration">50분</span>
-                </div>
-                <div class="section-select-card" onclick="startSection('speaking')">
-                    <i class="fas fa-microphone"></i>
-                    <h3>Speaking</h3>
-                    <p>말하기 과제</p>
-                    <span class="duration">17분</span>
-                </div>
+            <div class="task-dashboard-title">
+                <span id="taskDashboardIcon">📚</span>
+                <span id="taskDashboardTitle">리딩 모듈 1</span>
+                <span class="task-dashboard-subtitle" id="taskDashboardSubtitle">Week 1 - 월요일</span>
             </div>
         </div>
-    </div>
 
-    <!-- [V2] 단계 선택 화면 — 과제 버튼 클릭 후 진입 -->
-    <div id="stageSelectScreen" class="screen" style="display:none;">
-        <div class="test-header">
-            <button class="btn-back-to-schedule" onclick="showWelcomeScreen()">
-                <i class="fas fa-arrow-left"></i> 과제 목록으로
-            </button>
-            <div class="test-title" id="stageSelectTitle">리딩 모듈 1</div>
-        </div>
+        <!-- 메인 레이아웃: 좌측 버튼 + 우측 채점 -->
+        <div class="task-dashboard-body">
 
-        <!-- 메인 레이아웃: 왼쪽 풀이/해설 영역 + 오른쪽 채점 대시보드 -->
-        <div style="display:flex; gap:24px; max-width:1100px; margin:0 auto; padding:32px 20px; min-height:calc(100vh - 56px);">
-            
-            <!-- 왼쪽: 풀이 & 해설 영역 -->
-            <div class="stage-buttons" style="flex:1; display:flex; flex-direction:column; gap:24px;">
+            <!-- 좌측: 버튼 영역 -->
+            <div class="task-dashboard-left">
 
                 <!-- 풀이 섹션 -->
-                <div style="background:var(--surface-color); border-radius:16px; padding:28px; box-shadow:var(--shadow);">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
-                        <div style="width:4px; height:20px; background:var(--primary-color); border-radius:2px;"></div>
-                        <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0;">풀이</h3>
+                <div class="task-dashboard-section">
+                    <div class="task-dashboard-section-label">
+                        <div class="section-label-bar"></div>
+                        <h3>풀이</h3>
                     </div>
-                    <div style="display:flex; gap:14px;">
-                        <!-- 1차 풀이 -->
-                        <button id="stageBtn1st" onclick="startFirstAttemptV2()" style="
-                            flex:1; padding:20px 16px; 
-                            background:var(--bg-color); color:var(--text-primary); 
-                            border:2px solid var(--border-color); border-radius:12px; 
-                            cursor:pointer; font-size:14px; font-weight:600;
-                            display:flex; flex-direction:column; align-items:center; gap:10px;
-                            transition: all 0.2s;
-                        ">
-                            <div style="width:48px; height:48px; background:#EEF2FF; border-radius:12px; display:flex; align-items:center; justify-content:center;">
-                                <span style="font-size:22px;">📝</span>
-                            </div>
-                            <span>1차 풀이</span>
-                            <span id="stage1stStatus" style="font-size:11px; color:var(--text-secondary); font-weight:400;">미완료</span>
-                        </button>
-
-                        <!-- 2차 풀이 -->
-                        <button id="stageBtn2nd" onclick="startSecondAttemptV2()" style="
-                            flex:1; padding:20px 16px; 
-                            background:var(--bg-color); color:var(--text-primary); 
-                            border:2px solid var(--border-color); border-radius:12px; 
-                            cursor:pointer; font-size:14px; font-weight:600;
-                            display:flex; flex-direction:column; align-items:center; gap:10px;
-                            transition: all 0.2s;
-                        ">
-                            <div style="width:48px; height:48px; background:#F0FDF4; border-radius:12px; display:flex; align-items:center; justify-content:center;">
-                                <span style="font-size:22px;">🔄</span>
-                            </div>
-                            <span>2차 풀이</span>
-                            <span id="stage2ndStatus" style="font-size:11px; color:var(--text-secondary); font-weight:400;">미완료</span>
-                        </button>
-                    </div>
+                    <button class="task-dashboard-btn" id="taskBtnPractice" disabled>
+                        <div class="task-btn-icon">
+                            <span id="taskBtnPracticeIcon">📝</span>
+                        </div>
+                        <span class="task-btn-text" id="taskBtnPracticeText">실전 풀이</span>
+                        <span class="task-btn-status" id="taskBtnPracticeStatus">미완료</span>
+                    </button>
                 </div>
 
                 <!-- 해설 섹션 -->
-                <div style="background:var(--surface-color); border-radius:16px; padding:28px; box-shadow:var(--shadow);">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
-                        <div style="width:4px; height:20px; background:#7C5CBF; border-radius:2px;"></div>
-                        <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0;">해설</h3>
+                <div class="task-dashboard-section">
+                    <div class="task-dashboard-section-label">
+                        <div class="section-label-bar bar-purple"></div>
+                        <h3>해설</h3>
                     </div>
-                    <div style="display:flex; gap:14px;">
-                        <!-- 해설 보기 -->
-                        <button id="stageBtnExplain" onclick="showExplainV2()" style="
-                            flex:1; padding:20px 16px; 
-                            background:var(--bg-color); color:var(--text-primary); 
-                            border:2px solid var(--border-color); border-radius:12px; 
-                            cursor:pointer; font-size:14px; font-weight:600;
-                            display:flex; flex-direction:column; align-items:center; gap:10px;
-                            transition: all 0.2s;
-                        ">
-                            <div style="width:48px; height:48px; background:#F5F3FF; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                <span style="font-size:22px;">📖</span>
-                            </div>
-                            <span>해설 보기</span>
-                            <span id="stageExplainStatus" style="font-size:11px; color:var(--text-secondary); font-weight:400;">풀이 완료 후 확인 가능</span>
-                        </button>
+                    <button class="task-dashboard-btn" id="taskBtnExplain" disabled>
+                        <div class="task-btn-icon">
+                            <span>📖</span>
+                        </div>
+                        <span class="task-btn-text">해설 보기</span>
+                        <span class="task-btn-status" id="taskBtnExplainStatus">풀이 완료 후 확인 가능</span>
+                    </button>
+                </div>
 
-                        <!-- 오답노트 보기 -->
-                        <button id="stageBtnErrorNote" onclick="showErrorNoteV2()" style="
-                            flex:1; padding:20px 16px; 
-                            background:var(--bg-color); color:var(--text-primary); 
-                            border:2px solid var(--border-color); border-radius:12px; 
-                            cursor:pointer; font-size:14px; font-weight:600;
-                            display:flex; flex-direction:column; align-items:center; gap:10px;
-                            transition: all 0.2s;
-                        ">
-                            <div style="width:48px; height:48px; background:#FFF7ED; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                <span style="font-size:22px;">📝</span>
-                            </div>
-                            <span>오답노트 보기</span>
-                            <span id="stageErrorNoteStatus" style="font-size:11px; color:var(--text-secondary); font-weight:400;">제출 후 확인 가능</span>
-                        </button>
-                    </div>
+                <!-- 마감 배너 (마감 지난 경우에만 JS로 표시) -->
+                <div class="task-dashboard-deadline-banner" id="taskDeadlineBanner" style="display: none;">
+                    <i class="fas fa-clock"></i>
+                    <p>⏰ 이 과제의 마감이 지났습니다. 다시 풀기로 연습할 수 있지만, 인증률에는 반영되지 않습니다.</p>
                 </div>
 
             </div>
 
-            <!-- 오른쪽: 채점 결과 대시보드 -->
-            <div style="width:320px; flex-shrink:0;">
-                <div style="background:var(--surface-color); border-radius:16px; padding:28px; box-shadow:var(--shadow); position:sticky; top:80px;">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:24px;">
-                        <div style="width:4px; height:20px; background:#E8913A; border-radius:2px;"></div>
-                        <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0;">채점 결과</h3>
-                        <button onclick="StageSelector._loadFromDB()" title="최신 결과 불러오기"
-                            style="margin-left:auto; background:none; border:1px solid var(--border-color); border-radius:6px; padding:4px 8px; cursor:pointer; font-size:13px; color:var(--text-secondary); display:flex; align-items:center; gap:4px;"
-                            onmouseover="this.style.background='var(--bg-color)'" onmouseout="this.style.background='none'">
-                            🔄
+            <!-- 우측: 채점 결과 대시보드 -->
+            <div class="task-dashboard-right">
+                <div class="task-dashboard-score-panel">
+                    <div class="task-dashboard-section-label">
+                        <div class="section-label-bar bar-orange"></div>
+                        <h3>채점 결과</h3>
+                    </div>
+
+                    <!-- 실전풀이 결과 블록 -->
+                    <div class="score-block" id="scoreBlockInitial">
+                        <div class="score-block-title">실전풀이</div>
+                        <div class="score-block-content" id="scoreBlockInitialContent">
+                            <p class="score-empty-msg">풀이 후 표시됩니다</p>
+                        </div>
+                    </div>
+
+                    <!-- 최근 다시풀기 결과 블록 -->
+                    <div class="score-block" id="scoreBlockCurrent" style="display: none;">
+                        <div class="score-block-title">최근 다시풀기</div>
+                        <div class="score-block-content" id="scoreBlockCurrentContent">
+                            <p class="score-empty-msg">다시풀기 후 표시됩니다</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- [V3] 해설 보기 화면 (Split) -->
+    <!-- ============================= -->
+    <div id="explainViewerScreen" class="screen">
+        <!-- 헤더 -->
+        <div class="explain-viewer-header">
+            <button class="btn-back-to-dashboard" id="explainBackBtn">
+                <i class="fas fa-arrow-left"></i> 과제 화면으로
+            </button>
+            <div class="explain-viewer-title-area">
+                <span id="explainViewerIcon">📚</span>
+                <span id="explainViewerTitle">리딩 모듈 1</span>
+                <span class="explain-viewer-subtitle" id="explainViewerSubtitle">Week 1 - 월요일</span>
+            </div>
+        </div>
+
+        <!-- 메인: 좌우 split -->
+        <div class="explain-viewer-body">
+
+            <!-- 좌측: 해설 콘텐츠 -->
+            <div class="explain-viewer-left">
+
+                <!-- 탭 바 -->
+                <div class="explain-tab-bar">
+                    <button class="explain-tab-btn active" id="explainTabBtnInitial">
+                        <span class="explain-tab-icon">📋</span>
+                        <span class="explain-tab-label">실전풀이</span>
+                        <span class="explain-tab-score" id="explainTabScoreInitial"></span>
+                    </button>
+                    <button class="explain-tab-btn" id="explainTabBtnCurrent" style="display: none;">
+                        <span class="explain-tab-icon">🔄</span>
+                        <span class="explain-tab-label">다시풀기</span>
+                        <span class="explain-tab-score" id="explainTabScoreCurrent"></span>
+                    </button>
+                </div>
+
+                <!-- 실전풀이 탭 콘텐츠 -->
+                <div class="explain-tab-content active" id="explainTabInitial">
+                    <!-- JS가 기존 해설 화면의 내용을 여기에 렌더링 -->
+                </div>
+
+                <!-- 다시풀기 탭 콘텐츠 -->
+                <div class="explain-tab-content" id="explainTabCurrent" style="display: none;">
+                    <!-- JS가 기존 해설 화면의 내용을 여기에 렌더링 -->
+                </div>
+
+            </div>
+
+            <!-- 우측: 메모장 (오답노트) -->
+            <div class="explain-viewer-right">
+                <div class="explain-memo-panel" id="explainMemoPanel">
+
+                    <!-- 메모장 헤더 -->
+                    <div class="explain-memo-header">
+                        <span class="explain-memo-title">📝 오답노트</span>
+                    </div>
+
+                    <!-- 상태 메시지 (잠김/읽기전용 시 표시) -->
+                    <div class="explain-memo-status" id="explainMemoStatus" style="display: none;">
+                        <i class="fas fa-lock"></i>
+                        <p id="explainMemoStatusMsg">풀이 완료 후 작성할 수 있습니다.</p>
+                    </div>
+
+                    <!-- 메모 작성 영역 -->
+                    <div class="explain-memo-body" id="explainMemoBody">
+                        <textarea
+                            id="explainMemoTextarea"
+                            class="explain-memo-textarea"
+                            placeholder="오답노트를 작성해 주세요. 틀린 문제, 헷갈렸던 부분, 다음에 주의할 점 등을 자유롭게 적어보세요."
+                        ></textarea>
+                    </div>
+
+                    <!-- 하단 정보 -->
+                    <div class="explain-memo-footer">
+                        <div class="explain-memo-info">
+                            <span class="explain-memo-autosave" id="explainMemoAutoSave"></span>
+                            <span class="explain-memo-word-count" id="explainMemoWordCount">0 / 20 단어</span>
+                        </div>
+                        <button class="explain-memo-submit-btn" id="explainMemoSubmitBtn" disabled>
+                            제출하기
                         </button>
                     </div>
 
-                    <!-- 1차 결과 -->
-                    <div id="stageResult1st" style="margin-bottom:20px;">
-                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">1차 풀이</div>
-                        <div style="background:var(--bg-color); border-radius:10px; padding:16px;">
-                            <div id="stageScore1st" style="font-size:28px; font-weight:700; color:var(--text-primary); text-align:center;">
-                                --<span style="font-size:14px; font-weight:400; color:var(--text-secondary);">/35</span>
-                            </div>
-                            <div id="stageLevel1st" style="font-size:12px; color:var(--text-secondary); text-align:center; margin-top:4px;">
-                                레벨 --
-                            </div>
-                            <!-- 파트별 점수 -->
-                            <div id="stageDetail1st" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px;">
-                                <div style="font-size:11px; color:var(--text-secondary); text-align:center;">풀이 후 표시됩니다</div>
-                            </div>
+                    <!-- 스피킹 파일 첨부 (스피킹 과제일 때만 JS로 표시) -->
+                    <div class="explain-speaking-file-area" id="explainSpeakingFileArea" style="display: none;">
+                        <div class="explain-speaking-file-header">
+                            <span>🎤 스피킹 파일</span>
                         </div>
-                    </div>
-
-                    <!-- 2차 결과 -->
-                    <div id="stageResult2nd">
-                        <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">2차 풀이</div>
-                        <div style="background:var(--bg-color); border-radius:10px; padding:16px;">
-                            <div id="stageScore2nd" style="font-size:28px; font-weight:700; color:var(--text-primary); text-align:center;">
-                                --<span style="font-size:14px; font-weight:400; color:var(--text-secondary);">/35</span>
-                            </div>
-                            <div id="stageLevel2nd" style="font-size:12px; color:var(--text-secondary); text-align:center; margin-top:4px;">
-                                레벨 --
-                            </div>
-                            <div id="stageDetail2nd" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px;">
-                                <div style="font-size:11px; color:var(--text-secondary); text-align:center;">풀이 후 표시됩니다</div>
-                            </div>
-                        </div>
+                        <input type="file" id="explainSpeakingFileInput" accept="audio/*" />
+                        <p class="explain-speaking-file-msg" id="explainSpeakingFileMsg"></p>
                     </div>
 
                 </div>
@@ -779,9 +741,6 @@
                     <i class="fas fa-clock"></i>
                     <span id="fillBlanksTimer">20:00</span>
                 </div>
-                <div class="retake-badge" id="fillBlanksRetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
-                </div>
                 <button class="btn btn-secondary" id="fillBlanksPrevBtn" onclick="modulePrevFromFillBlanks()" style="display: none;">
                     Back
                 </button>
@@ -807,599 +766,26 @@
         </div>
     </div>
 
-    <!-- ============================= -->
-    <!-- Reading Module 1차 결과 화면 -->
-    <!-- ============================= -->
-    <div id="readingResultScreen" class="result-screen test-screen">
-        <div class="result-header">
-            <div class="result-title">Reading Module 1</div>
-            <div class="result-subtitle">1차 채점 결과</div>
-        </div>
-        
-        <div class="result-score-card">
-            <div class="result-total-score">-- / --</div>
-            <div class="result-percentage">--%</div>
-            <div class="result-level-container">
-                <span class="result-level-label">레벨</span>
-                <span class="result-level">-.-</span>
-            </div>
-        </div>
-        
-        <div class="result-component-section">
-            <div class="result-section-title">유형별 정답 현황</div>
-            <div class="result-component-list">
-                <!-- 컴포넌트별 점수가 여기에 표시됩니다 -->
-            </div>
-        </div>
-        
-        <div class="result-buttons">
-            <!-- 버튼이 동적으로 추가됩니다 -->
-        </div>
-    </div>
-
-    <!-- ============================= -->
-    <!-- Reading Module 2차 결과 화면 -->
-    <!-- ============================= -->
-    <div id="readingRetakeResultScreen" class="result-screen test-screen" style="display: none;">
-        <div class="retake-result-header">
-            <h2>📖 Reading Module 1 - 2차 풀이 완료</h2>
-        </div>
-        
-        <!-- 상단: 전체 요약 섹션 -->
-        <div class="retake-summary-section">
-            <!-- 35문제 O/X 비교표 -->
-            <div class="question-comparison-table">
-                <div class="comparison-row comparison-header">
-                    <span class="row-label">문제번호</span>
-                    <div class="question-numbers" id="questionNumbers">
-                        <!-- 1~35 동적 생성 -->
-                    </div>
-                </div>
-                <div class="comparison-row first-attempt-row">
-                    <span class="row-label">1차 결과</span>
-                    <div class="question-results" id="firstAttemptResults">
-                        <!-- O/X 동적 생성 -->
-                    </div>
-                </div>
-                <div class="comparison-row second-attempt-row">
-                    <span class="row-label">2차 결과</span>
-                    <div class="question-results" id="secondAttemptResults">
-                        <!-- O/X 동적 생성 -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 점수/정답률/레벨 비교표 -->
-            <div class="stats-comparison-table">
-                <div class="stats-header">
-                    <div class="stats-col">1차 결과</div>
-                    <div class="stats-col">2차 결과</div>
-                    <div class="stats-col">개선</div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-col">
-                        <span class="stats-value" id="firstScore">25/35</span>
-                    </div>
-                    <div class="stats-col">
-                        <span class="stats-value" id="secondScore">30/35</span>
-                    </div>
-                    <div class="stats-col improvement">
-                        <span class="stats-value" id="scoreDiff">+5 문제</span>
-                        <span class="improvement-icon">✨</span>
-                    </div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-col">
-                        <span class="stats-value" id="firstPercent">71%</span>
-                    </div>
-                    <div class="stats-col">
-                        <span class="stats-value" id="secondPercent">86%</span>
-                    </div>
-                    <div class="stats-col improvement">
-                        <span class="stats-value" id="percentDiff">+15%</span>
-                        <span class="improvement-icon">📈</span>
-                    </div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-col">
-                        <span class="stats-label">레벨 </span>
-                        <span class="stats-value" id="firstLevel">3.5</span>
-                    </div>
-                    <div class="stats-col">
-                        <span class="stats-label">레벨 </span>
-                        <span class="stats-value" id="secondLevel">4.0</span>
-                    </div>
-                    <div class="stats-col improvement">
-                        <span class="stats-value" id="levelDiff">+0.5</span>
-                        <span class="improvement-icon">⬆️</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 축하/격려 메시지 -->
-            <div class="motivation-message" id="motivationMessage">
-                <p>🎉 축하합니다!</p>
-                <p>조금 더 생각하는 것만으로 5문제를 더 맞혔어요!</p>
-                <p>정답률이 15% 상승했고, 0.5 레벨이 올랐어요!</p>
-            </div>
-        </div>
-        
-        <!-- [V2] 유형별 세부 결과 보기 버튼 제거 — explain-viewer-v2.js 탭으로 대체 -->
-    </div>
-
-    <!-- ============================= -->
-    <!-- Reading Module 2차 - 빈칸채우기 세부 결과 화면 -->
-    <!-- ============================= -->
-    <div id="readingRetakeDetailFillBlanksScreen" class="result-screen test-screen" style="display: none;">
-        <div class="retake-detail-header">
-            <!-- [V2] backToRetakeResult 제거 — explain-viewer-v2.js에서 탭 네비게이션 처리 -->
-            <h2 id="fillBlanksDetailTitle">📖 Week 1 - 일요일 : Reading Module 1 최종 해설</h2>
-        </div>
-        
-        <!-- 빈칸채우기 요약 -->
-        <div class="retake-detail-summary">
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <span class="stat-label">총 문제</span>
-                    <span class="stat-value" id="fillBlanksTotal">20</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">1차 정답</span>
-                    <span class="stat-value first" id="fillBlanksFirst">15/20 (75%)</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">2차 정답</span>
-                    <span class="stat-value second" id="fillBlanksSecond">18/20 (90%)</span>
-                </div>
-                <div class="stat-box improvement">
-                    <span class="stat-label">개선</span>
-                    <span class="stat-value" id="fillBlanksImprovement">+3문제 (+15%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 세트별 세부 결과 -->
-        <div class="retake-detail-sets" id="fillBlanksDetailSets">
-            <!-- Set 0001, Set 0002가 동적으로 추가됨 -->
-        </div>
-        
-        <!-- [V2] 하단 네비게이션 제거 — 상단 탭으로 대체 -->
-    </div>
-
-    <!-- ============================= -->
-    <!-- 일상리딩1 최종 해설 화면 -->
-    <!-- ============================= -->
-    <div id="readingRetakeDetailDaily1Screen" class="result-screen test-screen" style="display: none;">
-        <div class="retake-detail-header">
-            <!-- [V2] backToRetakeResult 제거 -->
-            <h2 id="daily1DetailTitle">📖 Week 1 - 일요일 : Reading Module 1 최종 해설</h2>
-        </div>
-        
-        <!-- 일상리딩1 요약 -->
-        <div class="retake-detail-summary">
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <span class="stat-label">총 문제</span>
-                    <span class="stat-value" id="daily1Total">4</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">1차 정답</span>
-                    <span class="stat-value first" id="daily1First">2/4 (50%)</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">2차 정답</span>
-                    <span class="stat-value second" id="daily1Second">3/4 (75%)</span>
-                </div>
-                <div class="stat-box improvement">
-                    <span class="stat-label">개선</span>
-                    <span class="stat-value" id="daily1Improvement">+1문제 (+25%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 세트별 세부 결과 -->
-        <div class="retake-detail-sets" id="daily1DetailSets">
-            <!-- Set 결과가 동적으로 추가됨 -->
-        </div>
-        
-        <!-- [V2] 하단 네비게이션 제거 — 상단 탭으로 대체 -->
-    </div>
-
-    <!-- ============================= -->
-    <!-- Reading 일상리딩2 최종 해설 화면 -->
-    <!-- ============================= -->
-    <div id="readingRetakeDetailDaily2Screen" class="result-screen test-screen" style="display: none;">
-        <!-- 헤더 -->
-        <div class="retake-detail-header">
-            <!-- [V2] backToRetakeResult 제거 -->
-            <h2 id="daily2DetailTitle">Week 1 - 일요일 : Reading Module 1 최종 해설</h2>
-        </div>
-        
-        <!-- 요약 통계 -->
-        <div class="retake-detail-summary">
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <span class="stat-label">총 문제</span>
-                    <span class="stat-value" id="daily2Total">0</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">1차 정답</span>
-                    <span class="stat-value first" id="daily2First">0/0 (0%)</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">2차 정답</span>
-                    <span class="stat-value second" id="daily2Second">0/0 (0%)</span>
-                </div>
-                <div class="stat-box improvement">
-                    <span class="stat-label">개선</span>
-                    <span class="stat-value" id="daily2Improvement">+0문제 (+0%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 세트별 세부 결과 -->
-        <div class="retake-detail-sets" id="daily2DetailSets">
-            <!-- Set 결과가 동적으로 추가됨 -->
-        </div>
-        
-        <!-- [V2] 하단 네비게이션 제거 — 상단 탭으로 대체 -->
-    </div>
-
-    <!-- ============================= -->
-    <!-- Reading 아카데믹 리딩 최종 해설 화면 -->
-    <!-- ============================= -->
-    <div id="readingRetakeDetailAcademicScreen" class="result-screen test-screen" style="display: none;">
-        <!-- 헤더 -->
-        <div class="retake-detail-header">
-            <!-- [V2] backToRetakeResult 제거 -->
-            <h2 id="academicDetailTitle">Week 1 - 일요일 : Reading Module 1 최종 해설</h2>
-        </div>
-        
-        <!-- 요약 통계 -->
-        <div class="retake-detail-summary">
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <span class="stat-label">총 문제</span>
-                    <span class="stat-value" id="academicTotal">0</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">1차 정답</span>
-                    <span class="stat-value first" id="academicFirst">0/0 (0%)</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">2차 정답</span>
-                    <span class="stat-value second" id="academicSecond">0/0 (0%)</span>
-                </div>
-                <div class="stat-box improvement">
-                    <span class="stat-label">개선</span>
-                    <span class="stat-value" id="academicImprovement">+0문제 (+0%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 세트별 세부 결과 -->
-        <div class="retake-detail-sets" id="academicDetailSets">
-            <!-- Set 결과가 동적으로 추가됨 -->
-        </div>
-        
-        <!-- [V2] 하단 네비게이션 제거 — 상단 탭으로 대체 -->
-    </div>
-
-    <!-- ============================= -->
-    <!-- Listening Module 1차 결과 화면 -->
-    <!-- ============================= -->
-    <div id="listeningResultScreen" class="result-screen test-screen">
-        <div class="result-header">
-            <div class="result-title">Listening Module 1</div>
-            <div class="result-subtitle">1차 채점 결과</div>
-        </div>
-        
-        <div class="result-score-card">
-            <div class="result-total-score">-- / --</div>
-            <div class="result-percentage">--%</div>
-            <div class="result-level-container">
-                <span class="result-level-label">레벨</span>
-                <span class="result-level">-.-</span>
-            </div>
-        </div>
-        
-        <div class="result-component-section">
-            <div class="result-section-title">유형별 정답 현황</div>
-            <div class="result-component-list">
-                <!-- 컴포넌트별 점수가 여기에 표시됩니다 -->
-            </div>
-        </div>
-        
-        <div class="result-buttons">
-            <!-- 버튼이 동적으로 추가됩니다 -->
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: readingResultScreen, listeningResultScreen (단순 채점 화면 → 과제 대시보드로 대체) -->
 
     <!-- ============================= -->
     <!-- Listening Module 2차 결과 화면 -->
     <!-- ============================= -->
-    <div id="listeningRetakeResultScreen" class="result-screen test-screen" style="display: none;">
-        <div class="retake-result-header">
-            <h2>🎧 Listening Module 1 - 2차 풀이 완료</h2>
-        </div>
-        
-        <!-- 상단: 전체 요약 섹션 -->
-        <div class="retake-summary-section">
-            <!-- 32문제 O/X 비교표 -->
-            <div class="question-comparison-table">
-                <div class="comparison-row comparison-header">
-                    <span class="row-label">문제번호</span>
-                    <div class="question-numbers" id="listeningQuestionNumbers">
-                        <!-- 1~32 동적 생성 -->
-                    </div>
-                </div>
-                <div class="comparison-row first-attempt-row">
-                    <span class="row-label">1차 결과</span>
-                    <div class="question-results" id="listeningFirstAttemptResults">
-                        <!-- O/X 동적 생성 -->
-                    </div>
-                </div>
-                <div class="comparison-row second-attempt-row">
-                    <span class="row-label">2차 결과</span>
-                    <div class="question-results" id="listeningSecondAttemptResults">
-                        <!-- O/X 동적 생성 -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 점수/정답률/레벨 비교표 -->
-            <div class="stats-comparison-table">
-                <div class="stats-header">
-                    <div class="stats-col">1차 결과</div>
-                    <div class="stats-col">2차 결과</div>
-                    <div class="stats-col">개선</div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-col">
-                        <span class="stats-value" id="listeningFirstScore">20/32</span>
-                    </div>
-                    <div class="stats-col">
-                        <span class="stats-value" id="listeningSecondScore">25/32</span>
-                    </div>
-                    <div class="stats-col improvement">
-                        <span class="stats-value" id="listeningScoreDiff">+5 문제</span>
-                        <span class="improvement-icon">✨</span>
-                    </div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-col">
-                        <span class="stats-value" id="listeningFirstPercent">63%</span>
-                    </div>
-                    <div class="stats-col">
-                        <span class="stats-value" id="listeningSecondPercent">78%</span>
-                    </div>
-                    <div class="stats-col improvement">
-                        <span class="stats-value" id="listeningPercentDiff">+15%</span>
-                        <span class="improvement-icon">📈</span>
-                    </div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-col">
-                        <span class="stats-label">레벨 </span>
-                        <span class="stats-value" id="listeningFirstLevel">3.0</span>
-                    </div>
-                    <div class="stats-col">
-                        <span class="stats-label">레벨 </span>
-                        <span class="stats-value" id="listeningSecondLevel">5.0</span>
-                    </div>
-                    <div class="stats-col improvement">
-                        <span class="stats-value" id="listeningLevelDiff">+2.0</span>
-                        <span class="improvement-icon">⬆️</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 축하/격려 메시지 -->
-            <div class="motivation-message" id="listeningMotivationMessage">
-                <p>🎉 축하합니다!</p>
-                <p>다시 한번 집중해서 듣는 것만으로 5문제를 더 맞혔어요!</p>
-                <p>정답률이 15% 상승했고, 2.0 레벨이 올랐어요!</p>
-            </div>
-        </div>
-        
-        <!-- [V2] 유형별 세부 결과 버튼 제거 — 해설은 과제 화면의 "해설 보기" 버튼으로 진입 -->
-    </div>
+    <!-- [V3] 삭제됨: listeningRetakeResultScreen (V2 2차 풀이 결과) -->
 
     <!-- ============================= -->
     <!-- 리스닝 응답고르기 최종 해설 화면 -->
     <!-- ============================= -->
-    <div id="listeningRetakeDetailResponseScreen" class="result-screen test-screen" style="display: none;">
-        <div class="retake-detail-header">
-            <button class="btn-back" onclick="backToListeningRetakeResult()">
-                <i class="fas fa-arrow-left"></i> 2차 결과
-            </button>
-            <h2 id="responseDetailTitle">🎧 Week 1 - 일요일 : Listening Module 1 최종 해설</h2>
-        </div>
-        
-        <!-- 응답고르기 요약 -->
-        <div class="retake-detail-summary">
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <span class="stat-label">총 문제</span>
-                    <span class="stat-value" id="responseTotal">12</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">1차 정답</span>
-                    <span class="stat-value first" id="responseFirst">8/12 (67%)</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">2차 정답</span>
-                    <span class="stat-value second" id="responseSecond">10/12 (83%)</span>
-                </div>
-                <div class="stat-box improvement">
-                    <span class="stat-label">개선</span>
-                    <span class="stat-value" id="responseImprovement">+2문제 (+16%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 세트별 세부 결과 -->
-        <div class="retake-detail-sets" id="responseDetailSets">
-            <!-- Set 결과가 동적으로 추가됨 -->
-        </div>
-        
-        <!-- 네비게이션 -->
-        <div class="retake-detail-navigation">
-            <button class="btn btn-secondary" onclick="backToListeningRetakeResult()">
-                <i class="fas fa-arrow-left"></i> 2차 결과로 돌아가기
-            </button>
-            <button class="btn btn-primary" onclick="showListeningRetakeDetailPage(2)">
-                다음: Conversation <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: listeningRetakeDetailResponseScreen (V2 2차 응답 상세) -->
 
-    <!-- 리스닝 최종 해설 - 컨버 화면 -->
-    <div id="listeningRetakeDetailConverScreen" class="result-screen test-screen" style="display: none;">
-        <div class="retake-detail-header">
-            <button class="btn-back" onclick="backToListeningRetakeResult()">
-                <i class="fas fa-arrow-left"></i> 2차 결과
-            </button>
-            <h2 id="converDetailTitle">🎧 Week 1 - 일요일 : Listening Module 2 최종 해설</h2>
-        </div>
-        
-        <!-- 컨버 요약 -->
-        <div class="retake-detail-summary">
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <span class="stat-label">총 문제</span>
-                    <span class="stat-value" id="converTotal">12</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">1차 정답</span>
-                    <span class="stat-value first" id="converFirst">8/12 (67%)</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">2차 정답</span>
-                    <span class="stat-value second" id="converSecond">10/12 (83%)</span>
-                </div>
-                <div class="stat-box improvement">
-                    <span class="stat-label">개선</span>
-                    <span class="stat-value" id="converImprovement">+2문제 (+16%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 세트별 세부 결과 -->
-        <div class="retake-detail-sets" id="converDetailSets">
-            <!-- Set 결과가 동적으로 추가됨 -->
-        </div>
-        
-        <!-- 네비게이션 -->
-        <div class="retake-detail-navigation">
-            <button class="btn btn-secondary" onclick="showListeningRetakeDetailPage(1)">
-                <i class="fas fa-arrow-left"></i> 이전: 응답고르기
-            </button>
-            <button class="btn btn-primary" onclick="showListeningRetakeDetailPage(3)">
-                다음: 공지사항 <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: listeningRetakeDetailConverScreen (V2 2차 대화 상세) -->
 
-    <!-- 리스닝 최종 해설 - 공지사항 화면 -->
-    <div id="listeningRetakeDetailAnnouncementScreen" class="result-screen test-screen" style="display: none;">
-        <div class="retake-detail-header">
-            <button class="btn-back" onclick="backToListeningRetakeResult()">
-                <i class="fas fa-arrow-left"></i> 2차 결과
-            </button>
-            <h2 id="announcementDetailTitle">🎧 Week 1 - 일요일 : Listening Module 3 최종 해설</h2>
-        </div>
-        
-        <!-- 공지사항 요약 -->
-        <div class="retake-detail-summary">
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <span class="stat-label">총 문제</span>
-                    <span class="stat-value" id="announcementTotal">12</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">1차 정답</span>
-                    <span class="stat-value first" id="announcementFirst">8/12 (67%)</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">2차 정답</span>
-                    <span class="stat-value second" id="announcementSecond">10/12 (83%)</span>
-                </div>
-                <div class="stat-box improvement">
-                    <span class="stat-label">개선</span>
-                    <span class="stat-value" id="announcementImprovement">+2문제 (+16%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 세트별 세부 결과 -->
-        <div class="retake-detail-sets" id="announcementDetailSets">
-            <!-- Set 결과가 동적으로 추가됨 -->
-        </div>
-        
-        <!-- 네비게이션 -->
-        <div class="retake-detail-navigation">
-            <button class="btn btn-secondary" onclick="showListeningRetakeDetailPage(2)">
-                <i class="fas fa-arrow-left"></i> 이전: Conversation
-            </button>
-            <button class="btn btn-primary" onclick="showListeningRetakeDetailPage(4)">
-                다음: Lecture <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: listeningRetakeDetailAnnouncementScreen (V2 2차 공지 상세) -->
 
-    <!-- 최종 해설 화면 컴포넌트 -->
-    <div id="finalExplainScreen" class="screen" style="display: none;">
-        <div class="final-header">
-            <h2 id="finalExplainTitle">📖 Week 1 - 월요일 : Reading Module 1 최종 해설</h2>
-        </div>
-        
-        <!-- 요약 통계 -->
-        <div class="final-summary">
-            <div class="final-stats">
-                <div class="final-stat-box">
-                    <span class="final-stat-label">총 문제</span>
-                    <span class="final-stat-value" id="finalTotal">12</span>
-                </div>
-                <div class="final-stat-box">
-                    <span class="final-stat-label">1차 정답</span>
-                    <span class="final-stat-value first" id="finalFirst">8/12 (67%)</span>
-                </div>
-                <div class="final-stat-box">
-                    <span class="final-stat-label">2차 정답</span>
-                    <span class="final-stat-value second" id="finalSecond">10/12 (83%)</span>
-                </div>
-                <div class="final-stat-box improvement">
-                    <span class="final-stat-label">개선</span>
-                    <span class="final-stat-value" id="finalImprovement">+2문제 (+16%)</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 유형 제목 (새 CSS에서는 사용하지 않으므로 숨김) -->
-        <div class="final-section-header" style="display:none;">
-            <h3 id="finalSectionTitle">Reading - Fill in the blanks</h3>
-        </div>
-        
-        <!-- 세부 결과 컨테이너 -->
-        <div class="final-content" id="finalDetailContent">
-            <!-- 여기에 컨텐츠가 동적으로 삽입됨 -->
-            <p style="text-align: center; color: #666; padding: 40px;">컨텐츠 영역</p>
-        </div>
-        
-        <!-- 네비게이션 -->
-        <div class="final-navigation">
-            <button class="btn btn-secondary" onclick="backToStageSelect()">
-                <i class="fas fa-arrow-left"></i> 과제 화면으로
-            </button>
-            <button class="btn btn-primary" id="finalNextBtn" onclick="goToNextFinalExplainPage()">
-                다음 페이지 <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: finalExplainScreen (V2 최종 해설) -->
 
     <!-- 정답채점 화면 -->
-    <div id="resultScreen" class="screen">
+    <div id="fillBlanksExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -1515,7 +901,7 @@
     </div>
 
     <!-- Reading 섹션 - 일상리딩1 결과 화면 -->
-    <div id="readingDaily1ResultScreen" class="screen">
+    <div id="daily1ExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -1566,7 +952,7 @@
     </div>
 
     <!-- Reading 섹션 - 일상리딩1 정답 채점 결과 -->
-    <div id="readingDaily2ResultScreen" class="screen">
+    <div id="daily2ExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -1795,7 +1181,7 @@
     </div>
 
     <!-- Listening 섹션 - 응답고르기 정답 채점 결과 -->
-    <div id="listeningResponseResultScreen" class="screen">
+    <div id="responseExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -1906,7 +1292,7 @@
     </div>
 
     <!-- Listening 섹션 - 컨버 정답 채점 결과 (웹디자이너 디자인) -->
-    <div id="listeningConverResultScreen" class="screen">
+    <div id="converExplainScreen" class="screen">
         <div class="conver-header">
             <h2>
                 <span class="conver-icon">💬</span>
@@ -2004,7 +1390,7 @@
     </div>
 
     <!-- Listening - 공지사항 채점 결과 화면 (웹디자이너 디자인) -->
-    <div id="listeningAnnouncementResultScreen" class="screen">
+    <div id="announcementExplainScreen" class="screen">
         <div class="announce-header">
             <h2>
                 <span class="announce-icon">📢</span>
@@ -2042,7 +1428,7 @@
     </div>
 
     <!-- Listening - 렉쳐 채점 결과 화면 (Academic 디자인) -->
-    <div id="listeningLectureResultScreen" class="screen">
+    <div id="lectureExplainScreen" class="screen">
         <!-- 헤더 -->
         <div class="academic-header">
             <h2>
@@ -2187,7 +1573,7 @@
     </div>
 
     <!-- Writing - 단어배열 채점 결과 화면 -->
-    <div id="writingArrangeResultScreen" class="screen">
+    <div id="arrangeExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -2324,7 +1710,7 @@
     </div>
 
     <!-- Writing - 이메일작성 결과 화면 -->
-    <div id="writingEmailResultScreen" class="screen">
+    <div id="emailExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -2517,7 +1903,7 @@
     </div>
 
     <!-- Writing - 토론형 결과 화면 -->
-    <div id="writingDiscussionResultScreen" class="screen">
+    <div id="discussionExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -2589,57 +1975,13 @@
         </div>
     </div>
 
-    <!-- Writing - 단어배열 비교 화면 (1차 vs 2차) -->
-    <div id="writingArrangeCompareScreen" class="screen">
-        <div class="test-header">
-            <div class="test-title">
-                <i class="fas fa-chart-bar"></i>
-                <span>Build a Sentence - 해설</span>
-            </div>
-        </div>
-        <div class="test-content" style="overflow-y:auto; height:calc(100vh - 60px);">
-            <!-- WritingFlow.renderArrangeCompare()가 동적으로 채움 -->
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: writingArrangeCompareScreen (V2 라이팅 1차/2차 비교) -->
 
-    <!-- Writing - 이메일 한글 번역 해설 화면 -->
-    <div id="writingEmailExplainScreen" class="screen">
-        <div class="test-header">
-            <div class="test-title">
-                <i class="fas fa-envelope"></i>
-                <span>Write an Email - 모범답안 번역</span>
-            </div>
-        </div>
-        <div class="test-content" style="overflow-y:auto; height:calc(100vh - 60px);">
-            <!-- WritingFlow.renderEmailExplain()가 동적으로 채움 -->
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: writingEmailExplainScreen (V2 이메일 모범답안 번역) -->
 
-    <!-- Writing - 토론형 한글 번역 해설 화면 -->
-    <div id="writingDiscussionExplainScreen" class="screen">
-        <div class="test-header">
-            <div class="test-title">
-                <i class="fas fa-comments"></i>
-                <span>Academic Discussion - 모범답안 번역</span>
-            </div>
-        </div>
-        <div class="test-content" style="overflow-y:auto; height:calc(100vh - 60px);">
-            <!-- WritingFlow.renderDiscussionExplain()가 동적으로 채움 -->
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: writingDiscussionExplainScreen (V2 토론 모범답안 번역) -->
 
-    <!-- Writing - 최종 해설 화면 -->
-    <div id="writingFinalExplainScreen" class="screen">
-        <div class="test-header">
-            <div class="test-title">
-                <i class="fas fa-graduation-cap"></i>
-                <span>Writing - 최종 해설</span>
-            </div>
-        </div>
-        <div class="test-content" style="overflow-y:auto; height:calc(100vh - 60px);">
-            <!-- WritingFlow.renderFinalExplain()가 동적으로 채움 -->
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: writingFinalExplainScreen (V2 라이팅 최종 해설) -->
 
     <!-- Speaking - 따라말하기 섹션 -->
     <div id="speakingRepeatScreen" class="screen">
@@ -2725,7 +2067,7 @@
     </div>
 
     <!-- Speaking - 따라말하기 복습 화면 -->
-    <div id="speakingRepeatResultScreen" class="screen">
+    <div id="repeatExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -2893,7 +2235,7 @@
     </div>
     
     <!-- Speaking - Interview 채점화면 -->
-    <div id="speakingInterviewResultScreen" class="screen">
+    <div id="interviewExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToStageSelect()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
@@ -3043,7 +2385,7 @@
     </div>
 
     <!-- Reading 섹션 - 아카데믹리딩 정답 채점 결과 -->
-    <div id="readingAcademicResultScreen" class="screen">
+    <div id="academicExplainScreen" class="screen">
         <div class="test-header">
             <button class="btn-back-to-schedule" onclick="backToScheduleFromAcademicResult()">
                 <i class="fas fa-arrow-left"></i> 학습 일정
@@ -3303,114 +2645,62 @@
             </div>
         </div>
     </div>
-
-    <!-- 결과 화면 -->
-    <div id="resultScreen" class="screen">
-        <div class="container">
-            <div class="result-header">
-                <i class="fas fa-trophy"></i>
-                <h1>시험 완료!</h1>
-                <p>수고하셨습니다. 결과를 확인하세요.</p>
-            </div>
-            
-            <div class="score-summary">
-                <div class="total-score">
-                    <h2>총점</h2>
-                    <div class="score-circle">
-                        <span id="totalScore">95</span>
-                        <span class="max-score">/120</span>
-                    </div>
-                </div>
-                
-                <div class="section-scores">
-                    <div class="section-score">
-                        <i class="fas fa-book-open"></i>
-                        <h3>Reading</h3>
-                        <div class="score" id="readingScore">28/30</div>
-                    </div>
-                    <div class="section-score">
-                        <i class="fas fa-headphones"></i>
-                        <h3>Listening</h3>
-                        <div class="score" id="listeningScore">26/30</div>
-                    </div>
-                    <div class="section-score">
-                        <i class="fas fa-microphone"></i>
-                        <h3>Speaking</h3>
-                        <div class="score" id="speakingScore">22/30</div>
-                    </div>
-                    <div class="section-score">
-                        <i class="fas fa-pen"></i>
-                        <h3>Writing</h3>
-                        <div class="score" id="writingScore">24/30</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="result-actions">
-                <button class="btn btn-primary" onclick="backToScheduleFromResult()">
-                    <i class="fas fa-calendar-alt"></i> 학습 일정으로
-                </button>
-                <button class="btn btn-secondary" onclick="restartTest()">
-                    <i class="fas fa-redo"></i> 다시 풀기
-                </button>
-                <button class="btn btn-success" onclick="exportResults()">
-                    <i class="fas fa-download"></i> 결과 다운로드
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: "시험 완료!" 트로피 단순 채점 화면 (과제 대시보드로 대체) -->
     <!-- [V2] 중복 navigation.js 제거 — line 3400에서 로드 -->
     <script src="js/data.js?v=20250209-pages"></script>
     <script src="js/schedule-data.js?v=001"></script>
     <script src="js/task-router.js?v=009_rawpoint"></script>
     <!-- [V2] FlowController 제거 — stage-selector.js로 대체 -->
-<script src="js/flow-v2/stage-selector.js?v=001"></script>
+<script src="js/stage-selector.js?v=001"></script>
     <script src="js/tasks.js?v=002"></script>
-    <!-- 빈칸채우기 Component -->
-    <script src="js/components/FillBlanksComponent.js?v=019"></script>
-    <script src="js/reading-fillblanks.js?v=014"></script>
-    <script src="js/reading-fillblanks-logic.js?v=032_nav_replay"></script>
-    <!-- 일상리딩1 Component -->
-    <script src="js/components/Daily1Component.js?v=013"></script>
-    <script src="js/reading-daily1.js?v=015"></script>
-    <script src="js/reading-daily1-logic.js?v=nav_cross_001_replay"></script>
-    <!-- 일상리딩2 Component -->
-    <script src="js/components/Daily2Component.js?v=004"></script>
-    <script src="js/reading-daily2.js?v=006"></script>
-    <script src="js/reading-daily2-logic.js?v=nav_cross_001_replay"></script>
-    <!-- 아카데믹리딩 Component -->
-    <script src="js/components/AcademicComponent.js?v=007"></script>
-    <script src="js/reading-academic.js?v=006"></script>
-    <script src="js/reading-academic-logic.js?v=nav_cross_001_replay"></script>
-    <!-- AudioPlayer (2차 풀이용) -->
+    <!-- ===== Reading Section (js/reading/) ===== -->
+    <script src="js/reading/utils.js"></script>
+    <!-- 빈칸채우기 -->
+    <script src="js/reading/fillblanks-component.js"></script>
+    <script src="js/reading/fillblanks-loader.js"></script>
+    <script src="js/reading/fillblanks-result.js"></script>
+    <!-- 일상리딩1 -->
+    <script src="js/reading/daily1-component.js"></script>
+    <script src="js/reading/daily1-loader.js"></script>
+    <script src="js/reading/daily1-result.js"></script>
+    <!-- 일상리딩2 -->
+    <script src="js/reading/daily2-component.js"></script>
+    <script src="js/reading/daily2-loader.js"></script>
+    <script src="js/reading/daily2-result.js"></script>
+    <!-- 아카데믹리딩 -->
+    <script src="js/reading/academic-component.js"></script>
+    <script src="js/reading/academic-loader.js"></script>
+    <script src="js/reading/academic-result.js"></script>
+    <!-- AudioPlayer -->
     <script src="js/components/AudioPlayer.js?v=005_no_alert_0221"></script>
-    <!-- 응답고르기 Component -->
-    <script src="js/components/ResponseComponent.js?v=006_cleanup_fix"></script>
-    <script src="js/listening-response-logic.js?v=20250221_flex_fix"></script>
-    <!-- 컨버 Component -->
-    <script src="js/components/ConverComponent.js?v=003_cleanup_fix"></script>
-    <script src="js/listening-conver-logic-v2.js?v=20260222_fix"></script>
-    <!-- 공지사항 Component -->
-    <script src="js/components/AnnouncementComponent.js?v=004_cleanup_fix"></script>
-    <script src="js/listening-announcement-logic-v2.js?v=20260221_v2"></script>
-    <script src="js/listening-announcement-result-v2.js?v=20260223_highlights_fix"></script>
-    <!-- 렉쳐 Component -->
-    <script src="js/components/LectureComponent.js?v=003_cleanup_fix"></script>
-    <script src="js/listening-lecture-logic-v2.js?v=20260221_v2"></script>
-    <script src="js/listening-lecture-logic-fixed-v2.js?v=20260224_index_fix"></script>
-    <!-- listening-lecture-result.js 비활성화: 예전 버전(listening-lecture-logic.js) 사용 -->
-<!-- <script src="js/listening-lecture-result.js?v=20260218_001"></script> -->
+    <!-- 리스닝 - 응답고르기 (Response) -->
+    <script src="js/listening/response-loader.js"></script>
+    <script src="js/listening/response-component.js"></script>
+    <script src="js/listening/response-result.js"></script>
+    <!-- 리스닝 - 컨버 (Conversation) -->
+    <script src="js/listening/conver-loader.js"></script>
+    <script src="js/listening/conver-component.js"></script>
+    <script src="js/listening/conver-result.js"></script>
+    <!-- 리스닝 - 공지사항 (Announcement) -->
+    <script src="js/listening/announcement-loader.js"></script>
+    <script src="js/listening/announcement-component.js"></script>
+    <script src="js/listening/announcement-result.js"></script>
+    <!-- 리스닝 - 렉쳐 (Lecture) -->
+    <script src="js/listening/lecture-loader.js"></script>
+    <script src="js/listening/lecture-component.js"></script>
+    <script src="js/listening/lecture-result.js"></script>
     <!-- 단어배열 Component -->
-    <script src="js/components/ArrangeComponent.js?v=003_retake_full"></script>
-    <script src="js/writing-arrange-logic.js?v=20250219-002"></script>
+    <script src="js/writing/arrange-loader.js"></script>
+    <script src="js/components/ArrangeComponent.js"></script>
+    <script src="js/writing/arrange-result.js"></script>
     <!-- 이메일작성 Component -->
-    <script src="js/components/EmailComponent.js?v=001"></script>
-    <script src="js/writing-email-logic.js?v=012"></script>
-    <script src="js/writing-email-result.js?v=013"></script>
+    <script src="js/writing/email-loader.js"></script>
+    <script src="js/components/EmailComponent.js"></script>
+    <script src="js/writing/email-result.js"></script>
     <!-- 토론형글쓰기 Component -->
-    <script src="js/components/DiscussionComponent.js?v=001"></script>
-    <script src="js/writing-discussion-logic-v2.js?v=20250219-002"></script>
-    <script src="js/writing-discussion-result.js?v=003"></script>
+    <script src="js/writing/discussion-loader.js"></script>
+    <script src="js/components/DiscussionComponent.js"></script>
+    <script src="js/writing/discussion-result.js"></script>
     <!-- 라이팅 한글 번역 -->
     <script src="js/writing-ko-data.js?v=003"></script>
     <!-- [V2] writing-flow 제거 — writing-flow-v2.js (아래)로 대체 -->
@@ -3426,13 +2716,12 @@
     <!-- 모듈 시스템 -->
     <script src="js/module-definitions.js?v=003_independent_setid"></script>
     <!-- [V2] 원본 → V2 전용 복사본으로 교체 -->
-    <script src="js/flow-v2/module-controller-v2.js?v=001"></script>
+    <script src="js/module-controller-v2.js?v=001"></script>
     <!-- [V2] auto-save.js 제거 — FlowController 미사용 -->
-    <script src="js/flow-v2/result-controller-v2.js?v=001"></script>
+    <script src="js/result-controller-v2.js?v=001"></script>
     <!-- [V2] result-replay 제거 — result-viewer.js로 대체 -->
-    <script src="js/flow-v2/retake-controller-v2.js?v=001"></script>
     <!-- [V2] 라이팅 전용 플로우 (ModuleController 로드 후) -->
-    <script src="js/flow-v2/writing-flow-v2.js?v=001"></script>
+    <script src="js/writing-flow-v2.js?v=001"></script>
     
     <!-- [V2] FlowController 기반 진입점 제거됨 -->
     <!-- [V2] 새 플로우: js/flow-v2/stage-selector.js 사용 -->
@@ -3446,15 +2735,10 @@
     <!-- 🔔 알림 시스템 -->
     <script src="js/notification.js?v=001"></script>
     <!-- [V2] 학습 결과 Supabase 저장 모듈 -->
-    <script src="js/flow-v2/study-save.js?v=001"></script>
+    <script src="js/study-save.js?v=001"></script>
     
-    <!-- [V2] Reading 2차 결과 — v2로 교체 (점수 비교표만) -->
-    <!-- <script src="js/reading-retake-result.js?v=academic_fix_final"></script> [V2] 기존 파일 제거 -->
-    <script src="js/flow-v2/reading-retake-result-v2.js?v=001"></script>
     <!-- [V2] 해설보기 — 별도 파일 -->
-    <script src="js/flow-v2/explain-viewer-v2.js?v=001"></script>
-    <script src="js/listening-retake-result.js?v=20260215_004"></script>
-    <script src="js/listening-retake-detail.js?v=20260223_syntax_fix"></script>
+    <script src="js/explain-viewer-v2.js?v=001"></script>
 <script src="js/final-explain-screen.js?v=001"></script>
 <script src="js/review-panel.js?v=001"></script>
 <!-- [V2] auth-monitor.js 제거 — FlowController 미사용으로 비활성 -->
