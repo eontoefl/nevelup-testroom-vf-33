@@ -3,11 +3,6 @@
 function backToSchedule() {
     console.log('🔙 [뒤로가기] 학습 일정으로 돌아가기 시작');
     
-    // ★ FlowController 정리 (종료 처리 함수에서 옮겨온 작업)
-    if (window.FlowController && FlowController.cleanup) {
-        FlowController.cleanup();
-    }
-    
     // ★ 오답노트 패널 정리
     if (typeof ErrorNote !== 'undefined') {
         ErrorNote.hide();
@@ -48,10 +43,6 @@ function backToSchedule() {
     
     // 타이머 정지
     stopAllTimers();
-    if (window.moduleController) {
-        window.moduleController.stopModuleTimer();
-        window.moduleController.stopQuestionTimer();
-    }
     
     // 2차 풀이 플로팅 UI 제거
     const retakeFloating = document.getElementById('retakeFloatingUI');

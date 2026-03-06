@@ -326,27 +326,16 @@ function _executeTaskCore(taskName) {
             break;
             
         case 'reading':
-            // 리딩 Module 시작
-            console.log(`  🔹 리딩 Module ${parsed.params.module} 시작`);
-            startReadingModule(parsed.params.module);
-            break;
-            
         case 'listening':
-            // 리스닝 Module 시작
-            console.log(`  🔹 리스닝 Module ${parsed.params.module} 시작`);
-            startListeningModule(parsed.params.module);
-            break;
-            
         case 'writing':
-            // 라이팅 시작
-            console.log(`  🔹 라이팅 ${parsed.params.number} 시작`);
-            startWriting(parsed.params.number);
-            break;
-            
         case 'speaking':
-            // 스피킹 시작
-            console.log(`  🔹 스피킹 ${parsed.params.number} 시작`);
-            startSpeaking(parsed.params.number);
+            // V3: 4섹션은 과제 대시보드(taskDashboardScreen)를 먼저 표시
+            console.log(`  🔹 [V3] ${parsed.type} → 과제 대시보드로 이동`);
+            if (typeof openTaskDashboard === 'function') {
+                openTaskDashboard(parsed.type, parsed.params, taskName);
+            } else {
+                console.error('❌ openTaskDashboard 함수가 없습니다. js/task-dashboard.js를 확인하세요.');
+            }
             break;
             
         default:
@@ -620,22 +609,4 @@ function finishReadingModule() {
 // startListeningModule() 함수는 listening-module-controller.js에서 전역으로 정의됨
 
 
-/**
- * 라이팅 시작
- * @param {number} number - 라이팅 번호
- */
-function startWriting(number) {
-    // TODO: 라이팅 시작 로직 구현
-    console.log(`🚧 라이팅 ${number} 시작 (구현 예정)`);
-    alert(`라이팅 ${number}을 시작합니다. (구현 예정)`);
-}
-
-/**
- * 스피킹 시작
- * @param {number} number - 스피킹 번호
- */
-function startSpeaking(number) {
-    // TODO: 스피킹 시작 로직 구현
-    console.log(`🚧 스피킹 ${number} 시작 (구현 예정)`);
-    alert(`스피킹 ${number}을 시작합니다. (구현 예정)`);
-}
+// [V3] startWriting, startSpeaking 제거 — 4섹션은 모두 task-dashboard.js → 각 모듈 컨트롤러로 진입
