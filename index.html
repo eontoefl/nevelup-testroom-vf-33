@@ -847,9 +847,7 @@
                     <i class="fas fa-clock"></i>
                     <span id="daily1Timer">20:00</span>
                 </div>
-                <div class="retake-badge" id="daily1RetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
-                </div>
+
                 <button class="btn btn-secondary" id="daily1PrevBtn" onclick="daily1PreviousQuestion()" style="display: none;">
                     Back
                 </button>
@@ -1014,9 +1012,7 @@
                     <i class="fas fa-clock"></i>
                     <span id="daily2Timer">20:00</span>
                 </div>
-                <div class="retake-badge" id="daily2RetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
-                </div>
+
                 <button class="btn btn-secondary" id="daily2PrevBtn" onclick="daily2PrevQuestion()" style="display: none;">
                     Back
                 </button>
@@ -1076,9 +1072,7 @@
                     <i class="fas fa-clock"></i>
                     <span id="academicTimer">20:00</span>
                 </div>
-                <div class="retake-badge" id="academicRetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
-                </div>
+
                 <button class="btn btn-secondary" id="academicPrevBtn" onclick="academicPrevQuestion()" style="display: none;">
                     Back
                 </button>
@@ -2666,6 +2660,8 @@
     <script src="js/reading/academic-component.js"></script>
     <script src="js/reading/academic-loader.js"></script>
     <script src="js/reading/academic-result.js"></script>
+    <!-- [V3] 리딩 모듈 컨트롤러 — 7세트(35문제) 순서 제어 + DB 저장 -->
+    <script src="js/reading/reading-module-controller.js?v=001"></script>
     <!-- AudioPlayer -->
     <script src="js/common/AudioPlayer.js?v=005_no_alert_0221"></script>
     <!-- 리스닝 - 응답고르기 (Response) -->
