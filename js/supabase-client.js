@@ -302,4 +302,147 @@ async function testSupabaseConnection() {
     }
 }
 
+// ================================================
+// V3 학습 결과 함수들 (study_results_v3)
+// ================================================
+// 유니크 키: (user_id, section_type, module_number, week, day)
+// v3-design-spec.md §3-2 참조
+
+/**
+ * V3 학습 결과 단일 레코드 조회
+ * 대시보드 진입 시 호출 → 버튼 상태 결정, 점수 표시
+ * 
+ * @param {string} userId - 사용자 ID
+ * @param {string} sectionType - 'reading' | 'listening' | 'writing' | 'speaking' | 'vocab' | 'intro-book'
+ * @param {number} moduleNumber - 모듈 번호
+ * @param {string|number} week - 주차
+ * @param {string} day - 요일 ('월', '화' 등)
+ * @returns {Promise<object|null>} 레코드 또는 null
+ */
+async function getStudyResultV3(userId, sectionType, moduleNumber, week, day) {
+    console.log('📖 [V3] 학습 결과 조회:', sectionType, 'M' + moduleNumber, 'W' + week, day);
+    
+    var query = 'user_id=eq.' + userId
+        + '&section_type=eq.' + encodeURIComponent(sectionType)
+        + '&module_number=eq.' + moduleNumber
+        + '&week=eq.' + encodeURIComponent(String(week))
+        + '&day=eq.' + encodeURIComponent(day)
+        + '&limit=1';
+    
+    var rows = await supabaseSelect('study_results_v3', query);
+    
+    if (!rows || rows.length === 0) {
+        console.log('📖 [V3] 결과 없음 (첫 풀이)');
+        return null;
+    }
+    
+    console.log('📖 [V3] 결과 발견:', rows[0].id);
+    return rows[0];
+}
+
+/**
+ * V3 실전풀이(initial_record) 저장
+ * 최초 1회만 저장 — initial_record가 이미 있으면 덮어쓰지 않음
+ * 
+ * @param {string} userId
+ * @param {string} sectionType
+ * @param {number} moduleNumber
+ * @param {string|number} week
+ * @param {string} day
+ * @param {object} recordJson - 채점 결과 JSON
+ * @param {object} extras - 추가 컬럼 (initial_level, writing_email_text 등)
+ * @returns {Promise<object|null>} 저장된 레코드
+ */
+async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day, recordJson, extras) {
+    console.log('💾 [V3] initial_record 저장:', sectionType, 'M' + moduleNumber);
+    
+    // 기존 레코드 확인 — initial_record가 이미 있으면 저장하지 않음
+    var existing = await getStudyResultV3(userId, sectionType, moduleNumber, week, day);
+    if (existing && existing.initial_record != null) {
+        console.log('⚠️ [V3] initial_record 이미 존재 — 덮어쓰기 방지 (불변 원칙)');
+        return existing;
+    }
+    
+    var data = {
+        user_id: userId,
+        section_type: sectionType,
+        module_number: moduleNumber,
+        week: String(week),
+        day: day,
+        initial_record: recordJson,
+        completed_at: new Date().toISOString()
+    };
+    
+    // 추가 컬럼 병합 (initial_level, writing_email_text 등)
+    if (extras && typeof extras === 'object') {
+        Object.assign(data, extras);
+    }
+    
+    var result = await supabaseUpsert(
+        'study_results_v3',
+        data,
+        'user_id,section_type,module_number,week,day'
+    );
+    
+    if (result) {
+        console.log('✅ [V3] initial_record 저장 완료:', result.id);
+    }
+    return result;
+}
+
+/**
+ * V3 다시풀기(current_record) 저장
+ * 매번 덮어쓰기 — 최신 결과로 대체
+ * 
+ * @param {string} userId
+ * @param {string} sectionType
+ * @param {number} moduleNumber
+ * @param {string|number} week
+ * @param {string} day
+ * @param {object} recordJson - 채점 결과 JSON
+ * @returns {Promise<object|null>} 저장된 레코드
+ */
+async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day, recordJson) {
+    console.log('💾 [V3] current_record 저장:', sectionType, 'M' + moduleNumber);
+    
+    var data = {
+        user_id: userId,
+        section_type: sectionType,
+        module_number: moduleNumber,
+        week: String(week),
+        day: day,
+        current_record: recordJson
+    };
+    
+    var result = await supabaseUpsert(
+        'study_results_v3',
+        data,
+        'user_id,section_type,module_number,week,day'
+    );
+    
+    if (result) {
+        console.log('✅ [V3] current_record 저장 완료:', result.id);
+    }
+    return result;
+}
+
+/**
+ * V3 완료 과제 목록 조회 (progress-tracker용)
+ * initial_record가 NULL이 아닌 레코드 = 완료된 과제
+ * 
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<Array>} 완료된 과제 레코드 배열 (id, section_type, module_number, week, day만 반환)
+ */
+async function getCompletedTasksV3(userId) {
+    console.log('📊 [V3] 완료 과제 목록 조회:', userId);
+    
+    var query = 'user_id=eq.' + userId
+        + '&initial_record=not.is.null'
+        + '&select=id,section_type,module_number,week,day';
+    
+    var rows = await supabaseSelect('study_results_v3', query);
+    console.log('📊 [V3] 완료 과제:', (rows ? rows.length : 0) + '건');
+    return rows || [];
+}
+
 console.log('✅ supabase-client.js 로드 완료');
