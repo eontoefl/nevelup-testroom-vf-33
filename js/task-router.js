@@ -253,10 +253,9 @@ function confirmTaskStart(taskName, onConfirm) {
         '<div style="font-size:40px;margin-bottom:12px;">⚠️</div>' +
         '<h3 style="margin:0 0 16px;font-size:17px;color:#1a1a1a;line-height:1.5;">과제를 시작하시겠습니까?</h3>' +
         '<p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.7;">' +
-            '시작하면 중간에 나갈 수 없으며,<br>' +
-            '중단 시 <strong style="color:#ef4444;">인증률에 불이익</strong>이 있습니다.<br><br>' +
-            '지금 집중해서 풀 수 있는 환경이 아니라면<br>' +
-            '돌아가기를 눌러주세요.' +
+            '제한시간 20분이 바로 시작됩니다.<br>' +
+            '첫 풀이 결과는 차트 및 포트폴리오에<br>' +
+            '<strong style="color:#ef4444;">영구 반영</strong>되며, 재시도할 수 없습니다.' +
         '</p>' +
         '<div style="display:flex;gap:10px;">' +
             '<button id="taskStartBack" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:14px;font-weight:600;color:#666;cursor:pointer;">돌아가기</button>' +
