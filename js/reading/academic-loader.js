@@ -80,12 +80,17 @@ async function _fetchAcademicFromSupabase() {
     }
 }
 
-// 아카데믹 지문 변환 (<<text>> → 하이라이트, #||# → <br>)
+// 아카데믹 지문 변환 (<<text>> → 하이라이트, 구분자 처리)
+// ※ 클래스명 ac-highlight-word = academic-component.js의 updatePassageHighlight()와 일치
 function convertAcademicPassage(raw) {
     if (!raw) return '';
     return raw
-        .replace(/<<([^>]+)>>/g, '<span class="highlight-word">$1</span>')
-        .replace(/#\|\|#/g, '<br>');
+        .replace(/<<([^>]+)>>/g, '<span class="ac-highlight-word">$1</span>')
+        .replace(/#\|\|#/g, '\n')
+        .replace(/#\|#/g, ' ')
+        .replace(/##/g, '\n\n')
+        .replace(/\\n/g, '\n')
+        .replace(/\n/g, '<br>');
 }
 
 // 문제 데이터 파싱 (Q번호::문제원문::문제해석::정답번호::보기데이터##보기데이터...)
@@ -139,10 +144,22 @@ function parseAcademicQuestionData(questionStr) {
         };
     }).filter(opt => opt !== null);
     
+    // 문제 종류 자동 판별 (highlight / insertion / normal)
+    // - 문제에 "highlighted"가 포함되면 highlight
+    // - 문제에 "(A)", "(B)", "(C)", "(D)" 위치 삽입 언급이 있으면 insertion
+    var questionType = 'normal';
+    var qLower = questionText.toLowerCase();
+    if (qLower.includes('highlight') || qLower.includes('bold')) {
+        questionType = 'highlight';
+    } else if (qLower.includes('square') || qLower.includes('insert') || /\[[A-D]\]/.test(questionText) || /where would the sentence/.test(qLower) || /best fit/.test(qLower) || /click on a square/.test(qLower)) {
+        questionType = 'insertion';
+    }
+
     return {
         questionNum,
         question: questionText,
         questionTranslation,
+        questionType,
         correctAnswer,
         options
     };
