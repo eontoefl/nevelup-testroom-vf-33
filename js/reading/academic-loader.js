@@ -107,7 +107,13 @@ function parseAcademicQuestionData(questionStr) {
         return null;
     }
     
-    const questionNum = parts[0].trim();
+    // 유형 태그 파싱: Q1[highlight] → questionNum='Q1', questionType='highlight'
+    // DB에 저장된 태그를 그대로 읽는 방식 (인덱스1과 동일)
+    const rawNum = parts[0].trim();
+    const typeMatch = rawNum.match(/^(.+?)(?:\[(\w+)\])?$/);
+    const questionNum = typeMatch ? typeMatch[1] : rawNum;
+    const questionType = typeMatch && typeMatch[2] ? typeMatch[2] : 'normal';
+
     const questionText = parts[1].trim();
     const questionTranslation = parts[2].trim();
     const correctAnswer = parseInt(parts[3].trim());
@@ -143,17 +149,6 @@ function parseAcademicQuestionData(questionStr) {
             explanation: optionExplanation
         };
     }).filter(opt => opt !== null);
-    
-    // 문제 종류 자동 판별 (highlight / insertion / normal)
-    // - 문제에 "highlighted"가 포함되면 highlight
-    // - 문제에 "(A)", "(B)", "(C)", "(D)" 위치 삽입 언급이 있으면 insertion
-    var questionType = 'normal';
-    var qLower = questionText.toLowerCase();
-    if (qLower.includes('highlight') || qLower.includes('bold')) {
-        questionType = 'highlight';
-    } else if (qLower.includes('square') || qLower.includes('insert') || /\[[A-D]\]/.test(questionText) || /where would the sentence/.test(qLower) || /best fit/.test(qLower) || /click on a square/.test(qLower)) {
-        questionType = 'insertion';
-    }
 
     return {
         questionNum,
