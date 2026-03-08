@@ -379,22 +379,19 @@ class LectureComponent {
         const questionKey = `${this.currentSetData.setId}_q${questionIndex + 1}`;
         const savedAnswer = this.answers[questionKey];
         
-        const optionsHtml = question.options.map((option, index) => {
-            const selectedClass = savedAnswer === (index + 1) ? 'selected' : '';
-            return `
-                <div class="response-option ${selectedClass}" 
-                     onclick="window.currentLectureComponent.selectOption(${index + 1})">
-                    ${option}
-                </div>
-            `;
-        }).join('');
+        const self = this;
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'conver-options';
+        question.options.forEach((option, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'response-option' + (savedAnswer === (index + 1) ? ' selected' : '');
+            optionDiv.textContent = option;
+            optionDiv.onclick = () => self.selectOption(index + 1);
+            optionsDiv.appendChild(optionDiv);
+        });
         
-        questionContentDiv.innerHTML = `
-            <h3 class="conver-question">${question.questionText}</h3>
-            <div class="conver-options">
-                ${optionsHtml}
-            </div>
-        `;
+        questionContentDiv.innerHTML = `<h3 class="conver-question">${question.questionText}</h3>`;
+        questionContentDiv.appendChild(optionsDiv);
     }
 
     /**

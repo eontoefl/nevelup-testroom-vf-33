@@ -273,21 +273,16 @@ class ResponseComponent {
     const questionKey = `${this.setData.id}_q${this.currentQuestion + 1}`;
     const savedAnswer = this.answers[questionKey];
     
-    const optionsHtml = question.options.map((option, index) => {
-      const selectedClass = savedAnswer === (index + 1) ? 'selected' : '';
-      const blurClass = isBlurred ? 'blurred' : '';
-      const disabledAttr = isBlurred ? 'style="pointer-events: none;"' : '';
-      
-      return `
-        <div class="response-option ${selectedClass} ${blurClass}" 
-             onclick="window.currentResponseComponent.selectOption(${index + 1})"
-             ${disabledAttr}>
-          ${option}
-        </div>
-      `;
-    }).join('');
-    
-    container.innerHTML = optionsHtml;
+    container.innerHTML = '';
+    const self = this;
+    question.options.forEach((option, index) => {
+      const optionDiv = document.createElement('div');
+      optionDiv.className = 'response-option' + (savedAnswer === (index + 1) ? ' selected' : '') + (isBlurred ? ' blurred' : '');
+      if (isBlurred) optionDiv.style.pointerEvents = 'none';
+      optionDiv.textContent = option;
+      optionDiv.onclick = () => self.selectOption(index + 1);
+      container.appendChild(optionDiv);
+    });
   }
 
   /**
