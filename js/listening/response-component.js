@@ -134,6 +134,10 @@ class ResponseComponent {
     // 보기를 보여주되 흐리게 + [듣기 시작] 버튼 표시
     this.renderOptions(question, true);
     this._showPlayButton();
+
+    // 오디오 재생 전이므로 타이머 숨김
+    const timerWrap = document.getElementById('responseTimerWrap');
+    if (timerWrap) timerWrap.style.display = 'none';
   }
   
   /**
@@ -179,15 +183,19 @@ class ResponseComponent {
       // 오디오 재생 (보기는 이미 흐린 상태)
       this.playAudio(question.audioUrl, () => {
         if (this._destroyed) return;
-        // 오디오 끝 → 바로 보기 선명하게 + 타이머 시작
+        // 오디오 끝 → 보기 선명하게 + 타이머 보이기 + 타이머 시작
         this.renderOptions(question, false);
+        const tw = document.getElementById('responseTimerWrap');
+        if (tw) tw.style.display = '';
         if (this.onTimerStart) {
           this.onTimerStart();
         }
       });
     } else {
-      // 오디오 없으면 즉시 보기 표시 + 타이머 시작
+      // 오디오 없으면 즉시 보기 표시 + 타이머 보이기 + 타이머 시작
       this.renderOptions(question, false);
+      const tw2 = document.getElementById('responseTimerWrap');
+      if (tw2) tw2.style.display = '';
       if (this.onTimerStart) {
         this.onTimerStart();
       }
