@@ -123,6 +123,9 @@ function _createAllListeningComponents() {
                 comp = new ResponseComponent(seq.setNum, {
                     onComplete: function(results) {
                         _onListeningSetComplete(index, results);
+                    },
+                    onTimerStart: function() {
+                        _startListeningQuestionTimer(index, 20);
                     }
                 });
                 break;
@@ -130,6 +133,9 @@ function _createAllListeningComponents() {
                 comp = new ConverComponent(seq.setNum, {
                     onComplete: function(results) {
                         _onListeningSetComplete(index, results);
+                    },
+                    onTimerStart: function() {
+                        _startListeningQuestionTimer(index, 20);
                     }
                 });
                 break;
@@ -137,6 +143,9 @@ function _createAllListeningComponents() {
                 comp = new AnnouncementComponent(seq.setNum, {
                     onComplete: function(results) {
                         _onListeningSetComplete(index, results);
+                    },
+                    onTimerStart: function() {
+                        _startListeningQuestionTimer(index, 20);
                     }
                 });
                 break;
@@ -144,6 +153,9 @@ function _createAllListeningComponents() {
                 comp = new LectureComponent(seq.setNum, {
                     onComplete: function(results) {
                         _onListeningSetComplete(index, results);
+                    },
+                    onTimerStart: function() {
+                        _startListeningQuestionTimer(index, 30);
                     }
                 });
                 break;
@@ -227,6 +239,9 @@ function _listeningModuleNext() {
     var mod = window.currentListeningModule;
     if (!mod) return;
 
+    // Next 누르면 현재 타이머 멈춤
+    _stopListeningQuestionTimer();
+
     var seq = mod.sequence[mod.currentIndex];
     var comp = mod.components[mod.currentIndex];
 
@@ -252,6 +267,9 @@ function _listeningModuleNext() {
 function _listeningModuleSubmit() {
     var mod = window.currentListeningModule;
     if (!mod) return;
+
+    // 타이머 멈춤
+    _stopListeningQuestionTimer();
 
     // 로딩 화면 표시 (중복 클릭 차단)
     _showSubmitLoading();
@@ -611,7 +629,87 @@ function _calculateListeningLevel(correctCount) {
 }
 
 // ============================================================
-// 11. 로딩 함수 (리딩과 공유 — submitLoadingOverlay)
+// 11. 문제별 타이머 (리스닝 전용)
+// ============================================================
+
+var _listeningTimerState = {
+    interval: null,
+    remaining: 0
+};
+
+/**
+ * 문제별 타이머 시작
+ * @param {number} setIndex - 현재 세트 인덱스
+ * @param {number} seconds - 제한 시간 (초)
+ */
+function _startListeningQuestionTimer(setIndex, seconds) {
+    // 이전 타이머 반드시 멈추고 시작
+    _stopListeningQuestionTimer();
+
+    var mod = window.currentListeningModule;
+    if (!mod) return;
+
+    _listeningTimerState.remaining = seconds;
+    _updateListeningTimerDisplay();
+
+    console.log('⏱️ 문제별 타이머 시작:', seconds + '초');
+
+    _listeningTimerState.interval = setInterval(function() {
+        _listeningTimerState.remaining--;
+        _updateListeningTimerDisplay();
+
+        if (_listeningTimerState.remaining <= 0) {
+            _stopListeningQuestionTimer();
+
+            // 시간 만료 → 컴포넌트에 알림
+            var comp = mod.components[mod.currentIndex];
+            if (comp && typeof comp.onQuestionTimeout === 'function') {
+                comp.onQuestionTimeout();
+            }
+            console.log('⏰ 시간 만료');
+        }
+    }, 1000);
+}
+
+/**
+ * 타이머 멈춤
+ */
+function _stopListeningQuestionTimer() {
+    if (_listeningTimerState.interval) {
+        clearInterval(_listeningTimerState.interval);
+        _listeningTimerState.interval = null;
+    }
+}
+
+/**
+ * 타이머 화면 표시 업데이트
+ */
+function _updateListeningTimerDisplay() {
+    var mod = window.currentListeningModule;
+    if (!mod) return;
+
+    var sec = Math.max(0, _listeningTimerState.remaining);
+    var min = Math.floor(sec / 60);
+    var s = sec % 60;
+    var text = min + ':' + (s < 10 ? '0' : '') + s;
+
+    // 현재 유형에 맞는 타이머 요소 업데이트
+    var timerIds = {
+        'response': 'responseTimer',
+        'conver': 'converTimer',
+        'announcement': 'announcementTimer',
+        'lecture': 'lectureTimer'
+    };
+
+    var seq = mod.sequence[mod.currentIndex];
+    var el = document.getElementById(timerIds[seq.type]);
+    if (el) {
+        el.textContent = text;
+    }
+}
+
+// ============================================================
+// 12. 로딩 함수 (리딩과 공유 — submitLoadingOverlay)
 // ============================================================
 
 // _showSubmitLoading, _hideSubmitLoading은 reading-module-controller.js에서 이미 정의됨
