@@ -289,10 +289,15 @@ async function _goToPrevSetLastQuestion(setIndex) {
 
 /**
  * 전체 Submit 핸들러
+ * - 로딩 화면 표시로 중복 클릭 차단
+ * - 채점 + DB 저장 1회만 실행
  */
 function _readingModuleSubmit() {
     var mod = window.currentReadingModule;
     if (!mod) return;
+
+    // 로딩 화면 표시 (중복 클릭 차단)
+    _showSubmitLoading();
 
     console.log('📤 리딩 모듈 전체 제출');
 
@@ -311,6 +316,22 @@ function _readingModuleSubmit() {
     });
 
     _finishReadingModule();
+}
+
+/**
+ * Submit 로딩 오버레이 표시
+ */
+function _showSubmitLoading() {
+    var overlay = document.getElementById('submitLoadingOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+/**
+ * Submit 로딩 오버레이 숨기기
+ */
+function _hideSubmitLoading() {
+    var overlay = document.getElementById('submitLoadingOverlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 // ============================================================
@@ -785,22 +806,33 @@ async function _finishReadingModule() {
                 });
                 console.log('💾 initial_record 저장 완료');
             }
+
+            // ✅ 저장 성공 → 모듈 데이터 초기화 + 대시보드 복귀
+            _hideSubmitLoading();
+            window.currentReadingModule = null;
+
+            if (typeof backToTaskDashboard === 'function') {
+                backToTaskDashboard();
+            } else if (typeof backToSchedule === 'function') {
+                backToSchedule();
+            }
+
         } catch (e) {
+            // ❌ 저장 실패 → 로딩 닫고 문제 화면 유지, 답안 보존
             console.error('❌ DB 저장 실패:', e);
-            alert('저장 중 오류가 발생했습니다. 다시 시도해 주세요.');
+            _hideSubmitLoading();
+            alert('저장에 실패했습니다. 인터넷 연결을 확인하고 다시 Submit 버튼을 눌러주세요.');
         }
     } else {
         console.log('📊 [개발모드] DB 저장 생략');
-    }
+        _hideSubmitLoading();
+        window.currentReadingModule = null;
 
-    // 모듈 데이터 초기화
-    window.currentReadingModule = null;
-
-    // 대시보드로 복귀
-    if (typeof backToTaskDashboard === 'function') {
-        backToTaskDashboard();
-    } else if (typeof backToSchedule === 'function') {
-        backToSchedule();
+        if (typeof backToTaskDashboard === 'function') {
+            backToTaskDashboard();
+        } else if (typeof backToSchedule === 'function') {
+            backToSchedule();
+        }
     }
 }
 
