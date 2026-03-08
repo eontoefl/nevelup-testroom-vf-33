@@ -91,15 +91,14 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
     let record = null;
     
     try {
-        // V3 DB 조회 (supabase-client.js에 V3 함수가 추가되면 교체)
-        // 현재는 함수 존재 여부를 확인하고, 없으면 null로 처리
-        if (typeof getTaskRecordV3 === 'function') {
+        // V3 DB 조회 — supabase-client.js의 getStudyResultV3() 호출
+        if (typeof getStudyResultV3 === 'function') {
             const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
             if (user && user.id) {
-                record = await getTaskRecordV3(user.id, sectionType, moduleNumber, week, day);
+                record = await getStudyResultV3(user.id, sectionType, moduleNumber, week, day);
             }
         } else {
-            console.log('📋 [대시보드] getTaskRecordV3 미구현 — 빈 상태로 표시');
+            console.log('📋 [대시보드] getStudyResultV3 미구현 — 빈 상태로 표시');
         }
     } catch (e) {
         console.warn('📋 [대시보드] DB 조회 실패:', e);
@@ -256,9 +255,9 @@ function _onExplainClick() {
 function backToTaskDashboard() {
     console.log('🔙 [대시보드] 과제 대시보드로 복귀');
     
-    // 미디어 정리
-    if (typeof stopAllMedia === 'function') {
-        stopAllMedia();
+    // 리스닝 모듈 정리 (오디오 정지 + 타이머 정지 + 상태 초기화)
+    if (typeof cleanupListeningModule === 'function') {
+        cleanupListeningModule();
     }
     
     // 타이머 정리

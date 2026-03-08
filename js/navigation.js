@@ -18,25 +18,7 @@ function backToSchedule() {
     // 모든 미디어 즉시 중지
     stopAllMedia();
     
-    // 모든 섹션 cleanup 호출
-    if (typeof cleanupListeningConver === 'function') {
-        cleanupListeningConver();
-    }
-    if (typeof cleanupListeningAnnouncement === 'function') {
-        cleanupListeningAnnouncement();
-    }
-    if (typeof cleanupListeningResponse === 'function') {
-        cleanupListeningResponse();
-    }
-    if (typeof cleanupListeningLecture === 'function') {
-        cleanupListeningLecture();
-    }
-    if (typeof cleanupSpeakingRepeat === 'function') {
-        cleanupSpeakingRepeat();
-    }
-    if (typeof cleanupSpeakingInterview === 'function') {
-        cleanupSpeakingInterview();
-    }
+    // 단어시험 cleanup
     if (typeof cleanupVocabTest === 'function') {
         cleanupVocabTest();
     }
