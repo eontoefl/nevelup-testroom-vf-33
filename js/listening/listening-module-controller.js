@@ -179,7 +179,19 @@ async function _goToListeningSet(setIndex) {
 
     console.log(`\n▶️ [${setIndex + 1}/9] ${seq.label} 이동`);
 
-    // 컴포넌트 초기화 (화면 전환 + 데이터 로드 포함)
+    // 화면 전환 — 유형별 screen 표시
+    var screenMap = {
+        'response':     'listeningResponseScreen',
+        'conver':       'listeningConverScreen',
+        'announcement': 'listeningAnnouncementScreen',
+        'lecture':      'listeningLectureScreen'
+    };
+    var screenId = screenMap[seq.type];
+    if (screenId && typeof showScreen === 'function') {
+        showScreen(screenId);
+    }
+
+    // 컴포넌트 초기화 (데이터 로드 + 문제 표시)
     await comp.init();
 
     // 문제 번호 표시 업데이트
