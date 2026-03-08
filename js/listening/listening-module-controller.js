@@ -585,11 +585,7 @@ async function _finishListeningModule() {
             _hideSubmitLoading();
             window.currentListeningModule = null;
 
-            if (typeof backToTaskDashboard === 'function') {
-                backToTaskDashboard();
-            } else if (typeof backToSchedule === 'function') {
-                backToSchedule();
-            }
+            backToTaskDashboard();
 
         } catch (e) {
             // ❌ 저장 실패 → 로딩 닫고 문제 화면 유지, 답안 보존
@@ -602,11 +598,7 @@ async function _finishListeningModule() {
         _hideSubmitLoading();
         window.currentListeningModule = null;
 
-        if (typeof backToTaskDashboard === 'function') {
-            backToTaskDashboard();
-        } else if (typeof backToSchedule === 'function') {
-            backToSchedule();
-        }
+        backToTaskDashboard();
     }
 }
 
@@ -709,7 +701,42 @@ function _updateListeningTimerDisplay() {
 }
 
 // ============================================================
-// 12. 로딩 함수 (리딩과 공유 — submitLoadingOverlay)
+// 12. 리스닝 모듈 정리 함수
+// ============================================================
+
+/**
+ * 리스닝 모듈 전체 정리
+ * - 현재 컴포넌트 cleanup (오디오 정지 + 폐쇄)
+ * - 타이머 정지
+ * - 모듈 상태 초기화
+ */
+function cleanupListeningModule() {
+    console.log('🧹 [cleanupListeningModule] 리스닝 모듈 정리 시작');
+
+    var mod = window.currentListeningModule;
+    if (!mod) {
+        console.log('🧹 리스닝 모듈 없음 — 정리 불필요');
+        return;
+    }
+
+    // 1. 현재 컴포넌트 cleanup
+    var comp = mod.components[mod.currentIndex];
+    if (comp && typeof comp.cleanup === 'function') {
+        comp.cleanup();
+        console.log('✅ 컴포넌트 cleanup 완료');
+    }
+
+    // 2. 타이머 정지
+    _stopListeningQuestionTimer();
+    console.log('✅ 타이머 정지 완료');
+
+    // 3. 모듈 상태 초기화
+    window.currentListeningModule = null;
+    console.log('✅ [cleanupListeningModule] 리스닝 모듈 정리 완료');
+}
+
+// ============================================================
+// 13. 로딩 함수 (리딩과 공유 — submitLoadingOverlay)
 // ============================================================
 
 // _showSubmitLoading, _hideSubmitLoading은 reading-module-controller.js에서 이미 정의됨
