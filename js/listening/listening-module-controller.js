@@ -247,11 +247,7 @@ function _listeningModuleNext() {
 
     // 세트 내부 다음 문제 시도
     var moved = comp.nextQuestion();
-    if (moved) {
-        // 같은 세트 내 다음 문제로 이동 성공 → 타이머 다시 시작
-        var timeLimit = (seq.type === 'lecture') ? 30 : 20;
-        _startListeningQuestionTimer(mod.currentIndex, timeLimit);
-    } else {
+    if (!moved) {
         // 세트 마지막 → 제출 후 다음 세트
         comp.submit();
         if (mod.currentIndex < mod.sequence.length - 1) {

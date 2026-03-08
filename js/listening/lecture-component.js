@@ -392,6 +392,11 @@ class LectureComponent {
         
         questionContentDiv.innerHTML = `<h3 class="conver-question">${question.questionText}</h3>`;
         questionContentDiv.appendChild(optionsDiv);
+
+        // 타이머 시작 요청 (문제 표시 = 답 고를 수 있는 상태)
+        if (this.onTimerStart) {
+            this.onTimerStart();
+        }
     }
 
     /**

@@ -368,6 +368,11 @@ class ConverComponent {
     
     // 질문 + 선택지 렌더링
     this.renderQuestion(question);
+
+    // 타이머 시작 요청 (문제 표시 = 답 고를 수 있는 상태)
+    if (this.onTimerStart) {
+      this.onTimerStart();
+    }
   }
 
   /**
