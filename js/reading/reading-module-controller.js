@@ -390,7 +390,11 @@ window.moduleSubmitAll = function() {
 
 // Review Panel
 window.openReviewPanel = function() {
-    _openReviewPanel();
+    if (window.currentListeningModule) {
+        _openListeningReviewPanel();
+    } else {
+        _openReadingReviewPanel();
+    }
 };
 
 window.closeReviewPanel = function() {
@@ -606,7 +610,7 @@ function _updateTimerDisplay() {
 // 9. Review Panel
 // ============================================================
 
-function _openReviewPanel() {
+function _openReadingReviewPanel() {
     var mod = window.currentReadingModule;
     if (!mod) return;
 
