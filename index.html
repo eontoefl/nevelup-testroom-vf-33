@@ -1116,7 +1116,7 @@
     <!-- Listening - 응답고르기 -->
     <div id="listeningResponseScreen" class="screen">
         <div class="test-header">
-            <button class="btn-back-to-schedule" onclick="backToStageSelect()">
+            <button class="btn-back-to-schedule" onclick="backToTaskDashboard()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
             </button>
             <div class="test-progress">
@@ -1130,9 +1130,6 @@
                 <div class="test-timer" id="responseTimerWrap">
                     <i class="fas fa-clock"></i>
                     <span id="responseTimer">0:20</span>
-                </div>
-                <div class="retake-badge" id="responseRetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
                 </div>
                 <button id="responseNextBtn" class="btn btn-primary" onclick="nextResponseQuestion()">
                     Next
@@ -1222,7 +1219,7 @@
     <!-- Listening - 컨버 -->
     <div id="listeningConverScreen" class="screen">
         <div class="test-header">
-            <button class="btn-back-to-schedule" onclick="backToStageSelect()">
+            <button class="btn-back-to-schedule" onclick="backToTaskDashboard()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
             </button>
             <div class="test-progress">
@@ -1236,9 +1233,6 @@
                 <div class="test-timer" id="converTimerWrap">
                     <i class="fas fa-clock"></i>
                     <span id="converTimer">0:20</span>
-                </div>
-                <div class="retake-badge" id="converRetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
                 </div>
                 <button id="converNextBtn" class="btn btn-primary" onclick="nextConverQuestion()">
                     Next
@@ -1320,7 +1314,7 @@
     <!-- Listening - 공지사항 섹션 -->
     <div id="listeningAnnouncementScreen" class="screen">
         <div class="test-header">
-            <button class="btn-back-to-schedule" onclick="backToStageSelect()">
+            <button class="btn-back-to-schedule" onclick="backToTaskDashboard()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
             </button>
             <div class="test-progress">
@@ -1334,9 +1328,6 @@
                 <div class="test-timer" id="announcementTimerWrap">
                     <i class="fas fa-clock"></i>
                     <span id="announcementTimer">00:20</span>
-                </div>
-                <div class="retake-badge" id="announcementRetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
                 </div>
                 <button id="announcementNextBtn" class="btn btn-primary" onclick="nextAnnouncementQuestion()">
                     Next
@@ -1466,7 +1457,7 @@
     <!-- Listening - 렉쳐 섹션 -->
     <div id="listeningLectureScreen" class="screen">
         <div class="test-header">
-            <button class="btn-back-to-schedule" onclick="backToStageSelect()">
+            <button class="btn-back-to-schedule" onclick="backToTaskDashboard()">
                 <i class="fas fa-arrow-left"></i> 과제 화면으로
             </button>
             <div class="test-progress">
@@ -1480,9 +1471,6 @@
                 <div class="test-timer" id="lectureTimerWrap">
                     <i class="fas fa-clock"></i>
                     <span id="lectureTimer">00:30</span>
-                </div>
-                <div class="retake-badge" id="lectureRetakeBadge" style="display:none;">
-                    🔄 2차 (제한없음)
                 </div>
                 <button id="lectureNextBtn" class="btn btn-primary" onclick="nextLectureQuestion()">
                     Next
@@ -2683,6 +2671,8 @@
     <script src="js/listening/lecture-loader.js"></script>
     <script src="js/listening/lecture-component.js"></script>
     <script src="js/listening/lecture-result.js"></script>
+    <!-- 리스닝 모듈 컨트롤러 (V3) -->
+    <script src="js/listening/listening-module-controller.js"></script>
     <!-- 단어배열 Component -->
     <script src="js/writing/arrange-loader.js"></script>
     <script src="js/writing/ArrangeComponent.js"></script>
