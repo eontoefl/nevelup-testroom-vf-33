@@ -246,20 +246,45 @@ function _readingModuleBack() {
     if (seq.type === 'fillblanks') {
         // 빈칸채우기: Back = 이전 세트로 (현재 답안 임시 저장)
         if (mod.currentIndex > 0) {
-            _goToSet(mod.currentIndex - 1);
+            _goToPrevSetLastQuestion(mod.currentIndex - 1);
         }
     } else {
         // Daily1/Daily2/Academic: 세트 내부 이전 문제 시도
         var moved = comp.previousQuestion();
         if (!moved) {
-            // 세트 첫 문제 → 이전 세트로
+            // 세트 첫 문제 → 이전 세트의 마지막 문제로
             if (mod.currentIndex > 0) {
-                _goToSet(mod.currentIndex - 1);
+                _goToPrevSetLastQuestion(mod.currentIndex - 1);
             }
         }
         _updateProgress();
         _updateButtons();
     }
+}
+
+/**
+ * 이전 세트로 이동하되, 해당 세트의 마지막 문제를 표시
+ * - 빈칸채우기: 한 화면에 10문제이므로 init()만 호출 (첫 문제 = 마지막 문제 = 같은 화면)
+ * - 나머지 유형: init() 후 loadQuestion(마지막 인덱스)로 마지막 문제 표시
+ */
+async function _goToPrevSetLastQuestion(setIndex) {
+    var mod = window.currentReadingModule;
+    if (!mod) return;
+
+    var prevSeq = mod.sequence[setIndex];
+    var prevComp = mod.components[setIndex];
+
+    // 세트 이동 (init 호출 → 화면 전환)
+    await _goToSet(setIndex);
+
+    // 빈칸채우기가 아니면 마지막 문제로 이동
+    if (prevSeq.type !== 'fillblanks' && prevComp.loadQuestion) {
+        var lastIndex = prevSeq.questionsPerSet - 1;
+        prevComp.loadQuestion(lastIndex);
+    }
+
+    _updateProgress();
+    _updateButtons();
 }
 
 /**
