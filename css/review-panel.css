@@ -198,7 +198,7 @@
    Review 버튼 (헤더에 추가되는 버튼)
    ============================ */
 .review-btn {
-    display: none; /* 기본 숨김, JS에서 제어 */
+    display: flex; /* V3: 항상 표시 */
     align-items: center;
     justify-content: center;
     gap: 5px;
