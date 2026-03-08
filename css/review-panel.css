@@ -7,7 +7,7 @@
    Review 패널 오버레이
    ============================ */
 #reviewPanel {
-    display: none;
+    display: flex;
     position: fixed;
     top: 0;
     left: 0;
