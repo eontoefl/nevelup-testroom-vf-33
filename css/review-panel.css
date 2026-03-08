@@ -16,7 +16,7 @@
     background: #f8f9fa;
     z-index: 9999;
     flex-direction: column;
-    overflow: hidden;
+    overflow: auto;
 }
 
 /* ============================
