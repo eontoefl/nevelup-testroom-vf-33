@@ -2950,5 +2950,33 @@ function showGuidePopup(config) {
     });
 }
 </script>
+
+<!-- Submit 로딩 오버레이 (전체 화면) -->
+<div id="submitLoadingOverlay" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(255, 255, 255, 0.95);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+">
+    <div style="
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e8e0ff;
+        border-top-color: #6c5ce7;
+        border-radius: 50%;
+        animation: submitSpin 0.8s linear infinite;
+    "></div>
+    <p style="margin-top: 16px; color: #6c5ce7; font-size: 15px; font-weight: 600;">
+        채점 및 저장 중입니다...
+    </p>
+</div>
+<style>
+    @keyframes submitSpin { to { transform: rotate(360deg); } }
+</style>
+
 </body>
 </html>
