@@ -815,11 +815,7 @@ async function _finishReadingModule() {
             _hideSubmitLoading();
             window.currentReadingModule = null;
 
-            if (typeof backToTaskDashboard === 'function') {
-                backToTaskDashboard();
-            } else if (typeof backToSchedule === 'function') {
-                backToSchedule();
-            }
+            backToTaskDashboard();
 
         } catch (e) {
             // ❌ 저장 실패 → 로딩 닫고 문제 화면 유지, 답안 보존
@@ -832,11 +828,7 @@ async function _finishReadingModule() {
         _hideSubmitLoading();
         window.currentReadingModule = null;
 
-        if (typeof backToTaskDashboard === 'function') {
-            backToTaskDashboard();
-        } else if (typeof backToSchedule === 'function') {
-            backToSchedule();
-        }
+        backToTaskDashboard();
     }
 }
 
