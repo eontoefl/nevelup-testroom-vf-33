@@ -491,9 +491,6 @@ class DiscussionComponent {
         console.log('📝 답안:', userAnswer);
         console.log('📊 단어 수:', wordCount);
         
-        // TXT 파일 다운로드
-        this.downloadDiscussion(setData, userAnswer, wordCount);
-        
         // 결과 데이터 생성 (프로필 포함 - 리플레이 시 이름 일관성 보장)
         const profiles = this.currentDiscussionProfiles || window.currentDiscussionProfiles || {
             student1: { name: 'Student 1' },

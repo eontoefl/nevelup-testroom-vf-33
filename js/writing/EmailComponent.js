@@ -300,7 +300,39 @@ class EmailComponent {
         
         console.log('[EmailComponent] 단어수:', wordCount);
         
-        // TXT 파일 내용 생성
+        // 결과 데이터 구성
+        const resultData = {
+            weekDay: 'Week 1, 월요일',  // TODO: 실제 학습 일정 정보
+            wordCount: wordCount,
+            userAnswer: userAnswer,
+            question: {
+                scenario: set.scenario,
+                task: set.task,
+                instructions: [
+                    set.instruction1,
+                    set.instruction2,
+                    set.instruction3
+                ],
+                to: set.to,
+                subject: set.subject,
+                sampleAnswer: set.sampleAnswer,
+                bullets: set.bullets
+            }
+        };
+        
+        console.log('[EmailComponent] 채점 완료:', resultData);
+        
+        return resultData;
+    }
+    
+    /**
+     * TXT 파일 다운로드 (컨트롤러가 다시풀기 시 호출)
+     */
+    downloadEmail() {
+        const set = this.data.sets[this.currentQuestion];
+        const userAnswer = document.getElementById('emailTextarea').value || '';
+        const wordCount = userAnswer.trim().split(/\s+/).filter(word => word.length > 0).length;
+        
         const now = new Date();
         const dateStr = now.toLocaleString('ko-KR', {
             year: 'numeric',
@@ -339,13 +371,11 @@ class EmailComponent {
         
         txtContent += `====================================\n`;
         
-        // TXT 파일 다운로드
         const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         
-        // 파일명: Writing_Email_YYYYMMDD_HHMMSS.txt
         const fileName = `Writing_Email_${window.currentAttemptNumber === 2 ? '2차' : '1차'}_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}.txt`;
         link.download = fileName;
         
@@ -355,32 +385,7 @@ class EmailComponent {
         URL.revokeObjectURL(url);
         
         console.log('[EmailComponent] 파일 다운로드 완료:', fileName);
-        
-        // 결과 데이터 구성
-        const resultData = {
-            weekDay: 'Week 1, 월요일',  // TODO: 실제 학습 일정 정보
-            wordCount: wordCount,
-            userAnswer: userAnswer,
-            question: {
-                scenario: set.scenario,
-                task: set.task,
-                instructions: [
-                    set.instruction1,
-                    set.instruction2,
-                    set.instruction3
-                ],
-                to: set.to,
-                subject: set.subject,
-                sampleAnswer: set.sampleAnswer,
-                bullets: set.bullets
-            }
-        };
-        
-        console.log('[EmailComponent] 채점 완료:', resultData);
-        
-        return resultData;
     }
-    
 
 }
 
