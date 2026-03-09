@@ -342,15 +342,6 @@ class Daily1Component {
         return div.innerHTML;
     }
     
-    /**
-     * 정리 (메모리 해제)
-     */
-    cleanup() {
-        console.log(`🧹 [Daily1Component] 정리`);
-        this.data = null;
-        this.currentSet = null;
-        this.answers = {};
-    }
     
 }
 

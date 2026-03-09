@@ -302,15 +302,6 @@ class Daily2Component {
         return div.innerHTML;
     }
     
-    /**
-     * 정리 (메모리 해제)
-     */
-    cleanup() {
-        console.log(`🧹 [Daily2Component] 정리`);
-        this.data = null;
-        this.currentSet = null;
-        this.answers = {};
-    }
 }
 
 // 전역으로 노출 (기존 코드와 호환성)
