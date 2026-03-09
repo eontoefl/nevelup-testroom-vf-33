@@ -84,7 +84,7 @@ async function _loadEmailFromSupabase() {
             };
         });
         
-        return { type: 'writing_email', timeLimit: 420, sets };
+        return { type: 'writing_email', sets };
         
     } catch (error) {
         console.error('❌ [email-loader] Supabase 로드 실패:', error);

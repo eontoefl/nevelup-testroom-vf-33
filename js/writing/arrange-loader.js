@@ -96,7 +96,7 @@ async function _loadArrangeFromSupabase() {
             return numA - numB;
         });
         
-        return { type: 'writing_arrange', timeLimit: 410, sets: setsArray };
+        return { type: 'writing_arrange', sets: setsArray };
         
     } catch (error) {
         console.error('❌ [arrange-loader] Supabase 로드 실패:', error);

@@ -37,9 +37,6 @@ function showArrangeResult() {
     });
     
     detailsContainer.innerHTML = html;
-    
-    // 결과 화면 표시
-    showScreen('arrangeExplainScreen');
 }
 
 /**
@@ -205,5 +202,4 @@ function escapeHtml_arrange(text) {
 
 // 전역 노출
 window.showArrangeResult = showArrangeResult;
-window.renderArrangeResultItem = renderArrangeResultItem;
 console.log('[arrange-result] 로드 완료');

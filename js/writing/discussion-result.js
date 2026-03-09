@@ -51,9 +51,6 @@ function showDiscussionResult(data) {
         console.warn('💬 [토론형 채점] 프로필 없음 - 기본값 사용');
     }
     
-    // 화면 전환
-    showScreen('discussionExplainScreen');
-    
     // 제목 업데이트
     const titleElement = document.getElementById('discussionResultTitle');
     if (titleElement) {
@@ -180,7 +177,7 @@ function showDiscussionResult(data) {
             const regex = new RegExp(`\\{\\{HIGHLIGHT_START_${i}\\}\\}([\\s\\S]*?)\\{\\{HIGHLIGHT_END_${i}\\}\\}`, 'g');
             htmlContent = htmlContent.replace(
                 regex,
-                `<span class="bullet-highlight" data-bullet="${i}" onclick="showDiscussionBulletFeedback(${i})">$1</span>`
+                `<span class="bullet-highlight" data-bullet="${i}" onclick="showDiscussionBulletFeedback(${i}, event)">$1</span>`
             );
         }
         
@@ -202,7 +199,7 @@ function showDiscussionResult(data) {
  * Bullet 피드백 표시 (하이라이트 클릭 시)
  * @param {number} bulletNum - Bullet 번호 (1, 2, 3)
  */
-function showDiscussionBulletFeedback(bulletNum) {
+function showDiscussionBulletFeedback(bulletNum, event) {
     console.log(`🎯 Bullet ${bulletNum} 클릭됨`);
     
     const bulletsElement = document.getElementById('discussionResultBullets');

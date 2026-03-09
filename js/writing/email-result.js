@@ -15,9 +15,6 @@ function showEmailResult(data) {
         return;
     }
     
-    // 화면 전환
-    showScreen('emailExplainScreen');
-    
     // 제목 업데이트
     const titleElement = document.getElementById('emailResultTitle');
     if (titleElement) {
@@ -147,7 +144,7 @@ function showEmailResult(data) {
             const regex = new RegExp(`\\{\\{HIGHLIGHT_START_${i}\\}\\}([\\s\\S]*?)\\{\\{HIGHLIGHT_END_${i}\\}\\}`, 'g');
             htmlContent = htmlContent.replace(
                 regex,
-                `<span class="bullet-highlight" data-bullet="${i}" onclick="showBulletFeedback(${i})">$1</span>`
+                `<span class="bullet-highlight" data-bullet="${i}" onclick="showBulletFeedback(${i}, event)">$1</span>`
             );
         }
         
@@ -179,7 +176,7 @@ function showEmailResult(data) {
  * Bullet 피드백 표시 (하이라이트 클릭 시)
  * @param {number} bulletNum - Bullet 번호 (1, 2, 3)
  */
-function showBulletFeedback(bulletNum) {
+function showBulletFeedback(bulletNum, event) {
     console.log(`🎯 Bullet ${bulletNum} 클릭됨`);
     
     const bulletsElement = document.getElementById('emailResultBullets');
