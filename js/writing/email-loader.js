@@ -8,16 +8,10 @@
 // 캐시 시스템
 let cachedEmailData = null;
 
-// 캐시 초기화 함수 (디버깅용)
-window.clearEmailCache = function() {
-    console.log('🔄 [email-loader] 캐시 초기화');
-    cachedEmailData = null;
-};
-
 /**
  * 이메일 작성 데이터 로드
  * @param {boolean} forceReload - 캐시 무시하고 강제 로드
- * @returns {Object|null} { type, timeLimit, sets } 또는 null
+ * @returns {Object|null} { type, sets } 또는 null
  */
 async function loadEmailData(forceReload = false) {
     console.log('[email-loader] 데이터 로드 시작');

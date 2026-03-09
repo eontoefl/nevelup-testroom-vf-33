@@ -9,16 +9,10 @@
 // 캐시 시스템
 let cachedArrangeData = null;
 
-// 캐시 초기화 함수 (디버깅용)
-window.clearArrangeCache = function() {
-    console.log('🔄 [arrange-loader] 캐시 초기화');
-    cachedArrangeData = null;
-};
-
 /**
  * 단어배열 데이터 로드
  * @param {boolean} forceReload - 캐시 무시하고 강제 로드
- * @returns {Object|null} { type, timeLimit, sets } 또는 null
+ * @returns {Object|null} { type, sets } 또는 null
  */
 async function loadArrangeData(forceReload = false) {
     console.log('[arrange-loader] 데이터 로드 시작');

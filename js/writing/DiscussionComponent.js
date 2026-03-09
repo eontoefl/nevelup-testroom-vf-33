@@ -113,7 +113,7 @@ class DiscussionComponent {
             
             // 2. 세트 찾기 (setNumber → 배열 인덱스 변환)
             const setIndex = this.setNumber - 1;
-            if (setIndex < 0 || setIndex >= this.writingDiscussionData.length) {
+            if (setIndex < 0 || setIndex >= this.writingDiscussionData.sets.length) {
                 throw new Error(`세트를 찾을 수 없습니다: ${this.setNumber}`);
             }
             
@@ -182,7 +182,7 @@ class DiscussionComponent {
     loadDiscussionQuestion(setIndex) {
         console.log(`📄 [Discussion] 문제 로드: Set ${setIndex}`);
         
-        if (!this.writingDiscussionData || setIndex >= this.writingDiscussionData.length) {
+        if (!this.writingDiscussionData || setIndex >= this.writingDiscussionData.sets.length) {
             console.error('❌ 유효하지 않은 세트 인덱스:', setIndex);
             return;
         }
@@ -217,7 +217,7 @@ class DiscussionComponent {
      * 문제 화면 렌더링
      */
     renderDiscussionQuestion() {
-        const setData = this.writingDiscussionData[this.currentDiscussionSet];
+        const setData = this.writingDiscussionData.sets[this.currentDiscussionSet];
         // sessionStorage 우선 → 인스턴스 → window → 기본값
         let profiles = null;
         const _renderSavedProfiles = sessionStorage.getItem('discussionProfiles');
@@ -484,7 +484,7 @@ class DiscussionComponent {
         console.log('📤 [Discussion] 제출 시작...');
         
         
-        const setData = this.writingDiscussionData[this.currentDiscussionSet];
+        const setData = this.writingDiscussionData.sets[this.currentDiscussionSet];
         const userAnswer = this.discussionAnswers[this.currentDiscussionSet] || '';
         const wordCount = userAnswer.trim() ? userAnswer.trim().split(/\s+/).length : 0;
         
@@ -589,6 +589,45 @@ class DiscussionComponent {
 }
 
 // ============================================
-// 전역 초기화
+// 전역 스코프에 노출
 // ============================================
+window.DiscussionComponent = DiscussionComponent;
+
+// index.html에서 호출하는 편집 도구 전역 함수
+function cutDiscussionText() {
+    if (window.currentDiscussionComponent) {
+        window.currentDiscussionComponent.cutDiscussion();
+    }
+}
+
+function pasteDiscussionText() {
+    if (window.currentDiscussionComponent) {
+        window.currentDiscussionComponent.pasteDiscussion();
+    }
+}
+
+function undoDiscussionText() {
+    if (window.currentDiscussionComponent) {
+        window.currentDiscussionComponent.undoDiscussion();
+    }
+}
+
+function redoDiscussionText() {
+    if (window.currentDiscussionComponent) {
+        window.currentDiscussionComponent.redoDiscussion();
+    }
+}
+
+function toggleDiscussionWordCount() {
+    if (window.currentDiscussionComponent) {
+        window.currentDiscussionComponent.toggleDiscussionWordCount();
+    }
+}
+
+function onDiscussionTextInput() {
+    if (window.currentDiscussionComponent) {
+        window.currentDiscussionComponent.onDiscussionTextInput();
+    }
+}
+
 console.log('✅ DiscussionComponent 클래스 로드 완료 (v=001)');

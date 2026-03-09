@@ -8,16 +8,10 @@
 // 캐시 시스템
 let cachedDiscussionData = null;
 
-// 캐시 초기화 함수 (디버깅용)
-window.clearDiscussionCache = function() {
-    console.log('🔄 [discussion-loader] 캐시 초기화');
-    cachedDiscussionData = null;
-};
-
 /**
  * 토론형 글쓰기 데이터 로드
  * @param {boolean} forceReload - 캐시 무시하고 강제 로드
- * @returns {Array|null} 세트 배열 또는 null
+ * @returns {Object|null} { type, sets } 또는 null
  */
 async function loadDiscussionData(forceReload = false) {
     console.log('[discussion-loader] 데이터 로드 시작');
@@ -100,7 +94,7 @@ async function _loadDiscussionFromSupabase() {
             return setData;
         });
         
-        return sets;
+        return { type: 'writing_discussion', sets };
         
     } catch (error) {
         console.error('❌ [discussion-loader] Supabase 로드 실패:', error);
