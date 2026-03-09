@@ -626,6 +626,7 @@ class ArrangeComponent {
         // sessionStorage에 저장
         sessionStorage.setItem('arrangeResults', JSON.stringify(resultData));
         
+        return resultData;
     }
     
 }
@@ -633,21 +634,6 @@ class ArrangeComponent {
 // 전역 스코프에 노출
 window.ArrangeComponent = ArrangeComponent;
 
-// index.html의 Next 버튼에서 호출하는 전역 함수
-function nextArrangeQuestion() {
-    if (window.currentArrangeComponent) {
-        window.currentArrangeComponent.nextQuestion();
-    }
-}
-window.nextArrangeQuestion = nextArrangeQuestion;
-
-// index.html의 Prev 버튼에서 호출하는 전역 함수
-function prevArrangeQuestion() {
-    if (window.currentArrangeComponent) {
-        window.currentArrangeComponent.prevQuestion();
-    }
-}
-window.prevArrangeQuestion = prevArrangeQuestion;
 
 // 드롭 허용 헬퍼 함수 (전역)
 function allowDrop(event) {

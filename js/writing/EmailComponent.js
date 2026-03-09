@@ -378,6 +378,7 @@ class EmailComponent {
         
         console.log('[EmailComponent] 채점 완료:', resultData);
         
+        return resultData;
     }
     
 
