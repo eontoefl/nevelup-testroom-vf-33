@@ -11,7 +11,7 @@
  * - 텍스트 편집 (7): 입력/저장/Undo/Redo/Cut/Paste
  * - 단어 수 관리 (4): 계산/표시/토글/1,000 단어 제한
  * - 제출 & 결과 (5): 제출/TXT 다운로드/결과 데이터 생성
- * - 내부 상태 + 타이머 (6): currentSet/Question/TIME_LIMIT/timer 변수/시작/중단
+ * - 내부 상태 (2): currentSet/Question
  * - 결과 화면 (7): 결과 표시/Bullet 하이라이트/문제 토글
  * 
  * 총 42개 요소
@@ -25,7 +25,7 @@ class DiscussionComponent {
         
         // 데이터 저장
         this.writingDiscussionData = null;
-        this._destroyed = false; // 🚪 문지기 플래그
+        
         
         // ============================================
         // 2. 프로필 이미지 관리 (7개)
@@ -88,9 +88,7 @@ class DiscussionComponent {
         this.currentDiscussionSet = 0;
         this.currentDiscussionQuestion = 0;
         
-        // 타이머 (9분 = 540초)
-        this.DISCUSSION_TIME_LIMIT = 600;
-        this.discussionTimer = null;
+
     }
     
     // ============================================
@@ -456,40 +454,7 @@ class DiscussionComponent {
     // 타이머 함수 (6개 중 2개)
     // ============================================
     
-    /**
-     * 타이머 시작 (9분 = 540초)
-     */
-    startDiscussionTimer(onTimeUpdate, onTimeEnd) {
-        console.log('⏱️ [Discussion] 타이머 시작: 540초');
-        
-        let remainingTime = this.DISCUSSION_TIME_LIMIT;
-        
-        // 초기 표시
-        if (onTimeUpdate) onTimeUpdate(remainingTime);
-        
-        this.discussionTimer = setInterval(() => {
-            remainingTime--;
-            
-            if (onTimeUpdate) onTimeUpdate(remainingTime);
-            
-            if (remainingTime <= 0) {
-                console.log('⏰ [Discussion] 시간 종료!');
-                this.stopDiscussionTimer();
-                if (onTimeEnd) onTimeEnd();
-            }
-        }, 1000);
-    }
-    
-    /**
-     * 타이머 중단
-     */
-    stopDiscussionTimer() {
-        if (this.discussionTimer) {
-            clearInterval(this.discussionTimer);
-            this.discussionTimer = null;
-            console.log('⏹️ [Discussion] 타이머 중단');
-        }
-    }
+
     
     // ============================================
     // 제출 & 결과 함수 (5개)
@@ -501,8 +466,6 @@ class DiscussionComponent {
     submit() {
         console.log('📤 [Discussion] 제출 시작...');
         
-        // 타이머 중단
-        this.stopDiscussionTimer();
         
         const setData = this.writingDiscussionData[this.currentDiscussionSet];
         const userAnswer = this.discussionAnswers[this.currentDiscussionSet] || '';
@@ -605,14 +568,7 @@ class DiscussionComponent {
         console.log(`💾 [Discussion] 파일 다운로드: ${filename}`);
     }
     
-    /**
-     * Cleanup (🚪 문지기 - 컴포넌트 전환 시 호출)
-     */
-    cleanup() {
-        console.log('[DiscussionComponent] Cleanup 시작');
-        this._destroyed = true;
-        console.log('[DiscussionComponent] Cleanup 완료');
-    }
+
 }
 
 // ============================================

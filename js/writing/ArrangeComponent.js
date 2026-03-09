@@ -35,10 +35,6 @@ class ArrangeComponent {
         this.profilePairs = {}; // 문제별 프로필 이미지 저장
         this.draggedWord = null; // 현재 드래그 중인 단어
         
-        // 타이머 설정
-        this.TIME_LIMIT = 410; // 6분 50초
-        
-
         
         // 프로필 이미지 (여자 7개, 남자 7개)
         this.FEMALE_IMAGES = [
