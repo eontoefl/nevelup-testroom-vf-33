@@ -385,3 +385,40 @@ class EmailComponent {
 
 // 전역 스코프에 노출
 window.EmailComponent = EmailComponent;
+
+// index.html에서 호출하는 편집 도구 전역 함수
+function cutText() {
+    if (window.currentEmailComponent) {
+        window.currentEmailComponent.cutText();
+    }
+}
+
+function pasteText() {
+    if (window.currentEmailComponent) {
+        window.currentEmailComponent.pasteText();
+    }
+}
+
+function undoText() {
+    if (window.currentEmailComponent) {
+        window.currentEmailComponent.undoText();
+    }
+}
+
+function redoText() {
+    if (window.currentEmailComponent) {
+        window.currentEmailComponent.redoText();
+    }
+}
+
+function toggleWordCount() {
+    if (window.currentEmailComponent) {
+        window.currentEmailComponent.toggleWordCount();
+    }
+}
+
+function onEmailTextInput() {
+    if (window.currentEmailComponent) {
+        window.currentEmailComponent.onTextInput();
+    }
+}
