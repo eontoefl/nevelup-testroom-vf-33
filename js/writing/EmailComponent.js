@@ -12,20 +12,10 @@
  */
 
 class EmailComponent {
-    constructor(setNumber, onComplete) {
+    constructor(setNumber) {
         console.log(`[EmailComponent] 생성 - setNumber: ${setNumber}`);
         
         this.setNumber = setNumber;
-        
-        // onComplete 콜백 처리 (함수 또는 객체 형태 지원)
-        if (typeof onComplete === 'function') {
-            this.onComplete = onComplete;
-        } else if (onComplete && typeof onComplete.onComplete === 'function') {
-            this.onComplete = onComplete.onComplete;
-            this.onError = onComplete.onError;
-        } else {
-            this.onComplete = null;
-        }
         
         // 내부 상태
         this.currentQuestion = 0;
@@ -71,17 +61,6 @@ class EmailComponent {
             
             // 3. 해당 세트 문제 로드 (setIndex 기준)
             this.loadQuestion(setIndex);
-            
-            // 4. 화면 표시
-            if (typeof window.showScreen === 'function') {
-                window.showScreen('writingEmailScreen');
-            }
-            
-            // 5. 이메일은 문제 1개 → Next 숨기고 Submit만 표시
-            const nextBtn = document.getElementById('emailNextBtn');
-            const submitBtn = document.getElementById('emailSubmitBtn');
-            if (nextBtn) nextBtn.style.display = 'none';
-            if (submitBtn) submitBtn.style.display = 'inline-block';
             
         } catch (error) {
             console.error('[EmailComponent] 초기화 실패:', error);
@@ -399,10 +378,6 @@ class EmailComponent {
         
         console.log('[EmailComponent] 채점 완료:', resultData);
         
-        // 완료 콜백 호출
-        if (this.onComplete) {
-            this.onComplete(resultData);
-        }
     }
     
 

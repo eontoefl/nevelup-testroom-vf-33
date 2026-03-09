@@ -12,20 +12,10 @@
  */
 
 class ArrangeComponent {
-    constructor(setNumber, onComplete) {
+    constructor(setNumber) {
         console.log(`[ArrangeComponent] 생성 - setNumber: ${setNumber}`);
         
         this.setNumber = setNumber;
-        
-        // onComplete 콜백 처리 (함수 또는 객체 형태 지원)
-        if (typeof onComplete === 'function') {
-            this.onComplete = onComplete;
-        } else if (onComplete && typeof onComplete.onComplete === 'function') {
-            this.onComplete = onComplete.onComplete;
-            this.onError = onComplete.onError;
-        } else {
-            this.onComplete = null;
-        }
         
         // 내부 상태
         this.currentQuestion = 0;
@@ -97,11 +87,6 @@ class ArrangeComponent {
             
             // 3. 첫 번째 문제 로드
             this.loadQuestion(0);
-            
-            // 4. 화면 표시
-            if (typeof window.showScreen === 'function') {
-                window.showScreen('writingArrangeScreen');
-            }
             
         } catch (error) {
             console.error('[ArrangeComponent] 초기화 실패:', error);
@@ -641,10 +626,6 @@ class ArrangeComponent {
         // sessionStorage에 저장
         sessionStorage.setItem('arrangeResults', JSON.stringify(resultData));
         
-        // 완료 콜백 호출
-        if (this.onComplete) {
-            this.onComplete(resultData);
-        }
     }
     
 }

@@ -18,7 +18,10 @@
  */
 
 class DiscussionComponent {
-    constructor() {
+    constructor(setNumber) {
+        console.log(`[DiscussionComponent] 생성 - setNumber: ${setNumber}`);
+        
+        this.setNumber = setNumber;
         // ============================================
         // 1. 데이터 처리 (6개)
         // ============================================
@@ -92,21 +95,35 @@ class DiscussionComponent {
     }
     
     // ============================================
-    // 데이터 처리 함수 (6개)
+    // 데이터 처리 함수
     // ============================================
     
     /**
-     * 데이터 로드 (외부 로더 사용)
+     * 컴포넌트 초기화 (데이터 로드 + 세트 찾기 + 문제 표시)
      */
-    async loadDiscussionData() {
-        console.log('📥 [Discussion] 데이터 로드 시작...');
+    async init() {
+        console.log('[DiscussionComponent] 초기화 시작');
         
-        this.writingDiscussionData = await window.loadDiscussionData();
-        if (!this.writingDiscussionData) {
-            throw new Error('데이터를 불러올 수 없습니다');
+        try {
+            // 1. 데이터 로드 (외부 로더 사용)
+            this.writingDiscussionData = await window.loadDiscussionData();
+            if (!this.writingDiscussionData) {
+                throw new Error('데이터를 불러올 수 없습니다');
+            }
+            
+            // 2. 세트 찾기 (setNumber → 배열 인덱스 변환)
+            const setIndex = this.setNumber - 1;
+            if (setIndex < 0 || setIndex >= this.writingDiscussionData.length) {
+                throw new Error(`세트를 찾을 수 없습니다: ${this.setNumber}`);
+            }
+            
+            // 3. 문제 로드
+            this.loadDiscussionQuestion(setIndex);
+            
+        } catch (error) {
+            console.error('[DiscussionComponent] 초기화 실패:', error);
+            alert('토론 작성 데이터를 불러오는데 실패했습니다.');
         }
-        
-        return this.writingDiscussionData;
     }
     
     // ============================================
