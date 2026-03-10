@@ -265,6 +265,11 @@ function backToTaskDashboard() {
         cleanupWritingModule();
     }
     
+    // 스피킹 모듈 정리 (오디오 정지 + AudioPlayer 해제 + 상태 초기화)
+    if (typeof cleanupSpeakingModule === 'function') {
+        cleanupSpeakingModule();
+    }
+    
     // 타이머 정리
     if (typeof stopAllTimers === 'function') {
         stopAllTimers();
