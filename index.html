@@ -1590,9 +1590,12 @@
                     <!-- 세부 채점 결과가 여기에 표시됩니다 -->
                 </div>
                 
-                <div class="result-actions">
-                    <button class="btn btn-primary btn-large" onclick="backToStageSelect()">
-                        <i class="fas fa-clipboard-list"></i> 과제 화면으로 돌아가기
+                <div class="result-actions" style="display: flex; justify-content: space-between; gap: 12px;">
+                    <button class="btn btn-secondary btn-large" onclick="backToStageSelect()">
+                        <i class="fas fa-clipboard-list"></i> 과제 화면으로
+                    </button>
+                    <button class="btn btn-primary btn-large" onclick="goToWritingEmail()">
+                        Email 작성으로 <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
@@ -1768,6 +1771,16 @@
                 <div class="email-bullets-container" id="emailResultBullets">
                     <!-- Bullet 내용은 JS로 동적 생성 -->
                 </div>
+            </div>
+
+            <!-- 하단 네비게이션 버튼 -->
+            <div class="result-actions" style="display: flex; justify-content: space-between; gap: 12px; margin-top: 24px;">
+                <button class="btn btn-secondary btn-large" onclick="showScreen('arrangeExplainScreen')">
+                    <i class="fas fa-arrow-left"></i> Arrange 해설로
+                </button>
+                <button class="btn btn-primary btn-large" onclick="goToWritingDiscussion()">
+                    Discussion 작성으로 <i class="fas fa-arrow-right"></i>
+                </button>
             </div>
         </div>
             </div>
@@ -1945,6 +1958,16 @@
                 <div class="discussion-bullets-container" id="discussionResultBullets">
                     <!-- Bullet 내용은 JS로 동적 생성 -->
                 </div>
+            </div>
+
+            <!-- 하단 네비게이션 버튼 -->
+            <div class="result-actions" style="display: flex; justify-content: space-between; gap: 12px; margin-top: 24px;">
+                <button class="btn btn-secondary btn-large" onclick="showScreen('emailExplainScreen')">
+                    <i class="fas fa-arrow-left"></i> Email 해설로
+                </button>
+                <button class="btn btn-primary btn-large" onclick="finishWritingModule()">
+                    <i class="fas fa-check-circle"></i> 완료
+                </button>
             </div>
         </div>
             </div>
@@ -2568,7 +2591,8 @@
     <script src="js/writing/discussion-result.js"></script>
     <!-- 라이팅 한글 번역 -->
     <script src="js/writing-ko-data.js?v=003"></script>
-    <!-- [V2] writing-flow 제거 — writing-flow-v2.js (아래)로 대체 -->
+    <!-- 라이팅 모듈 컨트롤러 (V3) -->
+    <script src="js/writing/writing-module-controller.js"></script>
     <!-- 따라말하기 Component -->
     <script src="js/speaking/RepeatComponent.js?v=002_skip_fix"></script>
     <!-- [V3-대기] speaking-repeat-logic.js — V3 speaking 모듈 컨트롤러에서 대체 예정 -->
