@@ -1,6 +1,6 @@
 /**
  * ================================================
- * RepeatComponent.js v=001
+ * RepeatComponent.js v=002
  * 따라말하기 컴포넌트
  * ================================================
  * 
@@ -20,13 +20,25 @@
  */
 
 class RepeatComponent {
-    constructor() {
-        // 데이터 저장 (외부 로더에서 로드)
-        this.speakingRepeatData = null;
+    /**
+     * @param {number} setId - 모듈 번호 (1-based)
+     * @param {AudioPlayer|null} audioPlayer - AudioPlayer 인스턴스 (iPad 호환)
+     * @param {Function|null} onComplete - 완료 시 컨트롤러에 알리는 콜백
+     */
+    constructor(setId, audioPlayer, onComplete) {
+        // ============================================
+        // 1. 외부 주입 프로퍼티 (컨트롤러에서 전달)
+        // ============================================
+        this.setId = setId || null;
+        this.audioPlayer = audioPlayer || null;
+        this.onComplete = onComplete || null;
         
         // ============================================
-        // 2. 내부 상태 변수 (4개)
+        // 2. 내부 상태 변수
         // ============================================
+        
+        // 데이터 저장 (외부 로더에서 로드)
+        this.speakingRepeatData = null;
         
         // 현재 세트/오디오 인덱스
         this.currentRepeatSet = 0;
@@ -35,6 +47,13 @@ class RepeatComponent {
         // 타이머 & 오디오
         this.repeatTimer = null;
         this.currentAudio = null;
+        
+        // cleanup 완료 플래그 (예약된 동작 차단용)
+        this._destroyed = false;
+        
+        // admin-skip용 (외부에서 참조)
+        this._currentRecordingSet = null;
+        this._currentRecordingAudioIndex = null;
     }
     
     /**
@@ -126,13 +145,6 @@ class RepeatComponent {
         }, 1000);
     }
     
-    /**
-     * 나레이션 화면 표시 (이전 버전과 호환)
-     */
-    showNarrationScreen(set) {
-        this.showContextNarration(set);
-    }
-    
     // ============================================
     // 오디오 시퀀스 함수 (8개)
     // ============================================
@@ -214,6 +226,17 @@ class RepeatComponent {
             this.currentAudio = null;
         }
         
+        // ★ AudioPlayer가 있으면 AudioContext 방식 (iPad 호환)
+        if (this.audioPlayer) {
+            // AudioPlayer.stop()으로 이전 재생 중지 (내부에서 처리)
+            this.audioPlayer.play(audioUrl, () => {
+                console.log('✅ 오디오 재생 완료 (AudioPlayer)');
+                if (onEnded) onEnded();
+            });
+            return;
+        }
+        
+        // ★ AudioPlayer가 없으면 기존 방식 (폴백)
         this.currentAudio = new Audio(audioUrl);
         this.currentAudio.volume = 1.0;
         
@@ -250,11 +273,15 @@ class RepeatComponent {
         this._currentRecordingSet = set;
         this._currentRecordingAudioIndex = audioIndex;
         
-        // beep 소리 재생 먼저 (Web Audio API 사용 - 매우 강하고 쨍한 beep)
+        // beep 소리 재생 (AudioPlayer의 AudioContext 재사용 — iPad 호환)
         console.log('🔔 beep 소리 재생 시도...');
         
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // ★ AudioPlayer가 있으면 이미 unlock된 AudioContext 사용
+            const audioContext = (this.audioPlayer && this.audioPlayer.audioCtx)
+                ? this.audioPlayer.audioCtx
+                : new (window.AudioContext || window.webkitAudioContext)();
+            
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
@@ -399,14 +426,17 @@ class RepeatComponent {
      * 따라말하기 완료
      */
     completeSpeakingRepeat() {
-        console.log('✅ 스피킹-따라말하기 완료 → 복습 화면으로 이동');
+        console.log('✅ 스피킹-따라말하기 완료');
         
-        // ★ 결과 데이터를 cleanup 전에 먼저 저장
+        // 결과 데이터 저장
         const set = this.speakingRepeatData ? this.speakingRepeatData.sets[this.currentRepeatSet] : null;
         const result = { set: set };
         
-        // ★ 컴포넌트 완전 정리 (타이머, 오디오, 예약 동작 모두 중단)
-        this.cleanup();
+        // ★ cleanup은 컨트롤러가 담당 — 여기서는 결과만 전달
+        // 컨트롤러에 "끝났어" 알림 전송
+        if (this.onComplete) {
+            this.onComplete(result);
+        }
         
         return result;
     }
@@ -425,6 +455,13 @@ class RepeatComponent {
             console.log('✅ 타이머 중지');
         }
         
+        // AudioPlayer 재생 중지 (AudioContext 방식)
+        if (this.audioPlayer) {
+            this.audioPlayer.stop();
+            console.log('✅ AudioPlayer 재생 중지');
+        }
+        
+        // 기존 Audio 객체 정리 (폴백 방식)
         if (this.currentAudio) {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
@@ -462,4 +499,4 @@ class RepeatComponent {
 // ============================================
 // 전역 초기화
 // ============================================
-console.log('✅ RepeatComponent 클래스 로드 완료 (v=001)');
+console.log('✅ RepeatComponent 클래스 로드 완료 (v=002)');

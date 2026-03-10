@@ -1,6 +1,6 @@
 /**
  * ================================================
- * InterviewComponent.js v=001
+ * InterviewComponent.js v=002
  * 인터뷰 컴포넌트
  * ================================================
  * 
@@ -22,28 +22,34 @@
  */
 
 class InterviewComponent {
-    constructor() {
-        // 데이터 저장 (외부 로더에서 로드)
-        this.speakingInterviewData = null;
-        this._destroyed = false; // cleanup 호출 시 true로 설정
+    /**
+     * @param {number} setId - 모듈 번호 (1-based)
+     * @param {AudioPlayer|null} audioPlayer - AudioPlayer 인스턴스 (iPad 호환)
+     * @param {Function|null} onComplete - 완료 시 컨트롤러에 알리는 콜백
+     */
+    constructor(setId, audioPlayer, onComplete) {
+        // ============================================
+        // 1. 외부 주입 프로퍼티 (컨트롤러에서 전달)
+        // ============================================
+        this.setId = setId || null;
+        this.audioPlayer = audioPlayer || null;
+        this.onComplete = onComplete || null;
         
         // ============================================
-        // 2. 녹음 기능 (7개 중 1개)
+        // 2. 내부 상태 변수
         // ============================================
+        
+        // 데이터 저장 (외부 로더에서 로드)
+        this.speakingInterviewData = null;
+        
+        // cleanup 완료 플래그 (예약된 동작 차단용)
+        this._destroyed = false;
         
         // 녹음 시간 (45초 고정)
         this.INTERVIEW_RESPONSE_TIME = 45;
         
-        // ============================================
-        // 3. 볼륨 조절 (5개 중 1개)
-        // ============================================
-        
         // 볼륨 레벨 (0.0~1.43, 기본 1.0 = 100%)
         this.interviewVolumeLevel = 1.0;
-        
-        // ============================================
-        // 4. 내부 상태 변수 (5개)
-        // ============================================
         
         // 현재 세트/질문 번호
         this.currentInterviewSet = 0;
@@ -53,6 +59,10 @@ class InterviewComponent {
         this.interviewTimer = null;
         this.currentVideo = null;
         this.currentInterviewAudio = null;
+        
+        // admin-skip용 (외부에서 참조)
+        this._currentRecordingSet = null;
+        this._currentRecordingQuestionIndex = null;
     }
     
     /**
@@ -477,7 +487,16 @@ class InterviewComponent {
         
         console.log('🎵 오디오 재생 시작:', audioUrl);
         
-        // HTML Audio Element 생성
+        // ★ AudioPlayer가 있으면 AudioContext 방식 (iPad 호환)
+        if (this.audioPlayer) {
+            this.audioPlayer.play(audioUrl, () => {
+                console.log('✅ 오디오 재생 완료 (AudioPlayer):', audioUrl.split('/').pop());
+                if (onEnded) onEnded();
+            });
+            return;
+        }
+        
+        // ★ AudioPlayer가 없으면 기존 방식 (폴백)
         this.currentInterviewAudio = new Audio(audioUrl);
         
         // 볼륨 설정
@@ -571,23 +590,6 @@ class InterviewComponent {
         }
     }
     
-    /**
-     * 외부 클릭 시 볼륨 슬라이더 닫기 (이벤트 리스너 등록용)
-     */
-    setupVolumeSliderCloseOnOutsideClick() {
-        document.addEventListener('click', (event) => {
-            const volumeControl = document.querySelector('.volume-control');
-            const volumeSliderContainer = document.getElementById('volumeSliderContainer');
-            
-            if (volumeControl && volumeSliderContainer && 
-                !volumeControl.contains(event.target) && 
-                volumeSliderContainer.style.display === 'block') {
-                volumeSliderContainer.style.display = 'none';
-                console.log('🎵 볼륨 슬라이더 닫힘 (외부 클릭)');
-            }
-        });
-    }
-    
     // ============================================
     // 완료 & Cleanup 함수 (2개)
     // ============================================
@@ -596,14 +598,17 @@ class InterviewComponent {
      * 인터뷰 완료
      */
     completeSpeakingInterview() {
-        console.log('✅ 스피킹-인터뷰 완료 → 채점화면으로 이동');
+        console.log('✅ 스피킹-인터뷰 완료');
         
-        // ★ 결과 데이터를 cleanup 전에 먼저 저장
+        // 결과 데이터 저장
         const set = this.speakingInterviewData ? this.speakingInterviewData.sets[this.currentInterviewSet] : null;
         const result = { set: set };
         
-        // ★ 컴포넌트 완전 정리 (타이머, 영상, 오디오, 예약 동작, 반복 영상 모두 중단)
-        this.cleanup();
+        // ★ cleanup은 컨트롤러가 담당 — 여기서는 결과만 전달
+        // 컨트롤러에 "끝났어" 알림 전송
+        if (this.onComplete) {
+            this.onComplete(result);
+        }
         
         return result;
     }
@@ -624,6 +629,12 @@ class InterviewComponent {
             console.log('✅ 타이머 정지');
         }
         
+        // AudioPlayer 재생 중지 (AudioContext 방식)
+        if (this.audioPlayer) {
+            this.audioPlayer.stop();
+            console.log('✅ AudioPlayer 재생 중지');
+        }
+        
         // nodding video 정지
         const noddingVideo = document.getElementById('interviewNoddingVideo');
         if (noddingVideo) {
@@ -641,7 +652,7 @@ class InterviewComponent {
             console.log('✅ 비디오 정지');
         }
         
-        // 오디오 정지
+        // 기존 Audio 객체 정리 (폴백 방식)
         if (this.currentInterviewAudio) {
             this.currentInterviewAudio.pause();
             this.currentInterviewAudio.currentTime = 0;
@@ -680,4 +691,4 @@ class InterviewComponent {
 // ============================================
 // 전역 초기화
 // ============================================
-console.log('✅ InterviewComponent 클래스 로드 완료 (v=001)');
+console.log('✅ InterviewComponent 클래스 로드 완료 (v=002)');
