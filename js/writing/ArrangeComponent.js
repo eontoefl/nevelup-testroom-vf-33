@@ -219,9 +219,19 @@ class ArrangeComponent {
         // 하단 보기 단어들
         const usedWords = savedAnswer ? Object.values(savedAnswer) : [];
         // 대소문자 무시 비교 (첫 빈칸 대문자 변환 대응)
-        const usedWordsLower = usedWords.map(w => w.toLowerCase());
+        // 사용 횟수 카운트 (같은 단어가 여러 개 있을 때 사용한 만큼만 비활성화)
+        const usedWordsLowerCount = {};
+        usedWords.forEach(w => {
+            const key = w.toLowerCase();
+            usedWordsLowerCount[key] = (usedWordsLowerCount[key] || 0) + 1;
+        });
         const optionsHtml = question.optionWords.map(word => {
-            const isUsed = usedWordsLower.includes(word.toLowerCase());
+            const key = word.toLowerCase();
+            let isUsed = false;
+            if (usedWordsLowerCount[key] && usedWordsLowerCount[key] > 0) {
+                isUsed = true;
+                usedWordsLowerCount[key]--;
+            }
             return `
                 <div class="arrange-option ${isUsed ? 'used' : ''}" 
                      draggable="${!isUsed}" 
