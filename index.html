@@ -1998,6 +1998,22 @@
         </div>
         
         <div class="test-content">
+            <!-- ★ "시작" 준비 화면 (AudioContext unlock용) -->
+            <div id="speakingReadyScreen" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:#fff; z-index:10; justify-content:center; align-items:center; flex-direction:column;">
+                <div style="text-align:center; padding:40px;">
+                    <div style="font-size:48px; margin-bottom:20px;">🎙️</div>
+                    <h2 style="font-size:22px; margin-bottom:12px; color:#333;">스피킹 모듈</h2>
+                    <p style="font-size:15px; color:#666; margin-bottom:24px;">마이크와 스피커가 준비되었는지 확인해 주세요.</p>
+                    <p id="speakingReadyStatus" style="font-size:14px; color:#888; margin-bottom:24px;">데이터 로드 중...</p>
+                    <button id="speakingStartBtn" disabled onclick="_onSpeakingStartTap()" style="padding:14px 48px; font-size:18px; font-weight:bold; background:#4CAF50; color:#fff; border:none; border-radius:8px; cursor:pointer; opacity:0.5;">
+                        시작
+                    </button>
+                    <button id="speakingRetryBtn" onclick="_onSpeakingRetryTap()" style="display:none; padding:14px 48px; font-size:18px; font-weight:bold; background:#f44336; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+
             <!-- 인트로 화면 -->
             <div id="repeatIntroScreen" class="repeat-intro-screen">
                 <div class="repeat-intro-content">
@@ -2599,6 +2615,10 @@
     <!-- <script src="js/speaking-repeat-logic.js?v=20250212-001"></script> -->
     <!-- 인터뷰 Component -->
     <script src="js/speaking/InterviewComponent.js?v=004_column_fix"></script>
+    <!-- Speaking Audio Engine (V3) — iPad Safari 호환 오디오 재생 -->
+    <script src="js/speaking/audio-player.js?v=001"></script>
+    <!-- Speaking Module Controller (V3) -->
+    <script src="js/speaking/speaking-module-controller.js?v=001"></script>
     <!-- [V3-대기] speaking-interview-logic.js — V3 speaking 모듈 컨트롤러에서 대체 예정 -->
     <!-- <script src="js/speaking-interview-logic.js?v=20250212-001"></script> -->
     <!-- [V3-대기] ComponentPatch.js — V3 모듈 컨트롤러에 init/onComplete 내장 예정 -->
