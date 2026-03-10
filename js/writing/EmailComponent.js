@@ -271,24 +271,6 @@ class EmailComponent {
     }
     
     /**
-     * 답안 다운로드 (문제 풀이 중)
-     */
-    downloadEmail() {
-        const set = this.data.sets[this.currentQuestion];
-        const answer = this.answers[set.id] || '';
-        
-        const content = `To: ${set.to}\nSubject: ${set.subject}\n\n${answer}`;
-        
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `email_${set.id}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-    
-    /**
      * 제출 & TXT 파일 다운로드
      */
     submit() {

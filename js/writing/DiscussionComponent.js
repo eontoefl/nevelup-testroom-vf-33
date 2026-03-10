@@ -513,18 +513,18 @@ class DiscussionComponent {
         
         console.log('✅ [Discussion] 결과 데이터:', resultData);
         
-        // 데이터 초기화
-        this.discussionAnswers = [];
-        this.discussionUndoStack = [];
-        this.discussionRedoStack = [];
-        
         return resultData;
     }
     
     /**
      * TXT 파일 다운로드
      */
-    downloadDiscussion(setData, userAnswer, wordCount) {
+    downloadDiscussion() {
+        // 내부 데이터에서 직접 읽기
+        const setData = this.writingDiscussionData.sets[this.currentDiscussionSet];
+        const userAnswer = this.discussionAnswers[this.currentDiscussionSet] || '';
+        const wordCount = userAnswer.trim() ? userAnswer.trim().split(/\s+/).length : 0;
+        
         const now = new Date();
         const dateStr = now.getFullYear() +
             String(now.getMonth() + 1).padStart(2, '0') +
