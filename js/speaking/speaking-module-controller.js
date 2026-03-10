@@ -51,7 +51,6 @@ async function startSpeakingModule(moduleNumber) {
 
     // AudioPlayer 인스턴스 생성
     var audioPlayer = new AudioPlayer();
-    console.log('🔊 AudioPlayer 생성 완료');
 
     // 모듈 상태 객체 생성
     window.currentSpeakingModule = {
