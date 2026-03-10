@@ -260,6 +260,11 @@ function backToTaskDashboard() {
         cleanupListeningModule();
     }
     
+    // 라이팅 모듈 정리 (타이머 정지 + 상태 초기화)
+    if (typeof cleanupWritingModule === 'function') {
+        cleanupWritingModule();
+    }
+    
     // 타이머 정리
     if (typeof stopAllTimers === 'function') {
         stopAllTimers();
