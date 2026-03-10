@@ -234,7 +234,7 @@ class DiscussionComponent {
         console.log('🎨 [Discussion] 문제 렌더링:', setData);
         
         // Context 표시
-        const contextElement = document.getElementById('discussionContext');
+        const contextElement = document.getElementById('discussionClassContext');
         if (contextElement) {
             contextElement.textContent = setData.classContext || '';
         }
