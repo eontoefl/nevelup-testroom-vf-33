@@ -414,7 +414,7 @@ window.prevArrangeQuestion = function() {
     _updateWritingProgress();
 };
 
-// Arrange Submit
+// Arrange Submit → 바로 Email로 이동
 window.submitWritingArrange = function() {
     var mod = window.currentWritingModule;
     if (!mod || mod.currentIndex !== 0) return;
@@ -429,21 +429,11 @@ window.submitWritingArrange = function() {
     mod.results.arrange = result;
     console.log('✅ Arrange 채점 결과 저장');
 
-    // 결과 화면 표시 → showArrangeResult()는 sessionStorage에서 읽음
-    if (typeof showArrangeResult === 'function') {
-        showArrangeResult();
-    }
-    if (typeof showScreen === 'function') {
-        showScreen('arrangeExplainScreen');
-    }
-};
-
-// Arrange 해설 → Email 이동 (해설 화면의 "다음" 버튼에서 호출)
-window.goToWritingEmail = function() {
+    // 바로 Email로 이동
     _startWritingType(1);
 };
 
-// Email Submit
+// Email Submit → 바로 Discussion으로 이동
 window.submitWritingEmail = function() {
     var mod = window.currentWritingModule;
     if (!mod || mod.currentIndex !== 1) return;
@@ -464,21 +454,11 @@ window.submitWritingEmail = function() {
         console.log('📥 Email TXT 다운로드 (다시풀기)');
     }
 
-    // 결과 화면 표시
-    if (typeof showEmailResult === 'function') {
-        showEmailResult(result);
-    }
-    if (typeof showScreen === 'function') {
-        showScreen('emailExplainScreen');
-    }
-};
-
-// Email 해설 → Discussion 이동
-window.goToWritingDiscussion = function() {
+    // 바로 Discussion으로 이동
     _startWritingType(2);
 };
 
-// Discussion Submit
+// Discussion Submit → 바로 DB 저장 + 대시보드 복귀
 window.submitWritingDiscussion = function() {
     var mod = window.currentWritingModule;
     if (!mod || mod.currentIndex !== 2) return;
@@ -499,20 +479,7 @@ window.submitWritingDiscussion = function() {
         console.log('📥 Discussion TXT 다운로드 (다시풀기)');
     }
 
-    // 결과 화면 표시
-    if (typeof showDiscussionResult === 'function') {
-        showDiscussionResult(result);
-    }
-    if (typeof showScreen === 'function') {
-        showScreen('discussionExplainScreen');
-    }
-
-    // Discussion 결과 화면 후 DB 저장 + 대시보드 복귀는
-    // 해설 화면의 "완료" 버튼에서 호출
-};
-
-// Discussion 해설 → DB 저장 → 대시보드 복귀
-window.finishWritingModule = function() {
+    // DB 저장 + 대시보드 복귀
     _finishWritingModule();
 };
 
