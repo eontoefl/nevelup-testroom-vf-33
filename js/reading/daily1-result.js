@@ -68,8 +68,6 @@ function showDaily1Results() {
     
     detailsContainer.innerHTML = detailsHTML;
     bindDaily1ToggleEvents();
-    showScreen('daily1ExplainScreen');
-    saveResultJsonToSupabase('reading', results);
     sessionStorage.removeItem('daily1Results');
 }
 

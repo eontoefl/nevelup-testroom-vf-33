@@ -3,11 +3,11 @@
 ================================================ */
 
 /* 결과 화면 헤더 */
-#writingEmailResultScreen .result-header {
+#emailExplainScreen .result-header {
     margin-bottom: 20px;
 }
 
-#writingEmailResultScreen .result-header h2 {
+#emailExplainScreen .result-header h2 {
     font-size: 24px;
     font-weight: 700;
     color: #1e293b;

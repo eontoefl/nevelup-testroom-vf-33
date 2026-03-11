@@ -3,11 +3,11 @@
 ================================================ */
 
 /* 결과 화면 헤더 */
-#writingDiscussionResultScreen .result-header {
+#discussionExplainScreen .result-header {
     margin-bottom: 20px;
 }
 
-#writingDiscussionResultScreen .result-header h2 {
+#discussionExplainScreen .result-header h2 {
     font-size: 24px;
     font-weight: 700;
     color: #1e293b;

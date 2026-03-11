@@ -2,14 +2,13 @@
    Listening Academic Explanation + Lecture Result
    #9480c5 | #77bf7e | #b9c9da | Pretendard
    Ground Rule: NO border-left anywhere
-   Shared by: #listeningAcademicExplainScreen, #listeningLectureResultScreen
+   Shared by: #lectureExplainScreen
    ============================================ */
 
 /* ── 리셋 불필요 — 각 화면 ID 셀렉터로 스코프 격리됨 ── */
 
 /* ── 루트 ── */
-#listeningAcademicExplainScreen,
-#listeningLectureResultScreen {
+#lectureExplainScreen {
     font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     background: #f7f6fb;
     min-height: 100vh;
@@ -18,8 +17,7 @@
 }
 
 /* ── 헤더 ── */
-#listeningAcademicExplainScreen .academic-header,
-#listeningLectureResultScreen .academic-header {
+#lectureExplainScreen .academic-header {
     background: linear-gradient(135deg, #9480c5, #7a66b0);
     padding: 24px 24px;
     text-align: center;
@@ -28,8 +26,7 @@
     z-index: 100;
 }
 
-#listeningAcademicExplainScreen .academic-header h2,
-#listeningLectureResultScreen .academic-header h2 {
+#lectureExplainScreen .academic-header h2 {
     color: #fff;
     font-size: 18px;
     font-weight: 700;
@@ -40,8 +37,7 @@
     gap: 8px;
 }
 
-#listeningAcademicExplainScreen .academic-icon,
-#listeningLectureResultScreen .academic-icon {
+#lectureExplainScreen .academic-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -54,15 +50,13 @@
 }
 
 /* ── 요약 통계 ── */
-#listeningAcademicExplainScreen .academic-summary,
-#listeningLectureResultScreen .academic-summary {
+#lectureExplainScreen .academic-summary {
     max-width: 880px;
     margin: 0 auto;
     padding: 20px 20px 0;
 }
 
-#listeningAcademicExplainScreen .academic-stats,
-#listeningLectureResultScreen .academic-stats {
+#lectureExplainScreen .academic-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 0;
@@ -72,8 +66,7 @@
     box-shadow: 0 2px 12px rgba(148,128,197,0.1);
 }
 
-#listeningAcademicExplainScreen .academic-stat-box,
-#listeningLectureResultScreen .academic-stat-box {
+#lectureExplainScreen .academic-stat-box {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -81,48 +74,40 @@
     padding: 18px 8px;
     border-right: 1px solid #f0edf5;
 }
-#listeningAcademicExplainScreen .academic-stat-box:last-child,
-#listeningLectureResultScreen .academic-stat-box:last-child {
+#lectureExplainScreen .academic-stat-box:last-child {
     border-right: none;
 }
 
-#listeningAcademicExplainScreen .academic-stat-label,
-#listeningLectureResultScreen .academic-stat-label {
+#lectureExplainScreen .academic-stat-label {
     font-size: 11px;
     font-weight: 600;
     color: #999;
     letter-spacing: 0.5px;
 }
 
-#listeningAcademicExplainScreen .academic-stat-value,
-#listeningLectureResultScreen .academic-stat-value {
+#lectureExplainScreen .academic-stat-value {
     font-size: 19px;
     font-weight: 800;
     color: #9480c5;
 }
-#listeningAcademicExplainScreen .academic-stat-value.first,
-#listeningLectureResultScreen .academic-stat-value.first {
+#lectureExplainScreen .academic-stat-value.first {
     color: #8fa5bb;
 }
-#listeningAcademicExplainScreen .academic-stat-value.second,
-#listeningLectureResultScreen .academic-stat-value.second {
+#lectureExplainScreen .academic-stat-value.second {
     color: #9480c5;
 }
-#listeningAcademicExplainScreen .academic-stat-box.improvement .academic-stat-value,
-#listeningLectureResultScreen .academic-stat-box.improvement .academic-stat-value {
+#lectureExplainScreen .academic-stat-box.improvement .academic-stat-value {
     color: #5ea065;
 }
 
 /* ── 세트 카드 ── */
-#listeningAcademicExplainScreen .academic-content,
-#listeningLectureResultScreen .academic-content {
+#lectureExplainScreen .academic-content {
     max-width: 880px;
     margin: 20px auto 0;
     padding: 0 20px;
 }
 
-#listeningAcademicExplainScreen .academic-set,
-#listeningLectureResultScreen .academic-set {
+#lectureExplainScreen .academic-set {
     background: #fff;
     border-radius: 14px;
     overflow: hidden;
@@ -130,8 +115,7 @@
     margin-bottom: 20px;
 }
 
-#listeningAcademicExplainScreen .academic-set-header,
-#listeningLectureResultScreen .academic-set-header {
+#lectureExplainScreen .academic-set-header {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -140,8 +124,7 @@
     border-bottom: 1px solid #f0edf5;
 }
 
-#listeningAcademicExplainScreen .academic-set-badge,
-#listeningLectureResultScreen .academic-set-badge {
+#lectureExplainScreen .academic-set-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -150,13 +133,11 @@
     color: #9480c5;
 }
 
-#listeningAcademicExplainScreen .academic-set-badge i,
-#listeningLectureResultScreen .academic-set-badge i {
+#lectureExplainScreen .academic-set-badge i {
     font-size: 14px;
 }
 
-#listeningAcademicExplainScreen .academic-set-meta,
-#listeningLectureResultScreen .academic-set-meta {
+#lectureExplainScreen .academic-set-meta {
     font-size: 12px;
     color: #999;
     font-weight: 500;
@@ -164,13 +145,11 @@
 }
 
 /* ── 강의 오디오 ── */
-#listeningAcademicExplainScreen .academic-audio-section,
-#listeningLectureResultScreen .academic-audio-section {
+#lectureExplainScreen .academic-audio-section {
     padding: 20px 20px 16px;
 }
 
-#listeningAcademicExplainScreen .academic-audio-title,
-#listeningLectureResultScreen .academic-audio-title {
+#lectureExplainScreen .academic-audio-title {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -180,16 +159,14 @@
     margin-bottom: 10px;
 }
 
-#listeningAcademicExplainScreen .academic-audio-player,
-#listeningLectureResultScreen .academic-audio-player {
+#lectureExplainScreen .academic-audio-player {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 0;
 }
 
-#listeningAcademicExplainScreen .academic-play-btn,
-#listeningLectureResultScreen .academic-play-btn {
+#lectureExplainScreen .academic-play-btn {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -205,21 +182,18 @@
     transition: background 0.2s;
 }
 
-#listeningAcademicExplainScreen .academic-play-btn:hover,
-#listeningLectureResultScreen .academic-play-btn:hover {
+#lectureExplainScreen .academic-play-btn:hover {
     opacity: 0.85;
 }
 
-#listeningAcademicExplainScreen .academic-seek-container,
-#listeningLectureResultScreen .academic-seek-container {
+#lectureExplainScreen .academic-seek-container {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-#listeningAcademicExplainScreen .academic-seek-bar,
-#listeningLectureResultScreen .academic-seek-bar {
+#lectureExplainScreen .academic-seek-bar {
     width: 100%;
     height: 4px;
     background: #e8e4f0;
@@ -229,16 +203,14 @@
     cursor: pointer;
 }
 
-#listeningAcademicExplainScreen .academic-seek-progress,
-#listeningLectureResultScreen .academic-seek-progress {
+#lectureExplainScreen .academic-seek-progress {
     height: 100%;
     background: #9480c5;
     border-radius: 2px;
     position: relative;
 }
 
-#listeningAcademicExplainScreen .academic-seek-handle,
-#listeningLectureResultScreen .academic-seek-handle {
+#lectureExplainScreen .academic-seek-handle {
     position: absolute;
     right: -6px;
     top: 50%;
@@ -251,8 +223,7 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 
-#listeningAcademicExplainScreen .academic-audio-time,
-#listeningLectureResultScreen .academic-audio-time {
+#lectureExplainScreen .academic-audio-time {
     display: flex;
     justify-content: space-between;
     font-size: 11px;
@@ -261,13 +232,11 @@
 }
 
 /* ── 강의 스크립트 ── */
-#listeningAcademicExplainScreen .academic-script-section,
-#listeningLectureResultScreen .academic-script-section {
+#lectureExplainScreen .academic-script-section {
     padding: 0 20px 16px;
 }
 
-#listeningAcademicExplainScreen .academic-script-toggle,
-#listeningLectureResultScreen .academic-script-toggle {
+#lectureExplainScreen .academic-script-toggle {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -284,19 +253,16 @@
     transition: background 0.2s;
 }
 
-#listeningAcademicExplainScreen .academic-script-toggle:hover,
-#listeningLectureResultScreen .academic-script-toggle:hover {
+#lectureExplainScreen .academic-script-toggle:hover {
     background: #eee9f7;
 }
 
-#listeningAcademicExplainScreen .academic-script-toggle .toggle-text,
-#listeningLectureResultScreen .academic-script-toggle .toggle-text {
+#lectureExplainScreen .academic-script-toggle .toggle-text {
     flex: 1;
     text-align: left;
 }
 
-#listeningAcademicExplainScreen .academic-script-body,
-#listeningLectureResultScreen .academic-script-body {
+#lectureExplainScreen .academic-script-body {
     margin-top: 12px;
     padding: 16px;
     background: #faf9fd;
@@ -304,30 +270,26 @@
     border: 1px solid rgba(148,128,197,0.10);
 }
 
-#listeningAcademicExplainScreen .academic-paragraph,
-#listeningLectureResultScreen .academic-paragraph {
+#lectureExplainScreen .academic-paragraph {
     margin-bottom: 16px;
     padding-bottom: 16px;
     border-bottom: 1px dashed rgba(148,128,197,0.15);
 }
 
-#listeningAcademicExplainScreen .academic-paragraph:last-child,
-#listeningLectureResultScreen .academic-paragraph:last-child {
+#lectureExplainScreen .academic-paragraph:last-child {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
 }
 
-#listeningAcademicExplainScreen .academic-paragraph-text,
-#listeningLectureResultScreen .academic-paragraph-text {
+#lectureExplainScreen .academic-paragraph-text {
     font-size: 14px;
     line-height: 1.8;
     color: #1e1e2f;
     margin-bottom: 8px;
 }
 
-#listeningAcademicExplainScreen .academic-paragraph-translation,
-#listeningLectureResultScreen .academic-paragraph-translation {
+#lectureExplainScreen .academic-paragraph-translation {
     display: block;
     font-size: 13px;
     line-height: 1.6;
@@ -336,8 +298,7 @@
 }
 
 /* 키워드 하이라이트 */
-#listeningAcademicExplainScreen .academic-keyword,
-#listeningLectureResultScreen .academic-keyword {
+#lectureExplainScreen .academic-keyword {
     color: #9480c5;
     font-weight: 600;
     text-decoration: underline;
@@ -347,8 +308,7 @@
     position: relative;
 }
 
-#listeningAcademicExplainScreen .academic-keyword:hover::after,
-#listeningLectureResultScreen .academic-keyword:hover::after {
+#lectureExplainScreen .academic-keyword:hover::after {
     content: attr(data-translation) " — " attr(data-explanation);
     position: absolute;
     bottom: calc(100% + 6px);
@@ -369,14 +329,12 @@
 }
 
 /* ── 문제 영역 구분선 ── */
-#listeningAcademicExplainScreen .academic-questions-divider,
-#listeningLectureResultScreen .academic-questions-divider {
+#lectureExplainScreen .academic-questions-divider {
     padding: 0 20px;
     margin-bottom: 8px;
 }
 
-#listeningAcademicExplainScreen .academic-questions-divider span,
-#listeningLectureResultScreen .academic-questions-divider span {
+#lectureExplainScreen .academic-questions-divider span {
     display: inline-block;
     font-size: 13px;
     font-weight: 700;
@@ -385,38 +343,32 @@
 }
 
 /* ── 문제 카드 ── */
-#listeningAcademicExplainScreen .academic-question,
-#listeningLectureResultScreen .academic-question {
+#lectureExplainScreen .academic-question {
     padding: 16px 20px 16px;
 }
 
-#listeningAcademicExplainScreen .academic-question + .academic-question,
-#listeningLectureResultScreen .academic-question + .academic-question {
+#lectureExplainScreen .academic-question + .academic-question {
     border-top: 1px solid #f0edf5;
 }
 
-#listeningAcademicExplainScreen .academic-question-header,
-#listeningLectureResultScreen .academic-question-header {
+#lectureExplainScreen .academic-question-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 10px;
 }
 
-#listeningAcademicExplainScreen .academic-q-number,
-#listeningLectureResultScreen .academic-q-number {
+#lectureExplainScreen .academic-q-number {
     font-size: 14px;
     font-weight: 700;
     color: #9480c5;
 }
 
-#listeningAcademicExplainScreen .academic-q-status,
-#listeningLectureResultScreen .academic-q-status {
+#lectureExplainScreen .academic-q-status {
     font-size: 18px;
 }
 
-#listeningAcademicExplainScreen .academic-q-text,
-#listeningLectureResultScreen .academic-q-text {
+#lectureExplainScreen .academic-q-text {
     font-size: 15px;
     font-weight: 600;
     color: #1e1e2f;
@@ -424,37 +376,32 @@
     margin-bottom: 6px;
 }
 
-#listeningAcademicExplainScreen .academic-q-translation,
-#listeningLectureResultScreen .academic-q-translation {
+#lectureExplainScreen .academic-q-translation {
     font-size: 13px;
     color: #8890a4;
     margin-bottom: 14px;
 }
 
 /* ── 답변 비교 ── */
-#listeningAcademicExplainScreen .academic-answer-summary,
-#listeningLectureResultScreen .academic-answer-summary {
+#lectureExplainScreen .academic-answer-summary {
     background: #f9f7ff;
     border-radius: 10px;
     padding: 12px 14px;
     margin-bottom: 12px;
 }
 
-#listeningAcademicExplainScreen .academic-answer-row,
-#listeningLectureResultScreen .academic-answer-row {
+#lectureExplainScreen .academic-answer-row {
     display: flex;
     align-items: flex-start;
     gap: 8px;
     margin-bottom: 6px;
 }
 
-#listeningAcademicExplainScreen .academic-answer-row:last-child,
-#listeningLectureResultScreen .academic-answer-row:last-child {
+#lectureExplainScreen .academic-answer-row:last-child {
     margin-bottom: 0;
 }
 
-#listeningAcademicExplainScreen .academic-answer-label,
-#listeningLectureResultScreen .academic-answer-label {
+#lectureExplainScreen .academic-answer-label {
     font-size: 12px;
     font-weight: 600;
     color: #8890a4;
@@ -462,26 +409,22 @@
     min-width: 52px;
 }
 
-#listeningAcademicExplainScreen .academic-answer-value,
-#listeningLectureResultScreen .academic-answer-value {
+#lectureExplainScreen .academic-answer-value {
     font-size: 13px;
     font-weight: 600;
     line-height: 1.4;
 }
 
-#listeningAcademicExplainScreen .academic-answer-value.correct,
-#listeningLectureResultScreen .academic-answer-value.correct {
+#lectureExplainScreen .academic-answer-value.correct {
     color: #77bf7e;
 }
 
-#listeningAcademicExplainScreen .academic-answer-value.incorrect,
-#listeningLectureResultScreen .academic-answer-value.incorrect {
+#lectureExplainScreen .academic-answer-value.incorrect {
     color: #d94452;
 }
 
 /* ── 보기 토글 ── */
-#listeningAcademicExplainScreen .academic-toggle-btn,
-#listeningLectureResultScreen .academic-toggle-btn {
+#lectureExplainScreen .academic-toggle-btn {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -498,42 +441,36 @@
     transition: background 0.2s;
 }
 
-#listeningAcademicExplainScreen .academic-toggle-btn:hover,
-#listeningLectureResultScreen .academic-toggle-btn:hover {
+#lectureExplainScreen .academic-toggle-btn:hover {
     background: #eee9f7;
 }
 
-#listeningAcademicExplainScreen .academic-toggle-btn .toggle-text,
-#listeningLectureResultScreen .academic-toggle-btn .toggle-text {
+#lectureExplainScreen .academic-toggle-btn .toggle-text {
     flex: 1;
     text-align: left;
 }
 
 /* ── 보기 상세 ── */
-#listeningAcademicExplainScreen .academic-options-details,
-#listeningLectureResultScreen .academic-options-details {
+#lectureExplainScreen .academic-options-details {
     display: none;
     flex-direction: column;
     gap: 10px;
     margin-top: 10px;
 }
 
-#listeningAcademicExplainScreen .academic-option,
-#listeningLectureResultScreen .academic-option {
+#lectureExplainScreen .academic-option {
     padding: 12px 14px;
     border-radius: 10px;
     background: #f9f7ff;
     border: 1px solid rgba(148,128,197,0.10);
 }
 
-#listeningAcademicExplainScreen .academic-option.correct,
-#listeningLectureResultScreen .academic-option.correct {
+#lectureExplainScreen .academic-option.correct {
     background: #f0faf1;
     border-color: rgba(119,191,126,0.25);
 }
 
-#listeningAcademicExplainScreen .academic-option-text,
-#listeningLectureResultScreen .academic-option-text {
+#lectureExplainScreen .academic-option-text {
     font-size: 14px;
     font-weight: 600;
     color: #1e1e2f;
@@ -543,8 +480,7 @@
     gap: 8px;
 }
 
-#listeningAcademicExplainScreen .academic-option-marker,
-#listeningLectureResultScreen .academic-option-marker {
+#lectureExplainScreen .academic-option-marker {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -558,22 +494,19 @@
     flex-shrink: 0;
 }
 
-#listeningAcademicExplainScreen .academic-option.correct .academic-option-marker,
-#listeningLectureResultScreen .academic-option.correct .academic-option-marker {
+#lectureExplainScreen .academic-option.correct .academic-option-marker {
     background: #d4f5d6;
     color: #3a9142;
 }
 
-#listeningAcademicExplainScreen .academic-option-translation,
-#listeningLectureResultScreen .academic-option-translation {
+#lectureExplainScreen .academic-option-translation {
     font-size: 12px;
     color: #8890a4;
     margin-bottom: 6px;
     padding-left: 30px;
 }
 
-#listeningAcademicExplainScreen .academic-option-explanation,
-#listeningLectureResultScreen .academic-option-explanation {
+#lectureExplainScreen .academic-option-explanation {
     font-size: 12px;
     line-height: 1.5;
     padding: 8px 12px;
@@ -581,28 +514,24 @@
     margin-left: 30px;
 }
 
-#listeningAcademicExplainScreen .academic-option-explanation.correct,
-#listeningLectureResultScreen .academic-option-explanation.correct {
+#lectureExplainScreen .academic-option-explanation.correct {
     background: rgba(119,191,126,0.08);
     color: #3a9142;
 }
 
-#listeningAcademicExplainScreen .academic-option-explanation.incorrect,
-#listeningLectureResultScreen .academic-option-explanation.incorrect {
+#lectureExplainScreen .academic-option-explanation.incorrect {
     background: rgba(231,76,94,0.06);
     color: #c0392b;
 }
 
 /* ── 핵심 포인트 요약 ── */
-#listeningAcademicExplainScreen .academic-summary-section,
-#listeningLectureResultScreen .academic-summary-section {
+#lectureExplainScreen .academic-summary-section {
     padding: 20px 20px 16px;
     margin-top: 4px;
     background: #faf9fd;
 }
 
-#listeningAcademicExplainScreen .academic-summary-title,
-#listeningLectureResultScreen .academic-summary-title {
+#lectureExplainScreen .academic-summary-title {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -612,27 +541,23 @@
     margin-bottom: 10px;
 }
 
-#listeningAcademicExplainScreen .academic-summary-title i,
-#listeningLectureResultScreen .academic-summary-title i {
+#lectureExplainScreen .academic-summary-title i {
     font-size: 13px;
 }
 
-#listeningAcademicExplainScreen .academic-summary-text,
-#listeningLectureResultScreen .academic-summary-text {
+#lectureExplainScreen .academic-summary-text {
     font-size: 14px;
     line-height: 1.8;
     color: #555;
 }
 
-#listeningAcademicExplainScreen .academic-key-points,
-#listeningLectureResultScreen .academic-key-points {
+#lectureExplainScreen .academic-key-points {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
-#listeningAcademicExplainScreen .academic-key-point,
-#listeningLectureResultScreen .academic-key-point {
+#lectureExplainScreen .academic-key-point {
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -641,8 +566,7 @@
     color: #555;
 }
 
-#listeningAcademicExplainScreen .academic-key-point::before,
-#listeningLectureResultScreen .academic-key-point::before {
+#lectureExplainScreen .academic-key-point::before {
     content: '•';
     color: #9480c5;
     font-weight: 700;
@@ -650,8 +574,7 @@
 }
 
 /* ── 네비게이션 ── */
-#listeningAcademicExplainScreen .academic-navigation,
-#listeningLectureResultScreen .academic-navigation {
+#lectureExplainScreen .academic-navigation {
     max-width: 880px;
     margin: 32px auto 0;
     padding: 0 20px;
@@ -660,8 +583,7 @@
     gap: 12px;
 }
 
-#listeningAcademicExplainScreen .academic-navigation .btn,
-#listeningLectureResultScreen .academic-navigation .btn {
+#lectureExplainScreen .academic-navigation .btn {
     font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
     font-size: 14px;
     font-weight: 600;
@@ -675,79 +597,67 @@
     gap: 6px;
 }
 
-#listeningAcademicExplainScreen .academic-navigation .btn-primary,
-#listeningLectureResultScreen .academic-navigation .btn-primary {
+#lectureExplainScreen .academic-navigation .btn-primary {
     background: #9480c5;
     color: #fff;
 }
 
-#listeningAcademicExplainScreen .academic-navigation .btn-primary:hover,
-#listeningLectureResultScreen .academic-navigation .btn-primary:hover {
+#lectureExplainScreen .academic-navigation .btn-primary:hover {
     background: #7a66b0;
 }
 
-#listeningAcademicExplainScreen .academic-navigation .btn-secondary,
-#listeningLectureResultScreen .academic-navigation .btn-secondary {
+#lectureExplainScreen .academic-navigation .btn-secondary {
     background: #fff;
     color: #9480c5;
     border: 1.5px solid #d8d0eb;
 }
 
-#listeningAcademicExplainScreen .academic-navigation .btn-secondary:hover,
-#listeningLectureResultScreen .academic-navigation .btn-secondary:hover {
+#lectureExplainScreen .academic-navigation .btn-secondary:hover {
     background: #f7f5fc;
 }
 
 /* ── 반응형 ── */
 @media (max-width: 640px) {
-    #listeningAcademicExplainScreen .academic-stats,
-    #listeningLectureResultScreen .academic-stats {
+    #lectureExplainScreen .academic-stats {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    #listeningAcademicExplainScreen .academic-header h2,
-    #listeningLectureResultScreen .academic-header h2 {
+    #lectureExplainScreen .academic-header h2 {
         font-size: 15px;
     }
 
-    #listeningAcademicExplainScreen .academic-stat-value,
-    #listeningLectureResultScreen .academic-stat-value {
+    #lectureExplainScreen .academic-stat-value {
         font-size: 15px;
     }
 
-    #listeningAcademicExplainScreen .academic-set-header,
-    #listeningLectureResultScreen .academic-set-header {
+    #lectureExplainScreen .academic-set-header {
         padding: 14px 16px;
     }
 
-    #listeningAcademicExplainScreen .academic-audio-section,
-    #listeningAcademicExplainScreen .academic-script-section,
-    #listeningAcademicExplainScreen .academic-questions-divider,
-    #listeningLectureResultScreen .academic-audio-section,
-    #listeningLectureResultScreen .academic-script-section,
-    #listeningLectureResultScreen .academic-questions-divider {
+    #lectureExplainScreen .academic-audio-section,
+    #lectureExplainScreen .academic-script-section,
+    #lectureExplainScreen .academic-questions-divider,
+    #lectureExplainScreen .academic-audio-section,
+    #lectureExplainScreen .academic-script-section,
+    #lectureExplainScreen .academic-questions-divider {
         padding-left: 16px;
         padding-right: 16px;
     }
 
-    #listeningAcademicExplainScreen .academic-question,
-    #listeningLectureResultScreen .academic-question {
+    #lectureExplainScreen .academic-question {
         padding-left: 16px;
         padding-right: 16px;
     }
 
-    #listeningAcademicExplainScreen .academic-navigation,
-    #listeningLectureResultScreen .academic-navigation {
+    #lectureExplainScreen .academic-navigation {
         flex-direction: column;
     }
 
-    #listeningAcademicExplainScreen .academic-navigation .btn,
-    #listeningLectureResultScreen .academic-navigation .btn {
+    #lectureExplainScreen .academic-navigation .btn {
         width: 100%;
     }
 
-    #listeningAcademicExplainScreen .academic-summary-section,
-    #listeningLectureResultScreen .academic-summary-section {
+    #lectureExplainScreen .academic-summary-section {
         padding-left: 16px;
         padding-right: 16px;
     }
