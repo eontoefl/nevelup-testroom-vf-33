@@ -5,7 +5,7 @@
    ============================================ */
 
 /* ── 루트 ── */
-#finalDetailContent {
+#converExplainScreen {
     font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     background: #f7f6fb;
     min-height: 100vh;
@@ -14,7 +14,7 @@
 }
 
 /* ── 헤더 ── */
-#finalDetailContent .conver-header {
+#converExplainScreen .conver-header {
     background: linear-gradient(135deg, #9480c5, #7a66b0);
     padding: 24px 24px;
     text-align: center;
@@ -23,7 +23,7 @@
     z-index: 100;
 }
 
-#finalDetailContent .conver-header h2 {
+#converExplainScreen .conver-header h2 {
     color: #fff;
     font-size: 18px;
     font-weight: 700;
@@ -34,7 +34,7 @@
     gap: 8px;
 }
 
-#finalDetailContent .conver-icon {
+#converExplainScreen .conver-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -47,13 +47,13 @@
 }
 
 /* ── 요약 통계 ── */
-#finalDetailContent .conver-summary {
+#converExplainScreen .conver-summary {
     max-width: 880px;
     margin: 0 auto;
     padding: 20px 20px 0;
 }
 
-#finalDetailContent .conver-stats {
+#converExplainScreen .conver-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 0;
@@ -63,7 +63,7 @@
     box-shadow: 0 2px 12px rgba(148,128,197,0.1);
 }
 
-#finalDetailContent .conver-stat-box {
+#converExplainScreen .conver-stat-box {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -71,41 +71,41 @@
     padding: 18px 8px;
     border-right: 1px solid #f0edf5;
 }
-#finalDetailContent .conver-stat-box:last-child {
+#converExplainScreen .conver-stat-box:last-child {
     border-right: none;
 }
 
-#finalDetailContent .conver-stat-label {
+#converExplainScreen .conver-stat-label {
     font-size: 11px;
     font-weight: 600;
     color: #999;
     letter-spacing: 0.5px;
 }
 
-#finalDetailContent .conver-stat-value {
+#converExplainScreen .conver-stat-value {
     font-size: 19px;
     font-weight: 800;
     color: #9480c5;
 }
-#finalDetailContent .conver-stat-value.first {
+#converExplainScreen .conver-stat-value.first {
     color: #8fa5bb;
 }
-#finalDetailContent .conver-stat-value.second {
+#converExplainScreen .conver-stat-value.second {
     color: #9480c5;
 }
-#finalDetailContent .conver-stat-box.improvement .conver-stat-value {
+#converExplainScreen .conver-stat-box.improvement .conver-stat-value {
     color: #5ea065;
 }
 
 /* ── 컨텐츠 영역 ── */
-#finalDetailContent .conver-content {
+#converExplainScreen .conver-content {
     max-width: 880px;
     margin: 20px auto 0;
     padding: 0 20px;
 }
 
 /* ── 대화 세트 카드 ── */
-#finalDetailContent .conver-set {
+#converExplainScreen .conver-set {
     background: #fff;
     border-radius: 14px;
     overflow: hidden;
@@ -115,7 +115,7 @@
 }
 
 /* ── 세트 헤더 (Conversation Set 1 등) ── */
-#finalDetailContent .conver-set-header {
+#converExplainScreen .conver-set-header {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -124,7 +124,7 @@
     border-bottom: 1px solid #f0edf5;
 }
 
-#finalDetailContent .conver-set-badge {
+#converExplainScreen .conver-set-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -133,11 +133,11 @@
     color: #9480c5;
 }
 
-#finalDetailContent .conver-set-badge i {
+#converExplainScreen .conver-set-badge i {
     font-size: 14px;
 }
 
-#finalDetailContent .conver-set-meta {
+#converExplainScreen .conver-set-meta {
     font-size: 12px;
     color: #999;
     font-weight: 500;
@@ -145,11 +145,11 @@
 }
 
 /* ── 전체 대화 오디오 영역 ── */
-#finalDetailContent .conver-audio-section {
+#converExplainScreen .conver-audio-section {
     padding: 20px 20px 16px;
 }
 
-#finalDetailContent .conver-audio-title {
+#converExplainScreen .conver-audio-title {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -159,14 +159,14 @@
     margin-bottom: 10px;
 }
 
-#finalDetailContent .conver-audio-player {
+#converExplainScreen .conver-audio-player {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 0;
 }
 
-#finalDetailContent .conver-play-btn {
+#converExplainScreen .conver-play-btn {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -181,18 +181,18 @@
     flex-shrink: 0;
     transition: opacity 0.2s;
 }
-#finalDetailContent .conver-play-btn:hover {
+#converExplainScreen .conver-play-btn:hover {
     opacity: 0.85;
 }
 
-#finalDetailContent .conver-seek-container {
+#converExplainScreen .conver-seek-container {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-#finalDetailContent .conver-seek-bar {
+#converExplainScreen .conver-seek-bar {
     width: 100%;
     height: 4px;
     background: #e8e4f0;
@@ -201,14 +201,14 @@
     position: relative;
 }
 
-#finalDetailContent .conver-seek-progress {
+#converExplainScreen .conver-seek-progress {
     height: 100%;
     background: #9480c5;
     border-radius: 2px;
     position: relative;
 }
 
-#finalDetailContent .conver-seek-handle {
+#converExplainScreen .conver-seek-handle {
     position: absolute;
     right: -5px;
     top: 50%;
@@ -221,7 +221,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
-#finalDetailContent .conver-audio-time {
+#converExplainScreen .conver-audio-time {
     display: flex;
     justify-content: space-between;
     font-size: 11px;
@@ -230,12 +230,12 @@
 }
 
 /* ── 전체 스크립트 영역 ── */
-#finalDetailContent .conver-script-section {
+#converExplainScreen .conver-script-section {
     padding: 0 20px 20px;
 }
 
 /* 스크립트 토글 */
-#finalDetailContent .conver-script-toggle {
+#converExplainScreen .conver-script-toggle {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -251,26 +251,26 @@
     color: #9480c5;
     transition: background 0.2s;
 }
-#finalDetailContent .conver-script-toggle:hover {
+#converExplainScreen .conver-script-toggle:hover {
     background: #eee9f7;
 }
-#finalDetailContent .conver-script-toggle .toggle-text {
+#converExplainScreen .conver-script-toggle .toggle-text {
     flex: 1;
     text-align: left;
 }
 
-#finalDetailContent .conver-script-body {
+#converExplainScreen .conver-script-body {
     margin-top: 12px;
 }
 
 /* 대화 라인 */
-#finalDetailContent .script-line {
+#converExplainScreen .script-line {
     display: flex;
     gap: 10px;
     padding: 8px 0;
 }
 
-#finalDetailContent .script-speaker {
+#converExplainScreen .script-speaker {
     font-size: 12px;
     font-weight: 700;
     color: #9480c5;
@@ -280,18 +280,18 @@
     padding-top: 1px;
 }
 
-#finalDetailContent .script-speaker.speaker-b {
+#converExplainScreen .script-speaker.speaker-b {
     color: #7aaa7e;
 }
 
-#finalDetailContent .script-text {
+#converExplainScreen .script-text {
     flex: 1;
     font-size: 14px;
     line-height: 1.8;
     color: #333;
 }
 
-#finalDetailContent .script-text .translation {
+#converExplainScreen .script-text .translation {
     display: block;
     font-size: 13px;
     color: #999;
@@ -299,7 +299,7 @@
 }
 
 /* 키워드 하이라이트 */
-#finalDetailContent .conver-keyword {
+#converExplainScreen .conver-keyword {
     color: #7a66b0;
     font-weight: 600;
     text-decoration: underline;
@@ -308,10 +308,10 @@
     cursor: help;
     position: relative;
 }
-#finalDetailContent .conver-keyword:hover {
+#converExplainScreen .conver-keyword:hover {
     text-decoration-color: rgba(148,128,197,0.7);
 }
-#finalDetailContent .conver-keyword:hover::after {
+#converExplainScreen .conver-keyword:hover::after {
     content: attr(data-translation) ' — ' attr(data-explanation);
     position: absolute;
     bottom: calc(100% + 6px);
@@ -326,7 +326,7 @@
     white-space: nowrap;
     z-index: 1000;
 }
-#finalDetailContent .conver-keyword:hover::before {
+#converExplainScreen .conver-keyword:hover::before {
     content: '';
     position: absolute;
     bottom: 100%;
@@ -338,43 +338,43 @@
 }
 
 /* ── 문제 영역 구분 ── */
-#finalDetailContent .conver-questions-divider {
+#converExplainScreen .conver-questions-divider {
     padding: 14px 20px 4px;
 }
 
-#finalDetailContent .conver-questions-divider span {
+#converExplainScreen .conver-questions-divider span {
     font-size: 12px;
     font-weight: 700;
     color: #9480c5;
 }
 
 /* ── 문제 카드 (세트 내부) ── */
-#finalDetailContent .conver-question {
+#converExplainScreen .conver-question {
     padding: 16px 20px 16px;
 }
-#finalDetailContent .conver-question + .conver-question {
+#converExplainScreen .conver-question + .conver-question {
     border-top: 1px solid #f0edf5;
 }
 
-#finalDetailContent .conver-question-header {
+#converExplainScreen .conver-question-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
 
-#finalDetailContent .conver-q-number {
+#converExplainScreen .conver-q-number {
     font-size: 14px;
     font-weight: 700;
     color: #1e1e2f;
 }
 
-#finalDetailContent .conver-q-status i {
+#converExplainScreen .conver-q-status i {
     font-size: 18px;
 }
 
 /* 문제 본문 */
-#finalDetailContent .conver-q-text {
+#converExplainScreen .conver-q-text {
     font-size: 14px;
     line-height: 1.7;
     color: #333;
@@ -382,7 +382,7 @@
     margin-bottom: 6px;
 }
 
-#finalDetailContent .conver-q-translation {
+#converExplainScreen .conver-q-translation {
     font-size: 13px;
     color: #999;
     line-height: 1.5;
@@ -390,25 +390,25 @@
 }
 
 /* 답변 비교 */
-#finalDetailContent .conver-answer-summary {
+#converExplainScreen .conver-answer-summary {
     background: #f9f7ff;
     border-radius: 10px;
     padding: 12px 14px;
     margin-bottom: 12px;
 }
 
-#finalDetailContent .conver-answer-row {
+#converExplainScreen .conver-answer-row {
     display: flex;
     align-items: flex-start;
     gap: 8px;
     margin-bottom: 6px;
 }
 
-#finalDetailContent .conver-answer-row:last-child {
+#converExplainScreen .conver-answer-row:last-child {
     margin-bottom: 0;
 }
 
-#finalDetailContent .conver-answer-label {
+#converExplainScreen .conver-answer-label {
     font-size: 12px;
     font-weight: 600;
     color: #8890a4;
@@ -416,22 +416,22 @@
     min-width: 52px;
 }
 
-#finalDetailContent .conver-answer-value {
+#converExplainScreen .conver-answer-value {
     font-size: 13px;
     font-weight: 600;
     line-height: 1.4;
 }
 
-#finalDetailContent .conver-answer-value.correct {
+#converExplainScreen .conver-answer-value.correct {
     color: #77bf7e;
 }
 
-#finalDetailContent .conver-answer-value.incorrect {
+#converExplainScreen .conver-answer-value.incorrect {
     color: #d94452;
 }
 
 /* ── 보기 해설 토글 ── */
-#finalDetailContent .conver-toggle-btn {
+#converExplainScreen .conver-toggle-btn {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -447,35 +447,35 @@
     color: #9480c5;
     transition: background 0.2s;
 }
-#finalDetailContent .conver-toggle-btn:hover {
+#converExplainScreen .conver-toggle-btn:hover {
     background: #eee9f7;
 }
-#finalDetailContent .conver-toggle-btn .toggle-text {
+#converExplainScreen .conver-toggle-btn .toggle-text {
     flex: 1;
     text-align: left;
 }
 
 /* 보기 상세 */
-#finalDetailContent .conver-options-details {
+#converExplainScreen .conver-options-details {
     display: none;
     flex-direction: column;
     gap: 10px;
     margin-top: 10px;
 }
 
-#finalDetailContent .conver-option {
+#converExplainScreen .conver-option {
     padding: 12px 14px;
     border-radius: 10px;
     background: #f9f7ff;
     border: 1px solid rgba(148,128,197,0.10);
 }
 
-#finalDetailContent .conver-option.correct {
+#converExplainScreen .conver-option.correct {
     background: #f0faf1;
     border-color: rgba(119,191,126,0.25);
 }
 
-#finalDetailContent .conver-option-text {
+#converExplainScreen .conver-option-text {
     font-size: 14px;
     font-weight: 600;
     color: #1e1e2f;
@@ -485,7 +485,7 @@
     gap: 8px;
 }
 
-#finalDetailContent .conver-option-marker {
+#converExplainScreen .conver-option-marker {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -499,19 +499,19 @@
     flex-shrink: 0;
 }
 
-#finalDetailContent .conver-option.correct .conver-option-marker {
+#converExplainScreen .conver-option.correct .conver-option-marker {
     background: #d4f5d6;
     color: #3a9142;
 }
 
-#finalDetailContent .conver-option-translation {
+#converExplainScreen .conver-option-translation {
     font-size: 12px;
     color: #8890a4;
     margin-bottom: 6px;
     padding-left: 30px;
 }
 
-#finalDetailContent .conver-option-explanation {
+#converExplainScreen .conver-option-explanation {
     font-size: 12px;
     line-height: 1.5;
     padding: 8px 12px;
@@ -519,24 +519,24 @@
     margin-left: 30px;
 }
 
-#finalDetailContent .conver-option-explanation.correct {
+#converExplainScreen .conver-option-explanation.correct {
     background: rgba(119,191,126,0.08);
     color: #3a9142;
 }
 
-#finalDetailContent .conver-option-explanation.incorrect {
+#converExplainScreen .conver-option-explanation.incorrect {
     background: rgba(231,76,94,0.06);
     color: #c0392b;
 }
 
 /* ── 대화 요약 / 핵심 포인트 ── */
-#finalDetailContent .conver-summary-section {
+#converExplainScreen .conver-summary-section {
     padding: 20px 20px 16px;
     margin-top: 4px;
     background: #faf9fd;
 }
 
-#finalDetailContent .conver-summary-title {
+#converExplainScreen .conver-summary-title {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -546,24 +546,24 @@
     margin-bottom: 10px;
 }
 
-#finalDetailContent .conver-summary-title i {
+#converExplainScreen .conver-summary-title i {
     font-size: 13px;
 }
 
-#finalDetailContent .conver-summary-text {
+#converExplainScreen .conver-summary-text {
     font-size: 14px;
     line-height: 1.8;
     color: #555;
 }
 
-#finalDetailContent .conver-key-points {
+#converExplainScreen .conver-key-points {
     display: flex;
     flex-direction: column;
     gap: 6px;
     margin-top: 10px;
 }
 
-#finalDetailContent .conver-key-point {
+#converExplainScreen .conver-key-point {
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -572,7 +572,7 @@
     color: #555;
 }
 
-#finalDetailContent .conver-key-point::before {
+#converExplainScreen .conver-key-point::before {
     content: '•';
     color: #9480c5;
     font-weight: 700;
@@ -580,7 +580,7 @@
 }
 
 /* ── 하단 네비게이션 ── */
-#finalDetailContent .conver-navigation {
+#converExplainScreen .conver-navigation {
     max-width: 880px;
     margin: 32px auto 0;
     padding: 0 20px;
@@ -589,7 +589,7 @@
     gap: 12px;
 }
 
-#finalDetailContent .conver-navigation .btn {
+#converExplainScreen .conver-navigation .btn {
     font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
     font-size: 14px;
     font-weight: 600;
@@ -603,46 +603,46 @@
     gap: 6px;
 }
 
-#finalDetailContent .conver-navigation .btn-secondary {
+#converExplainScreen .conver-navigation .btn-secondary {
     background: #fff;
     color: #9480c5;
     border: 1.5px solid #d8d0eb;
 }
-#finalDetailContent .conver-navigation .btn-secondary:hover {
+#converExplainScreen .conver-navigation .btn-secondary:hover {
     background: #f7f5fc;
 }
 
-#finalDetailContent .conver-navigation .btn-primary {
+#converExplainScreen .conver-navigation .btn-primary {
     background: #9480c5;
     color: #fff;
 }
-#finalDetailContent .conver-navigation .btn-primary:hover {
+#converExplainScreen .conver-navigation .btn-primary:hover {
     background: #7a66b0;
 }
 
 /* ── 반응형 ── */
 @media (max-width: 640px) {
-    #finalDetailContent .conver-stats {
+    #converExplainScreen .conver-stats {
         grid-template-columns: repeat(2, 1fr);
     }
-    #finalDetailContent .conver-stat-box:nth-child(2) {
+    #converExplainScreen .conver-stat-box:nth-child(2) {
         border-right: none;
     }
-    #finalDetailContent .conver-stat-box:nth-child(1),
-    #finalDetailContent .conver-stat-box:nth-child(2) {
+    #converExplainScreen .conver-stat-box:nth-child(1),
+    #converExplainScreen .conver-stat-box:nth-child(2) {
         border-bottom: 1px solid #f0edf5;
     }
-    #finalDetailContent .conver-navigation {
+    #converExplainScreen .conver-navigation {
         flex-direction: column;
     }
-    #finalDetailContent .conver-navigation .btn {
+    #converExplainScreen .conver-navigation .btn {
         width: 100%;
         justify-content: center;
     }
-    #finalDetailContent .conver-header h2 {
+    #converExplainScreen .conver-header h2 {
         font-size: 16px;
     }
-    #finalDetailContent .script-speaker {
+    #converExplainScreen .script-speaker {
         width: 44px;
         font-size: 11px;
     }

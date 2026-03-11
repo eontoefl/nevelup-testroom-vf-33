@@ -249,8 +249,6 @@ function _onExplainClick() {
 /**
  * 문제 풀이 완료 후 과제 대시보드로 복귀
  * 각 모듈 컨트롤러의 finish 함수에서 호출
- * 
- * HTML의 onclick="backToStageSelect()" 도 이 함수로 교체됨
  */
 function backToTaskDashboard() {
     console.log('🔙 [대시보드] 과제 대시보드로 복귀');
@@ -296,11 +294,6 @@ function backToTaskDashboard() {
     
     // DB 재조회 → 채점 결과 갱신 (방금 저장된 record 반영)
     _loadAndApplyDashboardState(state.sectionType, state.moduleNumber, state.week, state.day);
-}
-
-// V2 호환: HTML에서 onclick="backToStageSelect()" 가 호출될 때 대시보드로 복귀
-function backToStageSelect() {
-    backToTaskDashboard();
 }
 
 /**

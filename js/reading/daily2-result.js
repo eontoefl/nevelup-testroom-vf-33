@@ -74,9 +74,7 @@ function showDaily2Results() {
     });
     
     detailsContainer.innerHTML = detailsHTML;
-    showScreen('daily2ExplainScreen');
     bindDaily2ToggleEvents();
-    saveResultJsonToSupabase('reading', daily2Results);
     sessionStorage.removeItem('daily2Results');
 }
 

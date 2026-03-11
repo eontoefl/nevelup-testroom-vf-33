@@ -94,9 +94,7 @@ function showAcademicResults() {
     });
     
     detailsContainer.innerHTML = detailsHTML;
-    showScreen('academicExplainScreen');
     bindAcademicToggleEvents();
-    saveResultJsonToSupabase('reading', academicResults);
     sessionStorage.removeItem('academicResults');
 }
 
