@@ -1,16 +1,16 @@
 // Listening - 컨버 결과/해설 화면
 
 // 결과 화면 표시
-function showConverResults() {
+// @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+function showConverResults(data) {
     console.log('📊 [컨버] 결과 화면 표시');
     
-    const converResultsStr = sessionStorage.getItem('converResults');
-    if (!converResultsStr) {
+    if (!data) {
         console.error('❌ 결과 데이터가 없습니다');
         return;
     }
     
-    const converResults = JSON.parse(converResultsStr);
+    const converResults = data;
     
     // 전체 정답/오답 계산
     let totalCorrect = 0;
@@ -40,8 +40,9 @@ function showConverResults() {
     document.getElementById('converResultTotalCount').textContent = totalQuestions;
     
     // Week/Day 정보
-    const currentTest = JSON.parse(sessionStorage.getItem('currentTest') || '{"week":"Week 1","day":"월"}');
-    const dayTitle = `${currentTest.week || 'Week 1'}, ${currentTest.day || '월'}요일 - 컨버`;
+    const week = window.currentTest ? window.currentTest.currentWeek : 1;
+    const day = window.currentTest ? window.currentTest.currentDay : '월';
+    const dayTitle = `Week ${week}, ${day}요일 - 컨버`;
     document.getElementById('converResultDayTitle').textContent = dayTitle;
     
     // 세부 결과 렌더링
@@ -68,8 +69,7 @@ function showConverResults() {
         });
         console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
         
-        // 초기화 후 결과 데이터 정리
-        sessionStorage.removeItem('converResults');
+        // 초기화 후 결과 데이터 정리 완료
     }, 300);
 }
 

@@ -53,16 +53,16 @@ function splitToMatchTranslations_ac(cleanContent, translationCount) {
 }
 
 // 결과 화면 표시
-function showAcademicResults() {
+// @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+function showAcademicResults(data) {
     console.log('📊 [아카데믹리딩] 결과 화면 표시');
     
-    const academicResultsStr = sessionStorage.getItem('academicResults');
-    if (!academicResultsStr) {
+    if (!data) {
         console.error('❌ 결과 데이터가 없습니다');
         return;
     }
     
-    const academicResults = JSON.parse(academicResultsStr);
+    const academicResults = data;
     
     let totalCorrect = 0;
     let totalQuestions = 0;
@@ -82,8 +82,9 @@ function showAcademicResults() {
     document.getElementById('academicResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('academicResultTotalCount').textContent = totalQuestions;
     
-    const currentTest = JSON.parse(sessionStorage.getItem('currentTest') || '{"week":"Week 1","day":"월"}');
-    const dayTitle = `${currentTest.week || 'Week 1'}, ${currentTest.day || '월'}요일 - 아카데믹리딩`;
+    const week = window.currentTest ? window.currentTest.currentWeek : 1;
+    const day = window.currentTest ? window.currentTest.currentDay : '월';
+    const dayTitle = `Week ${week}, ${day}요일 - 아카데믹리딩`;
     document.getElementById('academicResultDayTitle').textContent = dayTitle;
     
     const detailsContainer = document.getElementById('academicResultDetails');
@@ -95,7 +96,6 @@ function showAcademicResults() {
     
     detailsContainer.innerHTML = detailsHTML;
     bindAcademicToggleEvents();
-    sessionStorage.removeItem('academicResults');
 }
 
 // 세트별 결과 렌더링

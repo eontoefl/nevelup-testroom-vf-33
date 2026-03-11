@@ -34,8 +34,13 @@ function splitToMatchTranslations(cleanContent, translationCount) {
 }
 
 // 정답채점 화면 표시
-function showDaily1Results() {
-    const results = JSON.parse(sessionStorage.getItem('daily1Results'));
+// @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+function showDaily1Results(data) {
+    const results = data;
+    if (!results) {
+        console.error('❌ 결과 데이터가 없습니다');
+        return;
+    }
     
     let totalCorrect = 0;
     let totalQuestions = 0;
@@ -68,7 +73,6 @@ function showDaily1Results() {
     
     detailsContainer.innerHTML = detailsHTML;
     bindDaily1ToggleEvents();
-    sessionStorage.removeItem('daily1Results');
 }
 
 // 세트별 결과 렌더링

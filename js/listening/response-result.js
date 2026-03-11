@@ -1,16 +1,16 @@
 // Listening - 응답고르기 결과/해설 화면
 
 // 결과 화면 표시
-function showResponseResults() {
+// @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+function showResponseResults(data) {
     console.log('📊 [응답고르기] 결과 화면 표시');
     
-    const responseResultsStr = sessionStorage.getItem('responseResults');
-    if (!responseResultsStr) {
+    if (!data) {
         console.error('❌ 결과 데이터가 없습니다');
         return;
     }
     
-    const responseResults = JSON.parse(responseResultsStr);
+    const responseResults = data;
     
     // 전체 정답/오답 계산
     let totalCorrect = 0;
@@ -40,8 +40,9 @@ function showResponseResults() {
     document.getElementById('responseResultTotalCount').textContent = totalQuestions;
     
     // Week/Day 정보
-    const currentTest = JSON.parse(sessionStorage.getItem('currentTest') || '{"week":"Week 1","day":"월"}');
-    const dayTitle = `${currentTest.week || 'Week 1'}, ${currentTest.day || '월'}요일 - 응답고르기`;
+    const week = window.currentTest ? window.currentTest.currentWeek : 1;
+    const day = window.currentTest ? window.currentTest.currentDay : '월';
+    const dayTitle = `Week ${week}, ${day}요일 - 응답고르기`;
     document.getElementById('responseResultDayTitle').textContent = dayTitle;
     
     // 세부 결과 렌더링
@@ -75,8 +76,7 @@ function showResponseResults() {
         console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
     }, 100);
     
-    // 결과 데이터 정리
-    sessionStorage.removeItem('responseResults');
+    // 결과 데이터 정리 완료
 }
 
 // 세트별 결과 렌더링

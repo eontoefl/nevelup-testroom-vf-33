@@ -6,50 +6,23 @@
 console.log('[lecture-result] 로드 시작');
 
 /**
- * 렉처 결과 화면 표시 (예전 버전 복구)
+ * 렉처 결과 화면 표시
+ * @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
  */
-function showLectureResults() {
+function showLectureResults(data) {
     console.log('🎯 [결과 화면] showLectureResults() 시작');
     
-    // sessionStorage에서 결과 가져오기 (두 가지 키 모두 확인)
-    let resultsJson = sessionStorage.getItem('lectureResults');
-    let isMultiSet = true;
-    
-    if (!resultsJson) {
-        // fallback: 단일 세트 키
-        resultsJson = sessionStorage.getItem('listeningLectureResult');
-        isMultiSet = false;
-        console.log('📦 [결과 화면] listeningLectureResult 키 사용 (단일 세트)');
-    } else {
-        console.log('📦 [결과 화면] lectureResults 키 사용 (복수 세트)');
-    }
-    
-    if (!resultsJson) {
+    if (!data) {
         console.error('❌ [결과 화면] 결과 데이터가 없습니다');
-        alert('결과 데이터를 찾을 수 없습니다.');
-        return;
-    }
-    
-    let parsedData;
-    try {
-        parsedData = JSON.parse(resultsJson);
-        console.log('✅ [결과 화면] 파싱된 데이터:', parsedData);
-    } catch (e) {
-        console.error('❌ [결과 화면] JSON 파싱 실패:', e);
-        alert('결과 데이터를 읽을 수 없습니다.');
         return;
     }
     
     // 데이터를 배열로 통일
     let setsArray;
-    if (isMultiSet && Array.isArray(parsedData)) {
-        // lectureResults: [{세트1}, {세트2}] 형태
-        setsArray = parsedData;
-    } else if (Array.isArray(parsedData)) {
-        setsArray = parsedData;
+    if (Array.isArray(data)) {
+        setsArray = data;
     } else {
-        // listeningLectureResult: {단일 세트} 형태
-        setsArray = [parsedData];
+        setsArray = [data];
     }
     
     console.log(`📊 [결과 화면] 총 ${setsArray.length}개 세트`);
