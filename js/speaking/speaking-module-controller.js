@@ -362,12 +362,22 @@ async function _finishSpeakingModule() {
     // 로딩 화면 표시 (DB 저장 대기)
     _showSubmitLoading();
 
-    // V3 JSON 구조 (완료 플래그만)
+    // V3 JSON 구조 (완료 플래그 + 문제 데이터)
+    // 해설 화면에서 DB로부터 문제를 복원하기 위해 데이터를 함께 저장
+    var repeatData = (mod.components[0] && mod.components[0].speakingRepeatData) || null;
+    var interviewData = (mod.components[1] && mod.components[1].speakingInterviewData) || null;
+
     var recordJson = {
         totalQuestions: mod.totalQuestions,
         completed: true,
-        repeat: { completed: !!mod.completedTypes.repeat },
-        interview: { completed: !!mod.completedTypes.interview },
+        repeat: {
+            completed: !!mod.completedTypes.repeat,
+            data: repeatData
+        },
+        interview: {
+            completed: !!mod.completedTypes.interview,
+            data: interviewData
+        },
         completedAt: new Date().toISOString()
     };
 
