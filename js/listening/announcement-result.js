@@ -1,16 +1,16 @@
 // Listening - 공지사항 채점 화면 로직 (컨버와 동일)
 
 // 결과 화면 표시
-function showAnnouncementResults() {
+// @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+function showAnnouncementResults(data) {
     console.log('📊 [공지사항] 결과 화면 표시');
     
-    const announcementResultsStr = sessionStorage.getItem('announcementResults');
-    if (!announcementResultsStr) {
+    if (!data) {
         console.error('❌ 결과 데이터가 없습니다');
         return;
     }
     
-    const announcementResults = JSON.parse(announcementResultsStr);
+    const announcementResults = data;
     
     // 전체 정답/오답 계산
     let totalCorrect = 0;
@@ -40,8 +40,9 @@ function showAnnouncementResults() {
     document.getElementById('announcementResultTotalCount').textContent = totalQuestions;
     
     // Week/Day 정보
-    const currentTest = JSON.parse(sessionStorage.getItem('currentTest') || '{"week":"Week 1","day":"월"}');
-    const dayTitle = `${currentTest.week || 'Week 1'}, ${currentTest.day || '월'}요일 - 공지사항`;
+    const week = window.currentTest ? window.currentTest.currentWeek : 1;
+    const day = window.currentTest ? window.currentTest.currentDay : '월';
+    const dayTitle = `Week ${week}, ${day}요일 - 공지사항`;
     document.getElementById('announcementResultDayTitle').textContent = dayTitle;
     
     // 세부 결과 렌더링
@@ -68,8 +69,7 @@ function showAnnouncementResults() {
         });
         console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
         
-        // 초기화 후 결과 데이터 정리
-        sessionStorage.removeItem('announcementResults');
+        // 초기화 후 결과 데이터 정리 완료
     }, 500); // 300ms → 500ms로 증가
 }
 

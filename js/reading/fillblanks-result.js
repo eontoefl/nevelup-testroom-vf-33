@@ -2,15 +2,11 @@
 // Reading - FillBlanks 결과(해설) 화면
 // ============================================
 
-// 해당일 완료 확인
-function checkDayCompletion() {
-    showFillBlanksExplainScreen();
-}
-
 // 정답채점 결과 화면 표시
-function showFillBlanksExplainScreen() {
-    // 결과 데이터 가져오기
-    const fillBlanksResults = JSON.parse(sessionStorage.getItem('fillBlanksResults') || '[]');
+// @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+function showFillBlanksExplainScreen(data) {
+    // 결과 데이터
+    const fillBlanksResults = data || [];
     
     // 전체 통계 계산
     let totalCorrect = 0;
@@ -67,9 +63,7 @@ function showFillBlanksExplainScreen() {
     
     detailsContainer.innerHTML = detailsHTML;
     
-    // 결과 화면 표시
-    // 세션 스토리지 정리
-    sessionStorage.removeItem('fillBlanksResults');
+    // 결과 화면 표시 완료
 }
 
 // 지문을 답안과 함께 렌더링
@@ -224,6 +218,5 @@ window.renderPassageWithAnswers = renderPassageWithAnswers;
 window.renderBlankExplanations = renderBlankExplanations;
 window.toggleBlankExplanation = toggleBlankExplanation;
 window.closeBlankExplanation = closeBlankExplanation;
-window.checkDayCompletion = checkDayCompletion;
 
 console.log('✅ [Reading] fillblanks-result.js 로드 완료');

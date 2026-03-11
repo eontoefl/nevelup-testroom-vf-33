@@ -20,32 +20,30 @@
 var _explainState = null;
 
 // ─── 섹션별 유형 → 결과 화면 매핑 ───
-// type: recordJson.sets 키의 prefix (reading/listening)
+// type: recordJson.sets 키의 prefix (reading/listening) 또는 recordJson 직접 키 (writing/speaking)
 // screenId: 전용 해설 화면의 HTML id
 // showFn: 호출할 전역 함수 이름
-// sessionKey: sessionStorage 키 (sessionStorage 기반 함수용)
-// mode: 'session' = sessionStorage 주입 후 호출, 'param' = 파라미터로 직접 호출
 var RESULT_TYPE_MAP = {
     reading: [
-        { type: 'fillblanks', screenId: 'fillBlanksExplainScreen', showFn: 'showFillBlanksExplainScreen', sessionKey: 'fillBlanksResults', mode: 'session' },
-        { type: 'daily1',     screenId: 'daily1ExplainScreen',     showFn: 'showDaily1Results',           sessionKey: 'daily1Results',     mode: 'session' },
-        { type: 'daily2',     screenId: 'daily2ExplainScreen',     showFn: 'showDaily2Results',           sessionKey: 'daily2Results',     mode: 'session' },
-        { type: 'academic',   screenId: 'academicExplainScreen',   showFn: 'showAcademicResults',         sessionKey: 'academicResults',   mode: 'session' }
+        { type: 'fillblanks', screenId: 'fillBlanksExplainScreen', showFn: 'showFillBlanksExplainScreen' },
+        { type: 'daily1',     screenId: 'daily1ExplainScreen',     showFn: 'showDaily1Results' },
+        { type: 'daily2',     screenId: 'daily2ExplainScreen',     showFn: 'showDaily2Results' },
+        { type: 'academic',   screenId: 'academicExplainScreen',   showFn: 'showAcademicResults' }
     ],
     listening: [
-        { type: 'response',     screenId: 'responseExplainScreen',     showFn: 'showResponseResults',     sessionKey: 'responseResults',     mode: 'session' },
-        { type: 'conver',       screenId: 'converExplainScreen',       showFn: 'showConverResults',       sessionKey: 'converResults',       mode: 'session' },
-        { type: 'announcement', screenId: 'announcementExplainScreen', showFn: 'showAnnouncementResults', sessionKey: 'announcementResults', mode: 'session' },
-        { type: 'lecture',      screenId: 'lectureExplainScreen',      showFn: 'showLectureResults',      sessionKey: 'lectureResults',      mode: 'session' }
+        { type: 'response',     screenId: 'responseExplainScreen',     showFn: 'showResponseResults' },
+        { type: 'conver',       screenId: 'converExplainScreen',       showFn: 'showConverResults' },
+        { type: 'announcement', screenId: 'announcementExplainScreen', showFn: 'showAnnouncementResults' },
+        { type: 'lecture',      screenId: 'lectureExplainScreen',      showFn: 'showLectureResults' }
     ],
     writing: [
-        { type: 'arrange',    screenId: 'arrangeExplainScreen',    showFn: 'showArrangeResult',    sessionKey: 'arrangeResults', mode: 'session' },
-        { type: 'email',      screenId: 'emailExplainScreen',      showFn: 'showEmailResult',      sessionKey: null,             mode: 'param' },
-        { type: 'discussion', screenId: 'discussionExplainScreen', showFn: 'showDiscussionResult', sessionKey: null,             mode: 'param' }
+        { type: 'arrange',    screenId: 'arrangeExplainScreen',    showFn: 'showArrangeResult' },
+        { type: 'email',      screenId: 'emailExplainScreen',      showFn: 'showEmailResult' },
+        { type: 'discussion', screenId: 'discussionExplainScreen', showFn: 'showDiscussionResult' }
     ],
     speaking: [
-        { type: 'repeat',    screenId: 'repeatExplainScreen',    showFn: 'showRepeatResult',    sessionKey: null, mode: 'param' },
-        { type: 'interview', screenId: 'interviewExplainScreen', showFn: 'showInterviewResult', sessionKey: null, mode: 'param' }
+        { type: 'repeat',    screenId: 'repeatExplainScreen',    showFn: 'showRepeatResult' },
+        { type: 'interview', screenId: 'interviewExplainScreen', showFn: 'showInterviewResult' }
     ]
 };
 
@@ -242,19 +240,11 @@ function _renderExplainTab(tabName, recordJson) {
 
     console.log(`📖 [해설] ${tabName} 탭 렌더링 시작 — ${typeDefs.length}개 유형`);
 
-    // currentTest 전역 변수 설정 (일부 show 함수가 참조)
+    // currentTest 전역 변수 설정 (show 함수들이 week/day 표시에 참조)
     if (window.currentTest) {
         window.currentTest.currentWeek = st.week;
         window.currentTest.currentDay = st.day;
     }
-
-    // sessionStorage에 currentTest 주입 (일부 show 함수가 sessionStorage에서 읽음)
-    sessionStorage.setItem('currentTest', JSON.stringify({
-        currentWeek: st.week,
-        currentDay: st.day,
-        week: 'Week ' + st.week,
-        day: st.day
-    }));
 
     // 점수 배지 (있으면)
     _updateScoreBadge(tabName, recordJson);
@@ -291,30 +281,15 @@ function _renderOneType(def, recordJson, tabContainer, st) {
         return;
     }
 
-    if (def.mode === 'session') {
-        // ── sessionStorage 기반 show 함수 ──
-        var data = _extractSessionData(def, recordJson, st);
-        if (!data) {
-            console.log(`📖 [해설] ${def.type}: 데이터 없음 (건너뜀)`);
-            return;
-        }
-
-        // sessionStorage에 주입
-        sessionStorage.setItem(def.sessionKey, JSON.stringify(data));
-
-        // show 함수 호출 → 전용 화면 DOM에 렌더링
-        showFn();
-
-    } else if (def.mode === 'param') {
-        // ── 파라미터 기반 show 함수 ──
-        var paramData = _extractParamData(def, recordJson, st);
-        if (!paramData) {
-            console.log(`📖 [해설] ${def.type}: 데이터 없음 (건너뜀)`);
-            return;
-        }
-
-        showFn(paramData);
+    // DB 데이터에서 해당 유형의 데이터 추출
+    var data = _extractData(def, recordJson, st);
+    if (!data) {
+        console.log('📖 [해설] ' + def.type + ': 데이터 없음 (건너뜀)');
+        return;
     }
+
+    // show 함수에 데이터 직접 전달
+    showFn(data);
 
     // 전용 화면의 콘텐츠를 해설 탭으로 이동
     _moveScreenContent(screen, tabContainer, def.type);
@@ -325,43 +300,21 @@ function _renderOneType(def, recordJson, tabContainer, st) {
 // ============================================================
 
 /**
+ * DB recordJson에서 해당 유형의 데이터를 추출
+ *
  * Reading/Listening: recordJson.sets에서 해당 type의 세트들을 배열로 모음
  * Writing arrange: recordJson.arrange
+ * Writing email/discussion: recordJson.email / recordJson.discussion
+ * Speaking repeat/interview: recordJson.repeat.data / recordJson.interview.data
  */
-function _extractSessionData(def, recordJson, st) {
-    var sectionType = st.sectionType;
-
-    if (sectionType === 'writing' && def.type === 'arrange') {
-        // arrange는 recordJson.arrange에 결과가 있음
-        if (!recordJson.arrange) return null;
-        return recordJson.arrange;
-    }
-
-    // Reading / Listening: recordJson.sets 에서 type_set{N} 키 수집
-    var sets = recordJson.sets;
-    if (!sets) return null;
-
-    var collected = [];
-    var keys = Object.keys(sets).sort();
-
-    keys.forEach(function(key) {
-        // 키 형태: "fillblanks_set1", "conver_set3" 등
-        if (key.indexOf(def.type + '_set') === 0) {
-            collected.push(sets[key]);
-        }
-    });
-
-    if (collected.length === 0) return null;
-    return collected;
-}
-
-/**
- * Writing email/discussion, Speaking repeat/interview
- */
-function _extractParamData(def, recordJson, st) {
+function _extractData(def, recordJson, st) {
     switch (def.type) {
+        // ── Writing (param 기반) ──
+        case 'arrange':
+            if (!recordJson.arrange) return null;
+            return recordJson.arrange;
+
         case 'email':
-            // email show 함수 기대 형태: { weekDay, wordCount, userAnswer, ... }
             if (!recordJson.email) return null;
             return Object.assign({
                 weekDay: 'Week ' + st.week + ', ' + st.day + '요일'
@@ -373,6 +326,7 @@ function _extractParamData(def, recordJson, st) {
                 weekDay: 'Week ' + st.week + ', ' + st.day + '요일'
             }, recordJson.discussion);
 
+        // ── Speaking (param 기반) ──
         case 'repeat':
             if (!recordJson.repeat || !recordJson.repeat.data) return null;
             return recordJson.repeat.data;
@@ -381,8 +335,23 @@ function _extractParamData(def, recordJson, st) {
             if (!recordJson.interview || !recordJson.interview.data) return null;
             return recordJson.interview.data;
 
+        // ── Reading / Listening (sets에서 배열 수집) ──
         default:
-            return null;
+            var sets = recordJson.sets;
+            if (!sets) return null;
+
+            var collected = [];
+            var keys = Object.keys(sets).sort();
+
+            keys.forEach(function(key) {
+                // 키 형태: "fillblanks_set1", "conver_set3" 등
+                if (key.indexOf(def.type + '_set') === 0) {
+                    collected.push(sets[key]);
+                }
+            });
+
+            if (collected.length === 0) return null;
+            return collected;
     }
 }
 
@@ -392,6 +361,9 @@ function _extractParamData(def, recordJson, st) {
 
 /**
  * 전용 화면의 inner content를 탭 컨테이너로 이동
+ * - 헤더(class에 'header' 포함), 네비게이션(class에 'navigation' 포함),
+ *   하단 버튼(class에 'actions' 포함)은 제외
+ * - 나머지 요소(통계, 상세 결과 등)만 이동
  */
 function _moveScreenContent(screen, tabContainer, typeName) {
     // 래퍼 div 생성
@@ -400,10 +372,20 @@ function _moveScreenContent(screen, tabContainer, typeName) {
     wrapper.setAttribute('data-explain-type', typeName);
     wrapper.setAttribute('data-explain-screen', screen.id);
 
-    // 전용 화면의 자식 요소를 wrapper로 이동
-    while (screen.firstChild) {
-        wrapper.appendChild(screen.firstChild);
+    // 제외 판별: class에 'header', 'navigation', 'actions' 포함 여부
+    function _shouldSkip(el) {
+        if (!el.className || typeof el.className !== 'string') return false;
+        var cls = el.className.toLowerCase();
+        return cls.indexOf('header') !== -1 || cls.indexOf('navigation') !== -1 || cls.indexOf('actions') !== -1;
     }
+
+    // 전용 화면의 자식 요소 중 제외 대상이 아닌 것만 이동
+    var children = Array.prototype.slice.call(screen.children);
+    children.forEach(function(child) {
+        if (!_shouldSkip(child)) {
+            wrapper.appendChild(child);
+        }
+    });
 
     tabContainer.appendChild(wrapper);
 }
@@ -411,6 +393,7 @@ function _moveScreenContent(screen, tabContainer, typeName) {
 /**
  * 모든 탭에서 이전에 이동한 콘텐츠를 원래 전용 화면으로 복원
  * (_resetExplainTabs에서 탭을 비우기 전에 호출)
+ * - 원래 화면에는 헤더/네비게이션이 남아있으므로, 마지막 자식 뒤에 append
  */
 function _restoreAllScreenContent() {
     var tabs = ['explainTabInitial', 'explainTabCurrent'];
@@ -425,8 +408,15 @@ function _restoreAllScreenContent() {
             if (!screen) return;
 
             // wrapper의 자식들을 전용 화면으로 복원
+            // 네비게이션이 있는 화면(conver, announce, lecture)은 네비게이션 앞에 삽입
+            var navEl = screen.querySelector('[class*="navigation"]');
+
             while (wrapper.firstChild) {
-                screen.appendChild(wrapper.firstChild);
+                if (navEl) {
+                    screen.insertBefore(wrapper.firstChild, navEl);
+                } else {
+                    screen.appendChild(wrapper.firstChild);
+                }
             }
         });
     });

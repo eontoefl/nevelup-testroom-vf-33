@@ -33,16 +33,16 @@ function splitToMatchTranslations_d2(cleanContent, translationCount) {
 }
 
 // 결과 화면 표시
-function showDaily2Results() {
+// @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+function showDaily2Results(data) {
     console.log('📊 [일상리딩2] 결과 화면 표시');
     
-    const daily2ResultsStr = sessionStorage.getItem('daily2Results');
-    if (!daily2ResultsStr) {
+    if (!data) {
         console.error('❌ 결과 데이터가 없습니다');
         return;
     }
     
-    const daily2Results = JSON.parse(daily2ResultsStr);
+    const daily2Results = data;
     
     let totalCorrect = 0;
     let totalQuestions = 0;
@@ -62,8 +62,9 @@ function showDaily2Results() {
     document.getElementById('daily2ResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('daily2ResultTotalCount').textContent = totalQuestions;
     
-    const currentTest = JSON.parse(sessionStorage.getItem('currentTest') || '{"week":"Week 1","day":"월"}');
-    const dayTitle = `${currentTest.week || 'Week 1'}, ${currentTest.day || '월'}요일 - 일상리딩2`;
+    const week = window.currentTest ? window.currentTest.currentWeek : 1;
+    const day = window.currentTest ? window.currentTest.currentDay : '월';
+    const dayTitle = `Week ${week}, ${day}요일 - 일상리딩2`;
     document.getElementById('daily2ResultDayTitle').textContent = dayTitle;
     
     const detailsContainer = document.getElementById('daily2ResultDetails');
@@ -75,7 +76,6 @@ function showDaily2Results() {
     
     detailsContainer.innerHTML = detailsHTML;
     bindDaily2ToggleEvents();
-    sessionStorage.removeItem('daily2Results');
 }
 
 // 세트별 결과 렌더링

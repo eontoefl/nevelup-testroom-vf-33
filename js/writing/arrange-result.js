@@ -5,17 +5,17 @@
 
 /**
  * 결과 화면 표시
+ * @param {Object} data - 채점 결과 데이터 (explain-viewer.js에서 전달)
  */
-function showArrangeResult() {
+function showArrangeResult(data) {
     console.log('[arrange-result] 결과 화면 표시');
     
-    const resultsStr = sessionStorage.getItem('arrangeResults');
-    if (!resultsStr) {
-        console.error('❌ [arrange-result] 저장된 결과 없음');
+    if (!data) {
+        console.error('❌ [arrange-result] 결과 데이터 없음');
         return;
     }
     
-    const resultsData = JSON.parse(resultsStr);
+    const resultsData = data;
     
     // 점수 표시
     document.getElementById('arrangeResultScoreValue').textContent = resultsData.accuracy + '%';
@@ -24,8 +24,9 @@ function showArrangeResult() {
     document.getElementById('arrangeResultTotalCount').textContent = resultsData.total;
     
     // Week/Day 정보
-    const currentTest = JSON.parse(sessionStorage.getItem('currentTest') || '{"week":"Week 1","day":"월"}');
-    const dayTitle = `${currentTest.week || 'Week 1'}, ${currentTest.day || '월'}요일 - Build a Sentence`;
+    const week = window.currentTest ? window.currentTest.currentWeek : 1;
+    const day = window.currentTest ? window.currentTest.currentDay : '월';
+    const dayTitle = `Week ${week}, ${day}요일 - Build a Sentence`;
     document.getElementById('arrangeResultDayTitle').textContent = dayTitle;
     
     // 세부 결과 렌더링
