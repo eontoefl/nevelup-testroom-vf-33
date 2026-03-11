@@ -378,11 +378,3 @@ function _launchVocabModule(pages) {
     }
 }
 
-// ============================================================
-// [V3] 리딩 모듈 — reading-module-controller.js로 완전 이관
-// startReadingModule(), 타이머, 세트 시퀀스, finishReadingModule() 등
-// ============================================================
-
-// [V3] startListeningModule — listening-module-controller.js에서 정의 예정
-
-// [V3] startWriting, startSpeaking — 각 모듈 컨트롤러로 진입
