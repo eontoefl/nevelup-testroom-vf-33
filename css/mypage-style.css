@@ -939,3 +939,45 @@ body {
   .g-head { font-size: .6rem; }
   .grass-legend { margin-left: 40px; }
 }
+
+/* ══════════════════════════════════════════
+   ④ V2 이전 학습 기록 바로가기
+══════════════════════════════════════════ */
+.v2-records-link-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.v2-records-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: var(--sub-light);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: .88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .2s;
+}
+.v2-records-link-btn:hover {
+  border-color: var(--signature);
+  color: var(--signature);
+  background: var(--signature-pale);
+  box-shadow: var(--shadow-sm);
+}
+.v2-records-link-btn i:first-child {
+  font-size: 1rem;
+}
+.v2-records-arrow {
+  font-size: .7rem;
+  opacity: .5;
+  transition: transform .2s, opacity .2s;
+}
+.v2-records-link-btn:hover .v2-records-arrow {
+  transform: translateX(3px);
+  opacity: 1;
+}

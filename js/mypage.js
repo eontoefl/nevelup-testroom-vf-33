@@ -93,6 +93,7 @@ function renderAll() {
     renderDeadlineExtensionBanner();
     renderGrass();
     renderScoreChart();
+    showV2RecordsLink();
 }
 
 // ================================================
@@ -910,10 +911,25 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ================================================
+// ④ V2 이전 학습 기록 버튼 표시
+// ================================================
+function showV2RecordsLink() {
+    const linkEl = document.getElementById('v2RecordsLink');
+    if (!linkEl) return;
+    // 모든 학생에게 표시 (데이터 없으면 v2-records.html에서 안내)
+    linkEl.style.display = 'flex';
+    console.log('📦 [MyPage] V2 이전 학습 기록 버튼 표시');
+}
+
+// ================================================
 // 네비게이션
 // ================================================
 function goBackToTestroom() {
     window.location.href = 'index.html';
+}
+
+function goToV2Records() {
+    window.location.href = 'v2-records.html';
 }
 
 function handleLogout() {
