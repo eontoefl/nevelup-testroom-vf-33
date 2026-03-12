@@ -2,6 +2,33 @@
 /* V3 과제 대시보드 스타일        */
 /* ============================= */
 
+/* 로딩 스피너 */
+.task-dashboard-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+}
+
+.task-dashboard-loading p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.task-dashboard-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: dashSpin 0.8s linear infinite;
+}
+
+@keyframes dashSpin { to { transform: rotate(360deg); } }
+
 /* 헤더 */
 .task-dashboard-header {
     display: flex;
