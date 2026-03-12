@@ -430,6 +430,20 @@ body {
   transform: rotate(180deg);
 }
 
+/* 메모/오답노트 유무 아이콘 */
+.v2r-has-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.v2r-has-icon i {
+  font-size: .7rem;
+  color: #b45309;
+}
+
 /* ══════════════════════════════════════════
    Accordion (오답노트)
 ══════════════════════════════════════════ */
@@ -444,7 +458,12 @@ body {
   border: 1px solid #e4ddf4;
   border-radius: var(--radius-md);
   border-left: 4px solid var(--signature);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
+
+.v2r-accordion-block {}
 
 .v2r-accordion-header {
   font-size: .8rem;
@@ -456,6 +475,10 @@ body {
   gap: 6px;
 }
 .v2r-accordion-header i { font-size: .75rem; }
+
+.v2r-accordion-header-memo {
+  color: #b45309;
+}
 
 .v2r-accordion-text {
   font-size: .84rem;
