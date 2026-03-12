@@ -120,6 +120,11 @@ async function openExplainViewer(sectionType, moduleNumber, week, day) {
             _renderExplainTab('current', row.current_record);
         }
 
+        // 오답노트 메모장 초기화 (스플릿 우측 패널)
+        if (typeof ErrorNote !== 'undefined' && ErrorNote.init) {
+            ErrorNote.init(row, sectionType, moduleNumber, 'initial');
+        }
+
     } catch (err) {
         console.error('❌ [해설] DB 조회 실패:', err);
         _showExplainError('데이터를 불러오는 데 실패했습니다.');
@@ -206,6 +211,11 @@ function _switchExplainTab(tabName) {
         if (btnCurrent) btnCurrent.classList.add('active');
         if (tabInitial) { tabInitial.classList.remove('active'); tabInitial.style.display = 'none'; }
         if (tabCurrent) { tabCurrent.classList.add('active'); tabCurrent.style.display = ''; }
+    }
+
+    // 오답노트 메모장 탭 전환
+    if (typeof ErrorNote !== 'undefined' && ErrorNote.onTabSwitch) {
+        ErrorNote.onTabSwitch(tabName);
     }
 }
 
@@ -486,6 +496,11 @@ function _showTabMessage(tabName, msg) {
 
 function _backFromExplainViewer() {
     console.log('📖 [해설] 뒤로가기 → 대시보드');
+
+    // 오답노트 메모장 정리
+    if (typeof ErrorNote !== 'undefined' && ErrorNote.cleanup) {
+        ErrorNote.cleanup();
+    }
 
     // 오디오 정리 (리스닝 해설에서 재생 중인 오디오 정지)
     _cleanupExplainAudio();

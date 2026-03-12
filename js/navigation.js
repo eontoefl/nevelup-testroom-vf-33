@@ -3,9 +3,9 @@
 function backToSchedule() {
     console.log('🔙 [뒤로가기] 학습 일정으로 돌아가기 시작');
     
-    // ★ 오답노트 패널 정리
-    if (typeof ErrorNote !== 'undefined') {
-        ErrorNote.hide();
+    // ★ 오답노트 메모장 정리 (V3: 스플릿 메모장)
+    if (typeof ErrorNote !== 'undefined' && ErrorNote.cleanup) {
+        ErrorNote.cleanup();
     }
     
     // beforeunload 경고 해제

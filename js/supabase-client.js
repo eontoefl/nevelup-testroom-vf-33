@@ -214,21 +214,11 @@ async function getStudentProgram(userEmail) {
 }
 
 // ================================================
-// 학습 기록 함수들 (tr_study_records)
+// V1/V2 학습 기록 함수들 — 모두 삭제됨
 // ================================================
 
-/**
- * 학습 기록 저장
- * @param {object} record - 학습 기록 데이터
- * @returns {Promise<object>} 저장된 기록
- */
-async function saveStudyRecord(record) {
-    console.log('💾 [Supabase] 학습 기록 저장:', record.task_type, '모듈', record.module_number);
-    return await supabaseInsert('tr_study_records', record);
-}
-
-// ★ getStudyRecords, getAuthRecords, saveGoldenTimeLog, updateGoldenTimeReturn 삭제됨
-//   — V3 전환으로 호출자 0건 확인 후 제거 (PR #10)
+// ★ saveStudyRecord, getStudyRecords, getAuthRecords, saveGoldenTimeLog, updateGoldenTimeReturn 삭제됨
+//   — V3 전환으로 호출자 0건 확인 후 제거 (PR #10, #12)
 
 // ================================================
 // 연결 테스트
