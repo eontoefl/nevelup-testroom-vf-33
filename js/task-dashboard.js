@@ -79,7 +79,13 @@ async function openTaskDashboard(sectionType, params, taskName) {
     showScreen('taskDashboardScreen');
     
     // ── DB 조회 → 고정인증률 확정 → 버튼 상태 설정 ──
+    // 최소 500ms 스피너 표시 (학생이 새로고침을 인지할 수 있도록)
+    var loadStart = Date.now();
     await _loadAndApplyDashboardState(sectionType, moduleNumber, week, day);
+    var elapsed = Date.now() - loadStart;
+    if (elapsed < 500) {
+        await new Promise(function(r) { setTimeout(r, 500 - elapsed); });
+    }
     
     // ── 로딩 해제 ──
     _showDashboardLoading(false);
@@ -297,7 +303,13 @@ async function backToTaskDashboard() {
     showScreen('taskDashboardScreen');
     
     // DB 재조회 → 채점 결과 갱신 (방금 저장된 record 반영)
+    // 최소 500ms 스피너 표시 (학생이 새로고침을 인지할 수 있도록)
+    var loadStart = Date.now();
     await _loadAndApplyDashboardState(state.sectionType, state.moduleNumber, state.week, state.day);
+    var elapsed = Date.now() - loadStart;
+    if (elapsed < 500) {
+        await new Promise(function(r) { setTimeout(r, 500 - elapsed); });
+    }
     
     // 로딩 해제
     _showDashboardLoading(false);
