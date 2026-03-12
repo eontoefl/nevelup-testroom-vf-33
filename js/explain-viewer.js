@@ -1,28 +1,26 @@
 /**
  * explain-viewer.js
- * V3 해설 보기 화면 제어
+ * V3 해설 보기 화면 제어 — 뎁스 방식
  *
- * 역할:
- *   - task-dashboard.js의 _onExplainClick()에서 호출됨
- *   - DB(study_results_v3)에서 initial_record / current_record 조회
- *   - 기존 전용 해설 화면(result 파일들)의 show 함수를 호출하여 렌더링
- *   - 렌더링된 콘텐츠를 해설 탭(explainTabInitial / explainTabCurrent)에 삽입
- *   - 탭 전환, 뒤로가기 처리
+ * 흐름:
+ *   1. task-dashboard.js의 _onExplainClick()에서 openExplainViewer() 호출
+ *   2. DB(study_results_v3)에서 initial_record / current_record 조회
+ *   3. 선택 화면 표시: "실전풀이 해설 보기" / "다시풀기 해설 보기" 버튼
+ *   4. 버튼 클릭 → 해당 record로 show 함수 호출 → 빨간 그릇에 데이터 채움
+ *   5. 이전/다음 버튼으로 빨간 그릇 간 전환
+ *   6. 뒤로가기: 해설 화면 → 선택 화면 → 대시보드 (2단계)
  *
  * 의존:
  *   - supabase-client.js  (getStudyResultV3, getCurrentUser)
  *   - task-dashboard.js   (backToTaskDashboard, SECTION_ICONS, SECTION_LABELS)
  *   - 13개 result 파일    (show 함수들)
- *   - showScreen()        (screen-manager 또는 전역)
+ *   - showScreen()        (전역)
  */
 
 // ─── 내부 상태 ───
 var _explainState = null;
 
 // ─── 섹션별 유형 → 결과 화면 매핑 ───
-// type: recordJson.sets 키의 prefix (reading/listening) 또는 recordJson 직접 키 (writing/speaking)
-// screenId: 전용 해설 화면의 HTML id
-// showFn: 호출할 전역 함수 이름
 var RESULT_TYPE_MAP = {
     reading: [
         { type: 'fillblanks', screenId: 'fillBlanksExplainScreen', showFn: 'showFillBlanksExplainScreen' },
@@ -53,16 +51,11 @@ var RESULT_TYPE_MAP = {
 
 /**
  * 해설 뷰어 열기 (task-dashboard.js의 _onExplainClick에서 호출)
- *
- * @param {string} sectionType - 'reading' | 'listening' | 'writing' | 'speaking'
- * @param {number} moduleNumber - 모듈 번호
- * @param {string|number} week - 주차
- * @param {string} day - 요일
  */
 async function openExplainViewer(sectionType, moduleNumber, week, day) {
-    console.log(`\n📖 ============================`);
-    console.log(`📖 해설 뷰어 열기: ${sectionType} M${moduleNumber} W${week} ${day}`);
-    console.log(`📖 ============================\n`);
+    console.log('\n📖 ============================');
+    console.log('📖 해설 뷰어 열기: ' + sectionType + ' M' + moduleNumber + ' W' + week + ' ' + day);
+    console.log('📖 ============================\n');
 
     // 상태 초기화
     _explainState = {
@@ -71,7 +64,9 @@ async function openExplainViewer(sectionType, moduleNumber, week, day) {
         week: week,
         day: day,
         dbRow: null,
-        activeTab: 'initial'   // 'initial' | 'current'
+        selectedMode: null,   // 'initial' | 'current'
+        visibleScreens: [],   // 데이터가 있는 빨간 그릇 screenId 배열
+        currentIndex: 0       // 현재 보이는 그릇 인덱스
     };
 
     // 화면 전환
@@ -82,57 +77,72 @@ async function openExplainViewer(sectionType, moduleNumber, week, day) {
     // 헤더 업데이트
     _updateExplainHeader(sectionType, moduleNumber, week, day);
 
-    // 탭 초기화
-    _resetExplainTabs();
+    // UI 초기화: 선택 화면 보이기, 콘텐츠 영역 숨기기
+    _showSelectPanel();
 
-    // 로딩 표시
-    _showExplainLoading();
+    // 선택 버튼 초기화 (로딩 상태)
+    var btnInitial = document.getElementById('explainBtnInitial');
+    var btnCurrent = document.getElementById('explainBtnCurrent');
+    if (btnInitial) { btnInitial.disabled = true; }
+    if (btnCurrent) { btnCurrent.style.display = 'none'; }
 
     // DB 조회
     try {
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
         if (!user || !user.id) {
             console.error('❌ [해설] 로그인 정보 없음');
-            _showExplainError('로그인 정보를 찾을 수 없습니다.');
+            _showSelectMessage('로그인 정보를 찾을 수 없습니다.');
             return;
         }
 
         var row = await getStudyResultV3(user.id, sectionType, moduleNumber, week, day);
         if (!row) {
             console.log('📖 [해설] 결과 없음 (아직 풀이하지 않음)');
-            _showExplainError('아직 풀이한 기록이 없습니다.');
+            _showSelectMessage('아직 풀이한 기록이 없습니다.');
             return;
         }
 
         _explainState.dbRow = row;
         console.log('📖 [해설] DB 레코드 조회 성공:', row.id);
 
-        // 실전풀이 탭 렌더링
-        if (row.initial_record) {
-            _renderExplainTab('initial', row.initial_record);
-        } else {
-            _showTabMessage('initial', '실전풀이 기록이 없습니다.');
+        // 실전풀이 버튼 활성화/비활성화
+        if (btnInitial) {
+            if (row.initial_record) {
+                btnInitial.disabled = false;
+                // 점수 표시
+                var scoreInitial = document.getElementById('explainSelectScoreInitial');
+                var score = _calculateScore(row.initial_record);
+                if (scoreInitial && score !== null) {
+                    scoreInitial.textContent = score + '%';
+                }
+            } else {
+                btnInitial.disabled = true;
+            }
         }
 
-        // 다시풀기 탭 (있는 경우만)
-        if (row.current_record) {
-            _showCurrentTab();
-            _renderExplainTab('current', row.current_record);
-        }
-
-        // 오답노트 메모장 초기화 (스플릿 우측 패널)
-        if (typeof ErrorNote !== 'undefined' && ErrorNote.init) {
-            ErrorNote.init(row, sectionType, moduleNumber, 'initial');
+        // 다시풀기 버튼 표시/활성화
+        if (btnCurrent) {
+            if (row.current_record) {
+                btnCurrent.style.display = '';
+                btnCurrent.disabled = false;
+                var scoreCurrent = document.getElementById('explainSelectScoreCurrent');
+                var score2 = _calculateScore(row.current_record);
+                if (scoreCurrent && score2 !== null) {
+                    scoreCurrent.textContent = score2 + '%';
+                }
+            } else {
+                btnCurrent.style.display = 'none';
+            }
         }
 
     } catch (err) {
         console.error('❌ [해설] DB 조회 실패:', err);
-        _showExplainError('데이터를 불러오는 데 실패했습니다.');
+        _showSelectMessage('데이터를 불러오는 데 실패했습니다.');
     }
 }
 
 // ============================================================
-// 2. 헤더 / 탭 UI
+// 2. 헤더
 // ============================================================
 
 function _updateExplainHeader(sectionType, moduleNumber, week, day) {
@@ -150,105 +160,86 @@ function _getDayLabel(day) {
     return map[day] || day;
 }
 
-function _resetExplainTabs() {
-    // 기존에 이동한 콘텐츠를 전용 화면으로 복원 (탭 초기화 전에!)
-    _restoreAllScreenContent();
-
-    // 실전풀이 탭 활성화
-    var btnInitial = document.getElementById('explainTabBtnInitial');
-    var btnCurrent = document.getElementById('explainTabBtnCurrent');
-    var tabInitial = document.getElementById('explainTabInitial');
-    var tabCurrent = document.getElementById('explainTabCurrent');
-
-    if (btnInitial) btnInitial.classList.add('active');
-    if (btnCurrent) {
-        btnCurrent.classList.remove('active');
-        btnCurrent.style.display = 'none';
-    }
-    if (tabInitial) {
-        tabInitial.classList.add('active');
-        tabInitial.style.display = '';
-        tabInitial.innerHTML = '';
-    }
-    if (tabCurrent) {
-        tabCurrent.classList.remove('active');
-        tabCurrent.style.display = 'none';
-        tabCurrent.innerHTML = '';
-    }
-
-    // 점수 배지 초기화
-    var scoreInitial = document.getElementById('explainTabScoreInitial');
-    var scoreCurrent = document.getElementById('explainTabScoreCurrent');
-    if (scoreInitial) scoreInitial.textContent = '';
-    if (scoreCurrent) scoreCurrent.textContent = '';
-}
-
-function _showCurrentTab() {
-    var btnCurrent = document.getElementById('explainTabBtnCurrent');
-    if (btnCurrent) btnCurrent.style.display = '';
-}
-
 // ============================================================
-// 3. 탭 전환
+// 3. 선택 화면 ↔ 콘텐츠 영역 전환
 // ============================================================
 
-function _switchExplainTab(tabName) {
-    if (!_explainState) return;
-    _explainState.activeTab = tabName;
+function _showSelectPanel() {
+    var selectPanel = document.getElementById('explainSelectPanel');
+    var contentArea = document.getElementById('explainContentArea');
+    var navBar = document.getElementById('explainNavBar');
 
-    var btnInitial = document.getElementById('explainTabBtnInitial');
-    var btnCurrent = document.getElementById('explainTabBtnCurrent');
-    var tabInitial = document.getElementById('explainTabInitial');
-    var tabCurrent = document.getElementById('explainTabCurrent');
+    if (selectPanel) selectPanel.style.display = '';
+    if (contentArea) contentArea.style.display = 'none';
+    if (navBar) navBar.style.display = 'none';
 
-    if (tabName === 'initial') {
-        if (btnInitial) btnInitial.classList.add('active');
-        if (btnCurrent) btnCurrent.classList.remove('active');
-        if (tabInitial) { tabInitial.classList.add('active'); tabInitial.style.display = ''; }
-        if (tabCurrent) { tabCurrent.classList.remove('active'); tabCurrent.style.display = 'none'; }
-    } else {
-        if (btnInitial) btnInitial.classList.remove('active');
-        if (btnCurrent) btnCurrent.classList.add('active');
-        if (tabInitial) { tabInitial.classList.remove('active'); tabInitial.style.display = 'none'; }
-        if (tabCurrent) { tabCurrent.classList.add('active'); tabCurrent.style.display = ''; }
-    }
+    // 모든 빨간 그릇 숨기기
+    _hideAllExplainScreens();
+}
 
-    // 오답노트 메모장 탭 전환
-    if (typeof ErrorNote !== 'undefined' && ErrorNote.onTabSwitch) {
-        ErrorNote.onTabSwitch(tabName);
-    }
+function _showContentArea() {
+    var selectPanel = document.getElementById('explainSelectPanel');
+    var contentArea = document.getElementById('explainContentArea');
+    var navBar = document.getElementById('explainNavBar');
+
+    if (selectPanel) selectPanel.style.display = 'none';
+    if (contentArea) contentArea.style.display = '';
+    if (navBar) navBar.style.display = '';
+}
+
+function _hideAllExplainScreens() {
+    var typeDefs = RESULT_TYPE_MAP;
+    var allDefs = (typeDefs.reading || [])
+        .concat(typeDefs.listening || [])
+        .concat(typeDefs.writing || [])
+        .concat(typeDefs.speaking || []);
+
+    allDefs.forEach(function(def) {
+        var screen = document.getElementById(def.screenId);
+        if (screen) screen.style.display = 'none';
+    });
+}
+
+function _showSelectMessage(msg) {
+    var selectPanel = document.getElementById('explainSelectPanel');
+    if (!selectPanel) return;
+
+    var titleEl = selectPanel.querySelector('.explain-select-title');
+    if (titleEl) titleEl.textContent = msg;
+
+    var btnArea = selectPanel.querySelector('.explain-select-buttons');
+    if (btnArea) btnArea.style.display = 'none';
 }
 
 // ============================================================
-// 4. 핵심: DB 데이터 → 기존 show 함수 호출 → 콘텐츠 이동
+// 4. 선택 버튼 클릭 → show 함수 호출 → 빨간 그릇 표시
 // ============================================================
 
 /**
- * recordJson에서 세트별 데이터를 추출하여 기존 show 함수를 호출하고
- * 전용 화면에 렌더링된 HTML을 해설 탭 컨테이너로 이동
- *
- * @param {'initial'|'current'} tabName
- * @param {Object} recordJson - initial_record 또는 current_record
+ * 실전풀이 또는 다시풀기 해설 보기
+ * @param {'initial'|'current'} mode
  */
-function _renderExplainTab(tabName, recordJson) {
+function _onSelectExplain(mode) {
     var st = _explainState;
-    if (!st) return;
+    if (!st || !st.dbRow) return;
 
-    var tabContainer = document.getElementById(
-        tabName === 'initial' ? 'explainTabInitial' : 'explainTabCurrent'
-    );
-    if (!tabContainer) return;
+    var recordJson = (mode === 'initial') ? st.dbRow.initial_record : st.dbRow.current_record;
+    if (!recordJson) return;
 
-    tabContainer.innerHTML = '';
+    st.selectedMode = mode;
+    st.visibleScreens = [];
+    st.currentIndex = 0;
+
+    console.log('📖 [해설] ' + mode + ' 해설 보기 시작');
+
+    // 모든 빨간 그릇 숨기기
+    _hideAllExplainScreens();
 
     var typeDefs = RESULT_TYPE_MAP[st.sectionType];
     if (!typeDefs) {
         console.error('❌ [해설] 알 수 없는 섹션:', st.sectionType);
-        _showTabMessage(tabName, '알 수 없는 과제 유형입니다.');
         return;
     }
-
-    console.log(`📖 [해설] ${tabName} 탭 렌더링 시작 — ${typeDefs.length}개 유형`);
 
     // currentTest 전역 변수 설정 (show 함수들이 week/day 표시에 참조)
     if (window.currentTest) {
@@ -256,70 +247,117 @@ function _renderExplainTab(tabName, recordJson) {
         window.currentTest.currentDay = st.day;
     }
 
-    // 점수 배지 (있으면)
-    _updateScoreBadge(tabName, recordJson);
-
+    // 각 유형별 show 함수 호출 → 빨간 그릇에 데이터 채움
     typeDefs.forEach(function(def) {
         try {
-            _renderOneType(def, recordJson, tabContainer, st);
+            var showFn = window[def.showFn];
+            if (typeof showFn !== 'function') {
+                console.warn('⚠️ [해설] show 함수 없음:', def.showFn);
+                return;
+            }
+
+            var screen = document.getElementById(def.screenId);
+            if (!screen) {
+                console.warn('⚠️ [해설] 전용 화면 없음:', def.screenId);
+                return;
+            }
+
+            var data = _extractData(def, recordJson, st);
+            if (!data) {
+                console.log('📖 [해설] ' + def.type + ': 데이터 없음 (건너뜀)');
+                return;
+            }
+
+            // show 함수 호출 — 빨간 그릇에 데이터 채움
+            showFn(data);
+
+            // 이 그릇은 데이터가 있으므로 보여줄 목록에 추가
+            st.visibleScreens.push(def.screenId);
+            console.log('📖 [해설] ' + def.type + ' 렌더링 완료');
+
         } catch (err) {
             console.error('❌ [해설] ' + def.type + ' 렌더링 실패:', err);
-            var errDiv = document.createElement('div');
-            errDiv.className = 'explain-render-error';
-            errDiv.textContent = def.type + ' 해설을 표시할 수 없습니다.';
-            tabContainer.appendChild(errDiv);
         }
     });
 
-    console.log(`📖 [해설] ${tabName} 탭 렌더링 완료`);
-}
-
-/**
- * 개별 유형 1개 렌더링
- */
-function _renderOneType(def, recordJson, tabContainer, st) {
-    var showFn = window[def.showFn];
-    if (typeof showFn !== 'function') {
-        console.warn('⚠️ [해설] show 함수 없음:', def.showFn);
+    if (st.visibleScreens.length === 0) {
+        console.log('📖 [해설] 표시할 해설이 없음');
         return;
     }
 
-    // 전용 화면 요소 (show 함수가 여기에 렌더링함)
-    var screen = document.getElementById(def.screenId);
-    if (!screen) {
-        console.warn('⚠️ [해설] 전용 화면 없음:', def.screenId);
-        return;
+    // 콘텐츠 영역 전환 + 첫 번째 그릇 표시
+    _showContentArea();
+    _showScreenAtIndex(0);
+
+    // 오답노트 초기화 (선택한 모드에 따라)
+    if (typeof ErrorNote !== 'undefined' && ErrorNote.init) {
+        ErrorNote.init(st.dbRow, st.sectionType, st.moduleNumber, mode);
     }
 
-    // DB 데이터에서 해당 유형의 데이터 추출
-    var data = _extractData(def, recordJson, st);
-    if (!data) {
-        console.log('📖 [해설] ' + def.type + ': 데이터 없음 (건너뜀)');
-        return;
-    }
-
-    // show 함수에 데이터 직접 전달
-    showFn(data);
-
-    // 전용 화면의 콘텐츠를 해설 탭으로 이동
-    _moveScreenContent(screen, tabContainer, def.type);
+    console.log('📖 [해설] ' + mode + ' 해설 보기 완료 — ' + st.visibleScreens.length + '개 화면');
 }
 
 // ============================================================
-// 5. 데이터 추출 (DB recordJson → show 함수 입력 형태)
+// 5. 이전/다음 네비게이션
 // ============================================================
 
-/**
- * DB recordJson에서 해당 유형의 데이터를 추출
- *
- * Reading/Listening: recordJson.sets에서 해당 type의 세트들을 배열로 모음
- * Writing arrange: recordJson.arrange
- * Writing email/discussion: recordJson.email / recordJson.discussion
- * Speaking repeat/interview: recordJson.repeat.data / recordJson.interview.data
- */
+function _showScreenAtIndex(index) {
+    var st = _explainState;
+    if (!st || st.visibleScreens.length === 0) return;
+
+    // 범위 보정
+    if (index < 0) index = 0;
+    if (index >= st.visibleScreens.length) index = st.visibleScreens.length - 1;
+
+    // 현재 보이는 그릇 숨기기
+    var currentScreenId = st.visibleScreens[st.currentIndex];
+    var currentScreen = document.getElementById(currentScreenId);
+    if (currentScreen) currentScreen.style.display = 'none';
+
+    // 새 그릇 보이기
+    st.currentIndex = index;
+    var newScreenId = st.visibleScreens[index];
+    var newScreen = document.getElementById(newScreenId);
+    if (newScreen) newScreen.style.display = '';
+
+    // 네비게이션 표시 업데이트
+    _updateNavIndicator();
+}
+
+function _updateNavIndicator() {
+    var st = _explainState;
+    if (!st) return;
+
+    var indicator = document.getElementById('explainNavIndicator');
+    var prevBtn = document.getElementById('explainPrevBtn');
+    var nextBtn = document.getElementById('explainNextBtn');
+
+    var total = st.visibleScreens.length;
+    var current = st.currentIndex + 1;
+
+    if (indicator) indicator.textContent = current + ' / ' + total;
+    if (prevBtn) prevBtn.disabled = (st.currentIndex === 0);
+    if (nextBtn) nextBtn.disabled = (st.currentIndex >= total - 1);
+}
+
+function _goToPrevScreen() {
+    var st = _explainState;
+    if (!st || st.currentIndex <= 0) return;
+    _showScreenAtIndex(st.currentIndex - 1);
+}
+
+function _goToNextScreen() {
+    var st = _explainState;
+    if (!st || st.currentIndex >= st.visibleScreens.length - 1) return;
+    _showScreenAtIndex(st.currentIndex + 1);
+}
+
+// ============================================================
+// 6. 데이터 추출 (DB recordJson → show 함수 입력 형태)
+// ============================================================
+
 function _extractData(def, recordJson, st) {
     switch (def.type) {
-        // ── Writing (param 기반) ──
         case 'arrange':
             if (!recordJson.arrange) return null;
             return recordJson.arrange;
@@ -336,7 +374,6 @@ function _extractData(def, recordJson, st) {
                 weekDay: 'Week ' + st.week + ', ' + st.day + '요일'
             }, recordJson.discussion);
 
-        // ── Speaking (param 기반) ──
         case 'repeat':
             if (!recordJson.repeat || !recordJson.repeat.data) return null;
             return recordJson.repeat.data;
@@ -345,7 +382,6 @@ function _extractData(def, recordJson, st) {
             if (!recordJson.interview || !recordJson.interview.data) return null;
             return recordJson.interview.data;
 
-        // ── Reading / Listening (sets에서 배열 수집) ──
         default:
             var sets = recordJson.sets;
             if (!sets) return null;
@@ -354,7 +390,6 @@ function _extractData(def, recordJson, st) {
             var keys = Object.keys(sets).sort();
 
             keys.forEach(function(key) {
-                // 키 형태: "fillblanks_set1", "conver_set3" 등
                 if (key.indexOf(def.type + '_set') === 0) {
                     collected.push(sets[key]);
                 }
@@ -366,147 +401,57 @@ function _extractData(def, recordJson, st) {
 }
 
 // ============================================================
-// 6. 전용 화면 → 탭 컨테이너 콘텐츠 이동
+// 7. 점수 계산
 // ============================================================
-
-/**
- * 전용 화면의 inner content를 탭 컨테이너로 이동
- * - 헤더(class에 'header' 포함), 네비게이션(class에 'navigation' 포함),
- *   하단 버튼(class에 'actions' 포함)은 제외
- * - 나머지 요소(통계, 상세 결과 등)만 이동
- */
-function _moveScreenContent(screen, tabContainer, typeName) {
-    // 래퍼 div 생성
-    var wrapper = document.createElement('div');
-    wrapper.className = 'explain-type-section';
-    wrapper.setAttribute('data-explain-type', typeName);
-    wrapper.setAttribute('data-explain-screen', screen.id);
-
-    // 제외 판별: class에 'header', 'navigation', 'actions' 포함 여부
-    function _shouldSkip(el) {
-        if (!el.className || typeof el.className !== 'string') return false;
-        var cls = el.className.toLowerCase();
-        return cls.indexOf('header') !== -1 || cls.indexOf('navigation') !== -1 || cls.indexOf('actions') !== -1;
-    }
-
-    // 전용 화면의 자식 요소 중 제외 대상이 아닌 것만 이동
-    var children = Array.prototype.slice.call(screen.children);
-    children.forEach(function(child) {
-        if (!_shouldSkip(child)) {
-            wrapper.appendChild(child);
-        }
-    });
-
-    tabContainer.appendChild(wrapper);
-}
-
-/**
- * 모든 탭에서 이전에 이동한 콘텐츠를 원래 전용 화면으로 복원
- * (_resetExplainTabs에서 탭을 비우기 전에 호출)
- * - 원래 화면에는 헤더/네비게이션이 남아있으므로, 마지막 자식 뒤에 append
- */
-function _restoreAllScreenContent() {
-    var tabs = ['explainTabInitial', 'explainTabCurrent'];
-    tabs.forEach(function(tabId) {
-        var tab = document.getElementById(tabId);
-        if (!tab) return;
-
-        var wrappers = tab.querySelectorAll('.explain-type-section[data-explain-screen]');
-        wrappers.forEach(function(wrapper) {
-            var screenId = wrapper.getAttribute('data-explain-screen');
-            var screen = document.getElementById(screenId);
-            if (!screen) return;
-
-            // wrapper의 자식들을 전용 화면으로 복원
-            // 네비게이션이 있는 화면(conver, announce, lecture)은 네비게이션 앞에 삽입
-            var navEl = screen.querySelector('[class*="navigation"]');
-
-            while (wrapper.firstChild) {
-                if (navEl) {
-                    screen.insertBefore(wrapper.firstChild, navEl);
-                } else {
-                    screen.appendChild(wrapper.firstChild);
-                }
-            }
-        });
-    });
-}
-
-// ============================================================
-// 7. 점수 배지 업데이트
-// ============================================================
-
-function _updateScoreBadge(tabName, recordJson) {
-    var badgeId = tabName === 'initial' ? 'explainTabScoreInitial' : 'explainTabScoreCurrent';
-    var badge = document.getElementById(badgeId);
-    if (!badge) return;
-
-    var score = _calculateScore(recordJson);
-    if (score !== null) {
-        badge.textContent = score + '%';
-    }
-}
 
 function _calculateScore(recordJson) {
     if (!recordJson) return null;
 
-    // Reading/Listening: totalCorrect / totalQuestions
     if (recordJson.totalCorrect != null && recordJson.totalQuestions) {
         return Math.round((recordJson.totalCorrect / recordJson.totalQuestions) * 100);
     }
 
-    // Writing: arrange accuracy
     if (recordJson.arrange && recordJson.arrange.accuracy != null) {
         return recordJson.arrange.accuracy;
     }
 
-    // Speaking: 점수 없음 (완료 여부만)
     return null;
 }
 
 // ============================================================
-// 8. 로딩 / 에러 / 메시지 UI
-// ============================================================
-
-function _showExplainLoading() {
-    var tab = document.getElementById('explainTabInitial');
-    if (tab) {
-        tab.innerHTML = '<div class="explain-loading"><i class="fas fa-spinner fa-spin"></i> 해설 데이터를 불러오는 중...</div>';
-    }
-}
-
-function _showExplainError(msg) {
-    var tab = document.getElementById('explainTabInitial');
-    if (tab) {
-        tab.innerHTML = '<div class="explain-error"><i class="fas fa-exclamation-circle"></i> ' + msg + '</div>';
-    }
-}
-
-function _showTabMessage(tabName, msg) {
-    var tabId = tabName === 'initial' ? 'explainTabInitial' : 'explainTabCurrent';
-    var tab = document.getElementById(tabId);
-    if (tab) {
-        tab.innerHTML = '<div class="explain-message">' + msg + '</div>';
-    }
-}
-
-// ============================================================
-// 9. 뒤로가기
+// 8. 뒤로가기 (2단계)
 // ============================================================
 
 function _backFromExplainViewer() {
+    var st = _explainState;
+
+    // 해설 콘텐츠 화면에 있으면 → 선택 화면으로
+    if (st && st.selectedMode) {
+        console.log('📖 [해설] 뒤로가기 → 선택 화면');
+
+        // 오답노트 정리
+        if (typeof ErrorNote !== 'undefined' && ErrorNote.cleanup) {
+            ErrorNote.cleanup();
+        }
+
+        // 오디오 정리
+        _cleanupExplainAudio();
+
+        // 선택 화면으로 복귀
+        st.selectedMode = null;
+        st.visibleScreens = [];
+        st.currentIndex = 0;
+        _showSelectPanel();
+        return;
+    }
+
+    // 선택 화면에 있으면 → 대시보드로
     console.log('📖 [해설] 뒤로가기 → 대시보드');
 
-    // 오답노트 메모장 정리
+    // 오답노트 정리 (혹시 남아있으면)
     if (typeof ErrorNote !== 'undefined' && ErrorNote.cleanup) {
         ErrorNote.cleanup();
     }
-
-    // 오디오 정리 (리스닝 해설에서 재생 중인 오디오 정지)
-    _cleanupExplainAudio();
-
-    // 이동한 콘텐츠를 전용 화면으로 복원
-    _restoreAllScreenContent();
 
     // 상태 초기화
     _explainState = null;
@@ -518,7 +463,6 @@ function _backFromExplainViewer() {
 }
 
 function _cleanupExplainAudio() {
-    // 해설 탭 내의 모든 오디오 정지
     var viewer = document.getElementById('explainViewerScreen');
     if (!viewer) return;
 
@@ -530,7 +474,7 @@ function _cleanupExplainAudio() {
 }
 
 // ============================================================
-// 10. 이벤트 바인딩 (DOM Ready)
+// 9. 이벤트 바인딩 (DOM Ready)
 // ============================================================
 
 (function _initExplainViewer() {
@@ -540,21 +484,33 @@ function _cleanupExplainAudio() {
         backBtn.addEventListener('click', _backFromExplainViewer);
     }
 
-    // 실전풀이 탭 버튼
-    var tabBtnInitial = document.getElementById('explainTabBtnInitial');
-    if (tabBtnInitial) {
-        tabBtnInitial.addEventListener('click', function() {
-            _switchExplainTab('initial');
+    // 실전풀이 해설 보기 버튼
+    var btnInitial = document.getElementById('explainBtnInitial');
+    if (btnInitial) {
+        btnInitial.addEventListener('click', function() {
+            _onSelectExplain('initial');
         });
     }
 
-    // 다시풀기 탭 버튼
-    var tabBtnCurrent = document.getElementById('explainTabBtnCurrent');
-    if (tabBtnCurrent) {
-        tabBtnCurrent.addEventListener('click', function() {
-            _switchExplainTab('current');
+    // 다시풀기 해설 보기 버튼
+    var btnCurrent = document.getElementById('explainBtnCurrent');
+    if (btnCurrent) {
+        btnCurrent.addEventListener('click', function() {
+            _onSelectExplain('current');
         });
     }
 
-    console.log('📖 [해설] explain-viewer.js 초기화 완료');
+    // 이전 버튼
+    var prevBtn = document.getElementById('explainPrevBtn');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', _goToPrevScreen);
+    }
+
+    // 다음 버튼
+    var nextBtn = document.getElementById('explainNextBtn');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', _goToNextScreen);
+    }
+
+    console.log('📖 [해설] explain-viewer.js 초기화 완료 (뎁스 방식)');
 })();
