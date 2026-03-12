@@ -74,6 +74,161 @@
 }
 
 /* ============================= */
+/* 선택 화면                       */
+/* ============================= */
+
+.explain-select-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 48px 24px;
+    gap: 32px;
+}
+
+.explain-select-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: -0.01em;
+}
+
+.explain-select-buttons {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 480px;
+}
+
+.explain-select-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 28px 20px;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: inherit;
+}
+
+.explain-select-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(148, 128, 197, 0.18);
+}
+
+.explain-select-btn:active:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.15);
+}
+
+.explain-select-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: var(--bg-color);
+}
+
+.explain-select-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.explain-select-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.explain-select-btn:disabled .explain-select-label {
+    color: var(--text-secondary);
+}
+
+.explain-select-score {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-color);
+    min-height: 26px;
+}
+
+.explain-select-score:empty {
+    display: none;
+}
+
+/* ============================= */
+/* 해설 콘텐츠 영역               */
+/* ============================= */
+
+.explain-content-area {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* ============================= */
+/* 이전/다음 네비게이션             */
+/* ============================= */
+
+.explain-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: var(--surface-color);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+}
+
+.explain-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: var(--surface-color);
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.explain-nav-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(148, 128, 197, 0.06);
+}
+
+.explain-nav-btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.explain-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.explain-nav-btn i {
+    font-size: 12px;
+}
+
+.explain-nav-indicator {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+}
+
+/* ============================= */
 /* 메모장 (오답노트)               */
 /* ============================= */
 
@@ -271,5 +426,28 @@
 
     .explain-memo-textarea {
         min-height: 200px;
+    }
+
+    .explain-select-panel {
+        padding: 32px 16px;
+        gap: 24px;
+    }
+
+    .explain-select-buttons {
+        flex-direction: column;
+        max-width: 100%;
+    }
+
+    .explain-select-btn {
+        padding: 20px 16px;
+    }
+
+    .explain-nav-bar {
+        padding: 10px 16px;
+    }
+
+    .explain-nav-btn {
+        padding: 7px 14px;
+        font-size: 12px;
     }
 }
