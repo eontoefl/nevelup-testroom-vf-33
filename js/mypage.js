@@ -13,12 +13,11 @@
 // 전역 상태
 // ================================================
 let mpUser = null;           // sessionStorage에서 로드한 유저 정보
-let mpV2Results = [];        // study_results_v2
-let mpStudyRecords = [];     // (최근기록용 — 추후 V2 전환 예정, 현재 빈 배열)
+let mpV3Results = [];        // study_results_v3
 let mpGradeRules = [];       // tr_grade_rules (등급/환급 기준표)
 let mpDeadlineExtensions = []; // tr_deadline_extensions (데드라인 연장)
 
-// task_type을 요일 매핑하기 위한 한→영 변환
+// section_type을 요일 매핑하기 위한 한→영 변환
 const DAY_MAP_KR_TO_NUM = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5 };
 
 // ================================================
@@ -64,10 +63,10 @@ async function loadAllData() {
     const userId = mpUser.id;
     console.log('📊 [MyPage] 데이터 로드 시작 - userId:', userId);
 
-    // V2 학습 결과 로드 (result_json은 대용량이므로 제외)
-    mpV2Results = await supabaseSelect(
-        'study_results_v2',
-        `user_id=eq.${userId}&order=completed_at.desc&select=id,user_id,section_type,module_number,week,day,first_result_json,second_result_json,error_note_submitted,first_level,locked_auth_rate,completed_at`
+    // V3 학습 결과 로드
+    mpV3Results = await supabaseSelect(
+        'study_results_v3',
+        `user_id=eq.${userId}&order=completed_at.desc&select=id,user_id,section_type,module_number,week,day,initial_record,current_record,error_note_submitted,initial_level,locked_auth_rate,completed_at`
     ) || [];
 
     // 등급/환급 기준표 로드
@@ -82,7 +81,7 @@ async function loadAllData() {
         `user_id=eq.${userId}&select=original_date,extra_days`
     ) || [];
 
-    console.log(`📊 [MyPage] 로드 완료 - V2결과: ${mpV2Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${mpDeadlineExtensions.length}건`);
+    console.log(`📊 [MyPage] 로드 완료 - V3결과: ${mpV3Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${mpDeadlineExtensions.length}건`);
 }
 
 // ================================================
@@ -308,7 +307,7 @@ function renderTodayTasks() {
 }
 
 // ================================================
-// ① 학습 현황 요약 카드 렌더링 (v2 — STUDENT_METRICS.md 기준)
+// ① 학습 현황 요약 카드 렌더링 (V3 — STUDENT_METRICS.md 기준)
 // ================================================
 function renderSummaryCards() {
     const programType = mpUser.programType || 'standard';
@@ -346,35 +345,29 @@ function renderSummaryCards() {
     const taskStats = countTasksDueToday(programType, totalWeeks);
     const tasksDueToday = taskStats.due;
 
-    // ── 인증률 계산 (V2: 각 과제별 인증률 합산 / 오늘까지 할당 과제 수) ──
+    // ── 인증률 계산 (V3: locked_auth_rate 우선 → 미확정 시 실시간 계산) ──
     // ★ 다시 풀기 시스템: locked_auth_rate 우선 사용
     let authRateSum = 0;
     
-    // study_results_v2에서 과제별 인증률 계산
-    mpV2Results.forEach(r => {
+    // study_results_v3에서 과제별 인증률 계산
+    mpV3Results.forEach(r => {
         let taskAuth = 0;
-        const sectionType = r.section_type;
         
-        // ★ 확정된 인증률이 있으면 그 값을 그대로 사용
+        // ★ locked_auth_rate 확정값이 있으면 그대로 사용
         if (r.locked_auth_rate != null) {
             taskAuth = Number(r.locked_auth_rate);
         }
-        // 보카/입문서: 있으면 100 (다시 풀기 대상 아님, locked_auth_rate 없음)
-        else if (sectionType === 'vocab' || sectionType === 'intro-book') {
-            if (r.first_result_json) taskAuth = 100;
-        }
-        // 리딩/리스닝/라이팅/스피킹: 모두 33 + 33 + 34 = 100 (통일)
+        // 미확정(4섹션 마감 전): initial_record 존재=50%, error_note_submitted=100%
         else {
-            if (r.first_result_json) taskAuth += 33;
-            if (r.second_result_json) taskAuth += 33;
-            if (r.error_note_submitted) taskAuth += 34;
+            if (r.initial_record) taskAuth = 50;
+            if (r.initial_record && r.error_note_submitted) taskAuth = 100;
         }
         
         authRateSum += taskAuth;
     });
 
     // 분모 결정
-    const authDenominator = tasksDueToday > 0 ? tasksDueToday : mpV2Results.length;
+    const authDenominator = tasksDueToday > 0 ? tasksDueToday : mpV3Results.length;
 
     let authRatePct, authSubText;
     if (authDenominator > 0) {
@@ -535,7 +528,7 @@ function renderGrass() {
     const programType = mpUser.programType || 'standard';
     const gridId = programType === 'fast' ? 'grass-fast' : 'grass-standard';
 
-    // ★ V2 데이터 기반 인증률 맵 (level 0~3)
+    // ★ V3 데이터 기반 인증률 맵 (level 0~3)
     const completedMap = buildCompletedMap();
     const currentDay = isBeforeStart() ? 0 : getCurrentScheduleDay();
 
@@ -609,12 +602,12 @@ function buildExtendedDayNums() {
 }
 
 /**
- * 과제별 인증률 맵 생성 (V2)
+ * 과제별 인증률 맵 생성 (V3)
  * key: "dayNum_order" (잔디 HTML의 data-day + data-order)
  * value: 인증률 레벨 (0, 1, 2, 3)
- *   0 = 미제출, 1 = 1차만, 2 = 1차+2차, 3 = 100% 완료
+ *   0 = 미제출, 1 = initial_record만, 2 = initial+current, 3 = 100% 완료
  * 
- * study_results_v2의 (section_type, week, day, module_number)를
+ * study_results_v3의 (section_type, week, day, module_number)를
  * 잔디 그리드의 (dayNum, order)에 매핑
  */
 function buildCompletedMap() {
@@ -632,8 +625,8 @@ function buildCompletedMap() {
         'speaking': 'speaking'
     };
 
-    // 각 V2 결과 → 해당 잔디 셀 매핑
-    mpV2Results.forEach(record => {
+    // 각 V3 결과 → 해당 잔디 셀 매핑
+    mpV3Results.forEach(record => {
         const week = record.week;
         const dayKr = record.day;
         const sectionType = record.section_type;
@@ -648,12 +641,12 @@ function buildCompletedMap() {
         let level = 0;
         if (sectionType === 'vocab' || sectionType === 'intro-book') {
             // 보카/입문서: 0 또는 3 (100%)
-            level = record.first_result_json ? 3 : 0;
+            level = record.initial_record ? 3 : 0;
         } else {
             // 리딩/리스닝/라이팅/스피킹: 4단계
-            if (record.first_result_json) level = 1;
-            if (record.first_result_json && record.second_result_json) level = 2;
-            if (record.first_result_json && record.second_result_json && record.error_note_submitted) level = 3;
+            if (record.initial_record) level = 1;
+            if (record.initial_record && record.current_record) level = 2;
+            if (record.initial_record && record.current_record && record.error_note_submitted) level = 3;
         }
 
         if (level === 0) return;
@@ -697,18 +690,18 @@ function getCurrentScheduleDay() {
 }
 
 // ================================================
-// ③ 성적 추이 라인 차트 (first_level 기반)
+// ③ 성적 추이 라인 차트 (initial_level 기반)
 // ================================================
 let scoreChartInstance = null;  // Chart.js 인스턴스
 let currentScoreTab = 'reading'; // 현재 활성 탭
 
 /**
  * 특정 section_type의 차트 데이터 생성
- * → 모듈 번호 순 정렬, 라벨 + first_level 배열 반환
+ * → 모듈 번호 순 정렬, 라벨 + initial_level 배열 반환
  */
 function buildChartData(sectionType) {
-    const filtered = mpV2Results
-        .filter(r => r.section_type === sectionType && r.first_level != null)
+    const filtered = mpV3Results
+        .filter(r => r.section_type === sectionType && r.initial_level != null)
         .sort((a, b) => {
             const wA = extractNum(a.week) * 100 + (a.module_number || 0);
             const wB = extractNum(b.week) * 100 + (b.module_number || 0);
@@ -721,7 +714,7 @@ function buildChartData(sectionType) {
     filtered.forEach(r => {
         const m = r.module_number || '?';
         labels.push('M' + m);
-        levels.push(r.first_level);
+        levels.push(r.initial_level);
     });
 
     return { labels, levels };
@@ -859,7 +852,7 @@ function formatDate(dateStr) {
 }
 
 /**
- * task_type → 한글 라벨 + CSS 클래스
+ * section_type → 한글 라벨 + CSS 클래스
  */
 function getTaskLabel(taskType) {
     const labels = {
@@ -873,151 +866,7 @@ function getTaskLabel(taskType) {
     return labels[taskType] || { name: taskType, cls: '' };
 }
 
-/**
- * 모듈 텍스트 생성
- */
-function getModuleText(record) {
-    if (record.task_type === 'vocab') {
-        return `Week ${record.week} ${record.day}`;
-    }
-    if (record.task_type === 'intro-book') {
-        return `${record.day}요일`;
-    }
-    return `Module ${record.module_number || ''}`;
-}
 
-/**
- * 점수 렌더링
- */
-function renderScore(record) {
-    if (record.task_type === 'vocab') {
-        const rate = record.vocab_accuracy_rate;
-        if (rate !== undefined && rate !== null) {
-            const pct = Math.round(rate * 100);
-            return `
-                <span class="score-badge">${pct}%</span>
-                <div class="score-bar">
-                    <div class="score-fill" style="width:${pct}%;"></div>
-                </div>
-            `;
-        }
-        return `<span class="score-badge">${record.score || 0} / ${record.total || 0}</span>`;
-    }
-
-    if (record.task_type === 'intro-book') {
-        return '<span class="score-badge" style="color:var(--accent);">✓ 완료</span>';
-    }
-
-    const score = record.score || 0;
-    const total = record.total || 1;
-    const pct = Math.round((score / total) * 100);
-
-    return `
-        <span class="score-badge">${score} / ${total}</span>
-        <div class="score-bar">
-            <div class="score-fill" style="width:${pct}%;"></div>
-        </div>
-    `;
-}
-
-/**
- * 해설 다시보기 버튼 렌더링
- */
-function renderReplayButton(record) {
-    // reading, listening, speaking, writing 지원
-    const supported = ['reading', 'listening', 'speaking', 'writing'];
-    if (!supported.includes(record.task_type)) {
-        return `<button class="btn-replay" disabled><i class="fa-solid fa-book-open"></i> -</button>`;
-    }
-    
-    // 지원 타입이면 버튼 표시 (클릭 시 서버에서 result_json 확인)
-    return `
-        <button class="btn-replay" onclick="replayExplanation('${record.id}')">
-            <i class="fa-solid fa-book-open"></i> 해설
-        </button>
-    `;
-}
-
-/**
- * 다시 풀기 버튼 렌더링
- * 마이페이지에서 이전 과제를 연습 모드로 다시 풀 수 있음
- * (인증률/점수에 영향 없음)
- */
-function renderRetryButton(record) {
-    // 다시 풀기 지원 타입
-    const supported = ['reading', 'listening', 'writing', 'speaking', 'vocab'];
-    if (!supported.includes(record.task_type)) {
-        return '';
-    }
-    
-    // task_type + module_number로 과제 식별
-    const taskType = record.task_type;
-    const moduleNum = record.module_number || 1;
-    const week = record.week || 1;
-    const day = record.day || '';
-    
-    return `
-        <button class="btn-retry" onclick="retryTask('${taskType}', ${moduleNum}, ${week}, '${day}')">
-            <i class="fa-solid fa-rotate-right"></i> 다시풀기
-        </button>
-    `;
-}
-
-/**
- * 다시 풀기 실행
- * index.html로 이동하여 해당 과제를 연습 모드로 실행
- */
-function retryTask(taskType, moduleNumber, week, day) {
-    if (!confirm('연습 모드로 다시 풀어봅니다.\n(기존 점수/인증률에 영향 없습니다)\n\n진행하시겠습니까?')) {
-        return;
-    }
-    
-    // 로딩 오버레이 표시
-    showLoadingOverlay('과제를 준비하고 있습니다...');
-    
-    // sessionStorage에 retry 정보 저장
-    const retryData = {
-        taskType: taskType,
-        moduleNumber: moduleNumber,
-        week: week,
-        day: day,
-        isPracticeMode: true
-    };
-    sessionStorage.setItem('retryData', JSON.stringify(retryData));
-    
-    // index.html로 이동
-    window.location.href = 'index.html?retry=true';
-}
-
-/**
- * 노트 버튼 렌더링
- */
-function renderNoteButton(record) {
-    if (record.error_note_text && record.error_note_text.trim()) {
-        const escaped = record.error_note_text
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/\n/g, '\\n');
-        const title = `${getTaskLabel(record.task_type).name} Module ${record.module_number || ''}`;
-        return `
-            <button class="btn-note" onclick="openNote('${title}', '${escaped}')">
-                <i class="fa-regular fa-note-sticky"></i> 노트보기
-            </button>
-        `;
-    }
-    if (record.memo_text && record.memo_text.trim()) {
-        const escaped = record.memo_text
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/\n/g, '\\n');
-        return `
-            <button class="btn-note" onclick="openNote('입문서 메모', '${escaped}')">
-                <i class="fa-regular fa-note-sticky"></i> 메모보기
-            </button>
-        `;
-    }
-    return `<button class="btn-note" disabled><i class="fa-regular fa-note-sticky"></i> -</button>`;
-}
 
 // ================================================
 // 플랜 탭 전환
