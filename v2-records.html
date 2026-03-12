@@ -359,10 +359,20 @@
     let tableHtml = '';
     visibleData.forEach((r, idx) => {
       const hasNote = r.error_note_text && r.error_note_text.trim();
-      const rowClass = hasNote ? 'v2r-row-has-note' : '';
-      const noteIcon = hasNote ? '<i class="fa-solid fa-chevron-down v2r-row-arrow"></i>' : '';
+      const hasMemo = r.memo_text && r.memo_text.trim();
+      const hasExpandable = hasNote || hasMemo;
+      const rowClass = hasExpandable ? 'v2r-row-has-note' : '';
+      const expandIcon = hasExpandable ? '<i class="fa-solid fa-chevron-down v2r-row-arrow"></i>' : '';
 
-      tableHtml += `<tr class="v2r-row ${rowClass}" ${hasNote ? `onclick="toggleAccordion(this, ${idx})"` : ''}>
+      // 메모 컬럼: 긴 텍스트 대신 유무 표시
+      let memoCell = '-';
+      if (hasMemo && hasNote) {
+        memoCell = '<span class="v2r-has-icon"><i class="fa-solid fa-note-sticky"></i> 메모</span>';
+      } else if (hasMemo) {
+        memoCell = '<span class="v2r-has-icon"><i class="fa-solid fa-note-sticky"></i> 메모</span>';
+      }
+
+      tableHtml += `<tr class="v2r-row ${rowClass}" ${hasExpandable ? `onclick="toggleAccordion(this, ${idx})"` : ''}>
         <td><span class="v2r-week-badge">W${r.week}</span></td>
         <td>${r.day || '-'}</td>
         <td><span class="v2r-type-badge v2r-type-${r.task_type}">${capitalizeFirst(r.task_type)}</span></td>
@@ -370,18 +380,32 @@
         <td>${formatVocabRate(r.vocab_accuracy_rate)}</td>
         <td>${formatTime(r.time_spent)}</td>
         <td>${formatDateOnly(r.completed_at)}</td>
-        <td>${r.memo_text || '-'} ${noteIcon}</td>
+        <td>${memoCell} ${expandIcon}</td>
       </tr>`;
 
-      // 아코디언 (오답노트)
-      if (hasNote) {
-        tableHtml += `<tr class="v2r-accordion" id="accordion-${idx}" style="display:none;">
-          <td colspan="8">
-            <div class="v2r-accordion-content">
+      // 아코디언 (오답노트 + 메모)
+      if (hasExpandable) {
+        let accordionInner = '';
+        if (hasNote) {
+          accordionInner += `<div class="v2r-accordion-block">
               <div class="v2r-accordion-header">
                 <i class="fa-solid fa-pen-to-square"></i> 오답노트
               </div>
               <p class="v2r-accordion-text">${escapeHtml(r.error_note_text)}</p>
+            </div>`;
+        }
+        if (hasMemo) {
+          accordionInner += `<div class="v2r-accordion-block">
+              <div class="v2r-accordion-header v2r-accordion-header-memo">
+                <i class="fa-solid fa-note-sticky"></i> 메모
+              </div>
+              <p class="v2r-accordion-text">${escapeHtml(r.memo_text)}</p>
+            </div>`;
+        }
+        tableHtml += `<tr class="v2r-accordion" id="accordion-${idx}" style="display:none;">
+          <td colspan="8">
+            <div class="v2r-accordion-content">
+              ${accordionInner}
             </div>
           </td>
         </tr>`;
@@ -393,13 +417,15 @@
     let cardHtml = '';
     visibleData.forEach((r, idx) => {
       const hasNote = r.error_note_text && r.error_note_text.trim();
+      const hasMemo = r.memo_text && r.memo_text.trim();
+      const hasExpandable = hasNote || hasMemo;
 
-      cardHtml += `<div class="v2r-card ${hasNote ? 'v2r-card-has-note' : ''}" ${hasNote ? `onclick="toggleCardAccordion(this)"` : ''}>
+      cardHtml += `<div class="v2r-card ${hasExpandable ? 'v2r-card-has-note' : ''}" ${hasExpandable ? `onclick="toggleCardAccordion(this)"` : ''}>
         <div class="v2r-card-top">
           <span class="v2r-week-badge">W${r.week}</span>
           <span class="v2r-card-day">${r.day || '-'}</span>
           <span class="v2r-type-badge v2r-type-${r.task_type}">${capitalizeFirst(r.task_type)}</span>
-          ${hasNote ? '<i class="fa-solid fa-chevron-down v2r-card-arrow"></i>' : ''}
+          ${hasExpandable ? '<i class="fa-solid fa-chevron-down v2r-card-arrow"></i>' : ''}
         </div>
         <div class="v2r-card-body">
           <div class="v2r-card-row">
@@ -418,11 +444,17 @@
             <span class="v2r-card-label">완료일</span>
             <span>${formatDateOnly(r.completed_at)}</span>
           </div>
-          ${r.memo_text ? `<div class="v2r-card-row"><span class="v2r-card-label">메모</span><span>${escapeHtml(r.memo_text)}</span></div>` : ''}
+          ${hasMemo ? `<div class="v2r-card-row"><span class="v2r-card-label">메모</span><span class="v2r-has-icon"><i class="fa-solid fa-note-sticky"></i> 있음</span></div>` : ''}
         </div>
-        ${hasNote ? `<div class="v2r-card-accordion" style="display:none;">
-          <div class="v2r-accordion-header"><i class="fa-solid fa-pen-to-square"></i> 오답노트</div>
-          <p class="v2r-accordion-text">${escapeHtml(r.error_note_text)}</p>
+        ${hasExpandable ? `<div class="v2r-card-accordion" style="display:none;">
+          ${hasNote ? `<div class="v2r-accordion-block">
+            <div class="v2r-accordion-header"><i class="fa-solid fa-pen-to-square"></i> 오답노트</div>
+            <p class="v2r-accordion-text">${escapeHtml(r.error_note_text)}</p>
+          </div>` : ''}
+          ${hasMemo ? `<div class="v2r-accordion-block">
+            <div class="v2r-accordion-header v2r-accordion-header-memo"><i class="fa-solid fa-note-sticky"></i> 메모</div>
+            <p class="v2r-accordion-text">${escapeHtml(r.memo_text)}</p>
+          </div>` : ''}
         </div>` : ''}
       </div>`;
     });
