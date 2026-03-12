@@ -128,17 +128,10 @@ function closeIntroBookModal() {
     if (memo) memo.value = '';
 }
 
-// 입문서 제출 (메모 + Supabase 저장)
+// 입문서 제출 (메모 + Supabase V3 저장)
 async function submitIntroBook() {
     var memo = document.getElementById('introBookMemo');
     var memoText = memo ? memo.value.trim() : '';
-
-    if (window._deadlinePassedMode) {
-        console.log('📖 [IntroBook] 마감 지난 과제 — 저장 생략');
-        alert('제출 완료! (마감 지난 과제 — 인증률 미반영)');
-        closeIntroBookModal();
-        return;
-    }
 
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!user || !user.id || user.id === 'dev-user-001') {
@@ -154,50 +147,32 @@ async function submitIntroBook() {
         scheduleInfo = { week: ct.currentWeek, day: ct.currentDay || '월' };
     }
 
+    // V3 인증률: 20단어 이상 → 100, 미만 → 0
+    var introWordCount = memoText.split(/\s+/).filter(function(w) { return w.length > 0; }).length;
+    var introAuthRate = (introWordCount >= 20) ? 100 : 0;
+
+    // V3 JSON 구조 생성
+    var recordJson = {
+        memo_text: memoText,
+        word_count: introWordCount,
+        completedAt: new Date().toISOString()
+    };
+
     try {
-        // tr_study_records 저장
-        var studyRecord = await saveStudyRecord({
-            user_id: user.id,
-            week: scheduleInfo.week,
-            day: scheduleInfo.day,
-            task_type: 'intro-book',
-            module_number: 1,
-            attempt: 1,
-            score: 1,
-            total: 1,
-            time_spent: 0,
-            detail: {},
-            memo_text: memoText,
-            completed_at: new Date().toISOString()
-        });
-
-        if (studyRecord && studyRecord.id) {
-            // 단어 수 체크 (20단어 이상 → 100, 미만 → 0)
-            var introWordCount = memoText.split(/\s+/).filter(function(w) { return w.length > 0; }).length;
-            var introAuthRate = (introWordCount >= 20) ? 100 : 0;
-
-            // tr_auth_records 저장
-            await saveAuthRecord({
-                user_id: user.id,
-                study_record_id: studyRecord.id,
-                auth_rate: introAuthRate,
-                step1_completed: true,
-                step2_completed: false,
-                explanation_completed: false,
-                fraud_flag: (introWordCount < 20)
+        if (window._deadlinePassedMode) {
+            // 마감 후 제출 → current_record에 저장 (연습 기록, 인증률 무관)
+            await upsertCurrentRecord(user.id, 'intro-book', 1, scheduleInfo.week, scheduleInfo.day, recordJson);
+            console.log('📖 [IntroBook] 마감 후 제출 — current_record 저장 완료');
+        } else {
+            // 마감 전 제출 → initial_record에 저장 + locked_auth_rate 즉시 확정
+            await upsertInitialRecord(user.id, 'intro-book', 1, scheduleInfo.week, scheduleInfo.day, recordJson, {
+                locked_auth_rate: introAuthRate
             });
             console.log('📖 [IntroBook] 기록 저장 완료, 단어수:', introWordCount, '인증률:', introAuthRate + '%');
+        }
 
-            // ProgressTracker 캐시 갱신
-            if (window.ProgressTracker) {
-                ProgressTracker.markCompleted('intro-book', 1);
-            }
-
-            // 학생 통계 갱신 (tr_student_stats UPSERT)
-            if (window.AuthMonitor && typeof AuthMonitor.updateStudentStats === 'function') {
-                AuthMonitor.updateStudentStats();
-                console.log('📊 [IntroBook] 학생 통계 갱신 요청');
-            }
+        if (window.ProgressTracker) {
+            ProgressTracker.markCompleted('intro-book', 1);
         }
     } catch (e) {
         console.error('📖 [IntroBook] 저장 실패:', e);

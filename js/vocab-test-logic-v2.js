@@ -598,10 +598,6 @@ function cleanupVocabTest() {
 // Supabase 보카 기록 저장
 // ========================================
 async function saveVocabRecord(correctCount, totalCount, percentage) {
-    if (window._deadlinePassedMode) {
-        console.log('📝 [Vocab] 마감 지난 과제 — 저장 생략');
-        return;
-    }
     console.log('📝 [Vocab] saveVocabRecord 시작:', correctCount, '/', totalCount, '=', percentage + '%');
     
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
@@ -623,46 +619,33 @@ async function saveVocabRecord(correctCount, totalCount, percentage) {
         scheduleInfo = { week: currentWeekId, day: currentDayId };
     }
 
-    var accuracyRate = percentage / 100;
+    // V3 인증률: 정답률 30% 이상 → 100, 미만 → 0
     var authRate = (percentage < 30) ? 0 : 100;
 
-    try {
-        var studyRecord = await saveStudyRecord({
-            user_id: user.id,
-            week: scheduleInfo.week,
-            day: scheduleInfo.day,
-            task_type: 'vocab',
-            module_number: 1,
-            attempt: 1,
-            score: correctCount,
-            total: totalCount,
-            time_spent: 0,
-            detail: { pages: currentPages, accuracy: percentage },
-            vocab_accuracy_rate: accuracyRate,
-            completed_at: new Date().toISOString()
-        });
+    // V3 JSON 구조 생성
+    var recordJson = {
+        score: correctCount,
+        total: totalCount,
+        accuracy: percentage,
+        pages: currentPages,
+        completedAt: new Date().toISOString()
+    };
 
-        if (studyRecord && studyRecord.id) {
-            await saveAuthRecord({
-                user_id: user.id,
-                study_record_id: studyRecord.id,
-                auth_rate: authRate,
-                step1_completed: true,
-                step2_completed: false,
-                explanation_completed: false,
-                fraud_flag: (percentage < 30)
+    try {
+        if (window._deadlinePassedMode) {
+            // 마감 후 제출 → current_record에 저장 (연습 기록, 인증률 무관)
+            await upsertCurrentRecord(user.id, 'vocab', 1, scheduleInfo.week, scheduleInfo.day, recordJson);
+            console.log('📝 [Vocab] 마감 후 제출 — current_record 저장 완료');
+        } else {
+            // 마감 전 제출 → initial_record에 저장 + locked_auth_rate 즉시 확정
+            await upsertInitialRecord(user.id, 'vocab', 1, scheduleInfo.week, scheduleInfo.day, recordJson, {
+                locked_auth_rate: authRate
             });
             console.log('📝 [Vocab] 기록 저장 완료, 인증률:', authRate + '%');
+        }
 
-            if (window.ProgressTracker) {
-                ProgressTracker.markCompleted('vocab', 1);
-            }
-
-            // 학생 통계 갱신 (tr_student_stats UPSERT)
-            if (window.AuthMonitor && typeof AuthMonitor.updateStudentStats === 'function') {
-                AuthMonitor.updateStudentStats();
-                console.log('📊 [Vocab] 학생 통계 갱신 요청');
-            }
+        if (window.ProgressTracker) {
+            ProgressTracker.markCompleted('vocab', 1);
         }
     } catch (e) {
         console.error('📝 [Vocab] 저장 실패:', e);

@@ -246,15 +246,8 @@ async function getStudyRecords(userId, week = null, day = null) {
 // ================================================
 
 /**
- * 인증 기록 저장
- */
-async function saveAuthRecord(record) {
-    console.log('🔒 [Supabase] 인증 기록 저장');
-    return await supabaseInsert('tr_auth_records', record);
-}
-
-/**
  * 학생의 인증 기록 조회
+ * ★ progress-tracker.js에서 호출 중 — 작업 B(V3 전환)에서 제거 예정
  */
 async function getAuthRecords(userId) {
     return await supabaseSelect('tr_auth_records', `user_id=eq.${userId}&order=created_at.desc`);
