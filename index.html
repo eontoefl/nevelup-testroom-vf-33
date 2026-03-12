@@ -533,6 +533,12 @@
     <!-- [V3] 과제 대시보드 -->
     <!-- ============================= -->
     <div id="taskDashboardScreen" class="screen">
+        <!-- 로딩 스피너 (DB 조회 + 상태 확정 완료까지 표시) -->
+        <div class="task-dashboard-loading" id="taskDashboardLoading">
+            <div class="task-dashboard-spinner"></div>
+            <p>과제 정보를 불러오는 중...</p>
+        </div>
+
         <!-- 헤더 -->
         <div class="task-dashboard-header">
             <button class="btn-back-to-schedule" onclick="backToScheduleFromDashboard()">

@@ -74,14 +74,15 @@ async function openTaskDashboard(sectionType, params, taskName) {
     if (elTitle) elTitle.textContent = title;
     if (elSubtitle) elSubtitle.textContent = subtitle;
     
-    // ── 버튼 초기 상태: 로딩 중 ──
-    _setButtonLoading(true);
-    
-    // ── 화면 전환 ──
+    // ── 로딩 표시 + 화면 전환 ──
+    _showDashboardLoading(true);
     showScreen('taskDashboardScreen');
     
-    // ── DB 조회 → 버튼 상태 설정 ──
+    // ── DB 조회 → 고정인증률 확정 → 버튼 상태 설정 ──
     await _loadAndApplyDashboardState(sectionType, moduleNumber, week, day);
+    
+    // ── 로딩 해제 ──
+    _showDashboardLoading(false);
 }
 
 /**
@@ -111,6 +112,11 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
     
     console.log('📋 [대시보드] 상태:', { hasInitial, hasCurrent, deadlinePassed });
     
+    // ── 고정인증률 확정 저장 (마감 지남 + 아직 미확정) ──
+    if (deadlinePassed && record && record.locked_auth_rate == null) {
+        await _lockAuthRate(record, hasInitial);
+    }
+    
     // ── 버튼 상태 적용 (v3-design-spec.md §2-4-1) ──
     _applyButtonStates(hasInitial, hasCurrent, deadlinePassed);
     
@@ -122,9 +128,6 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
     if (banner) {
         banner.style.display = deadlinePassed ? 'flex' : 'none';
     }
-    
-    // ── 로딩 해제 ──
-    _setButtonLoading(false);
 }
 
 /**
@@ -250,7 +253,7 @@ function _onExplainClick() {
  * 문제 풀이 완료 후 과제 대시보드로 복귀
  * 각 모듈 컨트롤러의 finish 함수에서 호출
  */
-function backToTaskDashboard() {
+async function backToTaskDashboard() {
     console.log('🔙 [대시보드] 과제 대시보드로 복귀');
     
     // 리스닝 모듈 정리 (오디오 정지 + 타이머 정지 + 상태 초기화)
@@ -289,11 +292,15 @@ function backToTaskDashboard() {
         return;
     }
     
-    // 화면 전환
+    // 로딩 표시 + 화면 전환
+    _showDashboardLoading(true);
     showScreen('taskDashboardScreen');
     
     // DB 재조회 → 채점 결과 갱신 (방금 저장된 record 반영)
-    _loadAndApplyDashboardState(state.sectionType, state.moduleNumber, state.week, state.day);
+    await _loadAndApplyDashboardState(state.sectionType, state.moduleNumber, state.week, state.day);
+    
+    // 로딩 해제
+    _showDashboardLoading(false);
 }
 
 /**
@@ -318,14 +325,46 @@ function backToScheduleFromDashboard() {
 // ─── 내부 유틸 함수 ───
 
 /**
- * 버튼 로딩 상태 토글
+ * 로딩 스피너 표시/숨김
+ * true → 스피너 표시 + 본문(헤더·바디) 숨김
+ * false → 스피너 숨김 + 본문 표시
  */
-function _setButtonLoading(isLoading) {
-    const btnPractice = document.getElementById('taskBtnPractice');
-    const btnExplain = document.getElementById('taskBtnExplain');
+function _showDashboardLoading(isLoading) {
+    const loading = document.getElementById('taskDashboardLoading');
+    const header = document.querySelector('#taskDashboardScreen .task-dashboard-header');
+    const body = document.querySelector('#taskDashboardScreen .task-dashboard-body');
     
-    if (btnPractice) btnPractice.disabled = isLoading;
-    if (btnExplain) btnExplain.disabled = isLoading;
+    if (loading) loading.style.display = isLoading ? 'flex' : 'none';
+    if (header) header.style.display = isLoading ? 'none' : '';
+    if (body) body.style.display = isLoading ? 'none' : '';
+}
+
+/**
+ * 고정인증률(locked_auth_rate) 확정 저장
+ * v3-design-spec.md §7-3 기준
+ * 
+ * 마감 지남 + record 존재 + locked_auth_rate NULL → 계산 후 DB UPDATE
+ * - initial_record 없음 → 0% (단, 행이 없으면 이 함수 자체가 호출 안 됨)
+ * - initial_record 있음 + error_note_submitted false → 50%
+ * - initial_record 있음 + error_note_submitted true → 100%
+ */
+async function _lockAuthRate(record, hasInitial) {
+    var rate = 0;
+    if (hasInitial && record.error_note_submitted) {
+        rate = 100;
+    } else if (hasInitial) {
+        rate = 50;
+    }
+    
+    try {
+        await supabaseUpdate('study_results_v3', 'id=eq.' + record.id, {
+            locked_auth_rate: rate
+        });
+        record.locked_auth_rate = rate;
+        console.log('🔒 [대시보드] 고정인증률 확정:', rate + '%', '(record id:', record.id + ')');
+    } catch (e) {
+        console.error('🔒 [대시보드] 고정인증률 저장 실패:', e);
+    }
 }
 
 /**
