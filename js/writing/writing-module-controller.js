@@ -530,14 +530,8 @@ async function _finishWritingModule() {
             accuracy: arrangeAccuracy,
             results: arrangeResult.results || []
         },
-        email: {
-            wordCount: mod.results.email ? mod.results.email.wordCount : 0,
-            userAnswer: mod.results.email ? mod.results.email.userAnswer : ''
-        },
-        discussion: {
-            wordCount: mod.results.discussion ? mod.results.discussion.wordCount : 0,
-            userAnswer: mod.results.discussion ? mod.results.discussion.userAnswer : ''
-        },
+        email: mod.results.email || { wordCount: 0, userAnswer: '' },
+        discussion: mod.results.discussion || { wordCount: 0, userAnswer: '' },
         completedAt: new Date().toISOString()
     };
 

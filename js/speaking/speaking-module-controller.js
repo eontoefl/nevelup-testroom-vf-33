@@ -324,12 +324,8 @@ function _onSpeakingComponentComplete(index, type, result) {
 
     console.log('✅ ' + type + ' 완료');
 
-    // 완료된 컴포넌트 정리 (컨트롤러의 역할)
-    var comp = mod.components[index];
-    if (comp && typeof comp.cleanup === 'function') {
-        comp.cleanup();
-        console.log('🧹 ' + type + ' cleanup 완료');
-    }
+    // cleanup은 DB 저장 후 backToTaskDashboard → cleanupSpeakingModule에서 일괄 수행
+    // (cleanup을 여기서 호출하면 speakingRepeatData/speakingInterviewData가 null이 되어 DB 저장 시 데이터 누락)
 
     // 완료 표시
     mod.completedTypes[type] = true;
@@ -400,13 +396,8 @@ async function _finishSpeakingModule() {
                 console.log('💾 initial_record 저장 완료');
             }
 
-            // 저장 성공 → 정리 + 대시보드 복귀
+            // 저장 성공 → 대시보드 복귀 (cleanup은 backToTaskDashboard → cleanupSpeakingModule에서 일괄 수행)
             _hideSubmitLoading();
-            // AudioPlayer 자원 해제
-            if (mod.audioPlayer && typeof mod.audioPlayer.destroy === 'function') {
-                mod.audioPlayer.destroy();
-            }
-            window.currentSpeakingModule = null;
             backToTaskDashboard();
 
         } catch (e) {
@@ -418,11 +409,6 @@ async function _finishSpeakingModule() {
         console.log('📊 [개발모드] DB 저장 생략');
         console.log('📊 recordJson:', JSON.stringify(recordJson, null, 2));
         _hideSubmitLoading();
-        // AudioPlayer 자원 해제
-        if (mod.audioPlayer && typeof mod.audioPlayer.destroy === 'function') {
-            mod.audioPlayer.destroy();
-        }
-        window.currentSpeakingModule = null;
         backToTaskDashboard();
     }
 }
