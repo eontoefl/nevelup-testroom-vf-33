@@ -376,11 +376,17 @@ function _extractData(def, recordJson, st) {
 
         case 'repeat':
             if (!recordJson.repeat || !recordJson.repeat.data) return null;
-            return recordJson.repeat.data;
+            // DB: { sets: [세트], type } → show 함수: { set: 세트 }
+            var repeatSets = recordJson.repeat.data.sets;
+            if (!repeatSets || repeatSets.length === 0) return null;
+            return { set: repeatSets[0] };
 
         case 'interview':
             if (!recordJson.interview || !recordJson.interview.data) return null;
-            return recordJson.interview.data;
+            // DB: { sets: [세트], type } → show 함수: { set: 세트 }
+            var interviewSets = recordJson.interview.data.sets;
+            if (!interviewSets || interviewSets.length === 0) return null;
+            return { set: interviewSets[0] };
 
         default:
             var sets = recordJson.sets;
