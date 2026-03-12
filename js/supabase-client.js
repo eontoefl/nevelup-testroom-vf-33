@@ -227,52 +227,8 @@ async function saveStudyRecord(record) {
     return await supabaseInsert('tr_study_records', record);
 }
 
-/**
- * 학생의 학습 기록 조회
- * @param {string} userId - 학생 ID
- * @param {number} week - 주차 (선택)
- * @param {string} day - 요일 (선택)
- * @returns {Promise<Array>} 학습 기록 목록
- */
-async function getStudyRecords(userId, week = null, day = null) {
-    let query = `user_id=eq.${userId}&order=completed_at.desc`;
-    if (week !== null) query += `&week=eq.${week}`;
-    if (day !== null) query += `&day=eq.${encodeURIComponent(day)}`;
-    return await supabaseSelect('tr_study_records', query);
-}
-
-// ================================================
-// 인증 기록 함수들 (tr_auth_records)
-// ================================================
-
-/**
- * 학생의 인증 기록 조회
- * ★ progress-tracker.js에서 호출 중 — 작업 B(V3 전환)에서 제거 예정
- */
-async function getAuthRecords(userId) {
-    return await supabaseSelect('tr_auth_records', `user_id=eq.${userId}&order=created_at.desc`);
-}
-
-// ================================================
-// 골든타임 기록 함수들 (tr_golden_time_logs)
-// ================================================
-
-/**
- * 골든타임 이탈 기록
- */
-async function saveGoldenTimeLog(log) {
-    console.log('⏰ [Supabase] 골든타임 기록 저장');
-    return await supabaseInsert('tr_golden_time_logs', log);
-}
-
-/**
- * 골든타임 복귀 업데이트
- */
-async function updateGoldenTimeReturn(logId, returnedAt) {
-    return await supabaseUpdate('tr_golden_time_logs', `id=eq.${logId}`, {
-        returned_at: returnedAt
-    });
-}
+// ★ getStudyRecords, getAuthRecords, saveGoldenTimeLog, updateGoldenTimeReturn 삭제됨
+//   — V3 전환으로 호출자 0건 확인 후 제거 (PR #10)
 
 // ================================================
 // 연결 테스트
