@@ -124,6 +124,7 @@ function _createSpeakingComponents(moduleNumber) {
             _onSpeakingComponentComplete(0, 'repeat', result);
         }
     );
+    window.currentRepeatComponent = repeatComp;
     console.log('  ✅ [0] 따라말하기 생성 완료');
 
     // Interview 컴포넌트
@@ -134,6 +135,7 @@ function _createSpeakingComponents(moduleNumber) {
             _onSpeakingComponentComplete(1, 'interview', result);
         }
     );
+    window.currentInterviewComponent = interviewComp;
     console.log('  ✅ [1] 인터뷰 생성 완료');
 
     mod.components = [repeatComp, interviewComp];
