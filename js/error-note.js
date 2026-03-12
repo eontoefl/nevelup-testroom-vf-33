@@ -6,15 +6,15 @@
  *
  * 역할:
  *   해설 화면(explainViewerScreen) 우측 메모장 제어
- *   - 탭(실전풀이/다시풀기)에 따라 오답노트 로드·저장
- *   - 실전풀이 탭 → error_note_text + error_note_submitted (제출 후 영구 잠금)
- *   - 다시풀기 탭 → current_error_note_text (덮어쓰기 가능)
+ *   - 선택 모드(실전풀이/다시풀기)에 따라 오답노트 로드·저장
+ *   - 실전풀이 → error_note_text + error_note_submitted (제출 후 영구 잠금)
+ *   - 다시풀기 → current_error_note_text (덮어쓰기 가능)
  *   - 단어 수 카운트, 자동저장(localStorage), 제출(DB)
  *   - 마감 후 실전풀이 오답노트 작성 불가
  *
  * 의존:
  *   supabase-client.js (supabaseUpdate, getStudyResultV3, getCurrentUser)
- *   explain-viewer.js  (_explainState, 탭 전환 시 ErrorNote.onTabSwitch 호출)
+ *   explain-viewer.js  (_explainState, 선택 시 ErrorNote.init 호출)
  *
  * 참조: v3-design-spec.md §8, §2-5-A
  */
@@ -53,20 +53,6 @@ var ErrorNote = {
 
         this._renderMemo();
         this._bindEvents();
-    },
-
-    // ========================================
-    // 탭 전환 시 호출 (explain-viewer.js에서 호출)
-    // ========================================
-    onTabSwitch: function(tabName) {
-        console.log('📝 [메모장] 탭 전환:', tabName);
-
-        // 현재 내용 자동저장 (localStorage)
-        this._saveToLocal();
-
-        this._activeTab = tabName;
-        this._isSubmitted = false;
-        this._renderMemo();
     },
 
     // ========================================
