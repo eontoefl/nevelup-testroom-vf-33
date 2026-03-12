@@ -377,7 +377,7 @@
         <td>${r.day || '-'}</td>
         <td><span class="v2r-type-badge v2r-type-${r.task_type}">${capitalizeFirst(r.task_type)}</span></td>
         <td>${formatScore(r.score, r.total)}</td>
-        <td>${formatVocabRate(r.vocab_accuracy_rate)}</td>
+        <td>${formatVocabRate(r.vocab_accuracy_rate, r.task_type)}</td>
         <td>${formatTime(r.time_spent)}</td>
         <td>${formatDateOnly(r.completed_at)}</td>
         <td>${memoCell} ${expandIcon}</td>
@@ -434,7 +434,7 @@
           </div>
           <div class="v2r-card-row">
             <span class="v2r-card-label">어휘 정답률</span>
-            <span>${formatVocabRate(r.vocab_accuracy_rate)}</span>
+            <span>${formatVocabRate(r.vocab_accuracy_rate, r.task_type)}</span>
           </div>
           <div class="v2r-card-row">
             <span class="v2r-card-label">소요 시간</span>
@@ -511,7 +511,8 @@
     return `${score}/${total}`;
   }
 
-  function formatVocabRate(rate) {
+  function formatVocabRate(rate, taskType) {
+    if (taskType !== 'vocab') return '-';
     if (rate == null || rate === '') return '-';
     const pct = rate <= 1 ? Math.round(rate * 100) : Math.round(rate);
     return pct + '%';
