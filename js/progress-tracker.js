@@ -5,7 +5,7 @@
  * ================================================
  * 
  * 기능:
- * 1. tr_study_records에서 완료 과제 조회
+ * 1. study_results_v3에서 완료 과제 조회 (V3)
  * 2. 학습일정 화면: 요일 버튼에 일 단위 진도 표시
  * 3. 학습일정 화면: 전체 진도율 Progress Bar 표시
  * 4. 과제 목록 화면: 완료 과제에 CSS 체크 아이콘 표시
@@ -18,8 +18,6 @@ var ProgressTracker = {
     _completedTasks: {},
     _loaded: false,
     _loading: false,
-    _authRecords: [],
-    _avgAuthRate: null,
 
     // ========================================
     // Supabase에서 학습 기록 조회 → 캐시
@@ -39,7 +37,7 @@ var ProgressTracker = {
         console.log('📊 [ProgressTracker] 학습 기록 조회 시작...');
 
         try {
-            var records = await getStudyRecords(user.id);
+            var records = await getCompletedTasksV3(user.id);
             
             // ★ markCompleted()로 캐시에 넣은 로컬 데이터 보존
             var localCache = {};
@@ -54,9 +52,9 @@ var ProgressTracker = {
 
             if (records && records.length > 0) {
                 records.forEach(function(rec) {
-                    if (rec.task_type && rec.module_number) {
+                    if (rec.section_type && rec.module_number) {
                         // 키: "reading_1", "writing_3" 등
-                        var key = rec.task_type + '_' + rec.module_number;
+                        var key = rec.section_type + '_' + rec.module_number;
                         // week+day도 함께 저장 (일 단위 진도 계산용)
                         if (!ProgressTracker._completedTasks[key]) {
                             ProgressTracker._completedTasks[key] = {
@@ -66,8 +64,8 @@ var ProgressTracker = {
                             };
                         }
                         // vocab, intro-book은 week_day 키도 추가 (날짜별 구분)
-                        if ((rec.task_type === 'vocab' || rec.task_type === 'intro-book') && rec.week && rec.day) {
-                            var wdKey = rec.task_type + '_w' + rec.week + '_' + rec.day;
+                        if ((rec.section_type === 'vocab' || rec.section_type === 'intro-book') && rec.week && rec.day) {
+                            var wdKey = rec.section_type + '_w' + rec.week + '_' + rec.day;
                             ProgressTracker._completedTasks[wdKey] = {
                                 week: rec.week,
                                 day: rec.day,
@@ -89,8 +87,6 @@ var ProgressTracker = {
             this._loaded = true;
             console.log('📊 [ProgressTracker] 완료 과제:', Object.keys(this._completedTasks).length, '건');
 
-            // 인증 기록도 조회
-            await this.loadAuthRecords(user.id);
         } catch (e) {
             console.error('❌ [ProgressTracker] 조회 실패:', e);
         }
@@ -98,101 +94,6 @@ var ProgressTracker = {
         this._loading = false;
     },
 
-    // ========================================
-    // Supabase에서 인증 기록 조회
-    // ========================================
-    async loadAuthRecords(userId) {
-        try {
-            if (typeof getAuthRecords === 'function') {
-                var records = await getAuthRecords(userId);
-                this._authRecords = records || [];
-                
-                // 시작 전이더라도 제출 기록이 있으면 인증률 계산
-                if (this._isBeforeStartDate() && this._authRecords.length === 0) {
-                    this._avgAuthRate = null;
-                    console.log('📊 [ProgressTracker] 시작 전 + 기록 없음 – 인증률 표시 안 함');
-                    return;
-                }
-
-                // B방식: 오늘까지 해야 할 과제 전부 기준, 안 한 건 0%
-                var totalTasksDue = this._countTasksDueToday();
-                
-                if (totalTasksDue > 0) {
-                    var sum = 0;
-                    this._authRecords.forEach(function(r) { sum += (r.auth_rate || 0); });
-                    // 제출한 과제의 합계 / 오늘까지 해야 할 전체 과제 수
-                    this._avgAuthRate = Math.round(sum / totalTasksDue);
-                } else if (this._authRecords.length > 0) {
-                    // 스케줄 계산 실패 시 기존 방식 폴백
-                    var sum = 0;
-                    this._authRecords.forEach(function(r) { sum += (r.auth_rate || 0); });
-                    this._avgAuthRate = Math.round(sum / this._authRecords.length);
-                } else {
-                    this._avgAuthRate = null;
-                }
-                console.log('📊 [ProgressTracker] 인증률:', this._avgAuthRate, '% (제출', this._authRecords.length + '건 / 마감', totalTasksDue + '건)');
-            }
-        } catch (e) {
-            console.error('📊 [ProgressTracker] 인증 기록 조회 실패:', e);
-        }
-    },
-
-    // ========================================
-    // 오늘까지 해야 할 과제 수 계산
-    // ========================================
-    _countTasksDueToday() {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (!user || !user.startDate) return 0;
-        if (typeof getDayTasks !== 'function') return 0;
-
-        var programType = user.programType || (user.program === '내벨업챌린지 - Standard' ? 'standard' : 'fast');
-        var totalWeeks = programType === 'standard' ? 8 : 4;
-        var dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-
-        var startDate = new Date(user.startDate + 'T00:00:00');
-        if (isNaN(startDate.getTime())) return 0;
-
-        // 새벽 4시 기준: 4시 이전이면 "오늘"은 어제
-        var now = new Date();
-        var effectiveToday = new Date(now);
-        if (now.getHours() < 4) {
-            effectiveToday.setDate(effectiveToday.getDate() - 1);
-        }
-        effectiveToday.setHours(0, 0, 0, 0);
-
-        var totalTasks = 0;
-
-        for (var w = 1; w <= totalWeeks; w++) {
-            for (var d = 0; d < dayOrder.length; d++) {
-                // 해당 날짜 계산
-                var taskDate = new Date(startDate);
-                taskDate.setDate(taskDate.getDate() + (w - 1) * 7 + d);
-                taskDate.setHours(0, 0, 0, 0);
-
-                // 과제 날짜가 오늘(effective) 이하면 포함
-                // ★ 데드라인 연장 체크: 연장된 마감이 아직 안 지났으면 제외
-                var taskDateStr = taskDate.getFullYear() + '-' +
-                    String(taskDate.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(taskDate.getDate()).padStart(2, '0');
-                var extensions = window._deadlineExtensions || [];
-                var ext = extensions.find(function(e) { return e.original_date === taskDateStr; });
-                if (ext) {
-                    var extDeadline = new Date(taskDate);
-                    extDeadline.setDate(extDeadline.getDate() + 1);
-                    extDeadline.setHours(4, 0, 0, 0);
-                    extDeadline.setDate(extDeadline.getDate() + (ext.extra_days || 1));
-                    if (now < extDeadline) continue; // 연장 마감 전 → 분모 제외
-                }
-
-                if (taskDate <= effectiveToday) {
-                    var tasks = getDayTasks(programType, w, dayOrder[d]);
-                    totalTasks += tasks.length;
-                }
-            }
-        }
-
-        return totalTasks;
-    },
 
     // ========================================
     // 특정 과제가 완료되었는지 판단
@@ -349,41 +250,6 @@ var ProgressTracker = {
             }
         }
 
-        // 인증률 / D-day 표시
-        var authRateHtml = '';
-        var isBeforeStart = this._isBeforeStartDate();
-
-        if (isBeforeStart && this._avgAuthRate !== null) {
-            // ★ 시작 전 + 선제출: D-day와 인증률 표시 (등급은 시작 후 산정)
-            var daysLeft = this._getDaysUntilStart();
-            var startStr = this._formatStartDate();
-            authRateHtml = 
-                '<div class="auth-rate-display">' +
-                    '<span class="auth-rate-label">시작까지 D-' + daysLeft + '</span>' +
-                    '<span class="auth-rate-value" style="color:#9480c5;">' + this._avgAuthRate + '%</span>' +
-                    '<span class="auth-rate-grade" style="background:#9480c5;">시작 후 산정</span>' +
-                '</div>';
-        } else if (isBeforeStart) {
-            // ★ 시작 전: D-day만 표시
-            var daysLeft = this._getDaysUntilStart();
-            var startStr = this._formatStartDate();
-            authRateHtml = 
-                '<div class="auth-rate-display">' +
-                    '<span class="auth-rate-label">시작까지</span>' +
-                    '<span class="auth-rate-value" style="color:#9480c5;">D-' + daysLeft + '</span>' +
-                    '<span class="auth-rate-grade" style="background:#9480c5;">' + startStr + ' 시작</span>' +
-                '</div>';
-        } else if (this._avgAuthRate !== null) {
-            // ★ 시작 후: 인증률 + 등급 표시
-            var grade = this.getGrade(this._avgAuthRate);
-            authRateHtml = 
-                '<div class="auth-rate-display">' +
-                    '<span class="auth-rate-label">인증률</span>' +
-                    '<span class="auth-rate-value" style="color:' + grade.color + '">' + this._avgAuthRate + '%</span>' +
-                    '<span class="auth-rate-grade" style="background:' + grade.color + '">' + grade.letter + '</span>' +
-                '</div>';
-        }
-
         container.innerHTML = 
             '<div class="total-progress-header">' +
                 '<span class="total-progress-label">전체 진도율</span>' +
@@ -394,55 +260,7 @@ var ProgressTracker = {
             '</div>' +
             '<div class="total-progress-bottom">' +
                 '<div class="total-progress-percent">' + progress.percent + '%</div>' +
-                authRateHtml +
             '</div>';
-    },
-
-    // ========================================
-    // 시작일 이전 여부 판별
-    // ========================================
-    _isBeforeStartDate() {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (!user || !user.startDate) return false;
-        var start = new Date(user.startDate);
-        start.setHours(0, 0, 0, 0);
-        var now = new Date();
-        now.setHours(0, 0, 0, 0);
-        return now < start;
-    },
-
-    // ========================================
-    // 시작일까지 남은 일수
-    // ========================================
-    _getDaysUntilStart() {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (!user || !user.startDate) return 0;
-        var start = new Date(user.startDate);
-        start.setHours(0, 0, 0, 0);
-        var now = new Date();
-        now.setHours(0, 0, 0, 0);
-        return Math.ceil((start - now) / (1000 * 60 * 60 * 24));
-    },
-
-    // ========================================
-    // 시작일 포맷 (M/D)
-    // ========================================
-    _formatStartDate() {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (!user || !user.startDate) return '';
-        var d = new Date(user.startDate);
-        return (d.getMonth() + 1) + '/' + d.getDate();
-    },
-
-    // ========================================
-    // 등급 판정 (인증률 → 등급)
-    // ========================================
-    getGrade(rate) {
-        if (rate >= 95) return { letter: 'A', color: '#22c55e' };
-        if (rate >= 90) return { letter: 'B', color: '#3b82f6' };
-        if (rate >= 80) return { letter: 'C', color: '#f59e0b' };
-        if (rate >= 70) return { letter: 'D', color: '#f97316' };
-        return { letter: 'F', color: '#ef4444' };
     },
 
     // ========================================
@@ -561,7 +379,7 @@ var ProgressTracker = {
 
 // ========================================
 // 자동 연동: showTaskListScreen에 체크 표시
-// ★ AuthMonitor 연동 제거됨 (V2에서 auth-monitor.js 미사용)
+// ★ AuthMonitor 연동 제거됨 (V3에서 auth-monitor.js 미사용)
 // ========================================
 (function() {
     var setupDone = false;
