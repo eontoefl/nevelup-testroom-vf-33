@@ -301,6 +301,148 @@
     margin-left: 8px;
 }
 
+/* ============================= */
+/* 채점 결과 뱃지 스타일           */
+/* ============================= */
+
+/* 뱃지 컨테이너 */
+.score-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* 개별 뱃지 */
+.score-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    min-width: 72px;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.score-badge-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.score-badge-value {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* 정답률 높음 (80% 이상) */
+.score-badge.badge-high {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+.score-badge.badge-high .score-badge-value {
+    color: #16a34a;
+}
+
+/* 정답률 중간 (50~79%) */
+.score-badge.badge-mid {
+    background: #fefce8;
+    border-color: #fef08a;
+}
+.score-badge.badge-mid .score-badge-value {
+    color: #ca8a04;
+}
+
+/* 정답률 낮음 (50% 미만) */
+.score-badge.badge-low {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+.score-badge.badge-low .score-badge-value {
+    color: #dc2626;
+}
+
+/* 완료 표시 */
+.score-badge.badge-complete {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+.score-badge.badge-complete .score-badge-value {
+    color: #16a34a;
+}
+
+/* 총점 바 */
+.score-total-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    margin-top: 4px;
+    background: #f8f6ff;
+    border-radius: 10px;
+    border: 1px solid #e9e2ff;
+}
+
+.score-total-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.score-total-bar .score-total-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.score-total-bar .score-total-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #9480c5;
+}
+
+/* 레벨 뱃지 */
+.score-level-badge {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    background: #9480c5;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+/* 라이팅 작성 내용 미리보기 */
+.score-text-preview {
+    margin: 8px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.score-text-preview-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    padding: 8px 12px 4px;
+    background: #f8fafc;
+}
+
+.score-text-preview-content {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #334155;
+    padding: 8px 12px 12px;
+    background: #f8fafc;
+    max-height: 120px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     .task-dashboard-body {
