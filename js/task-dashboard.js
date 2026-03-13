@@ -509,7 +509,7 @@ function _renderReadingScore(data) {
         html += '<span class="score-total-value">' + data.totalCorrect + '/' + data.totalQuestions + ' (' + totalPercent + '%)</span>';
         html += '</div>';
         if (data.level) {
-            html += '<span class="score-level-badge">Level ' + data.level + '</span>';
+            html += '<span class="score-level-badge">Level ' + Number(data.level).toFixed(1) + '</span>';
         }
         html += '</div>';
     }
@@ -581,7 +581,7 @@ function _renderListeningScore(data) {
         html += '<span class="score-total-value">' + data.totalCorrect + '/' + data.totalQuestions + ' (' + totalPercent + '%)</span>';
         html += '</div>';
         if (data.level) {
-            html += '<span class="score-level-badge">Level ' + data.level + '</span>';
+            html += '<span class="score-level-badge">Level ' + Number(data.level).toFixed(1) + '</span>';
         }
         html += '</div>';
     }
@@ -673,7 +673,7 @@ function _renderGenericScore(data) {
         html += '<span class="score-total-value">' + data.totalCorrect + '/' + data.totalQuestions + ' (' + percent + '%)</span>';
         html += '</div>';
         if (data.level) {
-            html += '<span class="score-level-badge">Level ' + data.level + '</span>';
+            html += '<span class="score-level-badge">Level ' + Number(data.level).toFixed(1) + '</span>';
         }
         html += '</div>';
         return html;

@@ -249,75 +249,68 @@
 
 
 /* ============================= */
-/* 채점 결과 뱃지 스타일           */
+/* 채점 결과 리스트 스타일           */
 /* ============================= */
 
-/* 뱃지 컨테이너 */
+/* 리스트 컨테이너 */
 .score-badges {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-direction: column;
+    gap: 0;
     margin-bottom: 12px;
 }
 
-/* 개별 뱃지 */
+/* 개별 행 (리스트 아이템) */
 .score-badge {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    min-width: 72px;
-    text-align: center;
-    border: 1px solid transparent;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+}
+
+.score-badge:last-child {
+    border-bottom: none;
 }
 
 .score-badge-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
     white-space: nowrap;
 }
 
 .score-badge-value {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    min-width: 48px;
+    text-align: center;
 }
 
 /* 정답률 높음 (80% 이상) */
-.score-badge.badge-high {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-}
 .score-badge.badge-high .score-badge-value {
+    background: #f0fdf4;
     color: #16a34a;
 }
 
 /* 정답률 중간 (50~79%) */
-.score-badge.badge-mid {
-    background: #fefce8;
-    border-color: #fef08a;
-}
 .score-badge.badge-mid .score-badge-value {
+    background: #fefce8;
     color: #ca8a04;
 }
 
 /* 정답률 낮음 (50% 미만) */
-.score-badge.badge-low {
-    background: #fef2f2;
-    border-color: #fecaca;
-}
 .score-badge.badge-low .score-badge-value {
+    background: #fef2f2;
     color: #dc2626;
 }
 
 /* 완료 표시 */
-.score-badge.badge-complete {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-}
 .score-badge.badge-complete .score-badge-value {
+    background: #f0fdf4;
     color: #16a34a;
 }
 
