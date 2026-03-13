@@ -302,11 +302,10 @@
     font-weight: 500;
 }
 
-/* 축하 아이콘 (80% 이상) */
+/* 폭죽 아이콘 (80% 이상) */
 .sd-celebrate {
-    color: #f59e0b;
-    font-size: 12px;
-    margin-left: 2px;
+    vertical-align: middle;
+    margin-left: 4px;
     animation: sdPulse 1.5s ease-in-out infinite;
 }
 
@@ -330,14 +329,6 @@
     border-radius: 99px;
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     min-width: 0;
-}
-
-/* Efficiency % 텍스트 */
-.sd-score-row-percent {
-    font-size: 11px;
-    font-weight: 500;
-    color: #94a3b8;
-    text-align: right;
 }
 
 /* ─── 요약 카드 (총점 + 레벨) ─── */
@@ -409,12 +400,33 @@
 }
 
 .sd-card-score .sd-summary-card-extra {
-    color: rgba(255, 255, 255, 0.75);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Efficiency 뱃지 (TOTAL SCORE 카드 하단) */
+.sd-efficiency-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: 20px;
 }
 
 .sd-card-level .sd-summary-card-extra {
     color: #77bf7e;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* 체크 아이콘 (ACHIEVED LEVEL 카드) */
+.sd-check-icon {
+    vertical-align: middle;
+    flex-shrink: 0;
 }
 
 /* ─── 라이팅 작성 내용 미리보기 ─── */
