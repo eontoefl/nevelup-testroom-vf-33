@@ -247,59 +247,6 @@
     margin: 0;
 }
 
-/* 점수 목록 (JS가 동적으로 채울 영역) */
-.score-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0;
-    font-size: 13px;
-}
-
-.score-item + .score-item {
-    border-top: 1px solid var(--border-color);
-}
-
-.score-item-label {
-    color: var(--text-secondary);
-}
-
-.score-item-value {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.score-item-value.correct {
-    color: var(--success-color);
-}
-
-/* 총점 행 */
-.score-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 2px solid var(--border-color);
-}
-
-.score-total-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.score-total-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-.score-total-level {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-left: 8px;
-}
 
 /* ============================= */
 /* 채점 결과 뱃지 스타일           */
