@@ -460,16 +460,15 @@ function _renderScoreFromRecord(recordJson, sectionType, dbRow) {
  */
 function _renderProgressRow(label, correct, total) {
     var percent = total > 0 ? Math.round((correct / total) * 100) : 0;
-    var celebIcon = percent >= 80 ? ' <i class="fa-solid fa-star sd-celebrate"></i>' : '';
+    var celebIcon = percent >= 80 ? ' <svg class="sd-celebrate" viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 21L3 14l7.5 3.5L5.5 21z" fill="#77bf7e"/><path d="M3 14l2-4.5 3.5 6L3 14z" fill="#5a9e61"/><path d="M5 9.5l4.5-2 1 4-5.5-2z" fill="#9480c5"/><path d="M9.5 7.5L12 3l1.5 5.5-4-1z" fill="#b9a5e8"/><circle cx="14" cy="5" r="1" fill="#f59e0b"/><circle cx="17" cy="8" r="0.8" fill="#77bf7e"/><circle cx="19" cy="4" r="0.6" fill="#9480c5"/><circle cx="16" cy="11" r="0.7" fill="#f59e0b"/><circle cx="20" cy="7" r="0.5" fill="#ef4444"/><circle cx="12" cy="9" r="0.6" fill="#77bf7e"/></svg>' : '';
     var html = '<div class="sd-score-row">';
     html += '<div class="sd-score-row-header">';
     html += '<span class="sd-score-row-label">' + label + '</span>';
-    html += '<span class="sd-score-row-stat">' + correct + '/' + total + celebIcon + '</span>';
+    html += '<span class="sd-score-row-stat">' + correct + ' / ' + total + celebIcon + '</span>';
     html += '</div>';
     html += '<div class="sd-progress-track">';
     html += '<div class="sd-progress-fill" style="width:' + percent + '%"></div>';
     html += '</div>';
-    html += '<div class="sd-score-row-percent">' + percent + '% Efficiency</div>';
     html += '</div>';
     return html;
 }
@@ -486,16 +485,16 @@ function _renderSummaryCards(data) {
     var html = '<div class="sd-summary-grid">';
     // 총점 카드
     html += '<div class="sd-summary-card sd-card-score">';
-    html += '<div class="sd-summary-card-label">총점</div>';
-    html += '<div class="sd-summary-card-value">' + data.totalCorrect + '<span class="sd-summary-card-sub">/' + data.totalQuestions + '</span></div>';
-    html += '<div class="sd-summary-card-extra">' + totalPercent + '%</div>';
+    html += '<div class="sd-summary-card-label">TOTAL SCORE</div>';
+    html += '<div class="sd-summary-card-value">' + data.totalCorrect + '<span class="sd-summary-card-sub"> / ' + data.totalQuestions + '</span></div>';
+    html += '<div class="sd-summary-card-extra"><span class="sd-efficiency-badge">' + totalPercent + '% Efficiency</span></div>';
     html += '</div>';
     // 레벨 카드
     if (levelStr) {
         html += '<div class="sd-summary-card sd-card-level">';
-        html += '<div class="sd-summary-card-label">Level</div>';
-        html += '<div class="sd-summary-card-value">' + levelStr + '</div>';
-        html += '<div class="sd-summary-card-extra">' + comment + '</div>';
+        html += '<div class="sd-summary-card-label">ACHIEVED LEVEL</div>';
+        html += '<div class="sd-summary-card-value">Level ' + levelStr + '</div>';
+        html += '<div class="sd-summary-card-extra"><svg class="sd-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M3 8.5l3.5 3.5 6.5-8" stroke="#77bf7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ' + comment + '</div>';
         html += '</div>';
     }
     html += '</div>';
