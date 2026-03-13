@@ -416,6 +416,63 @@ function _renderScorePanel(record, hasInitial, hasCurrent) {
     if (currentContent && hasCurrent) {
         currentContent.innerHTML = _renderScoreFromRecord(record.current_record, sectionType, record);
     }
+    
+    // 스피킹 오디오 재생 버튼 이벤트 바인딩
+    _bindAudioPlayButtons();
+}
+
+/** 스피킹 녹음 파일 재생 버튼 이벤트 */
+var _sdAudioInstance = null;
+
+function _bindAudioPlayButtons() {
+    var btns = document.querySelectorAll('.sd-audio-play-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].addEventListener('click', _handleAudioPlay);
+    }
+}
+
+function _handleAudioPlay(e) {
+    var btn = e.currentTarget;
+    var src = btn.getAttribute('data-src');
+    if (!src) return;
+    
+    // 이미 재생 중이면 정지
+    if (_sdAudioInstance && !_sdAudioInstance.paused) {
+        _sdAudioInstance.pause();
+        _sdAudioInstance.currentTime = 0;
+        _resetAllPlayButtons();
+        // 같은 버튼이면 토글 (정지만)
+        if (btn._playing) {
+            btn._playing = false;
+            return;
+        }
+    }
+    
+    // 새 오디오 재생
+    _sdAudioInstance = new Audio(src);
+    _resetAllPlayButtons();
+    
+    // 버튼 → 정지 아이콘으로 변경
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#9480c5"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+    btn._playing = true;
+    
+    _sdAudioInstance.play().catch(function(err) {
+        console.warn('🎧 오디오 재생 실패:', err);
+        _resetAllPlayButtons();
+    });
+    
+    _sdAudioInstance.onended = function() {
+        _resetAllPlayButtons();
+    };
+}
+
+function _resetAllPlayButtons() {
+    var btns = document.querySelectorAll('.sd-audio-play-btn');
+    var playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#9480c5"><path d="M8 5v14l11-7z"></path></svg>';
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].innerHTML = playIcon;
+        btns[i]._playing = false;
+    }
 }
 
 /**
@@ -439,7 +496,7 @@ function _renderScoreFromRecord(recordJson, sectionType, dbRow) {
             case 'writing':
                 return _renderWritingScore(data);
             case 'speaking':
-                return _renderSpeakingScore(data);
+                return _renderSpeakingScore(data, dbRow);
             default:
                 return _renderGenericScore(data);
         }
@@ -614,40 +671,78 @@ function _renderWritingScore(data) {
 }
 
 /** 스피킹 세부 점수 */
-function _renderSpeakingScore(data) {
+function _renderSpeakingScore(data, dbRow) {
     var html = '<div class="sd-score-list">';
     
-    // 따라말하기
-    if (data.repeat) {
-        var repeatDone = data.repeat.completed;
-        html += '<div class="sd-score-row ' + (repeatDone ? 'sd-row-complete' : '') + '">';
-        html += '<div class="sd-score-row-header">';
-        html += '<span class="sd-score-row-label">따라말하기</span>';
-        if (repeatDone) {
-            html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
-        } else {
-            html += '<span class="sd-score-row-stat sd-stat-pending">미완료</span>';
-        }
-        html += '</div>';
-        html += '</div>';
-    }
+    var items = [
+        { key: 'repeat', label: '따라말하기' },
+        { key: 'interview', label: '인터뷰' }
+    ];
+    var doneCount = 0;
+    var totalCount = 0;
     
-    // 인터뷰
-    if (data.interview) {
-        var interviewDone = data.interview.completed;
-        html += '<div class="sd-score-row ' + (interviewDone ? 'sd-row-complete' : '') + '">';
-        html += '<div class="sd-score-row-header">';
-        html += '<span class="sd-score-row-label">인터뷰</span>';
-        if (interviewDone) {
-            html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
-        } else {
-            html += '<span class="sd-score-row-stat sd-stat-pending">미완료</span>';
+    for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        if (data[item.key]) {
+            totalCount++;
+            var isDone = data[item.key].completed;
+            if (isDone) doneCount++;
+            
+            html += '<div class="sd-score-row">';
+            html += '<div class="sd-score-row-header">';
+            html += '<span class="sd-score-row-label">' + item.label + '</span>';
+            if (isDone) {
+                html += '<span class="sd-score-row-stat sd-stat-done">';
+                html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="#77bf7e"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+                html += ' 완료</span>';
+            } else {
+                html += '<span class="sd-score-row-stat sd-stat-pending">미완료</span>';
+            }
+            html += '</div>';
+            // 프로그레스 바 (완료=100%, 미완료=0%)
+            html += '<div class="sd-progress-track">';
+            html += '<div class="sd-progress-fill" style="width:' + (isDone ? '100' : '0') + '%"></div>';
+            html += '</div>';
+            html += '</div>';
         }
-        html += '</div>';
-        html += '</div>';
     }
     
     html += '</div>';
+    
+    // 녹음 파일 재생 버튼
+    var filePath = dbRow ? dbRow.speaking_file_1 : null;
+    if (filePath) {
+        var audioUrl = supabaseStorageUrl('speaking-files', filePath);
+        html += '<div class="sd-audio-player" id="sdAudioPlayerWrap">';
+        html += '<div class="sd-audio-player-header">';
+        html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="#9480c5"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>';
+        html += '<span>녹음 파일</span>';
+        html += '</div>';
+        html += '<div class="sd-audio-player-controls">';
+        html += '<button class="sd-audio-play-btn" id="sdAudioPlayBtn" data-src="' + _escapeHtml(audioUrl) + '">';
+        html += '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#9480c5">';
+        html += '<path d="M8 5v14l11-7z"></path>';
+        html += '</svg>';
+        html += '</button>';
+        html += '<span class="sd-audio-filename" id="sdAudioFilename">' + _escapeHtml(filePath.split('/').pop()) + '</span>';
+        html += '</div>';
+        html += '</div>';
+    }
+    
+    // 요약 카드 (COMPLETED x/x)
+    if (totalCount > 0) {
+        var allDone = doneCount === totalCount;
+        html += '<div class="sd-summary-grid" style="grid-template-columns:1fr">';
+        html += '<div class="sd-summary-card sd-card-score">';
+        html += '<div class="sd-summary-card-label">COMPLETED</div>';
+        html += '<div class="sd-summary-card-value">' + doneCount + ' / ' + totalCount + '</div>';
+        if (allDone) {
+            html += '<div class="sd-summary-card-extra"><span class="sd-efficiency-badge">All Done ✓</span></div>';
+        }
+        html += '</div>';
+        html += '</div>';
+    }
+    
     return html;
 }
 
