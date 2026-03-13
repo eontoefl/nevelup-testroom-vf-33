@@ -32,6 +32,17 @@ const SECTION_LABELS = {
     speaking: '스피킹'
 };
 
+// ─── 레벨별 코멘트 매핑 ───
+function _getLevelComment(level) {
+    var lv = Number(level) || 0;
+    if (lv >= 6.0) return 'Perfect Mastery!';
+    if (lv >= 5.0) return 'Excellent Command!';
+    if (lv >= 4.0) return 'Strong Performance!';
+    if (lv >= 3.0) return 'Advancing Steady!';
+    if (lv >= 2.0) return 'Making Progress!';
+    return 'Just Getting Started!';
+}
+
 /**
  * 과제 대시보드 열기
  * task-router.js의 _executeTaskCore()에서 4섹션일 때 호출됨
@@ -438,197 +449,163 @@ function _renderScoreFromRecord(recordJson, sectionType, dbRow) {
     }
 }
 
-// ─── 섹션별 상세 점수 렌더링 ───
+// ─── 섹션별 상세 점수 렌더링 (프로그레스 바 스타일) ───
+
+/**
+ * 프로그레스 바 행 하나를 생성하는 공통 헬퍼
+ * @param {string} label - 항목명
+ * @param {number} correct - 정답 수
+ * @param {number} total - 전체 수
+ * @returns {string} HTML
+ */
+function _renderProgressRow(label, correct, total) {
+    var percent = total > 0 ? Math.round((correct / total) * 100) : 0;
+    var celebIcon = percent >= 80 ? ' <i class="fa-solid fa-star sd-celebrate"></i>' : '';
+    var html = '<div class="sd-score-row">';
+    html += '<div class="sd-score-row-header">';
+    html += '<span class="sd-score-row-label">' + label + '</span>';
+    html += '<span class="sd-score-row-stat">' + correct + '/' + total + celebIcon + '</span>';
+    html += '</div>';
+    html += '<div class="sd-progress-track">';
+    html += '<div class="sd-progress-fill" style="width:' + percent + '%"></div>';
+    html += '</div>';
+    html += '<div class="sd-score-row-percent">' + percent + '% Efficiency</div>';
+    html += '</div>';
+    return html;
+}
+
+/**
+ * 총점 + 레벨 요약 카드 (2열 그리드)
+ */
+function _renderSummaryCards(data) {
+    if (data.totalCorrect === undefined || data.totalQuestions === undefined) return '';
+    var totalPercent = Math.round((data.totalCorrect / data.totalQuestions) * 100);
+    var levelStr = data.level ? Number(data.level).toFixed(1) : null;
+    var comment = data.level ? _getLevelComment(data.level) : '';
+    
+    var html = '<div class="sd-summary-grid">';
+    // 총점 카드
+    html += '<div class="sd-summary-card sd-card-score">';
+    html += '<div class="sd-summary-card-label">총점</div>';
+    html += '<div class="sd-summary-card-value">' + data.totalCorrect + '<span class="sd-summary-card-sub">/' + data.totalQuestions + '</span></div>';
+    html += '<div class="sd-summary-card-extra">' + totalPercent + '%</div>';
+    html += '</div>';
+    // 레벨 카드
+    if (levelStr) {
+        html += '<div class="sd-summary-card sd-card-level">';
+        html += '<div class="sd-summary-card-label">Level</div>';
+        html += '<div class="sd-summary-card-value">' + levelStr + '</div>';
+        html += '<div class="sd-summary-card-extra">' + comment + '</div>';
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+/**
+ * sets 객체를 숫자순으로 정렬하고 유형별로 그룹화하는 공통 헬퍼
+ */
+function _groupSets(data, typeLabels, typeOrder) {
+    if (!data.sets) return [];
+    var keys = Object.keys(data.sets).sort(function(a, b) {
+        var numA = parseInt(a.match(/\d+$/)[0]);
+        var numB = parseInt(b.match(/\d+$/)[0]);
+        return numA - numB;
+    });
+    var typeGroups = {};
+    keys.forEach(function(key) {
+        var typeName = key.replace(/_set\d+$/, '');
+        if (!typeGroups[typeName]) typeGroups[typeName] = [];
+        typeGroups[typeName].push(data.sets[key]);
+    });
+    var result = [];
+    typeOrder.forEach(function(typeName) {
+        var sets = typeGroups[typeName];
+        if (!sets) return;
+        var label = typeLabels[typeName] || typeName;
+        sets.forEach(function(setData, i) {
+            var correct = 0;
+            var total = 0;
+            if (setData && setData.answers) {
+                total = setData.answers.length;
+                setData.answers.forEach(function(a) { if (a.isCorrect) correct++; });
+            }
+            var setLabel = sets.length > 1 ? label + ' Set' + (i + 1) : label;
+            result.push({ label: setLabel, correct: correct, total: total });
+        });
+    });
+    return result;
+}
 
 /** 리딩 세부 점수 */
 function _renderReadingScore(data) {
-    var html = '<div class="score-badges">';
+    var items = _groupSets(data, {
+        fillblanks: '빈칸채우기', daily1: 'Daily1', daily2: 'Daily2', academic: 'Academic'
+    }, ['fillblanks', 'daily1', 'daily2', 'academic']);
     
-    // 유형별 한글 라벨
-    var typeLabels = {
-        fillblanks: '빈칸채우기',
-        daily1: 'Daily1',
-        daily2: 'Daily2',
-        academic: 'Academic'
-    };
-    
-    // sets에서 유형별 세트 추출
-    if (data.sets) {
-        var keys = Object.keys(data.sets).sort(function(a, b) {
-            var numA = parseInt(a.match(/\d+$/)[0]);
-            var numB = parseInt(b.match(/\d+$/)[0]);
-            return numA - numB;
-        });
-        
-        // 유형별로 그룹화
-        var typeGroups = {};
-        keys.forEach(function(key) {
-            var setData = data.sets[key];
-            // key 형식: "fillblanks_set9" → type = "fillblanks"
-            var typeName = key.replace(/_set\d+$/, '');
-            if (!typeGroups[typeName]) typeGroups[typeName] = [];
-            typeGroups[typeName].push(setData);
-        });
-        
-        // 유형 순서: fillblanks → daily1 → daily2 → academic
-        var typeOrder = ['fillblanks', 'daily1', 'daily2', 'academic'];
-        typeOrder.forEach(function(typeName) {
-            var sets = typeGroups[typeName];
-            if (!sets) return;
-            
-            var label = typeLabels[typeName] || typeName;
-            
-            sets.forEach(function(setData, i) {
-                var correct = 0;
-                var total = 0;
-                if (setData && setData.answers) {
-                    total = setData.answers.length;
-                    setData.answers.forEach(function(a) {
-                        if (a.isCorrect) correct++;
-                    });
-                }
-                var setLabel = sets.length > 1 ? label + ' Set' + (i + 1) : label;
-                var percent = total > 0 ? Math.round((correct / total) * 100) : 0;
-                var badgeClass = percent >= 80 ? 'badge-high' : percent >= 50 ? 'badge-mid' : 'badge-low';
-                html += '<div class="score-badge ' + badgeClass + '">';
-                html += '<span class="score-badge-label">' + setLabel + '</span>';
-                html += '<span class="score-badge-value">' + correct + '/' + total + '</span>';
-                html += '</div>';
-            });
-        });
-    }
-    
+    var html = '<div class="sd-score-list">';
+    items.forEach(function(item) {
+        html += _renderProgressRow(item.label, item.correct, item.total);
+    });
     html += '</div>';
-    
-    // 총점 + 레벨
-    if (data.totalCorrect !== undefined && data.totalQuestions !== undefined) {
-        var totalPercent = Math.round((data.totalCorrect / data.totalQuestions) * 100);
-        html += '<div class="score-total-bar">';
-        html += '<div class="score-total-info">';
-        html += '<span class="score-total-label">총점</span>';
-        html += '<span class="score-total-value">' + data.totalCorrect + '/' + data.totalQuestions + ' (' + totalPercent + '%)</span>';
-        html += '</div>';
-        if (data.level) {
-            html += '<span class="score-level-badge">Level ' + Number(data.level).toFixed(1) + '</span>';
-        }
-        html += '</div>';
-    }
-    
+    html += _renderSummaryCards(data);
     return html;
 }
 
 /** 리스닝 세부 점수 */
 function _renderListeningScore(data) {
-    var html = '<div class="score-badges">';
+    var items = _groupSets(data, {
+        response: '응답고르기', conver: '대화', announcement: '공지사항', lecture: '렉쳐'
+    }, ['response', 'conver', 'announcement', 'lecture']);
     
-    var typeLabels = {
-        response: '응답고르기',
-        conver: '대화',
-        announcement: '공지사항',
-        lecture: '렉쳐'
-    };
-    
-    if (data.sets) {
-        var keys = Object.keys(data.sets).sort(function(a, b) {
-            var numA = parseInt(a.match(/\d+$/)[0]);
-            var numB = parseInt(b.match(/\d+$/)[0]);
-            return numA - numB;
-        });
-        
-        var typeGroups = {};
-        keys.forEach(function(key) {
-            var setData = data.sets[key];
-            var typeName = key.replace(/_set\d+$/, '');
-            if (!typeGroups[typeName]) typeGroups[typeName] = [];
-            typeGroups[typeName].push(setData);
-        });
-        
-        var typeOrder = ['response', 'conver', 'announcement', 'lecture'];
-        typeOrder.forEach(function(typeName) {
-            var sets = typeGroups[typeName];
-            if (!sets) return;
-            
-            var label = typeLabels[typeName] || typeName;
-            
-            sets.forEach(function(setData, i) {
-                var correct = 0;
-                var total = 0;
-                if (setData && setData.answers) {
-                    total = setData.answers.length;
-                    setData.answers.forEach(function(a) {
-                        if (a.isCorrect) correct++;
-                    });
-                }
-                var setLabel = sets.length > 1 ? label + ' Set' + (i + 1) : label;
-                var percent = total > 0 ? Math.round((correct / total) * 100) : 0;
-                var badgeClass = percent >= 80 ? 'badge-high' : percent >= 50 ? 'badge-mid' : 'badge-low';
-                html += '<div class="score-badge ' + badgeClass + '">';
-                html += '<span class="score-badge-label">' + setLabel + '</span>';
-                html += '<span class="score-badge-value">' + correct + '/' + total + '</span>';
-                html += '</div>';
-            });
-        });
-    }
-    
+    var html = '<div class="sd-score-list">';
+    items.forEach(function(item) {
+        html += _renderProgressRow(item.label, item.correct, item.total);
+    });
     html += '</div>';
-    
-    // 총점 + 레벨
-    if (data.totalCorrect !== undefined && data.totalQuestions !== undefined) {
-        var totalPercent = Math.round((data.totalCorrect / data.totalQuestions) * 100);
-        html += '<div class="score-total-bar">';
-        html += '<div class="score-total-info">';
-        html += '<span class="score-total-label">총점</span>';
-        html += '<span class="score-total-value">' + data.totalCorrect + '/' + data.totalQuestions + ' (' + totalPercent + '%)</span>';
-        html += '</div>';
-        if (data.level) {
-            html += '<span class="score-level-badge">Level ' + Number(data.level).toFixed(1) + '</span>';
-        }
-        html += '</div>';
-    }
-    
+    html += _renderSummaryCards(data);
     return html;
 }
 
 /** 라이팅 세부 점수 */
 function _renderWritingScore(data) {
-    var html = '<div class="score-badges">';
+    var html = '<div class="sd-score-list">';
     
-    // Arrange
+    // Arrange — 점수 프로그레스 바
     if (data.arrange) {
         var arrCorrect = data.arrange.correct || 0;
         var arrTotal = data.arrange.total || 0;
-        var arrPercent = arrTotal > 0 ? Math.round((arrCorrect / arrTotal) * 100) : 0;
-        var badgeClass = arrPercent >= 80 ? 'badge-high' : arrPercent >= 50 ? 'badge-mid' : 'badge-low';
-        html += '<div class="score-badge ' + badgeClass + '">';
-        html += '<span class="score-badge-label">Arrange</span>';
-        html += '<span class="score-badge-value">' + arrCorrect + '/' + arrTotal + '</span>';
-        html += '</div>';
+        html += _renderProgressRow('Arrange', arrCorrect, arrTotal);
     }
     
-    // Email
+    // Email — 완료 표시 + 작성 내용
     if (data.email) {
-        html += '<div class="score-badge badge-complete">';
-        html += '<span class="score-badge-label">Email</span>';
-        html += '<span class="score-badge-value">완료 ✅</span>';
+        html += '<div class="sd-score-row sd-row-complete">';
+        html += '<div class="sd-score-row-header">';
+        html += '<span class="sd-score-row-label">Email</span>';
+        html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
+        html += '</div>';
         html += '</div>';
         if (data.email.userAnswer) {
-            html += '<div class="score-text-preview">';
-            html += '<div class="score-text-preview-label">Email 작성 내용</div>';
-            html += '<div class="score-text-preview-content">' + _escapeHtml(data.email.userAnswer) + '</div>';
+            html += '<div class="sd-text-preview">';
+            html += '<div class="sd-text-preview-label">Email 작성 내용</div>';
+            html += '<div class="sd-text-preview-content">' + _escapeHtml(data.email.userAnswer) + '</div>';
             html += '</div>';
         }
     }
     
-    // Discussion
+    // Discussion — 완료 표시 + 작성 내용
     if (data.discussion) {
-        html += '<div class="score-badge badge-complete">';
-        html += '<span class="score-badge-label">Discussion</span>';
-        html += '<span class="score-badge-value">완료 ✅</span>';
+        html += '<div class="sd-score-row sd-row-complete">';
+        html += '<div class="sd-score-row-header">';
+        html += '<span class="sd-score-row-label">Discussion</span>';
+        html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
+        html += '</div>';
         html += '</div>';
         if (data.discussion.userAnswer) {
-            html += '<div class="score-text-preview">';
-            html += '<div class="score-text-preview-label">Discussion 작성 내용</div>';
-            html += '<div class="score-text-preview-content">' + _escapeHtml(data.discussion.userAnswer) + '</div>';
+            html += '<div class="sd-text-preview">';
+            html += '<div class="sd-text-preview-label">Discussion 작성 내용</div>';
+            html += '<div class="sd-text-preview-content">' + _escapeHtml(data.discussion.userAnswer) + '</div>';
             html += '</div>';
         }
     }
@@ -639,23 +616,35 @@ function _renderWritingScore(data) {
 
 /** 스피킹 세부 점수 */
 function _renderSpeakingScore(data) {
-    var html = '<div class="score-badges">';
+    var html = '<div class="sd-score-list">';
     
     // 따라말하기
     if (data.repeat) {
         var repeatDone = data.repeat.completed;
-        html += '<div class="score-badge ' + (repeatDone ? 'badge-complete' : 'badge-low') + '">';
-        html += '<span class="score-badge-label">따라말하기</span>';
-        html += '<span class="score-badge-value">' + (repeatDone ? '완료 ✅' : '미완료') + '</span>';
+        html += '<div class="sd-score-row ' + (repeatDone ? 'sd-row-complete' : '') + '">';
+        html += '<div class="sd-score-row-header">';
+        html += '<span class="sd-score-row-label">따라말하기</span>';
+        if (repeatDone) {
+            html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
+        } else {
+            html += '<span class="sd-score-row-stat sd-stat-pending">미완료</span>';
+        }
+        html += '</div>';
         html += '</div>';
     }
     
     // 인터뷰
     if (data.interview) {
         var interviewDone = data.interview.completed;
-        html += '<div class="score-badge ' + (interviewDone ? 'badge-complete' : 'badge-low') + '">';
-        html += '<span class="score-badge-label">인터뷰</span>';
-        html += '<span class="score-badge-value">' + (interviewDone ? '완료 ✅' : '미완료') + '</span>';
+        html += '<div class="sd-score-row ' + (interviewDone ? 'sd-row-complete' : '') + '">';
+        html += '<div class="sd-score-row-header">';
+        html += '<span class="sd-score-row-label">인터뷰</span>';
+        if (interviewDone) {
+            html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
+        } else {
+            html += '<span class="sd-score-row-stat sd-stat-pending">미완료</span>';
+        }
+        html += '</div>';
         html += '</div>';
     }
     
@@ -666,16 +655,10 @@ function _renderSpeakingScore(data) {
 /** 기본 점수 표시 (섹션을 모를 때 폴백) */
 function _renderGenericScore(data) {
     if (data.totalCorrect !== undefined && data.totalQuestions !== undefined) {
-        var percent = Math.round((data.totalCorrect / data.totalQuestions) * 100);
-        var html = '<div class="score-total-bar">';
-        html += '<div class="score-total-info">';
-        html += '<span class="score-total-label">총점</span>';
-        html += '<span class="score-total-value">' + data.totalCorrect + '/' + data.totalQuestions + ' (' + percent + '%)</span>';
+        var html = '<div class="sd-score-list">';
+        html += _renderProgressRow('총점', data.totalCorrect, data.totalQuestions);
         html += '</div>';
-        if (data.level) {
-            html += '<span class="score-level-badge">Level ' + Number(data.level).toFixed(1) + '</span>';
-        }
-        html += '</div>';
+        html += _renderSummaryCards(data);
         return html;
     }
     if (data.completed) {
