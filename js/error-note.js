@@ -11,22 +11,26 @@
  *   - 다시풀기 → current_error_note_text (덮어쓰기 가능)
  *   - 단어 수 카운트, 자동저장(localStorage), 제출(DB)
  *   - 마감 후 실전풀이 오답노트 작성 불가
+ *   - 스피킹 과제: 실전풀이 탭에서 녹음 파일 첨부 + 업로드
  *
  * 의존:
- *   supabase-client.js (supabaseUpdate, getStudyResultV3, getCurrentUser)
+ *   supabase-client.js (supabaseUpdate, supabaseStorageUpload, getStudyResultV3, getCurrentUser)
  *   explain-viewer.js  (_explainState, 선택 시 ErrorNote.init 호출)
  *
- * 참조: v3-design-spec.md §8, §2-5-A
+ * 참조: v3-design-spec.md §8, §2-5-A, §2-5-1
  */
 
 var ErrorNote = {
 
     // ─── 내부 상태 ───
     _activeTab: 'initial',    // 'initial' | 'current'
+    _sectionType: null,       // 'reading' | 'listening' | 'writing' | 'speaking'
+    _moduleNumber: null,
     _dbRow: null,             // study_results_v3 레코드
     _isSubmitted: false,      // 현재 탭에서 제출 완료 여부
     _autoSaveTimer: null,
     _autoSaveKey: null,       // localStorage 키
+    _selectedFile: null,      // 스피킹 녹음 파일 (File 객체)
 
     // ========================================
     // 단어 수 카운트
@@ -44,7 +48,10 @@ var ErrorNote = {
 
         this._dbRow = dbRow;
         this._activeTab = activeTab || 'initial';
+        this._sectionType = sectionType;
+        this._moduleNumber = moduleNumber;
         this._isSubmitted = false;
+        this._selectedFile = null;
 
         // 자동저장 키 설정
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
@@ -52,6 +59,7 @@ var ErrorNote = {
         this._autoSaveKey = 'errornote_' + userId + '_' + sectionType + '_' + moduleNumber;
 
         this._renderMemo();
+        this._renderSpeakingFileArea();
         this._bindEvents();
     },
 
@@ -120,6 +128,58 @@ var ErrorNote = {
         this._updateWordCount();
     },
 
+    // ========================================
+    // 스피킹 파일 첨부 영역 렌더링
+    // ========================================
+    _renderSpeakingFileArea: function() {
+        var fileArea = document.getElementById('explainSpeakingFileArea');
+        var fileInput = document.getElementById('explainSpeakingFileInput');
+        var fileMsg = document.getElementById('explainSpeakingFileMsg');
+        if (!fileArea) return;
+
+        var isSpeaking = this._sectionType === 'speaking';
+        var isInitialTab = this._activeTab === 'initial';
+        var row = this._dbRow;
+        var alreadySubmitted = row && row.error_note_submitted === true;
+        var hasFile = row && row.speaking_file_1;
+
+        // 스피킹 + 실전풀이 탭만 표시
+        if (isSpeaking && isInitialTab) {
+            fileArea.style.display = 'block';
+
+            if (alreadySubmitted) {
+                // 이미 제출됨 → 잠금
+                if (fileInput) { fileInput.disabled = true; fileInput.style.display = 'none'; }
+                if (fileMsg) {
+                    if (hasFile) {
+                        fileMsg.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> 파일 첨부 완료';
+                    } else {
+                        fileMsg.textContent = '파일 없이 제출되었습니다.';
+                    }
+                    fileMsg.style.color = '#64748b';
+                }
+            } else {
+                // 작성 가능
+                if (fileInput) { fileInput.disabled = false; fileInput.style.display = ''; fileInput.value = ''; }
+                if (fileMsg) { fileMsg.textContent = '녹음 파일을 첨부해주세요. (최대 25MB)'; fileMsg.style.color = '#64748b'; }
+            }
+        } else if (isSpeaking && !isInitialTab) {
+            // 다시풀기 탭 → 안내 메시지
+            fileArea.style.display = 'block';
+            if (fileInput) { fileInput.style.display = 'none'; }
+            if (fileMsg) {
+                fileMsg.textContent = '다시풀기 오답노트의 녹음 파일은 저장되지 않습니다. 개인 연습용으로만 활용해 주세요.';
+                fileMsg.style.color = '#94a3b8';
+            }
+        } else {
+            // 스피킹 외 → 숨김
+            fileArea.style.display = 'none';
+        }
+
+        this._selectedFile = null;
+        this._updateSubmitState();
+    },
+
     // ── 상태별 UI 세팅 ──
 
     _showReadonly: function(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, text, msg) {
@@ -164,11 +224,12 @@ var ErrorNote = {
         var self = this;
         var textarea = document.getElementById('explainMemoTextarea');
         var submitBtn = document.getElementById('explainMemoSubmitBtn');
+        var fileInput = document.getElementById('explainSpeakingFileInput');
 
         if (textarea) {
-            // 기존 리스너 제거 후 재등록
             textarea.oninput = function() {
                 self._updateWordCount();
+                self._updateSubmitState();
                 self._scheduleAutoSave();
             };
         }
@@ -178,15 +239,52 @@ var ErrorNote = {
                 self.handleSubmit();
             };
         }
+
+        if (fileInput) {
+            fileInput.onchange = function() {
+                self._handleFileSelect();
+            };
+        }
     },
 
     // ========================================
-    // 단어 수 업데이트 + 제출 버튼 활성화
+    // 파일 선택 처리
+    // ========================================
+    _handleFileSelect: function() {
+        var fileInput = document.getElementById('explainSpeakingFileInput');
+        var fileMsg = document.getElementById('explainSpeakingFileMsg');
+        if (!fileInput || !fileInput.files[0]) return;
+
+        var file = fileInput.files[0];
+
+        // 25MB 제한
+        if (file.size > 25 * 1024 * 1024) {
+            alert('파일 크기가 25MB를 초과합니다. 더 작은 파일을 선택해주세요.');
+            fileInput.value = '';
+            this._selectedFile = null;
+            if (fileMsg) { fileMsg.textContent = '녹음 파일을 첨부해주세요. (최대 25MB)'; fileMsg.style.color = '#64748b'; }
+            this._updateSubmitState();
+            return;
+        }
+
+        this._selectedFile = file;
+
+        // 파일 선택 완료 UI
+        if (fileMsg) {
+            fileMsg.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> ' + file.name + ' (' + Math.round(file.size / 1024) + 'KB)';
+            fileMsg.style.color = '#334155';
+        }
+
+        console.log('📎 [메모장] 파일 선택:', file.name, Math.round(file.size / 1024) + 'KB');
+        this._updateSubmitState();
+    },
+
+    // ========================================
+    // 단어 수 업데이트
     // ========================================
     _updateWordCount: function() {
         var textarea = document.getElementById('explainMemoTextarea');
         var countEl = document.getElementById('explainMemoWordCount');
-        var submitBtn = document.getElementById('explainMemoSubmitBtn');
         if (!textarea || !countEl) return;
 
         var count = this.countWords(textarea.value);
@@ -197,10 +295,26 @@ var ErrorNote = {
         } else {
             countEl.style.color = '#ef4444';
         }
+    },
 
-        // 20단어 이상이어야 제출 가능
-        if (submitBtn && !textarea.readOnly) {
-            submitBtn.disabled = count < 20;
+    // ========================================
+    // 제출 버튼 활성화 조건 관리
+    // ========================================
+    _updateSubmitState: function() {
+        var textarea = document.getElementById('explainMemoTextarea');
+        var submitBtn = document.getElementById('explainMemoSubmitBtn');
+        if (!textarea || !submitBtn || textarea.readOnly) return;
+
+        var wordCount = this.countWords(textarea.value);
+        var textOk = wordCount >= 20;
+
+        // 스피킹 + 실전풀이: 텍스트 + 파일 둘 다 필요
+        var isSpeakingInitial = this._sectionType === 'speaking' && this._activeTab === 'initial';
+        if (isSpeakingInitial) {
+            var fileOk = this._selectedFile != null;
+            submitBtn.disabled = !(textOk && fileOk);
+        } else {
+            submitBtn.disabled = !textOk;
         }
     },
 
@@ -255,6 +369,13 @@ var ErrorNote = {
             return;
         }
 
+        // 스피킹 + 실전풀이: 파일 필수
+        var isSpeakingInitial = this._sectionType === 'speaking' && this._activeTab === 'initial';
+        if (isSpeakingInitial && !this._selectedFile) {
+            alert('스피킹 녹음 파일을 첨부해주세요.');
+            return;
+        }
+
         this._submitToDb(text, wordCount);
     },
 
@@ -279,14 +400,43 @@ var ErrorNote = {
         }
 
         try {
+            // ── 스피킹 + 실전풀이: 파일 먼저 업로드 ──
+            var filePath = null;
+            var isSpeakingInitial = this._sectionType === 'speaking' && this._activeTab === 'initial';
+
+            if (isSpeakingInitial && this._selectedFile) {
+                var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+                if (!user || !user.id) {
+                    throw new Error('사용자 정보 없음');
+                }
+
+                var ext = this._selectedFile.name.split('.').pop() || 'bin';
+                var timestamp = Date.now();
+                var storagePath = user.id + '/speaking_' + this._sectionType + '_m' + this._moduleNumber + '_' + timestamp + '.' + ext;
+
+                if (submitBtn) submitBtn.textContent = '파일 업로드 중...';
+
+                filePath = await supabaseStorageUpload('speaking-files', storagePath, this._selectedFile);
+
+                if (!filePath) {
+                    throw new Error('파일 업로드 실패');
+                }
+            }
+
+            // ── DB 저장 ──
             var updateData = {};
 
             if (this._activeTab === 'initial') {
                 updateData.error_note_text = text;
                 updateData.error_note_submitted = true;
+                if (filePath) {
+                    updateData.speaking_file_1 = filePath;
+                }
             } else {
                 updateData.current_error_note_text = text;
             }
+
+            if (submitBtn) submitBtn.textContent = '저장 중...';
 
             await supabaseUpdate('study_results_v3', 'id=eq.' + row.id, updateData);
 
@@ -294,6 +444,7 @@ var ErrorNote = {
             if (this._activeTab === 'initial') {
                 row.error_note_text = text;
                 row.error_note_submitted = true;
+                if (filePath) row.speaking_file_1 = filePath;
             } else {
                 row.current_error_note_text = text;
             }
@@ -314,6 +465,8 @@ var ErrorNote = {
                     submitBtn.textContent = '제출 완료';
                     submitBtn.classList.add('submitted');
                 }
+                // 스피킹 파일 영역 잠금
+                this._lockSpeakingFileArea();
                 console.log('📝 [메모장] 실전풀이 오답노트 제출 완료 (영구 잠금)');
             } else {
                 // 다시풀기 오답노트 → 제출 완료 표시 (재수정 가능)
@@ -330,6 +483,24 @@ var ErrorNote = {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '저장 실패 — 다시 시도';
             }
+            alert('저장에 실패했습니다. 다시 시도해 주세요.');
+        }
+    },
+
+    // ========================================
+    // 스피킹 파일 영역 잠금 (제출 후)
+    // ========================================
+    _lockSpeakingFileArea: function() {
+        var fileInput = document.getElementById('explainSpeakingFileInput');
+        var fileMsg = document.getElementById('explainSpeakingFileMsg');
+
+        if (fileInput) {
+            fileInput.disabled = true;
+            fileInput.style.display = 'none';
+        }
+        if (fileMsg && this._selectedFile) {
+            fileMsg.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> 파일 첨부 완료';
+            fileMsg.style.color = '#64748b';
         }
     },
 
@@ -345,8 +516,15 @@ var ErrorNote = {
         }
         this._dbRow = null;
         this._activeTab = 'initial';
+        this._sectionType = null;
+        this._moduleNumber = null;
         this._isSubmitted = false;
         this._autoSaveKey = null;
+        this._selectedFile = null;
+
+        // 파일 영역 숨기기
+        var fileArea = document.getElementById('explainSpeakingFileArea');
+        if (fileArea) fileArea.style.display = 'none';
     }
 };
 
