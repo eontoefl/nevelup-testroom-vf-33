@@ -384,4 +384,55 @@ async function getCompletedTasksV3(userId) {
     return rows || [];
 }
 
+// ================================================
+// Storage 파일 업로드
+// ================================================
+
+/**
+ * Supabase Storage에 파일 업로드
+ * @param {string} bucket - 버킷 이름 (예: 'speaking-files')
+ * @param {string} path - 저장 경로 (예: 'userId/filename.mp3')
+ * @param {File} file - 업로드할 File 객체
+ * @returns {Promise<string|null>} 성공 시 저장 경로, 실패 시 null
+ */
+async function supabaseStorageUpload(bucket, path, file) {
+    console.log('📤 [Storage] 업로드 시작:', bucket + '/' + path);
+
+    try {
+        var url = SUPABASE_CONFIG.url + '/storage/v1/object/' + bucket + '/' + path;
+        var response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': 'Bearer ' + SUPABASE_CONFIG.anonKey,
+                'Content-Type': file.type || 'application/octet-stream',
+                'x-upsert': 'true'
+            },
+            body: file
+        });
+
+        if (response.ok) {
+            console.log('✅ [Storage] 업로드 성공:', path);
+            return path;
+        } else {
+            var errText = await response.text();
+            console.error('❌ [Storage] 업로드 실패:', response.status, errText);
+            return null;
+        }
+    } catch (e) {
+        console.error('❌ [Storage] 업로드 에러:', e);
+        return null;
+    }
+}
+
+/**
+ * Supabase Storage 공개 URL 생성
+ * @param {string} bucket - 버킷 이름
+ * @param {string} path - 파일 경로
+ * @returns {string} 공개 URL
+ */
+function supabaseStorageUrl(bucket, path) {
+    return SUPABASE_CONFIG.url + '/storage/v1/object/public/' + bucket + '/' + path;
+}
+
 console.log('✅ supabase-client.js 로드 완료');
