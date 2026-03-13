@@ -393,7 +393,11 @@ function _extractData(def, recordJson, st) {
             if (!sets) return null;
 
             var collected = [];
-            var keys = Object.keys(sets).sort();
+            var keys = Object.keys(sets).sort(function(a, b) {
+                var numA = parseInt(a.match(/\d+$/)[0]);
+                var numB = parseInt(b.match(/\d+$/)[0]);
+                return numA - numB;
+            });
 
             keys.forEach(function(key) {
                 if (key.indexOf(def.type + '_set') === 0) {
