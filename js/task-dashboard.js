@@ -403,7 +403,7 @@ function _renderScorePanel(record, hasInitial, hasCurrent) {
     // 실전풀이 결과
     if (initialContent) {
         if (hasInitial) {
-            initialContent.innerHTML = _renderScoreFromRecord(record.initial_record, sectionType, record);
+            initialContent.innerHTML = _renderScoreFromRecord(record.initial_record, sectionType, record, 'initial');
         } else {
             initialContent.innerHTML = '<p class="score-empty-msg">풀이 후 표시됩니다</p>';
         }
@@ -414,7 +414,7 @@ function _renderScorePanel(record, hasInitial, hasCurrent) {
         currentBlock.style.display = hasCurrent ? 'block' : 'none';
     }
     if (currentContent && hasCurrent) {
-        currentContent.innerHTML = _renderScoreFromRecord(record.current_record, sectionType, record);
+        currentContent.innerHTML = _renderScoreFromRecord(record.current_record, sectionType, record, 'current');
     }
     
     // 스피킹 오디오 재생 버튼 이벤트 바인딩
@@ -436,14 +436,16 @@ function _handleAudioPlay(e) {
     var src = btn.getAttribute('data-src');
     if (!src) return;
     
+    // 현재 버튼이 재생 중이었는지 먼저 기억
+    var wasPlaying = !!btn._playing;
+    
     // 이미 재생 중이면 정지
     if (_sdAudioInstance && !_sdAudioInstance.paused) {
         _sdAudioInstance.pause();
         _sdAudioInstance.currentTime = 0;
         _resetAllPlayButtons();
         // 같은 버튼이면 토글 (정지만)
-        if (btn._playing) {
-            btn._playing = false;
+        if (wasPlaying) {
             return;
         }
     }
@@ -481,7 +483,7 @@ function _resetAllPlayButtons() {
  * @param {string} sectionType - 'reading' | 'listening' | 'writing' | 'speaking'
  * @param {Object} dbRow - DB 행 전체 (speaking_file_1 등 별도 컬럼 접근용)
  */
-function _renderScoreFromRecord(recordJson, sectionType, dbRow) {
+function _renderScoreFromRecord(recordJson, sectionType, dbRow, mode) {
     if (!recordJson) return '<p class="score-empty-msg">데이터 없음</p>';
     
     try {
@@ -496,7 +498,7 @@ function _renderScoreFromRecord(recordJson, sectionType, dbRow) {
             case 'writing':
                 return _renderWritingScore(data);
             case 'speaking':
-                return _renderSpeakingScore(data, dbRow);
+                return _renderSpeakingScore(data, dbRow, mode);
             default:
                 return _renderGenericScore(data);
         }
@@ -671,7 +673,7 @@ function _renderWritingScore(data) {
 }
 
 /** 스피킹 세부 점수 */
-function _renderSpeakingScore(data, dbRow) {
+function _renderSpeakingScore(data, dbRow, mode) {
     var html = '<div class="sd-score-list">';
     
     var items = [
@@ -709,24 +711,26 @@ function _renderSpeakingScore(data, dbRow) {
     
     html += '</div>';
     
-    // 녹음 파일 재생 버튼
-    var filePath = dbRow ? dbRow.speaking_file_1 : null;
-    if (filePath) {
-        var audioUrl = supabaseStorageUrl('speaking-files', filePath);
-        html += '<div class="sd-audio-player" id="sdAudioPlayerWrap">';
-        html += '<div class="sd-audio-player-header">';
-        html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="#9480c5"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>';
-        html += '<span>녹음 파일</span>';
-        html += '</div>';
-        html += '<div class="sd-audio-player-controls">';
-        html += '<button class="sd-audio-play-btn" id="sdAudioPlayBtn" data-src="' + _escapeHtml(audioUrl) + '">';
-        html += '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#9480c5">';
-        html += '<path d="M8 5v14l11-7z"></path>';
-        html += '</svg>';
-        html += '</button>';
-        html += '<span class="sd-audio-filename" id="sdAudioFilename">' + _escapeHtml(filePath.split('/').pop()) + '</span>';
-        html += '</div>';
-        html += '</div>';
+    // 녹음 파일 재생 버튼 — 실전풀이에서만 표시
+    if (mode === 'initial') {
+        var filePath = dbRow ? dbRow.speaking_file_1 : null;
+        if (filePath) {
+            var audioUrl = supabaseStorageUrl('speaking-files', filePath);
+            html += '<div class="sd-audio-player" id="sdAudioPlayerWrap">';
+            html += '<div class="sd-audio-player-header">';
+            html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="#9480c5"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>';
+            html += '<span>녹음 파일</span>';
+            html += '</div>';
+            html += '<div class="sd-audio-player-controls">';
+            html += '<button class="sd-audio-play-btn" id="sdAudioPlayBtn" data-src="' + _escapeHtml(audioUrl) + '">';
+            html += '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#9480c5">';
+            html += '<path d="M8 5v14l11-7z"></path>';
+            html += '</svg>';
+            html += '</button>';
+            html += '<span class="sd-audio-filename" id="sdAudioFilename">' + _escapeHtml(filePath.split('/').pop()) + '</span>';
+            html += '</div>';
+            html += '</div>';
+        }
     }
     
     // 요약 카드 (COMPLETED x/x)
