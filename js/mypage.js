@@ -536,7 +536,7 @@ function renderGrass() {
     // ★ 데드라인 연장된 dayNum 목록 계산
     const extendedDayNums = buildExtendedDayNums();
 
-    const levelClasses = ['', 'level-1', 'level-2', 'level-3'];
+    const levelClasses = ['', 'level-1', 'level-2'];
 
     document.querySelectorAll(`#${gridId} .g`).forEach(cell => {
         const dayNum = parseInt(cell.dataset.day);
@@ -552,11 +552,11 @@ function renderGrass() {
 
         if (level && level > 0) {
             // 인증률 레벨에 따라 클래스 적용
-            cell.classList.remove('empty', 'fail', 'success', 'level-1', 'level-2', 'level-3');
+            cell.classList.remove('empty', 'fail', 'success', 'level-1', 'level-2');
             cell.classList.add(levelClasses[level]);
         } else if (dayNum < currentDay && !extendedDayNums.has(dayNum)) {
             // ★ 기한 지남 + 미제출 → 빨간칸
-            cell.classList.remove('empty', 'success', 'level-1', 'level-2', 'level-3');
+            cell.classList.remove('empty', 'success', 'level-1', 'level-2');
             cell.classList.add('fail');
         }
     });
@@ -644,10 +644,11 @@ function buildCompletedMap() {
             // 보카/입문서: 0 또는 3 (100%)
             level = record.initial_record ? 3 : 0;
         } else {
-            // 리딩/리스닝/라이팅/스피킹: 4단계
+            // 리딩/리스닝/라이팅/스피킹: 2단계 (디자인스펙 §4-1)
+            // level 1 = 실전풀이 완료 (50%)
+            // level 2 = 실전풀이 + 오답노트 제출 (100%)
             if (record.initial_record) level = 1;
-            if (record.initial_record && record.current_record) level = 2;
-            if (record.initial_record && record.current_record && record.error_note_submitted) level = 3;
+            if (record.initial_record && record.error_note_submitted) level = 2;
         }
 
         if (level === 0) return;

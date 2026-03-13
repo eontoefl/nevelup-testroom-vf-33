@@ -456,10 +456,6 @@ body {
   background: #40c463;
   border: 1px solid #2ea04f;
 }
-.g.level-3 {
-  background: #216e39;
-  border: 1px solid #19562d;
-}
 .g.success {
   background: #216e39;
   border: 1px solid #19562d;
@@ -524,7 +520,6 @@ body {
 }
 .legend-dot.level-1  { background: #9be9a8; border: 1px solid #7dd390; }
 .legend-dot.level-2  { background: #40c463; border: 1px solid #2ea04f; }
-.legend-dot.level-3  { background: #216e39; border: 1px solid #19562d; }
 .legend-dot.fail     { background: #fca5a5; border: 1px solid #f87171; }
 .legend-dot.empty    { background: var(--sub-light); border: 1px dashed var(--sub); }
 .legend-dot.extended { background: #eff6ff; border: 2px solid #3b82f6; }
