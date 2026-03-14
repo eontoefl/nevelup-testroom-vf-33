@@ -201,10 +201,6 @@ function logout() {
             currentTest.currentDay = null;
         }
         
-        if (typeof stopAllTimers === 'function') {
-            stopAllTimers();
-        }
-        
         // 2차 풀이 플로팅 UI 제거
         const retakeFloating = document.getElementById('retakeFloatingUI');
         if (retakeFloating) retakeFloating.remove();
