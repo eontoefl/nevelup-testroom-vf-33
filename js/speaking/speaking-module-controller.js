@@ -425,7 +425,7 @@ async function _finishSpeakingModule() {
  * - AudioPlayer 자원 해제
  * - 모듈 상태 초기화
  * 
- * 호출 시점: backToTaskDashboard(), speakingBackToTaskDashboard()
+ * 호출 시점: backToTaskDashboard()
  */
 function cleanupSpeakingModule() {
     var mod = window.currentSpeakingModule;
@@ -460,20 +460,7 @@ function cleanupSpeakingModule() {
 }
 
 // ============================================================
-// 9. Back 버튼 핸들러 (글로벌)
-// ============================================================
-
-/**
- * 스피킹 화면에서 뒤로가기
- * 확인 다이얼로그 → cleanup → 대시보드 복귀
- */
-function speakingBackToTaskDashboard() {
-    cleanupSpeakingModule();
-    backToTaskDashboard();
-}
-
-// ============================================================
-// 10. 로딩 함수 (리딩/리스닝과 공유 — submitLoadingOverlay)
+// 9. 로딩 함수 (리딩/리스닝과 공유 — submitLoadingOverlay)
 // ============================================================
 
 // _showSubmitLoading, _hideSubmitLoading은 reading-module-controller.js에서 이미 정의됨

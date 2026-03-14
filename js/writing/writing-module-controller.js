@@ -483,19 +483,6 @@ window.submitWritingDiscussion = function() {
     _finishWritingModule();
 };
 
-// moduleSubmitAll 확장 — 라이팅 활성 시 위임 (리뷰 패널의 Submit All)
-(function() {
-    var originalModuleSubmitAll = window.moduleSubmitAll;
-    window.moduleSubmitAll = function() {
-        if (window.currentWritingModule) {
-            // 라이팅에서는 각 유형별 Submit만 사용
-            console.log('✍️ 라이팅 모듈은 유형별 Submit 사용');
-        } else if (originalModuleSubmitAll) {
-            originalModuleSubmitAll();
-        }
-    };
-})();
-
 // ============================================================
 // 8. 완료 → DB 저장 → 대시보드 복귀
 // ============================================================
