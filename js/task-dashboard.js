@@ -288,11 +288,6 @@ async function backToTaskDashboard() {
         cleanupSpeakingModule();
     }
     
-    // 타이머 정리
-    if (typeof stopAllTimers === 'function') {
-        stopAllTimers();
-    }
-    
     // beforeunload 경고 해제
     if (window._beforeUnloadHandler) {
         window.removeEventListener('beforeunload', window._beforeUnloadHandler);

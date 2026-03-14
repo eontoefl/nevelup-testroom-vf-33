@@ -461,19 +461,6 @@ async function loadScheduleFromSupabase() {
 }
 
 /**
- * 요일 영문명 → 한글명 매핑
- */
-const DAY_NAMES_KR = {
-    sunday: '일요일',
-    monday: '월요일',
-    tuesday: '화요일',
-    wednesday: '수요일',
-    thursday: '목요일',
-    friday: '금요일',
-    saturday: '토요일'
-};
-
-/**
  * 과제명을 파싱하여 타입과 파라미터 추출
  * @param {string} taskName - 과제명 (예: "내벨업보카 5, 6, 7pg")
  * @returns {Object} - { type, params }

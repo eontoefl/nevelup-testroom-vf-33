@@ -23,9 +23,6 @@ function backToSchedule() {
         cleanupVocabTest();
     }
     
-    // 타이머 정지
-    stopAllTimers();
-    
     // 2차 풀이 플로팅 UI 제거
     const retakeFloating = document.getElementById('retakeFloatingUI');
     if (retakeFloating) retakeFloating.remove();
