@@ -571,18 +571,6 @@ function renderVocabResult(results, correctCount, totalCount, percentage) {
     container.innerHTML = scoreCard + resultsList;
 }
 
-// 시험 재시작
-function restartVocabTest() {
-    vocabUserAnswers = {};
-    currentPageIndex = 0;
-    
-    // 시험 화면으로 복귀
-    document.getElementById('vocabResultScreen').style.display = 'none';
-    document.getElementById('vocabTestScreen').style.display = 'block';
-    document.getElementById('vocabTestIntro').style.display = 'block';
-    document.getElementById('vocabTestMain').style.display = 'none';
-}
-
 // Cleanup 함수
 function cleanupVocabTest() {
     vocabTestData = [];

@@ -214,34 +214,6 @@ async function getStudentProgram(userEmail) {
 }
 
 // ================================================
-// V1/V2 학습 기록 함수들 — 모두 삭제됨
-// ================================================
-
-// ★ saveStudyRecord, getStudyRecords, getAuthRecords, saveGoldenTimeLog, updateGoldenTimeReturn 삭제됨
-//   — V3 전환으로 호출자 0건 확인 후 제거 (PR #10, #12)
-
-// ================================================
-// 연결 테스트
-// ================================================
-
-async function testSupabaseConnection() {
-    console.log('🔗 [Supabase] 연결 테스트 시작...');
-    try {
-        const result = await supabaseSelect('users', 'select=id&limit=1');
-        if (result && result.length > 0) {
-            console.log('✅ [Supabase] 연결 성공!');
-            return true;
-        } else {
-            console.log('⚠️ [Supabase] 연결됐지만 데이터 없음 (users 테이블 비어있음)');
-            return true; // 연결 자체는 성공
-        }
-    } catch (e) {
-        console.error('❌ [Supabase] 연결 실패:', e);
-        return false;
-    }
-}
-
-// ================================================
 // V3 학습 결과 함수들 (study_results_v3)
 // ================================================
 // 유니크 키: (user_id, section_type, module_number, week, day)

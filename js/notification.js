@@ -5,7 +5,6 @@
  * 🔔 벨 버튼, 드롭다운 리스트, 상세 팝업을 동적으로 렌더링합니다.
  * 
  * 의존성: supabase-client.js (supabaseSelect, supabaseUpdate), auth.js (getCurrentUserId)
- * 삽입 위치: index_v2.html에서 supabase-client.js, auth.js 다음
  */
 
 (function () {
