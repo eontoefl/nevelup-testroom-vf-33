@@ -195,26 +195,10 @@ function logout() {
         currentUser = null;
         sessionStorage.removeItem('currentUser');
         
-        // 답안 초기화
-        if (typeof userAnswers !== 'undefined') {
-            userAnswers = {
-                reading: {},
-                listening: {},
-                speaking: {},
-                writing: {}
-            };
-        }
-        
-        // 상태 초기화
+        // 과제 상태 초기화
         if (typeof currentTest !== 'undefined') {
-            currentTest = {
-                section: null,
-                currentQuestion: 0,
-                currentPassage: 0,
-                currentTask: 0,
-                startTime: null,
-                answers: {}
-            };
+            currentTest.currentWeek = null;
+            currentTest.currentDay = null;
         }
         
         if (typeof stopAllTimers === 'function') {
@@ -242,11 +226,6 @@ function getCurrentUser() {
 // 현재 사용자 ID 가져오기 (Supabase 연동용)
 function getCurrentUserId() {
     return currentUser ? currentUser.id : null;
-}
-
-// 현재 프로그램 타입 가져오기 ('fast' 또는 'standard')
-function getCurrentProgramType() {
-    return currentUser ? currentUser.programType : 'standard';
 }
 
 console.log('✅ auth.js v2 (Supabase) 로드 완료');

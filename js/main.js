@@ -216,12 +216,6 @@ function showTaskListScreen(week, dayKr, tasks) {
         subtitle.textContent = `${tasks.length}개의 과제가 있습니다`;
     }
     
-    // 시작 버튼 숨기기
-    const startOptions = document.querySelector('#taskListScreen .start-options');
-    if (startOptions) {
-        startOptions.style.display = 'none';
-    }
-    
     // 과제 목록 표시
     const sectionsGrid = document.querySelector('#taskListScreen .sections-grid');
     if (sectionsGrid) {
