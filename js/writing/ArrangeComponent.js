@@ -440,7 +440,7 @@ class ArrangeComponent {
 window.ArrangeComponent = ArrangeComponent;
 
 
-// 드롭 허용 헬퍼 함수 (전역)
+// 드롭 허용 헬퍼 함수 (전역 필수 - renderQuestion innerHTML의 ondragover에서 호출)
 function allowDrop(event) {
     event.preventDefault();
 }

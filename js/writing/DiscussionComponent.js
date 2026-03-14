@@ -165,13 +165,6 @@ class DiscussionComponent {
             .replace(/\{name2\}/g, profiles.student2.name);
     }
     
-    /**
-     * 결과 화면용 이름 치환
-     */
-    replaceStudentNamesInResult(text, profiles) {
-        return this.replaceStudentNames(text, profiles);
-    }
-    
     // ============================================
     // 문제 화면 함수 (5개)
     // ============================================

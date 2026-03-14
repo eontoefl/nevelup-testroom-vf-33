@@ -2,11 +2,6 @@
 // Supabase 전용 (구글 시트 폴백 제거 완료)
 
 // ========== Supabase 데이터 로드 ==========
-async function fetchAcademicFromSheet() {
-    return await _fetchAcademicFromSupabase();
-}
-
-// --- Supabase에서 로드 ---
 async function _fetchAcademicFromSupabase() {
     if (typeof USE_SUPABASE !== 'undefined' && !USE_SUPABASE) {
         console.log('📋 [Academic] Supabase 비활성화 → 건너뜀');
@@ -72,7 +67,7 @@ async function _fetchAcademicFromSupabase() {
             };
         }).filter(s => s !== null);
         
-        return sets; // fetchAcademicFromSheet는 sets 배열만 반환
+        return sets;
         
     } catch (error) {
         console.error('❌ [Academic] Supabase 로드 실패:', error);
@@ -374,7 +369,7 @@ async function loadAcademicData(forceReload = false) {
     }
     
     try {
-        const sheetSets = await fetchAcademicFromSheet();
+        const sheetSets = await _fetchAcademicFromSupabase();
         
         // Supabase 데이터가 유효한 배열이면 사용
         if (sheetSets && Array.isArray(sheetSets) && sheetSets.length > 0) {

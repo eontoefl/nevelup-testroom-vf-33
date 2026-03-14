@@ -79,39 +79,20 @@ class Daily1Component {
      * 세트 번호로 인덱스 찾기
      */
     findSetIndex(setNumber) {
-        // 🆕 setNumber가 이미 "daily1_set_0001" 형식이면 그대로 사용
         let setId;
         if (typeof setNumber === 'string' && setNumber.startsWith('daily1_set_')) {
             setId = setNumber;
-            console.log(`🔍 [findSetIndex] setId 문자열 직접 사용: ${setId}`);
         } else {
             setId = `daily1_set_${String(setNumber).padStart(4, '0')}`;
-            console.log(`🔍 [findSetIndex] setNumber ${setNumber} → setId: ${setId}`);
         }
         
-        console.log(`🔍🔍🔍 [findSetIndex] 찾는 Set ID: ${setId}`);
-        console.log(`🔍🔍🔍 [findSetIndex] data.sets 개수: ${this.data.sets.length}`);
-        console.log(`🔍🔍🔍 [findSetIndex] data.sets 전체 ID 목록:`);
-        this.data.sets.forEach((s, idx) => {
-            console.log(`    [${idx}] ${s.id} | mainTitle: ${s.mainTitle.substring(0, 30)}`);
-        });
-        
         for (let i = 0; i < this.data.sets.length; i++) {
-            const currentSetId = this.data.sets[i].id;
-            const matches = (currentSetId === setId);
-            console.log(`    비교 [${i}] "${currentSetId}" === "${setId}"? ${matches}`);
-            
-            if (matches) {
-                console.log(`  ✅✅✅ 인덱스 ${i}에서 발견!`);
-                console.log(`  📄 찾은 세트 정보:`, {
-                    id: this.data.sets[i].id,
-                    mainTitle: this.data.sets[i].mainTitle,
-                    questions: this.data.sets[i].questions.map(q => q.question.substring(0, 50))
-                });
+            if (this.data.sets[i].id === setId) {
+                console.log(`[Daily1Component] 세트 발견: ${setId} (index ${i})`);
                 return i;
             }
         }
-        console.error(`  ❌ ${setId}를 찾을 수 없음`);
+        console.error(`[Daily1Component] 세트를 찾을 수 없음: ${setId}`);
         return -1;
     }
     
@@ -119,18 +100,12 @@ class Daily1Component {
      * UI 렌더링
      */
     render() {
-        console.log(`🎨 [Daily1Component] render() 호출`);
-        console.log('  this.currentSet.id:', this.currentSet.id);
-        console.log('  this.currentSet.mainTitle:', this.currentSet.mainTitle);
+        console.log(`[Daily1Component] render() - setId: ${this.currentSet.id}`);
         
         // 1. 메인 타이틀 설정
         const mainTitleEl = document.getElementById(this.mainTitleId);
-        console.log('  mainTitle 설정:', this.currentSet.mainTitle);
-        console.log('  mainTitleEl 찾음:', mainTitleEl ? 'YES' : 'NO');
         if (mainTitleEl) {
-            console.log('  변경 전:', mainTitleEl.textContent);
             mainTitleEl.textContent = this.currentSet.mainTitle;
-            console.log('  변경 후:', mainTitleEl.textContent);
         }
         
         // 2. 지문 렌더링
@@ -144,23 +119,7 @@ class Daily1Component {
      * 지문 렌더링
      */
     renderPassage() {
-        console.log('🎨🎨🎨 [renderPassage] 호출됨!');
-        console.log('  this.currentSet.id:', this.currentSet.id);
-        console.log('  this.currentSet.mainTitle:', this.currentSet.mainTitle);
-        console.log('  설정할 mainTitle:', this.currentSet.mainTitle);
-        console.log('  Stack trace:');
-        console.trace();
-        
         const passage = this.currentSet.passage;
-        
-        // mainTitle 설정
-        const mainTitleEl = document.getElementById(this.mainTitleId);
-        console.log('  mainTitleEl 찾음:', mainTitleEl ? 'YES' : 'NO');
-        if (mainTitleEl) {
-            console.log('  변경 전 textContent:', mainTitleEl.textContent);
-            mainTitleEl.textContent = this.currentSet.mainTitle;
-            console.log('  변경 후 textContent:', mainTitleEl.textContent);
-        }
         
         document.getElementById(this.passageTitleId).textContent = passage.title;
         // 구분자 처리 (문제풀이 화면용)

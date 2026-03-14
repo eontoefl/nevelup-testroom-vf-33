@@ -2,11 +2,6 @@
 // Supabase 전용 (구글 시트 폴백 제거 완료)
 
 // ========== Supabase 데이터 로드 ==========
-async function fetchDaily1FromSheet() {
-    return await _fetchDaily1FromSupabase();
-}
-
-// --- Supabase에서 로드 ---
 async function _fetchDaily1FromSupabase() {
     if (typeof USE_SUPABASE !== 'undefined' && !USE_SUPABASE) {
         console.log('📋 [Daily1] Supabase 비활성화 → 건너뜀');
@@ -179,7 +174,7 @@ async function loadDaily1Data(forceReload = false) {
     }
     
     console.log('📥 Supabase에서 새로 데이터 로드 중...');
-    const sheetsData = await fetchDaily1FromSheet();
+    const sheetsData = await _fetchDaily1FromSupabase();
     
     if (sheetsData && sheetsData.sets.length > 0) {
         console.log('✅ Supabase에서 일상리딩1 데이터를 불러왔습니다.');
