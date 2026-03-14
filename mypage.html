@@ -303,45 +303,9 @@
 
   </main>
 
-  <!-- ══════════ 노트 모달 ══════════ -->
-  <div class="modal-overlay" id="noteModal">
-    <div class="modal-box note-modal">
-      <div class="modal-header">
-        <h3 id="noteTitle"><i class="fa-regular fa-note-sticky"></i> 학습 노트</h3>
-        <button class="modal-close" onclick="closeModal('noteModal')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <p id="noteContent" class="note-content"></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Supabase 클라이언트 (공유) -->
-  <!-- 이동 중 로딩 오버레이 -->
-  <div id="loadingOverlay" style="
-    display:none; position:fixed; inset:0; z-index:99999;
-    background:rgba(255,255,255,.92);
-    flex-direction:column; align-items:center; justify-content:center; gap:16px;
-  ">
-    <i class="fa-solid fa-spinner fa-spin" style="font-size:32px; color:#6c5ce7;"></i>
-    <p id="loadingMessage" style="font-size:15px; font-weight:600; color:#333;">이동 중...</p>
-  </div>
-  <script>
-    function showLoadingOverlay(message) {
-        var overlay = document.getElementById('loadingOverlay');
-        var msg = document.getElementById('loadingMessage');
-        if (overlay) {
-            if (msg) msg.textContent = message || '이동 중...';
-            overlay.style.display = 'flex';
-        }
-    }
-  </script>
-
   <script src="js/supabase-client.js"></script>
   <!-- 스케줄 데이터 (과제 수 계산용) -->
   <script src="js/schedule-data.js?v=001"></script>
-  <!-- 해설 다시보기 -->
-  <script src="js/result-replay.js?v=20260222_writing_fix"></script>
   <!-- 마이페이지 전용 로직 -->
   <script src="js/mypage.js?v=015_score_chart_label"></script>
 </body>

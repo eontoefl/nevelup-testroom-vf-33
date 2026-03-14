@@ -843,32 +843,6 @@ function setupScoreTabEvents() {
     });
 }
 
-/**
- * 날짜 포맷: "2/19 (목)"
- */
-function formatDate(dateStr) {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    return `${d.getMonth() + 1}/${d.getDate()} (${days[d.getDay()]})`;
-}
-
-/**
- * section_type → 한글 라벨 + CSS 클래스
- */
-function getTaskLabel(taskType) {
-    const labels = {
-        'reading': { name: 'Reading', cls: '' },
-        'listening': { name: 'Listening', cls: 'listening' },
-        'writing': { name: 'Writing', cls: 'writing' },
-        'speaking': { name: 'Speaking', cls: 'speaking' },
-        'vocab': { name: 'Vocab', cls: 'vocab' },
-        'intro-book': { name: '입문서', cls: 'intro-book' }
-    };
-    return labels[taskType] || { name: taskType, cls: '' };
-}
-
-
 
 // ================================================
 // 플랜 탭 전환
@@ -883,33 +857,6 @@ function setupPlanTabs() {
     console.log(`🌱 [MyPage] 출석 잔디: ${programType} 과정 표시`);
 }
 
-// ================================================
-// 모달
-// ================================================
-function openNote(title, content) {
-    document.getElementById('noteTitle').innerHTML = 
-        `<i class="fa-regular fa-note-sticky"></i> ${title}`;
-    document.getElementById('noteContent').textContent = content;
-    document.getElementById('noteModal').classList.add('open');
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('open');
-}
-
-// 모달 바깥 클릭으로 닫기
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal-overlay')) {
-        e.target.classList.remove('open');
-    }
-});
-
-// ESC 키로 모달 닫기
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-    }
-});
 
 // ================================================
 // ④ V2 이전 학습 기록 버튼 표시
