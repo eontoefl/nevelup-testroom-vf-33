@@ -343,33 +343,12 @@
             };
 
             // Supabase에 저장
-            if (typeof supabaseInsert === 'function') {
-                const result = await supabaseInsert('tr_error_reports', reportData);
-                if (result) {
-                    originalConsole.log('✅ [ErrorReporter] 오류 전송 성공:', result.id);
-                    showToast('✅ 오류 전송이 완료되었습니다. 감사합니다!');
-                } else {
-                    throw new Error('supabaseInsert 실패');
-                }
+            const result = await supabaseInsert('tr_error_reports', reportData);
+            if (result) {
+                originalConsole.log('✅ [ErrorReporter] 오류 전송 성공:', result.id);
+                showToast('✅ 오류 전송이 완료되었습니다. 감사합니다!');
             } else {
-                // supabaseInsert가 아직 로드 안 됐을 때 — 직접 fetch
-                originalConsole.warn('⚠️ [ErrorReporter] supabaseInsert 없음, 직접 전송');
-                const response = await fetch(`https://qpqjevecjejvbeuogtbx.supabase.co/rest/v1/tr_error_reports`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwcWpldmVjamVqdmJldW9ndGJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDAxNDEsImV4cCI6MjA4Njk3NjE0MX0.pJvY4u9oHQYa7IvAjWluHMow_4WIkONDBBasnXxF5Gc',
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwcWpldmVjamVqdmJldW9ndGJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDAxNDEsImV4cCI6MjA4Njk3NjE0MX0.pJvY4u9oHQYa7IvAjWluHMow_4WIkONDBBasnXxF5Gc',
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify(reportData)
-                });
-                if (response.ok) {
-                    originalConsole.log('✅ [ErrorReporter] 직접 전송 성공');
-                    showToast('✅ 오류 전송이 완료되었습니다. 감사합니다!');
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
+                throw new Error('supabaseInsert 실패');
             }
 
             closeModal();
