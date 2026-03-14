@@ -419,6 +419,9 @@ function _renderScorePanel(record, hasInitial, hasCurrent) {
     
     // 스피킹 오디오 재생 버튼 이벤트 바인딩
     _bindAudioPlayButtons();
+    
+    // 라이팅 모달 보기 버튼 이벤트 바인딩
+    _bindWritingViewButtons();
 }
 
 /** 스피킹 녹음 파일 재생 버튼 이벤트 */
@@ -496,7 +499,7 @@ function _renderScoreFromRecord(recordJson, sectionType, dbRow, mode) {
             case 'listening':
                 return _renderListeningScore(data);
             case 'writing':
-                return _renderWritingScore(data);
+                return _renderWritingScore(data, dbRow);
             case 'speaking':
                 return _renderSpeakingScore(data, dbRow, mode);
             default:
@@ -626,7 +629,7 @@ function _renderListeningScore(data) {
 }
 
 /** 라이팅 세부 점수 */
-function _renderWritingScore(data) {
+function _renderWritingScore(data, dbRow) {
     var html = '<div class="sd-score-list">';
     
     // Arrange — 점수 프로그레스 바
@@ -636,39 +639,57 @@ function _renderWritingScore(data) {
         html += _renderProgressRow('Arrange', arrCorrect, arrTotal);
     }
     
-    // Email — 완료 표시 + 작성 내용
+    // Email — 완료 표시 + 모달 보기 버튼
     if (data.email) {
         html += '<div class="sd-score-row sd-row-complete">';
         html += '<div class="sd-score-row-header">';
-        html += '<span class="sd-score-row-label">Email</span>';
-        html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
-        html += '</div>';
-        html += '</div>';
+        html += '<span class="sd-score-row-label">Email';
         if (data.email.userAnswer) {
-            html += '<div class="sd-text-preview">';
-            html += '<div class="sd-text-preview-label">Email 작성 내용</div>';
-            html += '<div class="sd-text-preview-content">' + _escapeHtml(data.email.userAnswer) + '</div>';
-            html += '</div>';
+            html += ' <button class="sd-writing-view-btn" data-type="email">'
+                  + '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9480c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                  + '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>'
+                  + '<polyline points="14 2 14 8 20 8"></polyline>'
+                  + '<line x1="16" y1="13" x2="8" y2="13"></line>'
+                  + '<line x1="16" y1="17" x2="8" y2="17"></line>'
+                  + '<line x1="10" y1="9" x2="8" y2="9"></line>'
+                  + '</svg></button>';
         }
+        html += '</span>';
+        html += '<span class="sd-score-row-stat sd-stat-done"><svg width="14" height="14" viewBox="0 0 24 24" fill="#77bf7e"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> 완료</span>';
+        html += '</div>';
+        html += '</div>';
     }
     
-    // Discussion — 완료 표시 + 작성 내용
+    // Discussion — 완료 표시 + 모달 보기 버튼
     if (data.discussion) {
         html += '<div class="sd-score-row sd-row-complete">';
         html += '<div class="sd-score-row-header">';
-        html += '<span class="sd-score-row-label">Discussion</span>';
-        html += '<span class="sd-score-row-stat sd-stat-done"><i class="fa-solid fa-circle-check"></i> 완료</span>';
-        html += '</div>';
-        html += '</div>';
+        html += '<span class="sd-score-row-label">Discussion';
         if (data.discussion.userAnswer) {
-            html += '<div class="sd-text-preview">';
-            html += '<div class="sd-text-preview-label">Discussion 작성 내용</div>';
-            html += '<div class="sd-text-preview-content">' + _escapeHtml(data.discussion.userAnswer) + '</div>';
-            html += '</div>';
+            html += ' <button class="sd-writing-view-btn" data-type="discussion">'
+                  + '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9480c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                  + '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>'
+                  + '<polyline points="14 2 14 8 20 8"></polyline>'
+                  + '<line x1="16" y1="13" x2="8" y2="13"></line>'
+                  + '<line x1="16" y1="17" x2="8" y2="17"></line>'
+                  + '<line x1="10" y1="9" x2="8" y2="9"></line>'
+                  + '</svg></button>';
         }
+        html += '</span>';
+        html += '<span class="sd-score-row-stat sd-stat-done"><svg width="14" height="14" viewBox="0 0 24 24" fill="#77bf7e"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> 완료</span>';
+        html += '</div>';
+        html += '</div>';
     }
     
     html += '</div>';
+    
+    // 모달용 데이터를 전역에 저장 (모달 열 때 참조)
+    window._writingModalData = {
+        email: data.email || null,
+        discussion: data.discussion || null,
+        completedAt: dbRow ? dbRow.completed_at : null
+    };
+    
     return html;
 }
 
@@ -771,6 +792,138 @@ function _escapeHtml(text) {
     var div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ─── 라이팅 작성 내용 모달 ───
+
+/** 라이팅 모달 보기 버튼 이벤트 바인딩 */
+function _bindWritingViewButtons() {
+    var btns = document.querySelectorAll('.sd-writing-view-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var type = this.getAttribute('data-type');
+            _openWritingModal(type);
+        });
+    }
+}
+
+/** 라이팅 모달 열기 */
+function _openWritingModal(type) {
+    var modalData = window._writingModalData;
+    if (!modalData) return;
+    
+    var item = modalData[type];
+    if (!item || !item.userAnswer) return;
+    
+    var title = type === 'email' ? 'Email' : 'Discussion';
+    var wordCount = item.wordCount || 0;
+    var completedAt = modalData.completedAt ? _formatDate(modalData.completedAt) : null;
+    
+    // 메타 정보 구성
+    var metaParts = [];
+    if (completedAt) metaParts.push(completedAt);
+    if (wordCount > 0) metaParts.push(wordCount + ' words');
+    var metaText = metaParts.join(' · ');
+    
+    // 모달 HTML 생성
+    var html = '<div class="sd-modal-overlay" id="sdWritingModal">';
+    html += '<div class="sd-modal-container">';
+    
+    // 헤더
+    html += '<div class="sd-modal-header">';
+    html += '<div class="sd-modal-header-left">';
+    html += '<div class="sd-modal-icon">';
+    html += '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9480c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+    html += '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>';
+    html += '<polyline points="14 2 14 8 20 8"></polyline>';
+    html += '</svg>';
+    html += '</div>';
+    html += '<div class="sd-modal-title-wrap">';
+    html += '<h2 class="sd-modal-title">Writing: ' + title + '</h2>';
+    if (metaText) {
+        html += '<p class="sd-modal-meta">' + metaText + '</p>';
+    }
+    html += '</div>';
+    html += '</div>';
+    html += '<button class="sd-modal-close-btn" id="sdModalCloseBtn">';
+    html += '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+    html += '<line x1="18" y1="6" x2="6" y2="18"></line>';
+    html += '<line x1="6" y1="6" x2="18" y2="18"></line>';
+    html += '</svg>';
+    html += '</button>';
+    html += '</div>';
+    
+    // 본문
+    html += '<div class="sd-modal-body">';
+    html += '<div class="sd-modal-text-box">';
+    html += _escapeHtml(item.userAnswer);
+    html += '</div>';
+    html += '</div>';
+    
+    // 하단
+    html += '<div class="sd-modal-footer">';
+    html += '<div></div>';
+    html += '<button class="sd-modal-download-btn" disabled>';
+    html += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+    html += '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>';
+    html += '<polyline points="7 10 12 15 17 10"></polyline>';
+    html += '<line x1="12" y1="15" x2="12" y2="3"></line>';
+    html += '</svg>';
+    html += ' Download txt';
+    html += '</button>';
+    html += '</div>';
+    
+    html += '</div>';
+    html += '</div>';
+    
+    // DOM에 추가
+    var existing = document.getElementById('sdWritingModal');
+    if (existing) existing.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', html);
+    
+    // 이벤트 바인딩
+    var modal = document.getElementById('sdWritingModal');
+    var closeBtn = document.getElementById('sdModalCloseBtn');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', _closeWritingModal);
+    }
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) _closeWritingModal();
+        });
+    }
+    
+    // ESC 키로 닫기
+    document.addEventListener('keydown', _handleModalEsc);
+}
+
+/** 라이팅 모달 닫기 */
+function _closeWritingModal() {
+    var modal = document.getElementById('sdWritingModal');
+    if (modal) modal.remove();
+    document.removeEventListener('keydown', _handleModalEsc);
+}
+
+/** ESC 키 핸들러 */
+function _handleModalEsc(e) {
+    if (e.key === 'Escape') _closeWritingModal();
+}
+
+/** 날짜 포맷 헬퍼 (ISO → 읽기 쉬운 형식) */
+function _formatDate(isoStr) {
+    try {
+        var d = new Date(isoStr);
+        var year = d.getFullYear();
+        var month = d.getMonth() + 1;
+        var day = d.getDate();
+        return year + '.' + (month < 10 ? '0' : '') + month + '.' + (day < 10 ? '0' : '') + day;
+    } catch (e) {
+        return '';
+    }
 }
 
 console.log('✅ task-dashboard.js 로드 완료');
