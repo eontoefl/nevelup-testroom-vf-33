@@ -350,18 +350,6 @@ window.closeListeningReviewPanel = function() {
     _closeReviewPanel();
 };
 
-// moduleSubmitAll 확장 — 리스닝 활성 시 위임
-(function() {
-    var originalModuleSubmitAll = window.moduleSubmitAll;
-    window.moduleSubmitAll = function() {
-        if (window.currentListeningModule) {
-            _listeningModuleSubmit();
-        } else if (originalModuleSubmitAll) {
-            originalModuleSubmitAll();
-        }
-    };
-})();
-
 // ============================================================
 // 6. 문제 번호 표시 업데이트
 // ============================================================

@@ -851,6 +851,35 @@ function _calculateReadingLevel(correctCount) {
 }
 
 // ============================================================
+// 12. 정리 함수 (외부에서 호출 가능)
+// ============================================================
+
+/**
+ * 리딩 모듈 전체 정리
+ * - 타이머 정지
+ * - 모듈 상태 초기화
+ * 
+ * 호출 시점: backToTaskDashboard()
+ */
+function cleanupReadingModule() {
+    console.log('🧹 [cleanupReadingModule] 리딩 모듈 정리 시작');
+
+    var mod = window.currentReadingModule;
+    if (!mod) {
+        console.log('🧹 리딩 모듈 없음 — 정리 불필요');
+        return;
+    }
+
+    // 1. 타이머 정지
+    _stopTimer();
+    console.log('✅ 타이머 정지 완료');
+
+    // 2. 모듈 상태 초기화
+    window.currentReadingModule = null;
+    console.log('✅ [cleanupReadingModule] 리딩 모듈 정리 완료');
+}
+
+// ============================================================
 // 로드 확인
 // ============================================================
 

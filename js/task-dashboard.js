@@ -273,6 +273,11 @@ function _onExplainClick() {
 async function backToTaskDashboard() {
     console.log('🔙 [대시보드] 과제 대시보드로 복귀');
     
+    // 리딩 모듈 정리 (타이머 정지 + 상태 초기화)
+    if (typeof cleanupReadingModule === 'function') {
+        cleanupReadingModule();
+    }
+    
     // 리스닝 모듈 정리 (오디오 정지 + 타이머 정지 + 상태 초기화)
     if (typeof cleanupListeningModule === 'function') {
         cleanupListeningModule();
