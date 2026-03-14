@@ -20,18 +20,13 @@ function showScreen(screenId) {
         if (window.NotificationSystem) NotificationSystem.load();
     }
     
-    // welcomeScreen으로 전환 시 사용자 이름 표시
-    if (screenId === 'welcomeScreen' && currentUser) {
+    // taskListScreen으로 전환 시 사용자 이름 표시
+    if (screenId === 'taskListScreen' && currentUser) {
         const userNameElement = document.getElementById('currentUserName');
         if (userNameElement) {
             userNameElement.textContent = currentUser.name;
         }
     }
-}
-
-function showWelcomeScreen() {
-    showScreen('welcomeScreen');
-    stopAllTimers();
 }
 
 // ===== SCHEDULE SCREEN =====
@@ -191,10 +186,10 @@ function showTaskListScreen(week, dayKr, tasks) {
         screen.style.display = 'none';
     });
     
-    // welcomeScreen 표시
-    const welcomeScreenEl = document.getElementById('welcomeScreen');
-    welcomeScreenEl.classList.add('active');
-    welcomeScreenEl.style.display = 'block';
+    // taskListScreen 표시
+    const taskListScreenEl = document.getElementById('taskListScreen');
+    taskListScreenEl.classList.add('active');
+    taskListScreenEl.style.display = 'block';
     
     // 사용자 정보 표시
     if (currentUser) {
@@ -211,8 +206,8 @@ function showTaskListScreen(week, dayKr, tasks) {
     }
     
     // 헤더 변경
-    const welcomeHeader = document.querySelector('#welcomeScreen .welcome-header h1');
-    const subtitle = document.querySelector('#welcomeScreen .welcome-header .subtitle');
+    const welcomeHeader = document.querySelector('#taskListScreen .welcome-header h1');
+    const subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
     
     if (welcomeHeader) {
         welcomeHeader.textContent = `Week ${week} - ${dayKr}요일`;
@@ -222,13 +217,13 @@ function showTaskListScreen(week, dayKr, tasks) {
     }
     
     // 시작 버튼 숨기기
-    const startOptions = document.querySelector('#welcomeScreen .start-options');
+    const startOptions = document.querySelector('#taskListScreen .start-options');
     if (startOptions) {
         startOptions.style.display = 'none';
     }
     
     // 과제 목록 표시
-    const sectionsGrid = document.querySelector('#welcomeScreen .sections-grid');
+    const sectionsGrid = document.querySelector('#taskListScreen .sections-grid');
     if (sectionsGrid) {
         sectionsGrid.innerHTML = '';
         

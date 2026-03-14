@@ -22,8 +22,6 @@
 <link rel="stylesheet" href="css/listening-conver-result-v2.css?v=20260221_v2">
 <link rel="stylesheet" href="css/listening-announcement-result-v2.css?v=20260221_v2">
 <link rel="stylesheet" href="css/listening-academic-result-v2.css?v=20260221_v2">
-<!-- 비활성화: 오래된 레이아웃 CSS - 새 academic/conver/announce CSS로 대체됨 -->
-<!-- <link rel="stylesheet" href="css/listening-lecture-result.css?v=002"> -->
 <link rel="stylesheet" href="css/writing-arrange-result.css?v=001">
 <link rel="stylesheet" href="css/writing-email-result.css?v=015">
 <link rel="stylesheet" href="css/writing-discussion-result.css?v=003">
@@ -463,7 +461,7 @@
     </div>
 
     <!-- 메인 시작 화면 (기존 시험 개요 화면 - 추후 제거 가능) -->
-    <div id="welcomeScreen" class="screen" style="display:none;">
+    <div id="taskListScreen" class="screen" style="display:none;">
         <!-- 상단 네비게이션 바 (container 밖) -->
         <div class="top-nav-bar">
             <div class="top-nav-left">
@@ -492,42 +490,11 @@
             <div class="test-info">
                 <h2>과제 목록</h2>
                 <div class="sections-grid">
-                    <div class="section-card">
-                        <i class="fas fa-book-open"></i>
-                        <h3>Reading</h3>
-                        <p>3개 지문</p>
-                        <p class="time">54분</p>
-                    </div>
-                    <div class="section-card">
-                        <i class="fas fa-headphones"></i>
-                        <h3>Listening</h3>
-                        <p>대화 & 강의</p>
-                        <p class="time">41분</p>
-                    </div>
-                    <div class="section-card">
-                        <i class="fas fa-pen"></i>
-                        <h3>Writing</h3>
-                        <p>2개 에세이</p>
-                        <p class="time">50분</p>
-                    </div>
-                    <div class="section-card">
-                        <i class="fas fa-microphone"></i>
-                        <h3>Speaking</h3>
-                        <p>4개 과제</p>
-                        <p class="time">17분</p>
-                    </div>
+                    <!-- JS(showTaskListScreen)에서 동적으로 과제 카드 생성 -->
                 </div>
             </div>
-
-            <!-- [V3] 삭제됨: startFullTest, showSectionSelect 버튼 — V1 프로토타입 전용 -->
-            <div class="start-options" style="display:none;"></div>
         </div>
     </div>
-
-    <!-- 섹션 선택 화면 -->
-    <!-- [V3] 삭제됨: sectionSelectScreen (V2 섹션 선택 화면 → 스케줄에서 바로 진입) -->
-
-    <!-- [V3] 삭제됨: stageSelectScreen (V2 단계 선택 화면 → V3 과제 대시보드로 교체 예정) -->
 
     <!-- ============================= -->
     <!-- [V3] 과제 대시보드 -->
@@ -2261,112 +2228,8 @@
         </div>
     </div>
 
-    <!-- Reading 섹션 (기존 지문독해) -->
-    <div id="readingScreen" class="screen">
-        <div class="test-header">
-            <button class="btn-back-to-schedule" onclick="backToSchedule()">
-                <i class="fas fa-arrow-left"></i> 학습 일정
-            </button>
-            <div class="test-title">
-                <i class="fas fa-book-open"></i>
-                <span>Reading Section</span>
-            </div>
-            <div class="test-progress">
-                <span id="readingProgress">Question 1 of 10</span>
-            </div>
-            <div class="test-timer">
-                <i class="fas fa-clock"></i>
-                <span id="readingTimer">54:00</span>
-            </div>
-        </div>
-        
-        <div class="test-content">
-            <div class="reading-layout">
-                <div class="passage-panel">
-                    <h3 id="passageTitle">지문 제목</h3>
-                    <div id="passageContent" class="passage-content">
-                        <!-- 지문 내용이 여기에 표시됩니다 -->
-                    </div>
-                </div>
-                
-                <div class="question-panel">
-                    <div class="question-container">
-                        <div class="question-number">Question <span id="currentQuestionNum">1</span></div>
-                        <div id="questionContent" class="question-content">
-                            <!-- 질문이 여기에 표시됩니다 -->
-                        </div>
-                        <div id="answerOptions" class="answer-options">
-                            <!-- 선택지가 여기에 표시됩니다 -->
-                        </div>
-                    </div>
-                    
-                    <div class="navigation-buttons">
-                        <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()">
-                            <i class="fas fa-arrow-left"></i> Previous
-                        </button>
-                        <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">
-                            Next <i class="fas fa-arrow-right"></i>
-                        </button>
-                        <button class="btn btn-success" id="submitBtn" onclick="submitSection()" style="display:none;">
-                            Submit Section <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Listening 섹션 -->
-    <!-- Writing 섹션 -->
-    <div id="writingScreen" class="screen">
-        <div class="test-header">
-            <button class="btn-back-to-schedule" onclick="backToSchedule()">
-                <i class="fas fa-arrow-left"></i> 학습 일정
-            </button>
-            <div class="test-title">
-                <i class="fas fa-pen"></i>
-                <span>Writing Section</span>
-            </div>
-            <div class="test-progress">
-                <span id="writingProgress">Task 1 of 2</span>
-            </div>
-            <div class="test-timer">
-                <i class="fas fa-clock"></i>
-                <span id="writingTimer">50:00</span>
-            </div>
-        </div>
-        
-        <div class="test-content">
-            <div class="writing-layout">
-                <div class="writing-prompt-panel">
-                    <h3 id="writingTaskTitle">Task 1: Integrated Writing</h3>
-                    <div id="writingPrompt" class="writing-prompt">
-                        <!-- 프롬프트가 여기에 표시됩니다 -->
-                    </div>
-                </div>
-                
-                <div class="writing-editor-panel">
-                    <div class="editor-toolbar">
-                        <button onclick="formatText('bold')" title="Bold"><i class="fas fa-bold"></i></button>
-                        <button onclick="formatText('italic')" title="Italic"><i class="fas fa-italic"></i></button>
-                        <button onclick="formatText('underline')" title="Underline"><i class="fas fa-underline"></i></button>
-                        <span class="word-count">Words: <strong id="wordCount">0</strong></span>
-                    </div>
-                    <textarea id="writingEditor" placeholder="여기에 에세이를 작성하세요..."></textarea>
-                    
-                    <div class="navigation-buttons">
-                        <button class="btn btn-secondary" onclick="saveWriting()">
-                            <i class="fas fa-save"></i> Save Draft
-                        </button>
-                        <button class="btn btn-primary" id="nextWritingBtn" onclick="nextWritingTask()">
-                            Next Task <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- [V3] 삭제됨: readingScreen (V1 프로토타입 전용 — V3 reading 모듈 컨트롤러로 대체) -->
+    <!-- [V3] 삭제됨: writingScreen (V1 프로토타입 전용 — V3 writing 모듈 컨트롤러로 대체) -->
 
     <!-- 입문서 정독 PDF 모달 -->
     <div id="introBookModal" class="modal">
@@ -2415,8 +2278,6 @@
     <script src="js/task-router.js?v=010_v3_dashboard"></script>
     <!-- [V3] 과제 대시보드 제어 (V2 stage-selector.js 대체) -->
     <script src="js/task-dashboard.js?v=001"></script>
-    <!-- [V3-삭제] tasks.js — V1 프로토타입 전용 (demoTasks 참조), 활성 코드에서 미사용 -->
-<!-- <script src="js/tasks.js?v=002"></script> -->
     <!-- ===== 기반 도구 (DB, 인증) — 모든 컨트롤러보다 먼저 로드 ===== -->
     <script src="js/supabase-client.js?v=004_v3_functions"></script>
     <script src="js/auth.js?v=1002"></script>
@@ -2477,8 +2338,6 @@
     <!-- 따라말하기 Component -->
     <script src="js/speaking/repeat-loader.js?v=001"></script>
     <script src="js/speaking/RepeatComponent.js?v=002_skip_fix"></script>
-    <!-- [V3-대기] speaking-repeat-logic.js — V3 speaking 모듈 컨트롤러에서 대체 예정 -->
-    <!-- <script src="js/speaking-repeat-logic.js?v=20250212-001"></script> -->
     <!-- 인터뷰 Component -->
     <script src="js/speaking/interview-loader.js?v=001"></script>
     <script src="js/speaking/InterviewComponent.js?v=004_column_fix"></script>
@@ -2489,24 +2348,6 @@
     <script src="js/speaking/interview-result.js?v=001"></script>
     <!-- Speaking Module Controller (V3) -->
     <script src="js/speaking/speaking-module-controller.js?v=001"></script>
-    <!-- [V3-대기] speaking-interview-logic.js — V3 speaking 모듈 컨트롤러에서 대체 예정 -->
-    <!-- <script src="js/speaking-interview-logic.js?v=20250212-001"></script> -->
-    <!-- [V3-대기] ComponentPatch.js — V3 모듈 컨트롤러에 init/onComplete 내장 예정 -->
-    <!-- <script src="js/ComponentPatch.js?v=003"></script> -->
-    
-    <!-- 모듈 시스템 -->
-    <!-- [V3-대기] module-definitions.js — 현재 활성 코드에서 미참조, V3 모듈 컨트롤러 작성 시 재활용/참고 예정 -->
-    <!-- <script src="js/module-definitions.js?v=003_independent_setid"></script> -->
-    <!-- [V3-대기] module-controller-v2.js — V3 섹션별 모듈 컨트롤러로 대체 예정 -->
-    <!-- <script src="js/module-controller-v2.js?v=001"></script> -->
-    <!-- [V3-대기] result-controller-v2.js — V3 task-dashboard.js 점수 렌더링으로 대체 -->
-    <!-- <script src="js/result-controller-v2.js?v=001"></script> -->
-    <!-- [V3-대기] writing-flow-v2.js — V3 writing 모듈 컨트롤러로 대체 예정 -->
-    <!-- <script src="js/writing-flow-v2.js?v=001"></script> -->
-    
-    <!-- [V2] FlowController 기반 진입점 제거됨 -->
-    <!-- [V2] 새 플로우: js/flow-v2/stage-selector.js 사용 -->
-    
 <script src="js/vocab-test-logic-v2.js?v=20260223_stats"></script>
     <script src="js/timer.js"></script>
     <script src="js/main.js?v=20260223_progress_fix"></script>
@@ -2514,15 +2355,8 @@
     <!-- supabase-client.js, auth.js → 컨트롤러보다 앞에서 로드됨 (위쪽 참조) -->
     <!-- 🔔 알림 시스템 -->
     <script src="js/notification.js?v=001"></script>
-    <!-- [V3-대기] study-save.js — V3 supabase-client.js에 study_results_v3 함수로 대체 예정 -->
-    <!-- <script src="js/study-save.js?v=001"></script> -->
-    
     <!-- [V3] 해설 뷰어 -->
     <script src="js/explain-viewer.js?v=001"></script>
-    <!-- [V3-대기] review-panel.js — V3 섹션별 모듈 컨트롤러에 내장 예정 -->
-    <!-- <script src="js/review-panel.js?v=001"></script> -->
-<!-- [V2] auth-monitor.js 제거 — FlowController 미사용으로 비활성 -->
-<!-- [V2] fraud-filter.js 제거 — FlowController 미사용으로 비활성 -->
 <script src="js/error-note.js?v=010_v3_split_memo"></script>
 <script src="js/progress-tracker.js?v=006_grade_fix"></script>
 <script src="js/admin-skip.js?v=003_timer_fix"></script>
