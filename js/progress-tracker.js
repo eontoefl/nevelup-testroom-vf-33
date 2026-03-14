@@ -180,7 +180,7 @@ var ProgressTracker = {
     updateTaskCards() {
         if (!this._loaded) return;
 
-        var cards = document.querySelectorAll('#welcomeScreen .section-card');
+        var cards = document.querySelectorAll('#taskListScreen .section-card');
         cards.forEach(function(card) {
             // 기존 체크 제거
             var existingCheck = card.querySelector('.task-complete-badge');
