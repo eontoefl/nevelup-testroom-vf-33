@@ -89,7 +89,6 @@ class DiscussionComponent {
         
         // 현재 세트/문제 번호
         this.currentDiscussionSet = 0;
-        this.currentDiscussionQuestion = 0;
         
 
     }
@@ -181,7 +180,6 @@ class DiscussionComponent {
         }
         
         this.currentDiscussionSet = setIndex;
-        this.currentDiscussionQuestion = 0; // Discussion은 세트당 1문제
         
         // 프로필 선택: 2차 풀이면 1차에서 저장한 프로필 재사용, 아니면 랜덤 생성
         const savedProfiles = sessionStorage.getItem('discussionProfiles');
