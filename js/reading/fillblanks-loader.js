@@ -109,12 +109,18 @@ function parsePassageWithMarkers(text) {
 // ✅ 데이터 캐시 (정렬된 데이터를 메모리에 저장)
 let cachedFillBlanksData = null;
 
+// 🔧 캐시 강제 초기화 함수 (디버깅용)
+window.clearFillBlanksCache = function() {
+    cachedFillBlanksData = null;
+    console.log('🗑️ FillBlanks 캐시 초기화 완료');
+};
+
 // 데이터 로드 (Supabase → 데모 폴백)
-async function loadFillBlanksData() {
-    console.log('🔄 [loadFillBlanksData] 시작');
+async function loadFillBlanksData(forceReload = false) {
+    console.log('🔄 [loadFillBlanksData] 시작 (forceReload:', forceReload, ')');
     
-    // 캐시가 있으면 재사용
-    if (cachedFillBlanksData) {
+    // 강제 리로드가 아니고 캐시가 있으면 재사용
+    if (!forceReload && cachedFillBlanksData) {
         console.log('✅ [loadFillBlanksData] 캐시된 데이터 사용');
         console.log('📊 [loadFillBlanksData] 캐시 데이터 세트 순서:', cachedFillBlanksData.sets.map(s => s.id));
         return cachedFillBlanksData;
@@ -126,6 +132,7 @@ async function loadFillBlanksData() {
         console.log('✅ Supabase에서 빈칸채우기 데이터를 불러왔습니다.');
         console.log('📊 [loadFillBlanksData] 반환 데이터 세트 순서:', sheetsData.sets.map(s => s.id));
         cachedFillBlanksData = sheetsData; // 캐시 저장
+        window.readingFillBlanksData = sheetsData; // 보험 데이터 업데이트
         return sheetsData;
     } else {
         console.log('⚠️ 빈칸채우기 데모 데이터를 사용합니다.');
@@ -176,22 +183,5 @@ const readingFillBlanksDataDemo = {
     ]
 };
 
-// 실제 사용할 데이터
-let readingFillBlanksData = readingFillBlanksDataDemo;
-
-// 빈칸채우기 사용자 답안 저장
-let fillBlanksAnswers = {};
-
-// 페이지 로드 시 데이터 초기화
-async function initFillBlanksDataOnLoad() {
-    readingFillBlanksData = await loadFillBlanksData();
-    // ✅ 로드된 데이터를 window에 업데이트
-    window.readingFillBlanksData = readingFillBlanksData;
-    console.log('✅ [FillBlanks] window.readingFillBlanksData 업데이트 완료:', readingFillBlanksData.sets.map(s => s.id));
-}
-
-// 전역으로 노출
-window.readingFillBlanksData = readingFillBlanksData;
-
-// 자동 실행 (선택사항)
-// window.addEventListener('DOMContentLoaded', initFillBlanksDataOnLoad);
+// 전역으로 노출 (fillblanks-result.js 보험용)
+window.readingFillBlanksData = readingFillBlanksDataDemo;
