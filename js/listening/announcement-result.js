@@ -281,8 +281,8 @@ function renderAnnouncementAnswer(answer, qIdx, setIdx) {
                 <span class="announce-q-number">Question ${answer.questionNum || (qIdx + 1)}</span>
                 <span class="announce-q-status">${correctIcon}</span>
             </div>
-            <div class="announce-q-text">${answer.question || answer.questionText || ''}</div>
-            ${(answer.questionTrans || answer.questionTextTrans) ? `<div class="announce-q-translation">${answer.questionTrans || answer.questionTextTrans}</div>` : ''}
+            <div class="announce-q-text">${answer.questionText || ''}</div>
+            ${answer.questionTrans ? `<div class="announce-q-translation">${answer.questionTrans}</div>` : ''}
             
             <div class="announce-answer-summary">
                 <div class="announce-answer-row">
@@ -312,8 +312,8 @@ function renderAnnouncementOptionsExplanation(answer, qIdx, setIdx) {
     let optionsHtml = '';
     options.forEach((option, idx) => {
         const isCorrect = (idx + 1) === answer.correctAnswer;
-        const translation = (answer.optionTranslations || answer.translations || [])[idx] || '';
-        const explanation = (answer.optionExplanations || answer.explanations || [])[idx] || '';
+        const translation = (answer.optionTranslations || [])[idx] || '';
+        const explanation = (answer.optionExplanations || [])[idx] || '';
         const optionLetter = optionLabels[idx];
         
         optionsHtml += `

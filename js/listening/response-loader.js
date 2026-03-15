@@ -78,7 +78,7 @@ async function _loadResponseFromSupabase() {
         audioUrl: row.audio_url || '',
         gender: row.gender || '',
         options: [row.option1 || '', row.option2 || '', row.option3 || '', row.option4 || ''],
-        answer: parseInt(row.answer) || 1,
+        correctAnswer: parseInt(row.answer) || 1,
         script: row.script || '',
         scriptTrans: row.script_trans || '',
         scriptHighlights: scriptHighlights,

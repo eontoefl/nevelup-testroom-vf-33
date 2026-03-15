@@ -241,14 +241,14 @@ function highlightLectureScript(scriptText, highlights) {
 function renderLectureAnswer(result, index, setIdx) {
     
     const questionNum = index + 1;
-    const questionText = result.questionText || result.question || '';
+    const questionText = result.questionText || '';
     const questionTrans = result.questionTrans || '';
     const userAnswer = result.userAnswer;
     const correctAnswer = result.correctAnswer;
     const isCorrect = result.isCorrect;
     const options = result.options || [];
-    const translations = result.translations || result.optionTranslations || [];
-    const explanations = result.explanations || result.optionExplanations || [];
+    const optionTranslations = result.optionTranslations || [];
+    const optionExplanations = result.optionExplanations || [];
     
     const correctIcon = isCorrect 
         ? '<i class="fas fa-check-circle" style="color: #77bf7e;"></i>' 
@@ -264,8 +264,8 @@ function renderLectureAnswer(result, index, setIdx) {
     options.forEach((option, optIdx) => {
         const optionLetter = String.fromCharCode(65 + optIdx);
         const isCorrectOpt = correctAnswer === (optIdx + 1);
-        const translation = translations[optIdx] || '';
-        const explanation = explanations[optIdx] || '';
+        const translation = optionTranslations[optIdx] || '';
+        const explanation = optionExplanations[optIdx] || '';
         
         optionsHtml += `
             <div class="academic-option ${isCorrectOpt ? 'correct' : ''}">

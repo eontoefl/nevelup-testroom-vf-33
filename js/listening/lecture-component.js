@@ -483,8 +483,8 @@ class LectureComponent {
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
                 options: question.options,
-                translations: question.translations,
-                explanations: question.explanations
+                optionTranslations: question.optionTranslations,
+                optionExplanations: question.optionExplanations
             });
         });
         
