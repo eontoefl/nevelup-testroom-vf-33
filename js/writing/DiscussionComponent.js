@@ -27,7 +27,7 @@ class DiscussionComponent {
         // ============================================
         
         // 데이터 저장
-        this.writingDiscussionData = null;
+        this.setData = null;
         
         
         // ============================================
@@ -70,7 +70,7 @@ class DiscussionComponent {
         // ============================================
         
         // 답안 저장
-        this.discussionAnswers = [];
+        this.answer = '';
         
         // Undo/Redo 스택
         this.discussionUndoStack = [];
@@ -87,8 +87,6 @@ class DiscussionComponent {
         // 5. 내부 상태 + 타이머 (6개)
         // ============================================
         
-        // 현재 세트/문제 번호
-        this.currentDiscussionSet = 0;
         
 
     }
@@ -105,19 +103,22 @@ class DiscussionComponent {
         
         try {
             // 1. 데이터 로드 (외부 로더 사용)
-            this.writingDiscussionData = await window.loadDiscussionData();
-            if (!this.writingDiscussionData) {
+            const allData = await window.loadDiscussionData();
+            if (!allData || !allData.sets || allData.sets.length === 0) {
                 throw new Error('데이터를 불러올 수 없습니다');
             }
             
             // 2. 세트 찾기 (setNumber → 배열 인덱스 변환)
             const setIndex = this.setNumber - 1;
-            if (setIndex < 0 || setIndex >= this.writingDiscussionData.sets.length) {
+            if (setIndex < 0 || setIndex >= allData.sets.length) {
                 throw new Error(`세트를 찾을 수 없습니다: ${this.setNumber}`);
             }
             
+            this.setData = allData.sets[setIndex];
+            console.log('[DiscussionComponent] 세트 데이터 로드 완료:', this.setData);
+            
             // 3. 문제 로드
-            this.loadDiscussionQuestion(setIndex);
+            this.loadDiscussionQuestion();
             
         } catch (error) {
             console.error('[DiscussionComponent] 초기화 실패:', error);
@@ -171,15 +172,13 @@ class DiscussionComponent {
     /**
      * 문제 로드
      */
-    loadDiscussionQuestion(setIndex) {
-        console.log(`📄 [Discussion] 문제 로드: Set ${setIndex}`);
+    loadDiscussionQuestion() {
+        console.log(`📄 [Discussion] 문제 로드`);
         
-        if (!this.writingDiscussionData || setIndex >= this.writingDiscussionData.sets.length) {
-            console.error('❌ 유효하지 않은 세트 인덱스:', setIndex);
+        if (!this.setData) {
+            console.error('❌ setData가 없습니다');
             return;
         }
-        
-        this.currentDiscussionSet = setIndex;
         
         // 프로필 선택: 2차 풀이면 1차에서 저장한 프로필 재사용, 아니면 랜덤 생성
         const savedProfiles = sessionStorage.getItem('discussionProfiles');
@@ -208,7 +207,7 @@ class DiscussionComponent {
      * 문제 화면 렌더링
      */
     renderDiscussionQuestion() {
-        const setData = this.writingDiscussionData.sets[this.currentDiscussionSet];
+        const setData = this.setData;
         // sessionStorage 우선 → 인스턴스 → window → 기본값
         let profiles = null;
         const _renderSavedProfiles = sessionStorage.getItem('discussionProfiles');
@@ -277,7 +276,7 @@ class DiscussionComponent {
         // Textarea 복원
         const textarea = document.getElementById('discussionTextarea');
         if (textarea) {
-            textarea.value = this.discussionAnswers[this.currentDiscussionSet] || '';
+            textarea.value = this.answer || '';
             
             // 입력 이벤트 바인딩
             textarea.oninput = () => this.onDiscussionTextInput();
@@ -299,7 +298,7 @@ class DiscussionComponent {
         if (!textarea) return;
         
         // 답안 저장
-        this.discussionAnswers[this.currentDiscussionSet] = textarea.value;
+        this.answer = textarea.value;
         
         // Undo 스택에 푸시
         this.discussionUndoStack.push(textarea.value);
@@ -381,7 +380,7 @@ class DiscussionComponent {
         const previousState = this.discussionUndoStack.pop();
         textarea.value = previousState || '';
         
-        this.discussionAnswers[this.currentDiscussionSet] = textarea.value;
+        this.answer = textarea.value;
         this.updateDiscussionWordCount();
         
         console.log('↶ Undo 완료');
@@ -406,7 +405,7 @@ class DiscussionComponent {
         const nextState = this.discussionRedoStack.pop();
         textarea.value = nextState || '';
         
-        this.discussionAnswers[this.currentDiscussionSet] = textarea.value;
+        this.answer = textarea.value;
         this.updateDiscussionWordCount();
         
         console.log('↷ Redo 완료');
@@ -475,8 +474,8 @@ class DiscussionComponent {
         console.log('📤 [Discussion] 제출 시작...');
         
         
-        const setData = this.writingDiscussionData.sets[this.currentDiscussionSet];
-        const userAnswer = this.discussionAnswers[this.currentDiscussionSet] || '';
+        const setData = this.setData;
+        const userAnswer = this.answer || '';
         const wordCount = userAnswer.trim() ? userAnswer.trim().split(/\s+/).length : 0;
         
         console.log('📝 답안:', userAnswer);
@@ -512,8 +511,8 @@ class DiscussionComponent {
      */
     downloadDiscussion() {
         // 내부 데이터에서 직접 읽기
-        const setData = this.writingDiscussionData.sets[this.currentDiscussionSet];
-        const userAnswer = this.discussionAnswers[this.currentDiscussionSet] || '';
+        const setData = this.setData;
+        const userAnswer = this.answer || '';
         const wordCount = userAnswer.trim() ? userAnswer.trim().split(/\s+/).length : 0;
         
         const now = new Date();
