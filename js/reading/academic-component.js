@@ -9,105 +9,132 @@
  */
 
 class AcademicComponent {
-  constructor(setNumber) {
-    console.log(`[AcademicComponent] 생성 - setNumber: ${setNumber}`);
-    
-    this.setNumber = setNumber;           // 12. currentAcademicSet → this.setNumber
-    this.currentQuestion = 0;             // 13. currentAcademicQuestion → this.currentQuestion (0-based)
-    this.answers = {};                    // 14. academicAnswers → this.answers (현재 세트 답안)
-    
-    this.setData = null;                  // 현재 세트 데이터
-    this.totalQuestions = 5;              // Academic은 5문제 고정
-    
-    // DOM 요소 ID
-    this.optionsId = 'academicOptions';
-  }
+    constructor(setNumber, config = {}) {
+        console.log(`[AcademicComponent] 생성 - setNumber: ${setNumber}`);
+        
+        this.setNumber = setNumber;
+        this.currentQuestion = 0;
+        this.answers = {};
+        
+        this.data = null;                    // 전체 데이터
+        this.currentSet = null;              // 현재 세트 데이터
+        this.totalQuestions = 5;             // Academic은 5문제 고정
+        
+        // 콜백
+        this.onComplete = config.onComplete || null;
+        this.onError = config.onError || null;
+        
+        // DOM 요소 ID
+        this.screenId = 'readingAcademicScreen';
+        this.mainTitleId = 'academicMainTitle';
+        this.passageTitleId = 'academicPassageTitle';
+        this.passageContentId = 'academicPassageContent';
+        this.questionId = 'academicQuestion';
+        this.optionsId = 'academicOptions';
+    }
 
   /**
    * 1. 초기화 - 데이터 로드 및 화면 렌더링
    */
-  async init() {
-    console.log(`[AcademicComponent] 초기화 시작 - setNumber: ${this.setNumber}`);
-    
-    // 1. 화면 전환
-    showScreen('readingAcademicScreen');
-    
-    // 2. readingAcademicData 로드
-    if (!window.readingAcademicData || window.readingAcademicData.length === 0) {
-      console.log('[AcademicComponent] 데이터 로드 필요 - loadAcademicData() 호출');
-      await loadAcademicData();
+    async init() {
+        console.log(`[AcademicComponent] 초기화 시작 - setNumber: ${this.setNumber}`);
+        
+        try {
+            // 1. 화면 표시
+            showScreen(this.screenId);
+            
+            // 2. 데이터 로드
+            this.data = await loadAcademicData();
+            console.log(`✅ 데이터 로드 완료: ${this.data.sets.length}개 세트`);
+            
+            // 3. 세트 찾기
+            const setIndex = this.findSetIndex(this.setNumber);
+            if (setIndex === -1) {
+                throw new Error(`Set ${this.setNumber}를 찾을 수 없습니다`);
+            }
+            
+            this.currentSet = this.data.sets[setIndex];
+            console.log(`✅ Set 로드 완료: ${this.currentSet.id}`);
+            
+            // 4. UI 렌더링
+            this.render();
+            
+        } catch (error) {
+            console.error(`❌ [AcademicComponent] 초기화 실패:`, error);
+            if (this.onError) {
+                this.onError(error);
+            }
+        }
     }
-
-    // 3. findAcademicSetIndex - 세트 인덱스 찾기
-    const setIndex = this.findSetIndex();
-    if (setIndex === -1) {
-      console.error(`[AcademicComponent] 세트를 찾을 수 없습니다 - setNumber: ${this.setNumber}`);
-      return;
-    }
-
-    this.setData = window.readingAcademicData[setIndex];
-    console.log(`[AcademicComponent] 세트 데이터 로드 완료:`, this.setData);
-
-    // 4-1. Title 표시 (mainTitle)
-    const mainTitleEl = document.getElementById('academicMainTitle');
-    if (mainTitleEl && this.setData.mainTitle) {
-      mainTitleEl.textContent = this.setData.mainTitle;
-    }
-
-    // 5. renderAcademicPassage - 지문 렌더링
-    this.renderPassage();
-
-    // 6-1. loadAcademicQuestion - 첫 문제 로드
-    this.loadQuestion(0);
-  }
 
   /**
    * 3. findAcademicSetIndex - 세트 ID로 인덱스 찾기
    */
-  findSetIndex() {
-    // 🆕 setNumber가 이미 "academic_set_0001" 형식이면 그대로 사용
-    let setId;
-    if (typeof this.setNumber === 'string' && this.setNumber.startsWith('academic_set_')) {
-      setId = this.setNumber;
-      console.log(`🔍 [findSetIndex] setId 문자열 직접 사용: ${setId}`);
-    } else {
-      setId = `academic_set_${String(this.setNumber).padStart(4, '0')}`;
-      console.log(`🔍 [findSetIndex] setNumber ${this.setNumber} → setId: ${setId}`);
+    /**
+     * 세트 번호로 인덱스 찾기
+     */
+    findSetIndex(setNumber) {
+        let setId;
+        if (typeof setNumber === 'string' && setNumber.startsWith('academic_set_')) {
+            setId = setNumber;
+        } else {
+            setId = `academic_set_${String(setNumber).padStart(4, '0')}`;
+        }
+        
+        for (let i = 0; i < this.data.sets.length; i++) {
+            if (this.data.sets[i].id === setId) {
+                console.log(`[AcademicComponent] 세트 발견: ${setId} (index ${i})`);
+                return i;
+            }
+        }
+        console.error(`[AcademicComponent] 세트를 찾을 수 없음: ${setId}`);
+        return -1;
     }
-    
-    console.log(`[AcademicComponent] 세트 검색 - ID: ${setId}, 총 세트: ${window.readingAcademicData?.length || 0}`);
-    
-    const index = window.readingAcademicData.findIndex(s => s.id === setId);
-    console.log(`[AcademicComponent] 세트 인덱스: ${index}`);
-    return index;
-  }
+
+    /**
+     * UI 렌더링
+     */
+    render() {
+        // 1. 메인 타이틀 설정
+        const mainTitleEl = document.getElementById(this.mainTitleId);
+        if (mainTitleEl) {
+            mainTitleEl.textContent = this.currentSet.mainTitle;
+        }
+        
+        // 2. 지문 렌더링
+        this.renderPassage();
+        
+        // 3. 첫 번째 문제 로드
+        this.loadQuestion(0);
+    }
 
   /**
    * 5. renderAcademicPassage - 지문 렌더링
    */
-  renderPassage() {
-    console.log('[AcademicComponent] 지문 렌더링');
-    
-    const titleEl = document.getElementById('academicPassageTitle');
-    const contentEl = document.getElementById('academicPassageContent');
-
-    if (!this.setData || !this.setData.passage) {
-      console.error('[AcademicComponent] 지문 데이터 없음');
-      return;
+    /**
+     * 지문 렌더링
+     */
+    renderPassage() {
+        const passage = this.currentSet.passage;
+        
+        const titleEl = document.getElementById(this.passageTitleId);
+        const contentEl = document.getElementById(this.passageContentId);
+        
+        if (!passage) {
+            console.error('[AcademicComponent] 지문 데이터 없음');
+            return;
+        }
+        
+        if (titleEl) {
+            titleEl.innerHTML = passage.title || '';
+        }
+        if (contentEl) {
+            // 지문 렌더링 시 (A)~(D) 마커를 미리 span으로 감싸놓기 (기본 숨김)
+            let html = passage.content || '';
+            html = html.replace(/\(([A-D])\)/g, '<span class="ac-insertion-marker">($1)</span>');
+            contentEl.innerHTML = html;
+        }
     }
-
-    if (titleEl) {
-      titleEl.innerHTML = this.setData.passage.title || '';
-    }
-    if (contentEl) {
-      // 지문 렌더링 시 (A)~(D) 마커를 미리 span으로 감싸놓기 (기본 숨김)
-      let html = this.setData.passage.content || '';
-      html = html.replace(/\(([A-D])\)/g, '<span class="ac-insertion-marker">($1)</span>');
-      contentEl.innerHTML = html;
-    }
-
-    console.log('[AcademicComponent] 지문 렌더링 완료');
-  }
 
   /**
    * 🆕 5-1. 지문 highlight/insertion 스타일 토글
@@ -115,197 +142,225 @@ class AcademicComponent {
    * - insertion 문제 활성: (A)(B)(C)(D) 마커에 강조 클래스 추가
    * - 그 외: 모든 강조 제거
    */
-  updatePassageHighlight(question) {
-    const contentEl = document.getElementById('academicPassageContent');
-    if (!contentEl) return;
+    updatePassageHighlight(question) {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
 
-    const type = question.questionType || 'normal';
+        const type = question.questionType || 'normal';
 
-    // highlight 토글
-    contentEl.querySelectorAll('.ac-highlight-word').forEach(el => {
-      el.classList.toggle('ac-highlight-active', type === 'highlight');
-    });
+        // highlight 토글
+        contentEl.querySelectorAll('.ac-highlight-word').forEach(el => {
+            el.classList.toggle('ac-highlight-active', type === 'highlight');
+        });
 
-    // insertion 마커 표시/숨김 (renderPassage에서 이미 span으로 감싸놓음)
-    contentEl.querySelectorAll('.ac-insertion-marker').forEach(el => {
-      el.classList.toggle('ac-insertion-active', type === 'insertion');
-    });
-  }
+        // insertion 마커 표시/숨김 (renderPassage에서 이미 span으로 감싸놓음)
+        contentEl.querySelectorAll('.ac-insertion-marker').forEach(el => {
+            el.classList.toggle('ac-insertion-active', type === 'insertion');
+        });
+    }
 
   /**
    * 6-1. loadAcademicQuestion - 문제 로드 (질문 텍스트, 선택지 렌더링, 답안 복원)
    */
-  loadQuestion(questionIndex) {
-    console.log(`[AcademicComponent] 문제 로드 - questionIndex: ${questionIndex}`);
-    
-    this.currentQuestion = questionIndex;
-    const question = this.setData.questions[questionIndex];
-
-    if (!question) {
-      console.error(`[AcademicComponent] 문제 데이터 없음 - index: ${questionIndex}`);
-      return;
+    /**
+     * 문제 로드
+     */
+    loadQuestion(questionIndex) {
+        this.currentQuestion = questionIndex;
+        const question = this.currentSet.questions[questionIndex];
+        
+        if (!question) {
+            console.error(`[AcademicComponent] 문제 데이터 없음 - index: ${questionIndex}`);
+            return;
+        }
+        
+        // highlight/insertion 지문 스타일 토글
+        this.updatePassageHighlight(question);
+        
+        // 질문 텍스트 (insertion 문제: "..." 를 박스로 표시)
+        const questionTextEl = document.getElementById(this.questionId);
+        if (questionTextEl) {
+            let qText = question.question || '';
+            if ((question.questionType || 'normal') === 'insertion') {
+                qText = qText.replace(/"([^"]+)"/g, '<div class="ac-insertion-sentence">"$1"</div>');
+            }
+            questionTextEl.innerHTML = qText;
+        }
+        
+        // 선택지 렌더링
+        this.renderOptions(question.options, questionIndex);
     }
-
-    // highlight/insertion 지문 스타일 토글
-    this.updatePassageHighlight(question);
-
-    // 질문 텍스트 (insertion 문제: "..." 를 박스로 표시)
-    const questionTextEl = document.getElementById('academicQuestion');
-    if (questionTextEl) {
-      let qText = question.question || '';
-      if ((question.questionType || 'normal') === 'insertion') {
-        qText = qText.replace(/"([^"]+)"/g, '<div class="ac-insertion-sentence">"$1"</div>');
-      }
-      questionTextEl.innerHTML = qText;
-    }
-
-    // 선택지 렌더링 (6-2)
-    this.renderOptions(question.options);
-
-    // 6-3. 답안 복원
-    this.restoreAnswer(questionIndex);
-
-    console.log(`[AcademicComponent] 문제 ${questionIndex + 1} 로드 완료`);
-  }
 
   /**
    * 6-2. 선택지 렌더링 (구형 string 배열과 신형 object 배열 모두 지원)
    */
-  renderOptions(options) {
-    const container = document.getElementById('academicOptions');
-    if (!container) {
-      console.error('[AcademicComponent] academicOptions 컨테이너를 찾을 수 없습니다');
-      return;
+    /**
+     * 보기 렌더링
+     */
+    renderOptions(options, questionIndex) {
+        const container = document.getElementById(this.optionsId);
+        if (!container) {
+            console.error('[AcademicComponent] academicOptions 컨테이너를 찾을 수 없습니다');
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        options.forEach((opt, idx) => {
+            const label = this.getLabelFromIndex(idx);
+            const text = typeof opt === 'object' ? opt.text : opt;
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'answer-option';
+            optionDiv.dataset.value = label;
+            optionDiv.textContent = `${label}) ${text}`;
+            
+            optionDiv.addEventListener('click', () => this.selectOption(label));
+            
+            // 이전 답안 복원
+            const savedAnswer = this.answers[questionIndex];
+            if (savedAnswer === label) {
+                optionDiv.classList.add('selected');
+            }
+            
+            container.appendChild(optionDiv);
+        });
     }
-
-    container.innerHTML = '';
-
-    options.forEach((opt, idx) => {
-      const label = this.getLabelFromIndex(idx);
-      const text = typeof opt === 'object' ? opt.text : opt;
-
-      const optionDiv = document.createElement('div');
-      optionDiv.className = 'answer-option';  // ✅ 'option' → 'answer-option' 변경
-      optionDiv.dataset.value = label;
-      optionDiv.textContent = `${label}) ${text}`;  // ✅ innerHTML → textContent
-      
-      optionDiv.addEventListener('click', () => this.selectOption(label));
-      container.appendChild(optionDiv);
-    });
-  }
-
-  /**
-   * 6-3. 답안 복원
-   */
-  restoreAnswer(questionIndex) {
-    if (this.answers[questionIndex]) {
-      const selected = this.answers[questionIndex];
-      const options = document.querySelectorAll('#academicOptions .answer-option');
-      options.forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.value === selected);
-      });
-    }
-  }
 
   /**
    * 7. selectAcademicOption - 선택지 선택
    */
-  selectOption(value) {
-    console.log(`[AcademicComponent] 선택지 선택 - Q${this.currentQuestion + 1}: ${value}`);
-    
-    this.answers[this.currentQuestion] = value;
-
-    // UI 업데이트
-    const options = document.querySelectorAll('#academicOptions .answer-option');
-    options.forEach(opt => {
-      opt.classList.toggle('selected', opt.dataset.value === value);
-    });
-  }
+    /**
+     * 보기 선택
+     */
+    selectOption(value) {
+        this.answers[this.currentQuestion] = value;
+        
+        // 선택 UI 업데이트
+        const options = document.querySelectorAll(`#${this.optionsId} .answer-option`);
+        options.forEach(opt => {
+            if (opt.dataset.value === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+    }
 
   /**
    * 8. nextQuestion - 다음 문제로 이동
    */
-  nextQuestion() {
-    if (this.currentQuestion < this.totalQuestions - 1) {
-      this.loadQuestion(this.currentQuestion + 1);
-      return true;
+    /**
+     * 다음 문제로 이동
+     */
+    nextQuestion() {
+        if (this.currentQuestion < this.currentSet.questions.length - 1) {
+            this.loadQuestion(this.currentQuestion + 1);
+            return true;
+        }
+        return false;
     }
-    console.log('[AcademicComponent] 마지막 문제입니다');
-    return false;
-  }
-
-  /**
-   * 9. previousQuestion - 이전 문제로 이동
-   */
-  previousQuestion() {
-    if (this.currentQuestion > 0) {
-      this.loadQuestion(this.currentQuestion - 1);
-      return true;
+    
+    /**
+     * 이전 문제로 이동
+     */
+    previousQuestion() {
+        if (this.currentQuestion > 0) {
+            this.loadQuestion(this.currentQuestion - 1);
+            return true;
+        }
+        return false;
     }
-    console.log('[AcademicComponent] 첫 문제입니다');
-    return false;
-  }
-
-  /**
-   * 10. isLastQuestion - 마지막 문제 여부
-   */
-  isLastQuestion() {
-    return this.currentQuestion === this.totalQuestions - 1;
-  }
+    
+    /**
+     * 현재 문제가 이 세트의 마지막 문제인지 확인
+     */
+    isLastQuestion() {
+        return this.currentQuestion === this.currentSet.questions.length - 1;
+    }
+    
+    /**
+     * 현재 문제가 이 세트의 첫 문제인지 확인
+     */
+    isFirstQuestion() {
+        return this.currentQuestion === 0;
+    }
 
   /**
    * 11-2. submitAcademic - 답안 수집 & 채점
    */
-  submit() {
-    console.log('[AcademicComponent] 제출 시작');
-
-    // 11-3. 채점 (5문제)
-    const result = {
-      setId: this.setData.id,
-      mainTitle: this.setData.mainTitle,
-      passage: this.setData.passage,
-      answers: []
-    };
-
-    this.setData.questions.forEach((q, idx) => {
-      const userAnswer = this.answers[idx] || '';
-      
-      // ✅ 수정: userAnswer는 'A','B','C','D'이고, q.correctAnswer는 숫자(1,2,3,4,5)
-      // 'A' → 1, 'B' → 2, 'C' → 3, 'D' → 4로 변환
-      const userAnswerNumber = userAnswer ? userAnswer.charCodeAt(0) - 64 : 0; // 'A'.charCodeAt(0) = 65
-      const isCorrect = userAnswerNumber === q.correctAnswer;
-
-      result.answers.push({
-        questionIndex: idx,
-        question: q.question,
-        userAnswer: userAnswer,
-        correctAnswer: q.correctAnswer,
-        isCorrect: isCorrect,
-        options: q.options
-      });
-    });
-
-    // sessionStorage 저장
-    const storageKey = `academic_set_${String(this.setNumber).padStart(4, '0')}`;
-    sessionStorage.setItem(storageKey, JSON.stringify(result));
-    console.log(`[AcademicComponent] sessionStorage 저장 완료 - key: ${storageKey}`);
-
-    // 채점 완료 콜백
-    if (this.onComplete) {
-      console.log('[AcademicComponent] onComplete 콜백 호출');
-      this.onComplete(result);
+    /**
+     * 제출 (채점 및 결과 저장)
+     */
+    submit() {
+        console.log(`📤 [AcademicComponent] 제출 시작`);
+        
+        // 1. 채점
+        const results = this.gradeAnswers();
+        
+        // 2. sessionStorage에 저장 (이 세트만)
+        sessionStorage.setItem(
+            `academic_set_${this.setNumber}`,
+            JSON.stringify(results)
+        );
+        
+        console.log(`✅ 채점 완료:`, results);
+        
+        // 3. 콜백 호출 (Module Controller에 전달)
+        if (this.onComplete) {
+            this.onComplete(results);
+        }
     }
-
-    return result;
-  }
-
-  /**
-   * Utility: 인덱스 → 알파벳 라벨 변환
-   */
-  getLabelFromIndex(index) {
-    return String.fromCharCode(65 + index); // 65 = 'A'
-  }
-
+    
+    /**
+     * 답안 채점
+     */
+    gradeAnswers() {
+        const setResults = {
+            type: 'academic',
+            setId: this.currentSet.id,
+            setNumber: this.setNumber,
+            mainTitle: this.currentSet.mainTitle,
+            passage: this.currentSet.passage,
+            answers: []
+        };
+        
+        this.currentSet.questions.forEach((question, index) => {
+            const userAnswer = this.answers[index] || '';
+            
+            // userAnswer는 'A','B','C','D', correctAnswer는 숫자(1,2,3,4)
+            const userAnswerNumber = userAnswer ? userAnswer.charCodeAt(0) - 64 : 0;
+            const isCorrect = userAnswerNumber === question.correctAnswer;
+            
+            setResults.answers.push({
+                questionNum: question.questionNum || `Q${index + 1}`,
+                question: question.question,
+                questionTranslation: question.questionTranslation || '',
+                options: question.options || [],
+                userAnswer: userAnswer,
+                correctAnswer: question.correctAnswer,
+                isCorrect: isCorrect
+            });
+        });
+        
+        return setResults;
+    }
+    
+    /**
+     * HTML 이스케이프
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    /**
+     * 인덱스 → 알파벳 라벨 변환
+     */
+    getLabelFromIndex(index) {
+        return String.fromCharCode(65 + index);
+    }
 }
 
 // 전역으로 노출

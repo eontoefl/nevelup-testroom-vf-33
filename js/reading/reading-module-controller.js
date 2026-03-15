@@ -136,11 +136,11 @@ function _createAllComponents() {
                 });
                 break;
             case 'academic':
-                // AcademicComponent는 config를 안 받음 → 직접 할당
-                comp = new AcademicComponent(seq.setNum);
-                comp.onComplete = function(results) {
-                    _onSetComplete(index, results);
-                };
+                comp = new AcademicComponent(seq.setNum, {
+                    onComplete: function(results) {
+                        _onSetComplete(index, results);
+                    }
+                });
                 break;
         }
 

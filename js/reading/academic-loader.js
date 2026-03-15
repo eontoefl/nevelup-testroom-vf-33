@@ -67,7 +67,7 @@ async function _fetchAcademicFromSupabase() {
             };
         }).filter(s => s !== null);
         
-        return sets;
+        return { type: 'academic_reading', timeLimit: 120, sets };
         
     } catch (error) {
         console.error('❌ [Academic] Supabase 로드 실패:', error);
@@ -345,73 +345,33 @@ const readingAcademicDataDemo = {
     ]
 };
 
-// 실제 사용할 데이터
-let readingAcademicData = null;
-let academicAnswers = {};
-
-// ✅ 캐시 시스템 추가 (정렬된 데이터 재사용)
+// ✅ 데이터 캐시 (정렬된 데이터를 메모리에 저장)
 let cachedAcademicData = null;
 
-/**
- * 아카데믹 리딩 데이터 로드 (Supabase → 데모 폴백)
- * window.readingAcademicData에 배열 형태로 저장
- * @param {boolean} forceReload - true면 캐시 무시하고 재로드
- */
-async function loadAcademicData(forceReload = false) {
-    console.log('📥 [아카데믹리딩] 데이터 로드 시작...');
-    
-    // ✅ 캐시 확인
-    if (!forceReload && cachedAcademicData) {
-        console.log('✅ [아카데믹리딩] 캐시된 데이터 사용 (이미 정렬됨)');
-        window.readingAcademicData = cachedAcademicData;
-        console.log('  캐시 데이터 세트 순서:', cachedAcademicData.map(s => s.id));
-        return;
-    }
-    
-    try {
-        const sheetSets = await _fetchAcademicFromSupabase();
-        
-        // Supabase 데이터가 유효한 배열이면 사용
-        if (sheetSets && Array.isArray(sheetSets) && sheetSets.length > 0) {
-            console.log(`✅ [아카데믹리딩] Supabase 데이터 사용 (${sheetSets.length}개 세트)`);
-            window.readingAcademicData = sheetSets;
-            cachedAcademicData = sheetSets; // ✅ 캐시 저장
-            return;
-        }
-        
-        console.log('⚠️ [아카데믹리딩] Supabase 데이터 없음, 데모 데이터로 전환');
-        
-    } catch (error) {
-        console.error('❌ [아카데믹리딩] 로드 중 예외 발생:', error);
-    }
-    
-    // 데모 데이터 사용 (폴백)
-    if (readingAcademicDataDemo && readingAcademicDataDemo.sets) {
-        console.log(`📝 [아카데믹리딩] 데모 데이터 사용 (${readingAcademicDataDemo.sets.length}개 세트)`);
-        window.readingAcademicData = readingAcademicDataDemo.sets;
-        cachedAcademicData = readingAcademicDataDemo.sets; // ✅ 캐시 저장
-    } else {
-        console.error('❌ [아카데믹리딩] 데모 데이터도 없음!');
-        window.readingAcademicData = [];
-        cachedAcademicData = [];
-    }
-}
-
-// 캐시 초기화 함수 (디버깅용)
+// 🔧 캐시 강제 초기화 함수 (디버깅용)
 window.clearAcademicCache = function() {
-    console.log('🔄 [아카데믹리딩] 캐시 초기화');
     cachedAcademicData = null;
+    console.log('🗑️ Academic 캐시 초기화 완료');
 };
 
-// 페이지 로드 시 데이터 초기화
-async function initAcademicDataOnLoad() {
-    await loadAcademicData();
-    console.log('✅ [아카데믹리딩] 데이터 초기화 완료');
-}
-
-// 페이지 로드 시 자동 초기화
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAcademicDataOnLoad);
-} else {
-    initAcademicDataOnLoad();
+// 데이터 로드 (Supabase → 데모 폴백)
+async function loadAcademicData(forceReload = false) {
+    console.log('🔄 [loadAcademicData] 시작 (forceReload:', forceReload, ')');
+    
+    // 강제 리로드가 아니고 캐시가 있으면 재사용
+    if (!forceReload && cachedAcademicData) {
+        console.log('✅ [loadAcademicData] 캐시된 데이터 사용');
+        return cachedAcademicData;
+    }
+    
+    const supabaseData = await _fetchAcademicFromSupabase();
+    
+    if (supabaseData && supabaseData.sets.length > 0) {
+        console.log('✅ Supabase에서 아카데믹리딩 데이터를 불러왔습니다.');
+        cachedAcademicData = supabaseData; // 캐시 저장
+        return supabaseData;
+    } else {
+        console.log('⚠️ 아카데믹리딩 데모 데이터를 사용합니다.');
+        return readingAcademicDataDemo;
+    }
 }
