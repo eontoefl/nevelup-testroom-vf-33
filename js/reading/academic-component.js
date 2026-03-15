@@ -18,8 +18,6 @@ class AcademicComponent {
         
         this.data = null;                    // 전체 데이터
         this.currentSet = null;              // 현재 세트 데이터
-        this.totalQuestions = 5;             // Academic은 5문제 고정
-        
         // 콜백
         this.onComplete = config.onComplete || null;
         this.onError = config.onError || null;
@@ -33,9 +31,9 @@ class AcademicComponent {
         this.optionsId = 'academicOptions';
     }
 
-  /**
-   * 1. 초기화 - 데이터 로드 및 화면 렌더링
-   */
+    /**
+     * 초기화 - 데이터 로드 및 화면 렌더링
+     */
     async init() {
         console.log(`[AcademicComponent] 초기화 시작 - setNumber: ${this.setNumber}`);
         
@@ -67,9 +65,6 @@ class AcademicComponent {
         }
     }
 
-  /**
-   * 3. findAcademicSetIndex - 세트 ID로 인덱스 찾기
-   */
     /**
      * 세트 번호로 인덱스 찾기
      */
@@ -108,9 +103,6 @@ class AcademicComponent {
         this.loadQuestion(0);
     }
 
-  /**
-   * 5. renderAcademicPassage - 지문 렌더링
-   */
     /**
      * 지문 렌더링
      */
@@ -136,12 +128,9 @@ class AcademicComponent {
         }
     }
 
-  /**
-   * 🆕 5-1. 지문 highlight/insertion 스타일 토글
-   * - highlight 문제 활성: .ac-highlight-word에 활성 클래스 추가
-   * - insertion 문제 활성: (A)(B)(C)(D) 마커에 강조 클래스 추가
-   * - 그 외: 모든 강조 제거
-   */
+    /**
+     * 지문 highlight/insertion 스타일 토글
+     */
     updatePassageHighlight(question) {
         const contentEl = document.getElementById(this.passageContentId);
         if (!contentEl) return;
@@ -159,9 +148,6 @@ class AcademicComponent {
         });
     }
 
-  /**
-   * 6-1. loadAcademicQuestion - 문제 로드 (질문 텍스트, 선택지 렌더링, 답안 복원)
-   */
     /**
      * 문제 로드
      */
@@ -191,9 +177,6 @@ class AcademicComponent {
         this.renderOptions(question.options, questionIndex);
     }
 
-  /**
-   * 6-2. 선택지 렌더링 (구형 string 배열과 신형 object 배열 모두 지원)
-   */
     /**
      * 보기 렌더링
      */
@@ -227,9 +210,6 @@ class AcademicComponent {
         });
     }
 
-  /**
-   * 7. selectAcademicOption - 선택지 선택
-   */
     /**
      * 보기 선택
      */
@@ -247,9 +227,6 @@ class AcademicComponent {
         });
     }
 
-  /**
-   * 8. nextQuestion - 다음 문제로 이동
-   */
     /**
      * 다음 문제로 이동
      */
@@ -286,9 +263,6 @@ class AcademicComponent {
         return this.currentQuestion === 0;
     }
 
-  /**
-   * 11-2. submitAcademic - 답안 수집 & 채점
-   */
     /**
      * 제출 (채점 및 결과 저장)
      */

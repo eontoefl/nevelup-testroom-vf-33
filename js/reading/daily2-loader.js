@@ -314,13 +314,4 @@ const readingDaily2DataDemo = {
     ]
 };
 
-// 실제 사용할 데이터
-let readingDaily2Data = readingDaily2DataDemo;
 
-// 일상리딩2 사용자 답안 저장
-let daily2Answers = {};
-
-// 페이지 로드 시 데이터 초기화
-async function initDaily2DataOnLoad() {
-    readingDaily2Data = await loadDaily2Data();
-}
