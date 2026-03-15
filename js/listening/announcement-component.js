@@ -171,9 +171,6 @@ class AnnouncementComponent {
         const btn = document.createElement('button');
         btn.id = 'announcementListenBtn';
         btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:10px;"><path d="M3 9v6h4l5 5V4L7 9H3z" fill="white"/><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="white"/><path d="M19 12c0-3.17-1.82-5.9-4.5-7.22v2.16A5.98 5.98 0 0 1 18 12c0 2.48-1.35 4.64-3.5 5.06v2.16C17.18 17.9 19 15.17 19 12z" fill="white" opacity="0.7"/></svg>듣기 시작';
-        btn.style.cssText = '';
-        btn.onmouseover = null;
-        btn.onmouseout = null;
         btn.onclick = () => this._onPlayButtonClick();
         introScreen.insertBefore(btn, imageContainer);
     }

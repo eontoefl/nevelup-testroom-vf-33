@@ -235,7 +235,7 @@ function _onListeningSetComplete(setIndex, results) {
  * 통합 Next 핸들러 — 모든 리스닝 화면의 Next 버튼에서 호출
  * 리스닝은 순방향만 (Back 없음)
  */
-function _listeningModuleNext() {
+async function _listeningModuleNext() {
     var mod = window.currentListeningModule;
     if (!mod) return;
 
@@ -251,7 +251,9 @@ function _listeningModuleNext() {
         // 세트 마지막 → 제출 후 다음 세트
         comp.submit();
         if (mod.currentIndex < mod.sequence.length - 1) {
-            _goToListeningSet(mod.currentIndex + 1);
+            // _goToListeningSet 내부에서 progress/buttons 업데이트하므로 여기서 return
+            await _goToListeningSet(mod.currentIndex + 1);
+            return;
         }
     }
 
