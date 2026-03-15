@@ -53,45 +53,29 @@ async function _loadDiscussionFromSupabase() {
         console.log(`✅ [discussion-loader] Supabase에서 ${rows.length}개 세트 로드 성공`);
         
         const sets = rows.map(row => {
-            const setData = {
+            // Bullets 배열 구성 (빈 값 제외)
+            const bullets = [];
+            for (let i = 1; i <= 5; i++) {
+                const sentence = row[`bullet${i}_sentence`] || '';
+                if (sentence.trim()) {
+                    bullets.push({
+                        bulletNum: i,
+                        sentence: sentence,
+                        ets: row[`bullet${i}_ets`] || '',
+                        strategy: row[`bullet${i}_strategy`] || ''
+                    });
+                }
+            }
+            
+            return {
                 setNumber: row.id || '',
                 classContext: row.class_context || '',
                 topic: row.topic || '',
                 student1Opinion: row.student1_opinion || '',
                 student2Opinion: row.student2_opinion || '',
                 sampleAnswer: row.sample_answer || '',
-                bullet1Sentence: row.bullet1_sentence || '',
-                bullet1ETS: row.bullet1_ets || '',
-                bullet1Strategy: row.bullet1_strategy || '',
-                bullet2Sentence: row.bullet2_sentence || '',
-                bullet2ETS: row.bullet2_ets || '',
-                bullet2Strategy: row.bullet2_strategy || '',
-                bullet3Sentence: row.bullet3_sentence || '',
-                bullet3ETS: row.bullet3_ets || '',
-                bullet3Strategy: row.bullet3_strategy || '',
-                bullet4Sentence: row.bullet4_sentence || '',
-                bullet4ETS: row.bullet4_ets || '',
-                bullet4Strategy: row.bullet4_strategy || '',
-                bullet5Sentence: row.bullet5_sentence || '',
-                bullet5ETS: row.bullet5_ets || '',
-                bullet5Strategy: row.bullet5_strategy || ''
+                bullets: bullets
             };
-            
-            // Bullets 배열 구성 (빈 값 제외)
-            setData.bullets = [];
-            for (let i = 1; i <= 5; i++) {
-                const sentence = setData[`bullet${i}Sentence`];
-                if (sentence && sentence.trim()) {
-                    setData.bullets.push({
-                        bulletNum: i,
-                        sentence: sentence,
-                        ets: setData[`bullet${i}ETS`] || '',
-                        strategy: setData[`bullet${i}Strategy`] || ''
-                    });
-                }
-            }
-            
-            return setData;
         });
         
         return { type: 'writing_discussion', sets };

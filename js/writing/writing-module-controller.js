@@ -281,7 +281,7 @@ function _onWritingTimerExpired() {
             break;
 
         case 'email':
-            var emailTextarea = document.getElementById('emailWritingArea');
+            var emailTextarea = document.getElementById('emailTextarea');
             if (emailTextarea) {
                 emailTextarea.disabled = true;
                 emailTextarea.style.opacity = '0.7';
@@ -289,7 +289,7 @@ function _onWritingTimerExpired() {
             break;
 
         case 'discussion':
-            var discTextarea = document.getElementById('discussionWritingArea');
+            var discTextarea = document.getElementById('discussionTextarea');
             if (discTextarea) {
                 discTextarea.disabled = true;
                 discTextarea.style.opacity = '0.7';
