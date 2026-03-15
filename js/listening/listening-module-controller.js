@@ -494,11 +494,9 @@ function _isListeningQuestionAnswered(setIndex, questionIndex) {
     var comp = mod.components[setIndex];
     if (!comp) return false;
 
-    // 모든 리스닝 컴포넌트는 setData 또는 currentSetData에 setId 필드를 가짐
-    var setData = comp.setData || comp.currentSetData;
-    if (!setData) return false;
+    if (!comp.setData) return false;
 
-    var key = setData.setId + '_q' + (questionIndex + 1);
+    var key = comp.setData.setId + '_q' + (questionIndex + 1);
     return comp.answers[key] != null;
 }
 
