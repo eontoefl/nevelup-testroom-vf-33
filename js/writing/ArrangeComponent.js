@@ -19,8 +19,7 @@ class ArrangeComponent {
         // 내부 상태
         this.currentQuestion = 0;
         this.answers = {}; // 문제별 답안 저장
-        this.data = null;
-        this.currentSetData = null;
+        this.setData = null;
         this.profilePairs = {}; // 문제별 프로필 이미지 저장
         this.draggedWord = null; // 현재 드래그 중인 단어
         
@@ -55,8 +54,8 @@ class ArrangeComponent {
         
         try {
             // 1. 데이터 로드 (외부 로더 사용)
-            this.data = await window.loadArrangeData();
-            if (!this.data) {
+            const allData = await window.loadArrangeData();
+            if (!allData || !allData.sets || allData.sets.length === 0) {
                 throw new Error('데이터를 불러올 수 없습니다');
             }
             
@@ -64,13 +63,13 @@ class ArrangeComponent {
             const setId = `arrange_set_${String(this.setNumber).padStart(4, '0')}`;
             console.log(`[ArrangeComponent] 세트 검색 - ID: ${setId}`);
             
-            const setIndex = this.findSetIndex(setId);
+            const setIndex = allData.sets.findIndex(set => set.setId === setId);
             if (setIndex === -1) {
                 throw new Error(`세트를 찾을 수 없습니다: ${setId}`);
             }
             
-            this.currentSetData = this.data.sets[setIndex];
-            console.log('[ArrangeComponent] 세트 데이터 로드 완료:', this.currentSetData);
+            this.setData = allData.sets[setIndex];
+            console.log('[ArrangeComponent] 세트 데이터 로드 완료:', this.setData);
             
             // 3. 첫 번째 문제 로드
             this.loadQuestion(0);
@@ -84,9 +83,7 @@ class ArrangeComponent {
     /**
      * 세트 인덱스 찾기
      */
-    findSetIndex(setId) {
-        return this.data.sets.findIndex(set => set.setId === setId);
-    }
+
     
     /**
      * 랜덤 남녀 조합 생성 (남남/여여 불가, 직전 이미지 제외)
@@ -136,10 +133,10 @@ class ArrangeComponent {
         console.log(`[ArrangeComponent] 문제 ${questionIndex + 1} 로드`);
         
         this.currentQuestion = questionIndex;
-        const question = this.currentSetData.questions[questionIndex];
+        const question = this.setData.questions[questionIndex];
         
         // 문제별 프로필 이미지 조합 가져오기 (없으면 새로 생성)
-        const questionKey = `${this.currentSetData.setId}_q${question.questionNum}`;
+        const questionKey = `${this.setData.setId}_q${question.questionNum}`;
         if (!this.profilePairs[questionKey]) {
             this.profilePairs[questionKey] = this.getRandomGenderPair();
             console.log(`[ArrangeComponent] 새 프로필 조합 생성: ${questionKey}`);
@@ -168,7 +165,7 @@ class ArrangeComponent {
         const container = document.getElementById('arrangeQuestionContent');
         
         // 저장된 답안 불러오기
-        const questionKey = `${this.currentSetData.setId}_q${question.questionNum}`;
+        const questionKey = `${this.setData.setId}_q${question.questionNum}`;
         const savedAnswer = this.answers[questionKey];
         
         // 프로필 이미지 조합
@@ -290,8 +287,8 @@ class ArrangeComponent {
         }
         
         const index = parseInt(blank.dataset.index);
-        const question = this.currentSetData.questions[this.currentQuestion];
-        const questionKey = `${this.currentSetData.setId}_q${question.questionNum}`;
+        const question = this.setData.questions[this.currentQuestion];
+        const questionKey = `${this.setData.setId}_q${question.questionNum}`;
         
         if (!this.answers[questionKey]) {
             this.answers[questionKey] = {};
@@ -320,8 +317,8 @@ class ArrangeComponent {
      * 단어 제거 (클릭)
      */
     removeWord(index) {
-        const question = this.currentSetData.questions[this.currentQuestion];
-        const questionKey = `${this.currentSetData.setId}_q${question.questionNum}`;
+        const question = this.setData.questions[this.currentQuestion];
+        const questionKey = `${this.setData.setId}_q${question.questionNum}`;
         
         if (this.answers[questionKey] && this.answers[questionKey][index]) {
             console.log(`[ArrangeComponent] 단어 제거: ${questionKey}[${index}]`);
@@ -337,7 +334,7 @@ class ArrangeComponent {
      */
     nextQuestion() {
         const nextIndex = this.currentQuestion + 1;
-        const totalQuestions = this.currentSetData.questions.length;
+        const totalQuestions = this.setData.questions.length;
         
         if (nextIndex >= totalQuestions) {
             console.log('[ArrangeComponent] 마지막 문제 도달');
@@ -357,10 +354,10 @@ class ArrangeComponent {
         console.log('[ArrangeComponent] 최종 답안:', this.answers);
         
         let correct = 0;
-        const total = this.currentSetData.questions.length;
+        const total = this.setData.questions.length;
         
-        const results = this.currentSetData.questions.map((question, index) => {
-            const questionKey = `${this.currentSetData.setId}_q${question.questionNum}`;
+        const results = this.setData.questions.map((question, index) => {
+            const questionKey = `${this.setData.setId}_q${question.questionNum}`;
             const userAnswer = this.answers[questionKey];
             
             // 사용자가 입력한 전체 문장 만들기
@@ -422,8 +419,8 @@ class ArrangeComponent {
             correct: correct,
             total: total,
             accuracy: accuracy,
-            week: this.currentSetData.week,
-            day: this.currentSetData.day
+            week: this.setData.week,
+            day: this.setData.day
         };
         
         console.log('[ArrangeComponent] 채점 완료:', resultData);

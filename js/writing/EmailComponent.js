@@ -18,10 +18,8 @@ class EmailComponent {
         this.setNumber = setNumber;
         
         // 내부 상태
-        this.currentQuestion = 0;
-        this.answers = {}; // 문제별 답안 저장
-        this.data = null;
-        this.currentSetData = null;
+        this.answers = {}; // 답안 저장
+        this.setData = null;
         
         // Undo/Redo
         this.undoStack = [];
@@ -42,8 +40,8 @@ class EmailComponent {
         
         try {
             // 1. 데이터 로드 (외부 로더 사용)
-            this.data = await window.loadEmailData();
-            if (!this.data) {
+            const allData = await window.loadEmailData();
+            if (!allData || !allData.sets || allData.sets.length === 0) {
                 throw new Error('데이터를 불러올 수 없습니다');
             }
             
@@ -51,16 +49,16 @@ class EmailComponent {
             const setId = `email_set_${String(this.setNumber).padStart(4, '0')}`;
             console.log(`[EmailComponent] 세트 검색 - ID: ${setId}`);
             
-            const setIndex = this.findSetIndex(setId);
+            const setIndex = allData.sets.findIndex(set => set.setId === setId);
             if (setIndex === -1) {
                 throw new Error(`세트를 찾을 수 없습니다: ${setId}`);
             }
             
-            this.currentSetData = this.data.sets[setIndex];
-            console.log('[EmailComponent] 세트 데이터 로드 완료:', this.currentSetData);
+            this.setData = allData.sets[setIndex];
+            console.log('[EmailComponent] 세트 데이터 로드 완료:', this.setData);
             
-            // 3. 해당 세트 문제 로드 (setIndex 기준)
-            this.loadQuestion(setIndex);
+            // 3. 문제 렌더링
+            this.renderQuestion();
             
         } catch (error) {
             console.error('[EmailComponent] 초기화 실패:', error);
@@ -68,33 +66,13 @@ class EmailComponent {
         }
     }
     
-    
-    /**
-     * 세트 인덱스 찾기
-     */
-    findSetIndex(setId) {
-        return this.data.sets.findIndex(set => set.id === setId);
-    }
-    
-    /**
-     * 문제 로드
-     */
-    loadQuestion(questionIndex) {
-        console.log(`[EmailComponent] 문제 ${questionIndex + 1} 로드`);
-        
-        this.currentQuestion = questionIndex;
-        const set = this.data.sets[questionIndex];
-        
-        // 문제 렌더링
-        this.renderQuestion(set);
-        
-        console.log(`[EmailComponent] 문제 ${questionIndex + 1} 로드 완료`);
-    }
+
     
     /**
      * 문제 렌더링
      */
-    renderQuestion(set) {
+    renderQuestion() {
+        const set = this.setData;
         // 왼쪽: 과제 설명
         const scenarioEl = document.getElementById('emailSituation');
         if (scenarioEl) scenarioEl.textContent = set.scenario || '';
@@ -119,7 +97,7 @@ class EmailComponent {
         if (subjectEl) subjectEl.textContent = set.subject || '';
         
         // 이전 답안 불러오기
-        const savedAnswer = this.answers[set.id] || '';
+        const savedAnswer = this.answers[set.setId] || '';
         
         const textarea = document.getElementById('emailTextarea');
         if (textarea) {
@@ -143,15 +121,15 @@ class EmailComponent {
             return;
         }
         
-        const set = this.data.sets[this.currentQuestion];
+        const set = this.setData;
         if (!set) {
-            console.error('[EmailComponent] set을 찾을 수 없습니다');
+            console.error('[EmailComponent] setData를 찾을 수 없습니다');
             this.updateWordCount();
             return;
         }
         
         // 답안 저장
-        this.answers[set.id] = textarea.value;
+        this.answers[set.setId] = textarea.value;
         
         // Undo 스택에 추가
         if (this.undoStack[this.undoStack.length - 1] !== textarea.value) {
@@ -276,7 +254,7 @@ class EmailComponent {
     submit() {
         console.log('[EmailComponent] 제출 시작');
         
-        const set = this.data.sets[this.currentQuestion];
+        const set = this.setData;
         const userAnswer = document.getElementById('emailTextarea').value || '';
         const wordCount = userAnswer.trim().split(/\s+/).filter(word => word.length > 0).length;
         
@@ -311,7 +289,7 @@ class EmailComponent {
      * TXT 파일 다운로드 (컨트롤러가 다시풀기 시 호출)
      */
     downloadEmail() {
-        const set = this.data.sets[this.currentQuestion];
+        const set = this.setData;
         const userAnswer = document.getElementById('emailTextarea').value || '';
         const wordCount = userAnswer.trim().split(/\s+/).filter(word => word.length > 0).length;
         

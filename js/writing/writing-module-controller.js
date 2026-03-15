@@ -340,7 +340,7 @@ function _setArrangeButtons(comp) {
     var submitBtn = document.getElementById('arrangeSubmitBtn');
 
     var isFirst = (comp.currentQuestion === 0);
-    var totalQuestions = comp.currentSetData ? comp.currentSetData.questions.length : 10;
+    var totalQuestions = comp.setData ? comp.setData.questions.length : 10;
     var isLast = (comp.currentQuestion >= totalQuestions - 1);
 
     if (prevBtn) prevBtn.style.display = isFirst ? 'none' : '';
