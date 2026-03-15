@@ -68,7 +68,7 @@ async function _loadDiscussionFromSupabase() {
             }
             
             return {
-                setNumber: row.id || '',
+                setId: row.id,
                 classContext: row.class_context || '',
                 topic: row.topic || '',
                 student1Opinion: row.student1_opinion || '',
