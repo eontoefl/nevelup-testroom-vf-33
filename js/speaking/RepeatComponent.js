@@ -40,9 +40,8 @@ class RepeatComponent {
         // 데이터 저장 (외부 로더에서 로드)
         this.speakingRepeatData = null;
         
-        // 현재 세트/오디오 인덱스
+        // 현재 세트 인덱스
         this.currentRepeatSet = 0;
-        this.currentRepeatNarration = 0;
         
         // 타이머 & 오디오
         this.repeatTimer = null;
@@ -476,7 +475,6 @@ class RepeatComponent {
         
         this.speakingRepeatData = null;
         this.currentRepeatSet = 0;
-        this.currentRepeatNarration = 0;
         
         console.log('✅ [Cleanup] 스피킹-따라말하기 정리 완료');
     }

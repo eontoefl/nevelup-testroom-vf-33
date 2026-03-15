@@ -74,7 +74,7 @@ async function _loadInterviewFromSupabase() {
             }
             
             return {
-                id: row.id,
+                setId: row.id,
                 contextText: row.context_text || '',
                 contextTranslation: row.translation || '',
                 contextAudio: row.context_audio || '',
@@ -105,13 +105,8 @@ function _parseHighlights(highlightsStr) {
     try {
         let cleanStr = highlightsStr.trim();
         
-        // 방법 1: JSON 형식 시도
+        // JSON 형식 시도
         if (cleanStr.startsWith('{') && cleanStr.endsWith('}')) {
-            // Google Sheets 이스케이프 해제
-            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) {
-                cleanStr = cleanStr.slice(1, -1).replace(/""/g, '"');
-            }
-            
             try {
                 const parsed = JSON.parse(cleanStr);
                 console.log('✅ [interview-loader] highlights 파싱 성공 (JSON):', Object.keys(parsed).length, '개');

@@ -77,7 +77,7 @@ async function _loadRepeatFromSupabase() {
             }
             
             return {
-                id: row.id,
+                setId: row.id,
                 contextText: row.context_text || '',
                 narration: narration,
                 audios: audios
