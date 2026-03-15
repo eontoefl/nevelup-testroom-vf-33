@@ -84,18 +84,18 @@ async function _loadConverFromSupabase() {
         scriptHighlights: scriptHighlights,
         questions: [
           {
-            question: row.q1_question || '',
+            questionText: row.q1_question || '',
             questionTrans: row.q1_question_trans || '',
             options: [row.q1_opt1 || '', row.q1_opt2 || '', row.q1_opt3 || '', row.q1_opt4 || ''],
-            answer: parseInt(row.q1_answer) || 1,
+            correctAnswer: parseInt(row.q1_answer) || 1,
             optionTranslations: [row.q1_opt_trans1 || '', row.q1_opt_trans2 || '', row.q1_opt_trans3 || '', row.q1_opt_trans4 || ''],
             optionExplanations: [row.q1_opt_exp1 || '', row.q1_opt_exp2 || '', row.q1_opt_exp3 || '', row.q1_opt_exp4 || '']
           },
           {
-            question: row.q2_question || '',
+            questionText: row.q2_question || '',
             questionTrans: row.q2_question_trans || '',
             options: [row.q2_opt1 || '', row.q2_opt2 || '', row.q2_opt3 || '', row.q2_opt4 || ''],
-            answer: parseInt(row.q2_answer) || 1,
+            correctAnswer: parseInt(row.q2_answer) || 1,
             optionTranslations: [row.q2_opt_trans1 || '', row.q2_opt_trans2 || '', row.q2_opt_trans3 || '', row.q2_opt_trans4 || ''],
             optionExplanations: [row.q2_opt_exp1 || '', row.q2_opt_exp2 || '', row.q2_opt_exp3 || '', row.q2_opt_exp4 || '']
           }

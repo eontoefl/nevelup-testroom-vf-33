@@ -296,7 +296,7 @@ function renderConverAnswer(answer, qIdx, setIdx) {
                 <span class="conver-q-number">Question ${answer.questionNum}</span>
                 <span class="conver-q-status">${correctIcon}</span>
             </div>
-            <div class="conver-q-text">${answer.question}</div>
+            <div class="conver-q-text">${answer.questionText}</div>
             ${answer.questionTrans ? `<div class="conver-q-translation">${answer.questionTrans}</div>` : ''}
             
             <div class="conver-answer-summary">

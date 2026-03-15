@@ -410,7 +410,7 @@ class ConverComponent {
       optionsDiv.appendChild(optionDiv);
     });
     
-    container.innerHTML = `<h3 class="conver-question">${question.question}</h3>`;
+    container.innerHTML = `<h3 class="conver-question">${question.questionText}</h3>`;
     container.appendChild(optionsDiv);
   }
 
@@ -491,7 +491,7 @@ class ConverComponent {
     this.setData.questions.forEach((question, index) => {
       const questionKey = `${this.setData.setId}_q${index + 1}`;
       const userAnswer = this.answers[questionKey] || null;
-      const isCorrect = userAnswer === question.answer;
+      const isCorrect = userAnswer === question.correctAnswer;
       
       results.answers.push({
         questionNum: index + 1,
@@ -499,13 +499,13 @@ class ConverComponent {
         script: this.setData.script || '',
         scriptTrans: this.setData.scriptTrans || '',
         scriptHighlights: this.setData.scriptHighlights || [],
-        question: question.question,
+        questionText: question.questionText,
         questionTrans: question.questionTrans || '',
         options: question.options,
         optionTranslations: question.optionTranslations || [],
         optionExplanations: question.optionExplanations || [],
         userAnswer: userAnswer,
-        correctAnswer: question.answer,
+        correctAnswer: question.correctAnswer,
         isCorrect: isCorrect
       });
     });

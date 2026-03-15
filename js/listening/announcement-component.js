@@ -487,13 +487,13 @@ class AnnouncementComponent {
             results.push({
                 questionIndex: index,
                 questionText: question.questionText,
-                questionTextTrans: question.questionTextTrans || '',
+                questionTrans: question.questionTrans || '',
                 userAnswer: userAnswer,
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
                 options: question.options,
-                translations: question.translations,
-                explanations: question.explanations
+                optionTranslations: question.optionTranslations,
+                optionExplanations: question.optionExplanations
             });
         });
         

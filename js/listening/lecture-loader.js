@@ -84,8 +84,8 @@ async function _loadLectureFromSupabase() {
         questionTrans: row[`${prefix}_question_trans`] || '',
         options: [row[`${prefix}_opt1`] || '', row[`${prefix}_opt2`] || '', row[`${prefix}_opt3`] || '', row[`${prefix}_opt4`] || ''],
         correctAnswer: parseInt(row[`${prefix}_correct_answer`]) || 1,
-        translations: [row[`${prefix}_trans1`] || '', row[`${prefix}_trans2`] || '', row[`${prefix}_trans3`] || '', row[`${prefix}_trans4`] || ''],
-        explanations: [row[`${prefix}_exp1`] || '', row[`${prefix}_exp2`] || '', row[`${prefix}_exp3`] || '', row[`${prefix}_exp4`] || '']
+        optionTranslations: [row[`${prefix}_trans1`] || '', row[`${prefix}_trans2`] || '', row[`${prefix}_trans3`] || '', row[`${prefix}_trans4`] || ''],
+        optionExplanations: [row[`${prefix}_exp1`] || '', row[`${prefix}_exp2`] || '', row[`${prefix}_exp3`] || '', row[`${prefix}_exp4`] || '']
       });
       
       return {

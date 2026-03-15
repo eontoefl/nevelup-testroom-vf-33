@@ -485,7 +485,7 @@ class ResponseComponent {
     this.setData.questions.forEach((question, index) => {
       const questionKey = `${this.setData.setId}_q${index + 1}`;
       const userAnswer = this.answers[questionKey] || null;
-      const isCorrect = userAnswer === question.answer;
+      const isCorrect = userAnswer === question.correctAnswer;
       
       results.answers.push({
         questionNum: question.questionNum,
@@ -497,7 +497,7 @@ class ResponseComponent {
         optionTranslations: question.optionTranslations || [],
         optionExplanations: question.optionExplanations || [],
         userAnswer: userAnswer,
-        correctAnswer: question.answer,
+        correctAnswer: question.correctAnswer,
         isCorrect: isCorrect
       });
     });

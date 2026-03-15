@@ -75,19 +75,19 @@ async function _loadAnnouncementFromSupabase() {
         questions: [
           {
             questionText: row.q1_question_text || '',
-            questionTextTrans: row.q1_question_text_trans || '',
+            questionTrans: row.q1_question_text_trans || '',
             options: [row.q1_opt1 || '', row.q1_opt2 || '', row.q1_opt3 || '', row.q1_opt4 || ''],
             correctAnswer: parseInt(row.q1_correct_answer) || 1,
-            translations: [row.q1_trans1 || '', row.q1_trans2 || '', row.q1_trans3 || '', row.q1_trans4 || ''],
-            explanations: [row.q1_exp1 || '', row.q1_exp2 || '', row.q1_exp3 || '', row.q1_exp4 || '']
+            optionTranslations: [row.q1_trans1 || '', row.q1_trans2 || '', row.q1_trans3 || '', row.q1_trans4 || ''],
+            optionExplanations: [row.q1_exp1 || '', row.q1_exp2 || '', row.q1_exp3 || '', row.q1_exp4 || '']
           },
           {
             questionText: row.q2_question_text || '',
-            questionTextTrans: row.q2_question_text_trans || '',
+            questionTrans: row.q2_question_text_trans || '',
             options: [row.q2_opt1 || '', row.q2_opt2 || '', row.q2_opt3 || '', row.q2_opt4 || ''],
             correctAnswer: parseInt(row.q2_correct_answer) || 1,
-            translations: [row.q2_trans1 || '', row.q2_trans2 || '', row.q2_trans3 || '', row.q2_trans4 || ''],
-            explanations: [row.q2_exp1 || '', row.q2_exp2 || '', row.q2_exp3 || '', row.q2_exp4 || '']
+            optionTranslations: [row.q2_trans1 || '', row.q2_trans2 || '', row.q2_trans3 || '', row.q2_trans4 || ''],
+            optionExplanations: [row.q2_exp1 || '', row.q2_exp2 || '', row.q2_exp3 || '', row.q2_exp4 || '']
           }
         ]
       };
