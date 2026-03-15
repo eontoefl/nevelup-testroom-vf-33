@@ -25,7 +25,7 @@ async function loadConverData(forceReload = false) {
   // 캐시 확인
   if (!forceReload && cachedConverData) {
     console.log('✅ [conver-loader] 캐시된 데이터 사용');
-    console.log('  캐시 데이터 세트 순서:', cachedConverData.sets.map(s => s.id));
+    console.log('  캐시 데이터 세트 순서:', cachedConverData.sets.map(s => s.setId));
     return cachedConverData;
   }
   
@@ -77,7 +77,7 @@ async function _loadConverFromSupabase() {
       }
       
       return {
-        id: row.id,
+        setId: row.id,
         audioUrl: row.audio_url || '',
         script: row.script || '',
         scriptTrans: row.script_trans || '',
@@ -104,8 +104,8 @@ async function _loadConverFromSupabase() {
     });
     
     sets.sort((a, b) => {
-      const numA = parseInt(a.id.replace(/\D/g, ''));
-      const numB = parseInt(b.id.replace(/\D/g, ''));
+      const numA = parseInt(a.setId.replace(/\D/g, ''));
+      const numB = parseInt(b.setId.replace(/\D/g, ''));
       return numA - numB;
     });
     

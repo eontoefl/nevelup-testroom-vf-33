@@ -492,22 +492,14 @@ function _isListeningQuestionAnswered(setIndex, questionIndex) {
     if (!mod) return false;
 
     var comp = mod.components[setIndex];
-    var seq = mod.sequence[setIndex];
-
     if (!comp) return false;
 
-    // 리스닝 컴포넌트들은 answers 객체에 setId_qN 형태로 저장
-    if (seq.type === 'response') {
-        var key = comp.setData ? comp.setData.id + '_q' + (questionIndex + 1) : '';
-        return comp.answers[key] != null;
-    } else {
-        // conver/announcement/lecture: setId_qN
-        var setData = comp.setData || comp.currentSetData;
-        if (!setData) return false;
-        var key = setData.setId ? setData.setId + '_q' + (questionIndex + 1) : 
-                  setData.id + '_q' + (questionIndex + 1);
-        return comp.answers[key] != null;
-    }
+    // 모든 리스닝 컴포넌트는 setData 또는 currentSetData에 setId 필드를 가짐
+    var setData = comp.setData || comp.currentSetData;
+    if (!setData) return false;
+
+    var key = setData.setId + '_q' + (questionIndex + 1);
+    return comp.answers[key] != null;
 }
 
 // ============================================================

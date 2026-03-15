@@ -97,7 +97,7 @@ class ResponseComponent {
     
     console.log(`[ResponseComponent] 세트 검색 - ID: ${setId}`);
     
-    const index = sets.findIndex(s => s.id === setId);
+    const index = sets.findIndex(s => s.setId === setId);
     console.log(`[ResponseComponent] 세트 인덱스: ${index}`);
     return index;
   }
@@ -272,7 +272,7 @@ class ResponseComponent {
     const container = document.getElementById('responseOptions');
     if (!container) return;
     
-    const questionKey = `${this.setData.id}_q${this.currentQuestion + 1}`;
+    const questionKey = `${this.setData.setId}_q${this.currentQuestion + 1}`;
     const savedAnswer = this.answers[questionKey];
     
     container.innerHTML = '';
@@ -433,7 +433,7 @@ class ResponseComponent {
     
     console.log(`[ResponseComponent] 선택 - Q${this.currentQuestion + 1}: ${optionIndex}`);
     
-    const questionKey = `${this.setData.id}_q${this.currentQuestion + 1}`;
+    const questionKey = `${this.setData.setId}_q${this.currentQuestion + 1}`;
     this.answers[questionKey] = optionIndex;
     
     document.querySelectorAll('.response-option').forEach((el, idx) => {
@@ -478,12 +478,12 @@ class ResponseComponent {
     
     // 결과 데이터 준비
     const results = {
-      setId: this.setData.id,
+      setId: this.setData.setId,
       answers: []
     };
     
     this.setData.questions.forEach((question, index) => {
-      const questionKey = `${this.setData.id}_q${index + 1}`;
+      const questionKey = `${this.setData.setId}_q${index + 1}`;
       const userAnswer = this.answers[questionKey] || null;
       const isCorrect = userAnswer === question.answer;
       
