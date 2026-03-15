@@ -65,7 +65,7 @@ async function _loadEmailFromSupabase() {
             }
             
             return {
-                setId: `email_set_${String(row.id).padStart(4, '0')}`,
+                setId: row.id,
                 scenario: row.scenario || '',
                 task: row.task || '',
                 instruction1: row.instruction1 || '',

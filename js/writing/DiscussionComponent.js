@@ -108,10 +108,13 @@ class DiscussionComponent {
                 throw new Error('데이터를 불러올 수 없습니다');
             }
             
-            // 2. 세트 찾기 (setNumber → 배열 인덱스 변환)
-            const setIndex = this.setNumber - 1;
-            if (setIndex < 0 || setIndex >= allData.sets.length) {
-                throw new Error(`세트를 찾을 수 없습니다: ${this.setNumber}`);
+            // 2. 세트 찾기
+            const setId = `discussion_set_${String(this.setNumber).padStart(4, '0')}`;
+            console.log(`[DiscussionComponent] 세트 검색 - ID: ${setId}`);
+            
+            const setIndex = allData.sets.findIndex(set => set.setId === setId);
+            if (setIndex === -1) {
+                throw new Error(`세트를 찾을 수 없습니다: ${setId}`);
             }
             
             this.setData = allData.sets[setIndex];
