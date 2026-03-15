@@ -23,8 +23,7 @@ class AnnouncementComponent {
         this.currentQuestion = 0;
         this.answers = {};
         this.showingIntro = true;
-        this.data = null;
-        this.currentSetData = null;
+        this.setData = null;
         this.currentImage = null;
         
         // 오디오 플레이어
@@ -59,28 +58,20 @@ class AnnouncementComponent {
         
         try {
             // 1. 데이터 로드 (외부 로더 사용)
-            this.data = await loadAnnouncementData();
+            const allData = await loadAnnouncementData();
             
-            if (!this.data || !this.data.sets || this.data.sets.length === 0) {
+            if (!allData || !allData.sets || allData.sets.length === 0) {
                 throw new Error('데이터를 불러올 수 없습니다');
             }
             
             // 2. 세트 찾기
-            let setId;
-            if (typeof this.setNumber === 'string' && this.setNumber.includes('_set_')) {
-                setId = this.setNumber;
-            } else {
-                setId = `announcement_set_${String(this.setNumber).padStart(4, '0')}`;
-            }
-            console.log(`[AnnouncementComponent] 세트 검색 - ID: ${setId}`);
-            
-            const setIndex = this.findSetIndex(setId);
+            const setIndex = this.findSetIndex(allData.sets);
             if (setIndex === -1) {
-                throw new Error(`세트를 찾을 수 없습니다: ${setId}`);
+                throw new Error(`세트를 찾을 수 없습니다: ${this.setNumber}`);
             }
             
-            this.currentSetData = this.data.sets[setIndex];
-            console.log('[AnnouncementComponent] 세트 데이터 로드 완료:', this.currentSetData);
+            this.setData = allData.sets[setIndex];
+            console.log('[AnnouncementComponent] 세트 데이터 로드 완료:', this.setData);
             
             // 3. 인트로 화면 표시
             this.showIntro();
@@ -94,17 +85,17 @@ class AnnouncementComponent {
     /**
      * 세트 인덱스 찾기
      */
-    findSetIndex(setId) {
+    findSetIndex(sets) {
         let targetSetId;
-        if (typeof setId === 'string' && setId.includes('_set_')) {
-            targetSetId = setId;
+        if (typeof this.setNumber === 'string' && this.setNumber.includes('_set_')) {
+            targetSetId = this.setNumber;
         } else {
-            targetSetId = `announcement_set_${String(setId).padStart(4, '0')}`;
+            targetSetId = `announcement_set_${String(this.setNumber).padStart(4, '0')}`;
         }
         
         console.log(`[AnnouncementComponent] 세트 검색 - ID: ${targetSetId}`);
         
-        const index = this.data.sets.findIndex(set => set.setId === targetSetId);
+        const index = sets.findIndex(set => set.setId === targetSetId);
         console.log(`[AnnouncementComponent] 세트 인덱스: ${index}`);
         return index;
     }
@@ -118,7 +109,7 @@ class AnnouncementComponent {
         this.showingIntro = true;
         
         // 성별에 따라 이미지 선택
-        const gender = this.currentSetData.gender.toLowerCase().trim();
+        const gender = this.setData.gender.toLowerCase().trim();
         const isFemale = gender === 'female' || gender === 'f';
         const images = isFemale ? this.FEMALE_IMAGES : this.MALE_IMAGES;
         const lastKey = isFemale ? '_lastFemaleImage' : '_lastMaleImage';
@@ -199,7 +190,7 @@ class AnnouncementComponent {
      * 나레이션 재생
      */
     playNarration(onEnded) {
-        const narrationUrl = this.currentSetData.narrationUrl;
+        const narrationUrl = this.setData.narrationUrl;
         console.log('[AnnouncementComponent] 나레이션 URL:', narrationUrl);
         
         if (!narrationUrl) {
@@ -236,7 +227,7 @@ class AnnouncementComponent {
      * 공지사항 오디오 재생
      */
     playMainAudio(onEnded) {
-        const audioUrl = this.currentSetData.audioUrl;
+        const audioUrl = this.setData.audioUrl;
         console.log('[AnnouncementComponent] 공지사항 오디오 URL:', audioUrl);
         
         if (!audioUrl) {
@@ -355,7 +346,7 @@ class AnnouncementComponent {
         if (oldNotice) oldNotice.remove();
         
         this.currentQuestion = questionIndex;
-        const question = this.currentSetData.questions[questionIndex];
+        const question = this.setData.questions[questionIndex];
         
         // 작은 이미지 표시
         this.renderSmallImage();
@@ -391,7 +382,7 @@ class AnnouncementComponent {
         const container = document.getElementById('announcementQuestionContent');
         if (!container) return;
         
-        const questionKey = `${this.currentSetData.setId}_q${this.currentQuestion + 1}`;
+        const questionKey = `${this.setData.setId}_q${this.currentQuestion + 1}`;
         const savedAnswer = this.answers[questionKey];
         
         const self = this;
@@ -420,7 +411,7 @@ class AnnouncementComponent {
         
         console.log(`[AnnouncementComponent] 선택지 ${optionIndex} 선택됨`);
         
-        const questionKey = `${this.currentSetData.setId}_q${this.currentQuestion + 1}`;
+        const questionKey = `${this.setData.setId}_q${this.currentQuestion + 1}`;
         this.answers[questionKey] = optionIndex;
         
         const allOptions = document.querySelectorAll('#announcementQuestionContent .response-option');
@@ -457,7 +448,7 @@ class AnnouncementComponent {
      * 다음 문제로 이동
      */
     nextQuestion() {
-        if (this.currentQuestion < this.currentSetData.questions.length - 1) {
+        if (this.currentQuestion < this.setData.questions.length - 1) {
             this.loadQuestion(this.currentQuestion + 1);
             return true;
         }
@@ -475,8 +466,8 @@ class AnnouncementComponent {
         let totalCorrect = 0;
         let totalIncorrect = 0;
         
-        this.currentSetData.questions.forEach((question, index) => {
-            const questionKey = `${this.currentSetData.setId}_q${index + 1}`;
+        this.setData.questions.forEach((question, index) => {
+            const questionKey = `${this.setData.setId}_q${index + 1}`;
             const userAnswer = this.answers[questionKey];
             const correctAnswer = question.correctAnswer;
             const isCorrect = userAnswer === correctAnswer;
@@ -498,18 +489,18 @@ class AnnouncementComponent {
         });
         
         const resultData = {
-            setId: this.currentSetData.setId,
-            gender: this.currentSetData.gender,
+            setId: this.setData.setId,
+            gender: this.setData.gender,
             imageUrl: this.currentImage,
-            audioUrl: this.currentSetData.audioUrl,
-            narrationUrl: this.currentSetData.narrationUrl,
-            script: this.currentSetData.script,
-            scriptTrans: this.currentSetData.scriptTrans || '',
-            scriptHighlights: this.currentSetData.scriptHighlights || '',
+            audioUrl: this.setData.audioUrl,
+            narrationUrl: this.setData.narrationUrl,
+            script: this.setData.script,
+            scriptTrans: this.setData.scriptTrans || '',
+            scriptHighlights: this.setData.scriptHighlights || '',
             totalCorrect: totalCorrect,
             totalIncorrect: totalIncorrect,
-            totalQuestions: this.currentSetData.questions.length,
-            score: Math.round((totalCorrect / this.currentSetData.questions.length) * 100),
+            totalQuestions: this.setData.questions.length,
+            score: Math.round((totalCorrect / this.setData.questions.length) * 100),
             answers: results
         };
         

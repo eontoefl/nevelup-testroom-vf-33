@@ -23,8 +23,7 @@ class LectureComponent {
         this.currentQuestion = 0;
         this.answers = {};
         this.showingIntro = true;
-        this.data = null;
-        this.currentSetData = null;
+        this.setData = null;
         this.currentImage = null;
         
         // 오디오 플레이어
@@ -59,28 +58,20 @@ class LectureComponent {
         
         try {
             // 1. 데이터 로드 (외부 로더 사용)
-            this.data = await loadLectureData();
+            const allData = await loadLectureData();
             
-            if (!this.data || !this.data.sets || this.data.sets.length === 0) {
+            if (!allData || !allData.sets || allData.sets.length === 0) {
                 throw new Error('데이터를 불러올 수 없습니다');
             }
             
             // 2. 세트 찾기
-            let setId;
-            if (typeof this.setNumber === 'string' && this.setNumber.includes('_set_')) {
-                setId = this.setNumber;
-            } else {
-                setId = `lecture_set_${String(this.setNumber).padStart(4, '0')}`;
-            }
-            console.log(`[LectureComponent] 세트 검색 - ID: ${setId}`);
-            
-            const setIndex = this.findSetIndex(setId);
+            const setIndex = this.findSetIndex(allData.sets);
             if (setIndex === -1) {
-                throw new Error(`세트를 찾을 수 없습니다: ${setId}`);
+                throw new Error(`세트를 찾을 수 없습니다: ${this.setNumber}`);
             }
             
-            this.currentSetData = this.data.sets[setIndex];
-            console.log('[LectureComponent] 세트 데이터 로드 완료:', this.currentSetData);
+            this.setData = allData.sets[setIndex];
+            console.log('[LectureComponent] 세트 데이터 로드 완료:', this.setData);
             
             // 3. 인트로 화면 표시
             this.showIntro();
@@ -94,17 +85,17 @@ class LectureComponent {
     /**
      * 세트 인덱스 찾기
      */
-    findSetIndex(setId) {
+    findSetIndex(sets) {
         let targetSetId;
-        if (typeof setId === 'string' && setId.includes('_set_')) {
-            targetSetId = setId;
+        if (typeof this.setNumber === 'string' && this.setNumber.includes('_set_')) {
+            targetSetId = this.setNumber;
         } else {
-            targetSetId = `lecture_set_${String(setId).padStart(4, '0')}`;
+            targetSetId = `lecture_set_${String(this.setNumber).padStart(4, '0')}`;
         }
         
         console.log(`[LectureComponent] 세트 검색 - ID: ${targetSetId}`);
         
-        const index = this.data.sets.findIndex(set => set.setId === targetSetId);
+        const index = sets.findIndex(set => set.setId === targetSetId);
         console.log(`[LectureComponent] 세트 인덱스: ${index}`);
         return index;
     }
@@ -118,7 +109,7 @@ class LectureComponent {
         this.showingIntro = true;
         
         // 성별에 따라 교수 이미지 선택
-        const gender = this.currentSetData.gender.toLowerCase().trim();
+        const gender = this.setData.gender.toLowerCase().trim();
         const isFemale = gender === 'female' || gender === 'f';
         const images = isFemale ? this.FEMALE_IMAGES : this.MALE_IMAGES;
         const lastKey = isFemale ? '_lastFemaleImage' : '_lastMaleImage';
@@ -131,7 +122,7 @@ class LectureComponent {
         // 인트로 타이틀 표시
         const titleElement = document.getElementById('lectureIntroTitle');
         if (titleElement) {
-            titleElement.textContent = this.currentSetData.lectureTitle || 'Listen to a lecture.';
+            titleElement.textContent = this.setData.lectureTitle || 'Listen to a lecture.';
         }
         
         // 인트로 화면에 이미지 표시
@@ -198,7 +189,7 @@ class LectureComponent {
     playAudioSequence() {
         console.log('[LectureComponent] 오디오 시퀀스 시작');
         
-        const narrationUrl = this.currentSetData.narrationUrl;
+        const narrationUrl = this.setData.narrationUrl;
         
         if (!narrationUrl || narrationUrl.trim() === '') {
             console.log('[LectureComponent] 나레이션 없음, 렉처 오디오만 재생');
@@ -222,7 +213,7 @@ class LectureComponent {
      * 나레이션 재생
      */
     playNarration(onEnded) {
-        const narrationUrl = this.currentSetData.narrationUrl;
+        const narrationUrl = this.setData.narrationUrl;
         
         if (!narrationUrl) {
             if (onEnded) onEnded();
@@ -248,7 +239,7 @@ class LectureComponent {
      * 렉처 오디오 재생
      */
     playMainAudio(onEnded) {
-        const audioUrl = this.currentSetData.audioUrl;
+        const audioUrl = this.setData.audioUrl;
         
         if (!audioUrl || audioUrl.trim() === '') {
             this._showNoAudioNotice();
@@ -355,7 +346,7 @@ class LectureComponent {
         console.log(`[LectureComponent] 문제 ${questionIndex + 1} 로드`);
         
         this.currentQuestion = questionIndex;
-        const question = this.currentSetData.questions[questionIndex];
+        const question = this.setData.questions[questionIndex];
         
         this._questionTimedOut = false;
         const oldNotice = document.querySelector('#lectureQuestionContent .timeout-notice');
@@ -370,7 +361,7 @@ class LectureComponent {
         
         questionContentDiv.innerHTML = '';
         
-        const questionKey = `${this.currentSetData.setId}_q${questionIndex + 1}`;
+        const questionKey = `${this.setData.setId}_q${questionIndex + 1}`;
         const savedAnswer = this.answers[questionKey];
         
         const self = this;
@@ -434,7 +425,7 @@ class LectureComponent {
         
         console.log(`[LectureComponent] 선택 - Q${this.currentQuestion + 1}: ${optionIndex}`);
         
-        const questionKey = `${this.currentSetData.setId}_q${this.currentQuestion + 1}`;
+        const questionKey = `${this.setData.setId}_q${this.currentQuestion + 1}`;
         this.answers[questionKey] = optionIndex;
         
         const allOptions = document.querySelectorAll('#lectureQuestionContent .response-option');
@@ -449,7 +440,7 @@ class LectureComponent {
      * 다음 문제로 이동
      */
     nextQuestion() {
-        if (this.currentQuestion < this.currentSetData.questions.length - 1) {
+        if (this.currentQuestion < this.setData.questions.length - 1) {
             this.loadQuestion(this.currentQuestion + 1);
             return true;
         }
@@ -466,8 +457,8 @@ class LectureComponent {
         let totalCorrect = 0;
         let totalIncorrect = 0;
         
-        this.currentSetData.questions.forEach((question, index) => {
-            const questionKey = `${this.currentSetData.setId}_q${index + 1}`;
+        this.setData.questions.forEach((question, index) => {
+            const questionKey = `${this.setData.setId}_q${index + 1}`;
             const userAnswer = this.answers[questionKey];
             const correctAnswer = question.correctAnswer;
             const isCorrect = userAnswer === correctAnswer;
@@ -489,19 +480,19 @@ class LectureComponent {
         });
         
         const resultData = {
-            setId: this.currentSetData.setId,
-            gender: this.currentSetData.gender,
-            lectureTitle: this.currentSetData.lectureTitle,
+            setId: this.setData.setId,
+            gender: this.setData.gender,
+            lectureTitle: this.setData.lectureTitle,
             imageUrl: this.currentImage,
-            audioUrl: this.currentSetData.audioUrl,
-            narrationUrl: this.currentSetData.narrationUrl,
-            script: this.currentSetData.script,
-            scriptTrans: this.currentSetData.scriptTrans,
-            scriptHighlights: this.currentSetData.scriptHighlights,
+            audioUrl: this.setData.audioUrl,
+            narrationUrl: this.setData.narrationUrl,
+            script: this.setData.script,
+            scriptTrans: this.setData.scriptTrans,
+            scriptHighlights: this.setData.scriptHighlights,
             totalCorrect: totalCorrect,
             totalIncorrect: totalIncorrect,
-            totalQuestions: this.currentSetData.questions.length,
-            score: Math.round((totalCorrect / this.currentSetData.questions.length) * 100),
+            totalQuestions: this.setData.questions.length,
+            score: Math.round((totalCorrect / this.setData.questions.length) * 100),
             answers: results
         };
         
