@@ -229,63 +229,87 @@
     <!-- 로그인 화면 -->
     <div id="loginScreen" class="screen active">
         <div class="login-container">
-            <div class="login-card">
-                <div class="login-header">
-                    <i class="fas fa-user-shield"></i>
-                    <h1>내벨업 테스트룸</h1>
-                    <p>수강생 인증</p>
-                </div>
-                
-                <!-- 이온토플 브랜드 -->
-                <div class="brand-badge">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span>이온토플</span>
-                </div>
-                
-                <div id="loginMessage" class="login-message" style="display:none;"></div>
-                
-                <form id="loginForm" onsubmit="handleLogin(event)">
-                    <div class="form-group">
-                        <label for="studentEmail">
-                            <i class="fas fa-envelope"></i>
-                            이메일
-                        </label>
-                        <input 
-                            type="email" 
-                            id="studentEmail" 
-                            placeholder="example@email.com" 
-                            autocomplete="email"
-                        >
+            <!-- 상단 브랜드 네비게이션 -->
+            <header class="login-top-nav">
+                <div class="login-brand">
+                    <div class="login-brand-icon">
+                        <i class="fas fa-graduation-cap"></i>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="studentPassword">
-                            <i class="fas fa-lock"></i>
-                            비밀번호
-                        </label>
-                        <input 
-                            type="password" 
-                            id="studentPassword" 
-                            placeholder="비밀번호를 입력하세요" 
-                            autocomplete="current-password"
-                        >
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary btn-large btn-block" id="loginBtn">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span>로그인</span>
-                    </button>
-                </form>
-                
-                <div class="login-footer">
-                    <p><i class="fas fa-info-circle"></i> 공홈(eonfl.com) 계정으로 로그인하세요.</p>
+                    <span class="login-brand-name">이온토플</span>
                 </div>
-                
-                <!-- 카카오톡 문의 버튼 -->
-                <a href="https://business.kakao.com/_FWxcZC/chats" target="_blank" class="kakao-help-btn" title="문의하기">
-                    <i class="fas fa-comment-dots"></i>
-                </a>
-            </div>
+            </header>
+
+            <main class="login-main">
+                <div class="login-grid">
+                    <!-- 좌측: 히어로 콘텐츠 -->
+                    <div class="login-hero">
+                        <span class="login-hero-badge">Premium Test Suite</span>
+                        <h1 class="login-hero-title">
+                            NEVEL-UP<br><span class="login-hero-accent">TESTROOM</span>
+                        </h1>
+                    </div>
+
+                    <!-- 우측: 로그인 카드 -->
+                    <div class="login-card-wrapper">
+                        <div class="login-card">
+                            <div class="login-header">
+                                <i class="fas fa-user-shield"></i>
+                                <h1>내벨업 테스트룸</h1>
+                                <p>수강생 인증</p>
+                            </div>
+
+                            <div id="loginMessage" class="login-message" style="display:none;"></div>
+
+                            <form id="loginForm" onsubmit="handleLogin(event)">
+                                <div class="form-group">
+                                    <label for="studentEmail">
+                                        <i class="fas fa-envelope"></i>
+                                        이메일
+                                    </label>
+                                    <input 
+                                        type="email" 
+                                        id="studentEmail" 
+                                        placeholder="example@email.com" 
+                                        autocomplete="email"
+                                    >
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="studentPassword">
+                                        <i class="fas fa-lock"></i>
+                                        비밀번호
+                                    </label>
+                                    <input 
+                                        type="password" 
+                                        id="studentPassword" 
+                                        placeholder="비밀번호를 입력하세요" 
+                                        autocomplete="current-password"
+                                    >
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large btn-block" id="loginBtn">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    <span>로그인</span>
+                                </button>
+                            </form>
+
+                            <div class="login-footer">
+                                <p><i class="fas fa-info-circle"></i> 공홈(eonfl.com) 계정으로 로그인하세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 카카오톡 문의 버튼 -->
+            <a href="https://business.kakao.com/_FWxcZC/chats" target="_blank" class="kakao-help-btn" title="문의하기">
+                <i class="fas fa-comment-dots"></i>
+            </a>
+
+            <!-- 하단 푸터 -->
+            <footer class="login-bottom-footer">
+                <p>© 2026 EON. ALL RIGHTS RESERVED.</p>
+            </footer>
         </div>
     </div>
 
