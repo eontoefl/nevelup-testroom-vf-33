@@ -51,13 +51,11 @@ class InterviewComponent {
         // 볼륨 레벨 (0.0~1.43, 기본 1.0 = 100%)
         this.interviewVolumeLevel = 1.0;
         
-        // 현재 세트/질문 번호
+        // 현재 세트 인덱스
         this.currentInterviewSet = 0;
-        this.currentInterviewQuestion = 0;
         
-        // 타이머 & 미디어
+        // 타이머 & 오디오
         this.interviewTimer = null;
-        this.currentVideo = null;
         this.currentInterviewAudio = null;
         
         // admin-skip용 (외부에서 참조)
@@ -132,7 +130,6 @@ class InterviewComponent {
         }
         
         this.currentInterviewSet = setIndex;
-        this.currentInterviewQuestion = 0;
         
         // 첫 번째 화면 표시
         this.showInterviewContextScreen(set);
@@ -209,7 +206,6 @@ class InterviewComponent {
             return;
         }
         
-        this.currentInterviewQuestion = questionIndex;
         const videoData = set.videos[questionIndex];
         
         console.log(`🎤 질문 ${questionIndex + 1}/4 준비`);
@@ -635,21 +631,14 @@ class InterviewComponent {
             console.log('✅ AudioPlayer 재생 중지');
         }
         
-        // nodding video 정지
-        const noddingVideo = document.getElementById('interviewNoddingVideo');
+        // nodding video 정지 (interviewVideo 요소를 nodding + 질문 영상 모두에 사용)
+        const noddingVideo = document.getElementById('interviewVideo');
         if (noddingVideo) {
             noddingVideo.pause();
+            noddingVideo.loop = false;
             noddingVideo.removeAttribute('src');
             noddingVideo.load();
             console.log('✅ Nodding video 정지');
-        }
-        
-        // 비디오 정지
-        if (this.currentVideo) {
-            this.currentVideo.pause();
-            this.currentVideo.currentTime = 0;
-            this.currentVideo = null;
-            console.log('✅ 비디오 정지');
         }
         
         // 기존 Audio 객체 정리 (폴백 방식)
@@ -669,7 +658,6 @@ class InterviewComponent {
         // 데이터 초기화
         this.speakingInterviewData = null;
         this.currentInterviewSet = 0;
-        this.currentInterviewQuestion = 0;
         
         console.log('✅ [Cleanup] 스피킹-인터뷰 정리 완료');
     }
