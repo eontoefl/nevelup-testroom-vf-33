@@ -93,7 +93,7 @@ async function _loadInterviewFromSupabase() {
 }
 
 /**
- * Highlights JSON 파싱 (2가지 형식 지원)
+ * Highlights JSON 파싱
  * @private
  */
 function _parseHighlights(highlightsStr) {
@@ -103,44 +103,11 @@ function _parseHighlights(highlightsStr) {
     }
     
     try {
-        let cleanStr = highlightsStr.trim();
-        
-        // JSON 형식 시도
-        if (cleanStr.startsWith('{') && cleanStr.endsWith('}')) {
-            try {
-                const parsed = JSON.parse(cleanStr);
-                console.log('✅ [interview-loader] highlights 파싱 성공 (JSON):', Object.keys(parsed).length, '개');
-                return parsed;
-            } catch (e) {
-                console.warn('⚠️ [interview-loader] JSON 파싱 실패, :: 구분자 시도');
-            }
-        }
-        
-        // 방법 2: :: 구분자 파싱
-        const highlights = {};
-        const entries = cleanStr.split('||').map(s => s.trim()).filter(s => s);
-        
-        for (const entry of entries) {
-            const parts = entry.split('::').map(s => s.trim());
-            if (parts.length === 3) {
-                const [key, title, description] = parts;
-                highlights[key] = {
-                    title: title,
-                    description: description
-                };
-            }
-        }
-        
-        if (Object.keys(highlights).length > 0) {
-            console.log('✅ [interview-loader] highlights 파싱 성공 (:: 구분자):', Object.keys(highlights).length, '개');
-            return highlights;
-        }
-        
-        console.warn('⚠️ [interview-loader] highlights 파싱 실패: 알 수 없는 형식');
-        return {};
-        
+        const parsed = JSON.parse(highlightsStr.trim());
+        console.log('✅ [interview-loader] highlights 파싱 성공:', Object.keys(parsed).length, '개');
+        return parsed;
     } catch (e) {
-        console.error('❌ [interview-loader] highlights 파싱 실패:', e);
+        console.error('❌ [interview-loader] highlights JSON 파싱 실패:', e);
         console.error('❌ [interview-loader] 원본 데이터:', highlightsStr);
         return {};
     }
