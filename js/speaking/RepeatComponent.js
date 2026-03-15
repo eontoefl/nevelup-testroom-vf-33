@@ -84,6 +84,9 @@ class RepeatComponent {
         const timestamp = new Date().toISOString().split('T')[1].substring(0, 12);
         console.log(`📺 [showIntroScreen] 인트로 화면 표시 [${timestamp}]`);
         
+        // setId(모듈 번호, 1-based)로 세트 인덱스 계산
+        this.currentRepeatSet = (this.setId || 1) - 1;
+        
         document.getElementById('repeatIntroScreen').style.display = 'flex';
         document.getElementById('repeatNarrationScreen').style.display = 'none';
         
