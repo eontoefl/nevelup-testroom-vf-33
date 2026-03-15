@@ -205,7 +205,7 @@ function _onSetComplete(setIndex, results) {
 /**
  * 통합 Next 핸들러 — 모든 화면의 Next 버튼에서 호출
  */
-function _readingModuleNext() {
+async function _readingModuleNext() {
     var mod = window.currentReadingModule;
     if (!mod) return;
 
@@ -216,7 +216,7 @@ function _readingModuleNext() {
         // 빈칸채우기: Next = 세트 전체 제출 → 다음 세트
         comp.submit();
         if (mod.currentIndex < mod.sequence.length - 1) {
-            _goToSet(mod.currentIndex + 1);
+            await _goToSet(mod.currentIndex + 1);
         }
     } else {
         // Daily1/Daily2/Academic: 세트 내부 다음 문제 시도
@@ -225,7 +225,8 @@ function _readingModuleNext() {
             // 세트 마지막 → 제출 후 다음 세트
             comp.submit();
             if (mod.currentIndex < mod.sequence.length - 1) {
-                _goToSet(mod.currentIndex + 1);
+                await _goToSet(mod.currentIndex + 1);
+                return; // _goToSet 내부에서 progress/buttons 업데이트 완료
             }
         }
         _updateProgress();
