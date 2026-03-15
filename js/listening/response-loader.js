@@ -26,7 +26,7 @@ async function loadResponseData(forceReload = false) {
   // 캐시 확인
   if (!forceReload && cachedResponseData) {
     console.log('✅ [response-loader] 캐시된 데이터 사용');
-    console.log('  캐시 데이터 세트 순서:', cachedResponseData.sets.map(s => s.id));
+    console.log('  캐시 데이터 세트 순서:', cachedResponseData.sets.map(s => s.setId));
     return cachedResponseData;
   }
   
@@ -65,7 +65,7 @@ async function _loadResponseFromSupabase() {
     rows.forEach(row => {
       const setId = row.set_id;
       if (!setsMap[setId]) {
-        setsMap[setId] = { id: setId, questions: [] };
+        setsMap[setId] = { setId: setId, questions: [] };
       }
       
       let scriptHighlights = [];
@@ -90,8 +90,8 @@ async function _loadResponseFromSupabase() {
     const sets = Object.values(setsMap);
     sets.forEach(set => set.questions.sort((a, b) => a.questionNum - b.questionNum));
     sets.sort((a, b) => {
-      const numA = parseInt(a.id.replace(/\D/g, ''));
-      const numB = parseInt(b.id.replace(/\D/g, ''));
+      const numA = parseInt(a.setId.replace(/\D/g, ''));
+      const numB = parseInt(b.setId.replace(/\D/g, ''));
       return numA - numB;
     });
     
