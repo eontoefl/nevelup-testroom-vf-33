@@ -182,7 +182,8 @@ class DiscussionComponent {
         
         // 프로필 선택: 2차 풀이면 1차에서 저장한 프로필 재사용, 아니면 랜덤 생성
         const savedProfiles = sessionStorage.getItem('discussionProfiles');
-        if (window.isSecondAttempt && savedProfiles) {
+        const isRetake = window.currentWritingModule && window.currentWritingModule.isRetake;
+        if (isRetake && savedProfiles) {
             try {
                 this.currentDiscussionProfiles = JSON.parse(savedProfiles);
                 console.log('♻️ [Discussion] 1차 프로필 재사용:', this.currentDiscussionProfiles.student1.name, this.currentDiscussionProfiles.student2.name);
@@ -523,7 +524,8 @@ class DiscussionComponent {
             String(now.getMinutes()).padStart(2, '0') +
             String(now.getSeconds()).padStart(2, '0');
         
-        const filename = `Writing_Discussion_${window.currentAttemptNumber === 2 ? '2차' : '1차'}_${dateStr}.txt`;
+        const isRetake = window.currentWritingModule && window.currentWritingModule.isRetake;
+        const filename = `Writing_Discussion_${isRetake ? '2차' : '1차'}_${dateStr}.txt`;
         
         // sessionStorage 우선 → 인스턴스 → window → 기본값
         let profiles = null;
@@ -539,7 +541,7 @@ class DiscussionComponent {
         }
         
         let content = '='.repeat(60) + '\n';
-        content += `토론형 글쓰기 답안 (${window.currentAttemptNumber === 2 ? '2차 작성' : '1차 작성'})\n`;
+        content += `토론형 글쓰기 답안 (${isRetake ? '2차 작성' : '1차 작성'})\n`;
         content += '='.repeat(60) + '\n\n';
         content += `작성일시: ${now.toLocaleString('ko-KR')}\n`;
         content += `단어 수: ${wordCount}\n\n`;
