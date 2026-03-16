@@ -217,6 +217,17 @@ body {
   align-items: center;
   gap: 16px;
 }
+.user-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.user-greeting {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.025em;
+}
 .user-info-card > i.fa-user-circle {
   width: 64px; height: 64px;
   border-radius: 16px;
