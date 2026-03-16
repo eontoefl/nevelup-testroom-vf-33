@@ -1,0 +1,439 @@
+/* ══════════════════════════════════════════
+   Fill in the Blanks — 결과(해설) 화면
+   Ethereal Dashboard 디자인
+   Scope: #fillBlanksExplainScreen
+══════════════════════════════════════════ */
+
+/* ── Variables ── */
+#fillBlanksExplainScreen {
+  --fb-primary: #9480c5;
+  --fb-primary-soft: #f4f2f9;
+  --fb-success: #77bf7e;
+  --fb-success-soft: #f0f9f1;
+  --fb-error: #e57373;
+  --fb-error-soft: #fef2f2;
+  --fb-warning-soft: #fff8e1;
+  --fb-bg: #f1f4f8;
+  --fb-text: #2d3436;
+  --fb-text-muted: #636e72;
+  --fb-shadow: 0 10px 30px rgba(148, 128, 197, 0.08);
+  --fb-shadow-subtle: 0 4px 20px rgba(148, 128, 197, 0.06);
+}
+
+
+/* ── Result Container ── */
+#fillBlanksExplainScreen .result-container {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: var(--fb-shadow);
+}
+
+
+/* ── Header & Score ── */
+#fillBlanksExplainScreen .result-header {
+  text-align: left;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+#fillBlanksExplainScreen .result-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--fb-primary);
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+#fillBlanksExplainScreen .result-summary {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+  align-items: stretch;
+}
+
+#fillBlanksExplainScreen .result-score-card {
+  background: var(--fb-primary);
+  color: white;
+  padding: 24px;
+  border-radius: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#fillBlanksExplainScreen .score-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+#fillBlanksExplainScreen .score-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+#fillBlanksExplainScreen .result-stats {
+  flex: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+#fillBlanksExplainScreen .stat-item {
+  background: var(--fb-bg);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+#fillBlanksExplainScreen .stat-label {
+  font-size: 0.85rem;
+  color: var(--fb-text-muted);
+  margin-bottom: 4px;
+}
+
+#fillBlanksExplainScreen .stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+#fillBlanksExplainScreen .stat-value.correct  { color: var(--fb-success); }
+#fillBlanksExplainScreen .stat-value.incorrect { color: var(--fb-error); }
+
+
+/* ── Details Container ── */
+#fillBlanksExplainScreen .result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Section Title ── */
+#fillBlanksExplainScreen .result-section {
+  padding: 8px 0;
+}
+
+#fillBlanksExplainScreen .result-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fb-text);
+}
+
+#fillBlanksExplainScreen .result-section-title i {
+  color: var(--fb-primary);
+}
+
+
+/* ── Passage Panel ── */
+#fillBlanksExplainScreen .result-passage {
+  background: var(--fb-primary-soft);
+  padding: 28px;
+  border-radius: 20px;
+  font-size: 1.05rem;
+  line-height: 2.2;
+  color: #34495e;
+  margin-bottom: 24px;
+  box-shadow: inset 0 2px 4px rgba(148, 128, 197, 0.03);
+  border: none;
+}
+
+
+/* ── Blank (공통) ── */
+#fillBlanksExplainScreen .result-blank {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin: 0 2px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+  gap: 2px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#fillBlanksExplainScreen .result-blank:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+#fillBlanksExplainScreen .result-blank i {
+  font-size: 0.8rem;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+#fillBlanksExplainScreen .blank-given {
+  opacity: 0.6;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+#fillBlanksExplainScreen .blank-user {
+  font-family: 'Pretendard', 'Courier New', monospace;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+
+/* ── Blank: 정답 ── */
+#fillBlanksExplainScreen .result-blank.correct {
+  background: var(--fb-success-soft);
+  color: var(--fb-success);
+  border: none;
+}
+
+#fillBlanksExplainScreen .result-blank.correct i { color: var(--fb-success); }
+#fillBlanksExplainScreen .result-blank.correct .blank-user { color: #059669; }
+
+
+/* ── Blank: 오답 ── */
+#fillBlanksExplainScreen .result-blank.incorrect {
+  background: var(--fb-error-soft);
+  color: var(--fb-error);
+  border: none;
+}
+
+#fillBlanksExplainScreen .result-blank.incorrect i { color: var(--fb-error); }
+#fillBlanksExplainScreen .result-blank.incorrect .blank-user { color: #dc2626; }
+
+
+/* ── Blank: 1차 틀림 + 2차 맞음 ── */
+#fillBlanksExplainScreen .result-blank.improved {
+  box-shadow: 0 0 0 2px rgba(119, 191, 126, 0.6);
+  animation: fb-improved-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes fb-improved-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(119, 191, 126, 0.6); }
+  50%      { box-shadow: 0 0 0 3px rgba(119, 191, 126, 0.4); }
+}
+
+
+/* ── Explanation Box ── */
+#fillBlanksExplainScreen .blank-explanation-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  margin: 16px 0 24px;
+  box-shadow: var(--fb-shadow-subtle);
+  animation: fb-slideIn 0.3s ease-out;
+  border: none;
+}
+
+@keyframes fb-slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#fillBlanksExplainScreen .explanation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+#fillBlanksExplainScreen .explanation-word {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#fillBlanksExplainScreen .explanation-word strong {
+  font-weight: 400;
+  color: var(--fb-text-muted);
+  font-size: 14px;
+}
+
+#fillBlanksExplainScreen .correct-word {
+  color: var(--fb-primary);
+  font-weight: 700;
+  font-size: 18px;
+  margin-left: 8px;
+}
+
+#fillBlanksExplainScreen .correct-word.incorrect-answer {
+  color: var(--fb-error);
+}
+
+#fillBlanksExplainScreen .btn-close-explanation {
+  background: var(--fb-bg);
+  border: none;
+  color: var(--fb-text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+#fillBlanksExplainScreen .btn-close-explanation:hover {
+  background: #e2e8f0;
+}
+
+
+/* ── Explanation Text ── */
+#fillBlanksExplainScreen .explanation-text {
+  display: flex;
+  gap: 12px;
+  font-size: 0.95rem;
+  color: #4a4a4a;
+  padding: 12px;
+  background: var(--fb-primary-soft);
+  border-radius: 12px;
+  align-items: flex-start;
+}
+
+#fillBlanksExplainScreen .explanation-text i {
+  color: var(--fb-primary);
+  font-size: 20px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+#fillBlanksExplainScreen .explanation-text p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #4b5563;
+}
+
+
+/* ── Common Mistakes ── */
+#fillBlanksExplainScreen .common-mistakes-section {
+  margin-top: 16px;
+  background: var(--fb-warning-soft);
+  padding: 18px;
+  border-radius: 16px;
+}
+
+#fillBlanksExplainScreen .common-mistakes-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#fillBlanksExplainScreen .common-mistakes-header {
+  color: #856404;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#fillBlanksExplainScreen .common-mistakes-header i {
+  font-size: 18px;
+  color: #f59e0b;
+}
+
+#fillBlanksExplainScreen .common-mistakes-header strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+#fillBlanksExplainScreen .common-mistakes-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#fillBlanksExplainScreen .mistake-word {
+  background: white;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: var(--fb-error);
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+#fillBlanksExplainScreen .mistake-word:hover {
+  background: #fde68a;
+  transform: translateY(-1px);
+}
+
+#fillBlanksExplainScreen .common-mistakes-text {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.7;
+}
+
+
+/* ── Bottom Action Button ── */
+#fillBlanksExplainScreen .result-actions {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+#fillBlanksExplainScreen .result-actions .btn {
+  background: var(--fb-primary);
+  color: white;
+  border: none;
+  padding: 16px 40px;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(148, 128, 197, 0.3);
+}
+
+#fillBlanksExplainScreen .result-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(148, 128, 197, 0.4);
+  filter: brightness(1.05);
+}
+
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  #fillBlanksExplainScreen .result-container {
+    padding: 20px;
+  }
+  #fillBlanksExplainScreen .result-summary {
+    flex-direction: column;
+  }
+  #fillBlanksExplainScreen .result-passage {
+    font-size: 1rem;
+    padding: 20px;
+  }
+  #fillBlanksExplainScreen .score-value {
+    font-size: 2rem;
+  }
+  #fillBlanksExplainScreen .common-mistakes-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
