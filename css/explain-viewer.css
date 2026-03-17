@@ -42,8 +42,9 @@
     flex: 0 0 60%;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow: hidden;
     border-right: 1px solid var(--border-color);
+    position: relative;
 }
 
 /* 우측: 메모장 */
@@ -146,6 +147,8 @@
 /* ============================= */
 
 .explain-content-area {
+    flex: 1;
+    overflow-y: auto;
     position: relative;
 }
 
@@ -159,14 +162,17 @@
     justify-content: space-between;
     gap: 2rem;
     padding: 12px 24px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 50px;
-    box-shadow: 0 10px 30px -5px rgba(148, 128, 197, 0.15);
+    box-shadow: 0 8px 32px rgba(148, 128, 197, 0.25), 0 2px 8px rgba(0, 0, 0, 0.08);
     width: fit-content;
-    margin: 12px auto 0;
-    flex-shrink: 0;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
