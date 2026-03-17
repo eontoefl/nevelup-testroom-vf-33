@@ -236,35 +236,43 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--surface-color);
+    gap: 0;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 32px rgba(148, 128, 197, 0.08);
 }
 
 .explain-memo-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 0 0 16px 0;
     flex-shrink: 0;
 }
 
 .explain-memo-title {
     font-size: 15px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #9480c5;
+    letter-spacing: -0.02em;
 }
 
 /* 상태 메시지 (잠김/읽기전용) */
 .explain-memo-status {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 16px 20px;
-    background: var(--bg-color);
-    border-bottom: 1px solid var(--border-color);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    background: rgba(148, 128, 197, 0.06);
+    border-radius: 16px;
 }
 
 .explain-memo-status i {
     color: var(--text-secondary);
-    font-size: 14px;
-    margin-top: 2px;
+    font-size: 24px;
 }
 
 .explain-memo-status p {
@@ -272,12 +280,13 @@
     color: var(--text-secondary);
     line-height: 1.5;
     margin: 0;
+    text-align: center;
 }
 
 /* 메모 작성 영역 */
 .explain-memo-body {
     flex: 1;
-    padding: 16px 20px;
+    padding: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -286,21 +295,24 @@
 .explain-memo-textarea {
     width: 100%;
     flex: 1;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
+    min-height: 180px;
+    border: none;
+    border-radius: 16px;
     padding: 16px;
     font-size: 14px;
     font-family: inherit;
     line-height: 1.7;
     color: var(--text-primary);
-    background: var(--bg-color);
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: inset 0 2px 8px rgba(148, 128, 197, 0.06);
     resize: none;
     outline: none;
-    transition: border-color 0.2s;
+    transition: background 0.2s, box-shadow 0.2s;
 }
 
 .explain-memo-textarea:focus {
-    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: inset 0 2px 8px rgba(148, 128, 197, 0.1);
 }
 
 .explain-memo-textarea::placeholder {
@@ -309,15 +321,17 @@
 }
 
 .explain-memo-textarea:disabled {
-    background: #f9fafb;
+    background: rgba(249, 250, 251, 0.5);
     color: var(--text-secondary);
     cursor: not-allowed;
 }
 
 /* 하단 정보 */
 .explain-memo-footer {
-    padding: 12px 20px 16px;
-    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 0;
     flex-shrink: 0;
 }
 
@@ -325,7 +339,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    flex: 1;
+    margin-right: 12px;
 }
 
 .explain-memo-autosave {
@@ -340,29 +355,30 @@
 }
 
 .explain-memo-submit-btn {
-    width: 100%;
-    padding: 12px;
-    background: var(--primary-color);
+    padding: 10px 24px;
+    background: #9480c5;
     color: #fff;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     font-family: inherit;
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.2);
 }
 
 .explain-memo-submit-btn:hover:not(:disabled) {
-    background: #7C5CBF;
+    filter: brightness(1.1);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.3);
+    box-shadow: 0 6px 16px rgba(148, 128, 197, 0.35);
 }
 
 .explain-memo-submit-btn:disabled {
     background: var(--border-color);
     color: var(--text-secondary);
     cursor: not-allowed;
+    box-shadow: none;
 }
 
 /* ============================= */
@@ -421,7 +437,7 @@
     }
 
     .explain-memo-body {
-        padding: 12px 16px;
+        padding: 0;
     }
 
     .explain-memo-textarea {
