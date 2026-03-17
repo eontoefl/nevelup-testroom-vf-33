@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="css/writing-discussion-result.css?v=003">
     <link rel="stylesheet" href="css/discussion-style-v2.css?v=015">
     <link rel="stylesheet" href="css/notification.css?v=001">
+    <link rel="stylesheet" href="css/notice-panel.css?v=001">
     <link rel="stylesheet" href="css/speaking-repeat-style.css?v=20250207-fixed">
     <link rel="stylesheet" href="css/speaking-repeat-result.css?v=001">
     <link rel="stylesheet" href="css/speaking-interview-style.css?v=005">
@@ -377,27 +378,17 @@
             left: 30px;
             top: 80px;
             width: 240px;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-            overflow: hidden;
             z-index: 10;
         ">
-            <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6); padding:16px 20px; display:flex; align-items:center; gap:9px;">
-                <span style="font-size:20px;">📢</span>
-                <span style="font-size:16px; font-weight:700; color:#fff;">공지사항</span>
+            <div class="notice-header">
+                <i class="fas fa-bullhorn"></i>
+                <span>공지사항</span>
             </div>
-            <div id="noticeList" style="padding:16px 18px; display:flex; flex-direction:column; gap:12px;">
+            <div id="noticeList">
                 <!-- Supabase에서 동적으로 로드됩니다 -->
-                <div style="text-align:center; padding:20px 0; color:#999; font-size:13px;">불러오는 중...</div>
+                <div class="notice-empty-msg">불러오는 중...</div>
             </div>
         </div>
-        <style>
-            @media (max-width: 1400px) {
-                #noticeContainer { display: none !important; }
-            }
-        </style>
         <script>
         // 공지사항 너비를 user-info에 맞춤
         function alignNoticeToUserInfo() {
@@ -444,7 +435,7 @@
                 const notices = await supabaseSelect('tr_notices', 'is_active=eq.true&order=sort_order.asc');
 
                 if (!notices || notices.length === 0) {
-                    listEl.innerHTML = '<div style="text-align:center; padding:16px 0; color:#999; font-size:13px;">등록된 공지가 없습니다.</div>';
+                    listEl.innerHTML = '<div class="notice-empty-msg">등록된 공지가 없습니다.</div>';
                     return;
                 }
 
@@ -452,9 +443,9 @@
                     const s = NOTICE_STYLES[n.type] || NOTICE_STYLES.notice;
                     const glowStyle = s.glow ? 'animation:noticeGlow 2s ease-in-out infinite;' : '';
                     return `
-                        <div style="background:${s.bg}; border-radius:8px; padding:12px 14px; ${glowStyle}">
-                            <div style="font-size:14px; font-weight:700; color:${s.titleColor}; margin-bottom:5px;">${s.emoji} ${n.title}</div>
-                            <div style="font-size:13px; color:${s.textColor}; line-height:1.6;">${n.content}</div>
+                        <div class="notice-item" style="background:${s.bg}; ${glowStyle}">
+                            <div class="notice-item-tag" style="color:${s.titleColor};">${s.emoji} ${n.title}</div>
+                            <div class="notice-item-content" style="color:${s.textColor};">${n.content}</div>
                         </div>
                     `;
                 }).join('');
