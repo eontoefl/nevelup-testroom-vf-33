@@ -278,7 +278,7 @@ function showTaskListScreen(week, dayKr, tasks) {
             };
             
             card.innerHTML = `
-                <i class="${icon}"></i>
+                <div class="card-icon"><i class="${icon}"></i></div>
                 <h3>${taskName}</h3>
                 <p>${description}</p>
             `;
