@@ -42,7 +42,7 @@ function initScheduleScreen() {
     }
     
     if (programBadgeElement) {
-        programBadgeElement.textContent = currentUser.program;
+        programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 - ', '');
     }
     
     // Supabase 스케줄 로드 → 완료 후 렌더링
@@ -220,7 +220,7 @@ function showTaskListScreen(week, dayKr, tasks) {
         }
         
         if (programBadgeElement) {
-            programBadgeElement.textContent = currentUser.program;
+            programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 - ', '');
         }
     }
     

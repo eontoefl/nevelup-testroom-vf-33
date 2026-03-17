@@ -3305,33 +3305,8 @@ body {
     box-shadow: none;
 }
 
-#taskListScreen .top-nav-bar .user-info {
-    position: static;
-    background: none;
-    padding: 0;
+#taskListScreen .user-card {
     box-shadow: none;
-    gap: 12px;
-}
-
-#taskListScreen .user-info i {
-    font-size: 1.5rem;
-    color: var(--primary-color);
-}
-
-#taskListScreen #currentUserName {
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-#taskListScreen .program-badge {
-    background: rgba(148, 128, 197, 0.1);
-    color: var(--primary-color);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 #taskListScreen .nav-icon-btn.nav-icon-logout {
