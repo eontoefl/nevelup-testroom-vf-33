@@ -1,0 +1,598 @@
+/* ================================================
+ * Reading Result 통합 스타일
+ * 기준: 디자인 레퍼런스 파일 (daily1, daily2, academic 해설.txt)
+ * prefix: rd-
+ * 적용 대상: #daily1ExplainScreen, #daily2ExplainScreen, #academicExplainScreen
+ * ================================================ */
+
+/* ── 변수 ── */
+#daily1ExplainScreen,
+#daily2ExplainScreen,
+#academicExplainScreen {
+    --rd-purple: #9480c5;
+    --rd-purple-light: #b3a4d9;
+    --rd-green: #77bf7e;
+    --rd-green-dark: #5a9a60;
+    --rd-bg: #f1f4f8;
+    --rd-white: #ffffff;
+    --rd-text: #2d3436;
+    --rd-gray: #636e72;
+    --rd-red: #e57373;
+    --rd-red-dark: #c65e5e;
+    --rd-shadow: 0 8px 24px rgba(149, 157, 165, 0.1);
+    --rd-ambient: 0 12px 32px rgba(148, 128, 197, 0.05);
+    --rd-radius: 16px;
+    --rd-card-radius: 20px;
+    padding: 24px 48px;
+}
+
+/* ── 레이아웃 ── */
+#daily1ExplainScreen .test-content,
+#daily2ExplainScreen .test-content,
+#academicExplainScreen .test-content {
+    width: 100%;
+}
+
+#daily1ExplainScreen .result-container,
+#daily2ExplainScreen .result-container,
+#academicExplainScreen .result-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ── 헤더 섹션 ── */
+#daily1ExplainScreen .result-header,
+#daily2ExplainScreen .result-header,
+#academicExplainScreen .result-header {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    text-align: left;
+    display: block;
+    margin-bottom: 16px;
+    border-bottom: none;
+}
+
+#daily1ResultDayTitle,
+#daily2ResultDayTitle,
+#academicResultDayTitle {
+    margin: 0 0 24px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--rd-purple);
+    letter-spacing: -0.02em;
+}
+
+#daily1ExplainScreen .result-summary,
+#daily2ExplainScreen .result-summary,
+#academicExplainScreen .result-summary {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 16px;
+    width: 100%;
+}
+
+#daily1ExplainScreen .result-score-card,
+#daily2ExplainScreen .result-score-card,
+#academicExplainScreen .result-score-card {
+    background: var(--rd-purple);
+    color: white;
+    padding: 32px 24px;
+    border-radius: 24px;
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 12px 24px rgba(148, 128, 197, 0.2);
+    border: none;
+    margin-bottom: 0;
+}
+
+#daily1ExplainScreen .score-label,
+#daily2ExplainScreen .score-label,
+#academicExplainScreen .score-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+#daily1ExplainScreen .score-value,
+#daily2ExplainScreen .score-value,
+#academicExplainScreen .score-value {
+    font-size: 2.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1px;
+}
+
+#daily1ExplainScreen .result-score-card .score-value,
+#daily2ExplainScreen .result-score-card .score-value,
+#academicExplainScreen .result-score-card .score-value {
+    color: white;
+}
+
+#daily1ExplainScreen .result-stats,
+#daily2ExplainScreen .result-stats,
+#academicExplainScreen .result-stats {
+    flex: 2.8;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+#daily1ExplainScreen .stat-item,
+#daily2ExplainScreen .stat-item,
+#academicExplainScreen .stat-item {
+    background: var(--rd-white);
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    box-shadow: var(--rd-ambient);
+    border: none;
+}
+
+#daily1ExplainScreen .stat-label,
+#daily2ExplainScreen .stat-label,
+#academicExplainScreen .stat-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--rd-gray);
+    margin-bottom: 12px;
+}
+
+#daily1ExplainScreen .stat-value,
+#daily2ExplainScreen .stat-value,
+#academicExplainScreen .stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--rd-text);
+}
+
+#daily1ExplainScreen .stat-value.correct,
+#daily2ExplainScreen .stat-value.correct,
+#academicExplainScreen .stat-value.correct {
+    color: var(--rd-green);
+}
+
+#daily1ExplainScreen .stat-value.incorrect,
+#daily2ExplainScreen .stat-value.incorrect,
+#academicExplainScreen .stat-value.incorrect {
+    color: var(--rd-red);
+}
+
+/* ── 세트 섹션 ── */
+#daily1ExplainScreen .result-set-section,
+#daily2ExplainScreen .result-set-section,
+#academicExplainScreen .result-set-section {
+    margin-top: 24px;
+    margin-bottom: 0;
+}
+
+#daily1ExplainScreen .result-section-title,
+#daily2ExplainScreen .result-section-title,
+#academicExplainScreen .result-section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--rd-text);
+    padding-bottom: 0;
+    border-bottom: none;
+    letter-spacing: -0.02em;
+}
+
+#daily1ExplainScreen .result-section-title i,
+#daily2ExplainScreen .result-section-title i,
+#academicExplainScreen .result-section-title i {
+    color: var(--rd-purple);
+}
+
+/* ── 지문 패널 ── */
+.rd-passage-panel {
+    background: var(--rd-white);
+    padding: 32px;
+    border-radius: var(--rd-radius);
+    box-shadow: var(--rd-shadow);
+    margin-bottom: 24px;
+}
+
+.result-passage-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 24px;
+    color: var(--rd-text);
+    text-align: center;
+    letter-spacing: -0.02em;
+}
+
+.sentence-translations {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sentence-pair {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f4f8;
+}
+
+.sentence-pair:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.sentence-original {
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    color: var(--rd-text);
+}
+
+.sentence-translation {
+    font-size: 0.95rem;
+    color: var(--rd-gray);
+}
+
+/* ── 인터랙티브 단어 ── */
+.interactive-word {
+    color: var(--rd-purple);
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: help;
+    padding: 0 2px;
+    transition: all 0.15s;
+}
+
+.interactive-word:hover {
+    background: rgba(148, 128, 197, 0.1);
+}
+
+/* ── 툴팁 ── */
+.rd-tooltip {
+    position: absolute;
+    z-index: 1000;
+    background: var(--rd-white);
+    color: var(--rd-text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e5e7eb;
+    max-width: 280px;
+    font-size: 13px;
+    line-height: 1.5;
+    pointer-events: none;
+}
+
+.tooltip-translation {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--rd-text);
+}
+
+.tooltip-explanation {
+    font-size: 12px;
+    color: var(--rd-gray);
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* ── 문제 카드 ── */
+.rd-result-item {
+    background: var(--rd-white);
+    border-radius: var(--rd-radius);
+    box-shadow: var(--rd-shadow);
+    margin-bottom: 16px;
+    padding: 24px;
+    display: flex;
+    gap: 20px;
+    border: none;
+}
+
+.rd-result-item.correct {
+    background: var(--rd-white);
+}
+
+.rd-result-item.incorrect {
+    background: var(--rd-white);
+}
+
+.rd-result-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.rd-result-item.correct .rd-result-icon {
+    color: var(--rd-purple);
+}
+
+.rd-result-item.incorrect .rd-result-icon {
+    color: var(--rd-red);
+}
+
+.rd-result-content {
+    flex-grow: 1;
+}
+
+/* ── 문제 텍스트 ── */
+.rd-question-text {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: var(--rd-text);
+}
+
+.rd-question-text strong {
+    font-weight: 700;
+    margin-right: 8px;
+}
+
+/* ── 문제 해석 ── */
+.question-translation {
+    font-size: 0.9rem;
+    color: var(--rd-gray);
+    background: #f8f9fa;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.question-translation i {
+    display: inline;
+}
+
+/* ── 답변 영역 ── */
+.rd-answer-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.rd-answer-label {
+    color: var(--rd-gray);
+}
+
+.rd-answer-value {
+    color: var(--rd-text);
+}
+
+.rd-answer-value.correct {
+    color: var(--rd-purple);
+}
+
+.rd-answer-value.incorrect {
+    color: var(--rd-red);
+}
+
+/* ── 보기 해설 아코디언 ── */
+.options-explanation-container {
+    margin-top: 24px;
+}
+
+.btn-toggle-options {
+    background: #f1f4f8;
+    border: 1px solid transparent;
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--rd-gray);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-toggle-options:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.btn-toggle-options:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-toggle-options.is-active {
+    background: var(--rd-white);
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.1);
+    border-color: rgba(148, 128, 197, 0.2);
+    color: var(--rd-purple);
+}
+
+.btn-toggle-options i {
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
+.options-explanation-content {
+    margin-top: 12px;
+    padding: 24px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+}
+
+/* ── 보기 아이템 ── */
+.option-item {
+    margin-bottom: 32px;
+}
+
+.option-item:last-child {
+    margin-bottom: 0;
+}
+
+.option-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.option-label {
+    font-weight: 700;
+    color: var(--rd-purple);
+    font-size: 1.1rem;
+}
+
+.option-text {
+    flex-grow: 1;
+    color: var(--rd-text);
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.option-badge {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.correct-badge {
+    background: rgba(148, 128, 197, 0.1);
+    color: var(--rd-purple);
+}
+
+.incorrect-badge {
+    background: rgba(229, 115, 115, 0.1);
+    color: var(--rd-red);
+}
+
+/* ── 보기 번역 ── */
+.option-translation {
+    font-size: 0.9rem;
+    color: var(--rd-gray);
+    margin-bottom: 14px;
+    padding-left: 28px;
+    font-style: italic;
+    opacity: 0.85;
+}
+
+/* ── 보기 해설 ── */
+.option-explanation {
+    padding: 18px 22px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.option-explanation.correct {
+    background: rgba(119, 191, 126, 0.08);
+    color: var(--rd-green-dark);
+}
+
+.option-explanation.incorrect {
+    background: rgba(229, 115, 115, 0.06);
+    color: var(--rd-red-dark);
+}
+
+.option-explanation strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    color: inherit;
+    font-weight: 700;
+}
+
+.option-explanation strong i {
+    font-size: 0.9rem;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+    #daily1ExplainScreen,
+    #daily2ExplainScreen,
+    #academicExplainScreen {
+        padding: 16px;
+    }
+
+    #daily1ExplainScreen .result-summary,
+    #daily2ExplainScreen .result-summary,
+    #academicExplainScreen .result-summary {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #daily1ExplainScreen .result-stats,
+    #daily2ExplainScreen .result-stats,
+    #academicExplainScreen .result-stats {
+        grid-template-columns: repeat(3, 1fr);
+        width: 100%;
+    }
+
+    #daily1ExplainScreen .result-score-card,
+    #daily2ExplainScreen .result-score-card,
+    #academicExplainScreen .result-score-card {
+        width: 100%;
+    }
+
+    .rd-result-item {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .option-explanation {
+        margin-left: 0;
+    }
+
+    .option-translation {
+        padding-left: 20px;
+    }
+
+    .btn-toggle-options {
+        padding: 12px 14px;
+    }
+
+    .rd-tooltip {
+        max-width: 240px;
+        font-size: 12px;
+    }
+
+    .rd-passage-panel {
+        padding: 20px;
+    }
+
+    #daily1ExplainScreen .result-section-title,
+    #daily2ExplainScreen .result-section-title,
+    #academicExplainScreen .result-section-title {
+        font-size: 1.1rem;
+    }
+
+    .rd-question-text {
+        font-size: 1rem;
+    }
+
+    .sentence-original {
+        font-size: 0.95rem;
+    }
+
+    .sentence-translation {
+        font-size: 0.85rem;
+    }
+
+    .question-translation {
+        font-size: 0.85rem;
+    }
+
+    .option-header {
+        flex-wrap: wrap;
+    }
+}

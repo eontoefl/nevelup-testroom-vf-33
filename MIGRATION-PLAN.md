@@ -1,8 +1,18 @@
-# Reading Result CSS/JS Prefix Migration Plan
+# Reading Result CSS/JS Migration Plan
 
 ## Goal
-daily1, daily2, academic 세 리딩 결과 화면의 CSS prefix를 `rd-`로 통일하고,
-CSS 파일 3개를 `css/reading-result.css` 1개로 합친다.
+daily1, daily2, academic 세 리딩 결과 화면을 하나의 통일된 디자인으로 통합한다.
+- CSS 파일 3개 → `css/reading-result.css` 1개
+- JS 파일 3개의 HTML 생성 구조를 통일
+- 클래스명 prefix를 `rd-`로 통일
+
+## Design Reference (기준 파일)
+`/home/user/uploaded_files/daily1, daily2, academic 해설.txt`
+
+이 파일이 최종 디자인의 **유일한 기준**이다.
+CSS와 HTML 구조 모두 이 파일에서 추출한다.
+
+---
 
 ## Current State (AS-IS)
 
@@ -18,30 +28,86 @@ CSS 파일 3개를 `css/reading-result.css` 1개로 합친다.
 
 ### HTML (index.html)
 - Line 17-19: 3개 CSS link tags
-- Line 696-730: `#daily1ExplainScreen` (HTML 구조)
-- Line 731-765: `#daily2ExplainScreen` (HTML 구조)
-- Line 766-800: `#academicExplainScreen` (HTML 구조)
-- Line 2278: `<script src="js/reading/daily1-result.js">`
-- Line 2282: `<script src="js/reading/daily2-result.js">`
-- Line 2286: `<script src="js/reading/academic-result.js">`
+- Line 696-730: `#daily1ExplainScreen`
+- Line 731-765: `#daily2ExplainScreen`
+- Line 766-800: `#academicExplainScreen`
+- Line 2278, 2282, 2286: 3개 JS script tags
 
-### HTML Structure (3개 모두 동일)
+---
+
+## Design Reference Structure (기준 파일에서 추출)
+
+### HTML 구조 (JS가 생성해야 하는 것)
+
+#### 세트 섹션
 ```html
-<div id="{screen}ExplainScreen" style="display:none">
-  <div class="test-content">
-    <div class="result-container">
-      <div class="result-header">
-        <h2 id="{prefix}ResultDayTitle">...</h2>
-        <div class="result-summary">
-          <div class="result-score-card">...</div>
-          <div class="result-stats">
-            <div class="stat-item">정답</div>
-            <div class="stat-item">오답</div>
-            <div class="stat-item">전체</div>
-          </div>
-        </div>
+<div class="result-set-section">
+  <h3 class="result-section-title">
+    <i class="fas fa-book-open"></i> Set 1: 지문 제목
+  </h3>
+  <div class="rd-passage-panel">...</div>
+  <!-- 문제 카드들 -->
+</div>
+```
+
+#### 지문 패널
+```html
+<div class="rd-passage-panel">
+  <h4 class="result-passage-title">지문 제목</h4>
+  <div class="sentence-translations">
+    <div class="sentence-pair">
+      <div class="sentence-original">
+        원문 (<span class="interactive-word" data-translation="..." data-explanation="...">단어</span>)
       </div>
-      <div class="result-details" id="{prefix}ResultDetails"></div>
+      <div class="sentence-translation">번역</div>
+    </div>
+  </div>
+</div>
+```
+
+#### 문제 카드
+```html
+<div class="rd-result-item correct|incorrect">
+  <div class="rd-result-icon"><i class="fas fa-check-circle|fa-times-circle"></i></div>
+  <div class="rd-result-content">
+    <div class="rd-question-text">
+      <strong>1.</strong> 문제 텍스트
+    </div>
+    <div class="question-translation">
+      <i class="fas fa-comment-dots"></i> 문제 해석: 번역
+    </div>
+    <div class="rd-answer-row">
+      <span class="rd-answer-label">✓|✗ 내 답변:</span>
+      <span class="rd-answer-value correct|incorrect">A) 답변</span>
+    </div>
+    <!-- 오답인 경우만 -->
+    <div class="rd-answer-row">
+      <span class="rd-answer-label">✓ 정답:</span>
+      <span class="rd-answer-value correct">A) 정답</span>
+    </div>
+    <!-- 보기 해설 아코디언 -->
+  </div>
+</div>
+```
+
+#### 보기 해설 아코디언
+```html
+<div class="options-explanation-container">
+  <button class="btn-toggle-options" onclick="toggle...('{id}')">
+    <span class="toggle-text">보기 상세 해설 펼치기</span>
+    <i class="fas fa-chevron-down"></i>
+  </button>
+  <div id="{id}" class="options-explanation-content" style="display: none;">
+    <div class="option-item">
+      <div class="option-header">
+        <span class="option-label">A)</span>
+        <span class="option-text">보기 텍스트</span>
+        <span class="option-badge correct-badge|incorrect-badge">✓ 정답 | ✗ 내가 선택한 오답</span>
+      </div>
+      <div class="option-translation">번역</div>
+      <div class="option-explanation correct|incorrect">
+        <strong>정답 이유:|오답 이유:</strong><br>설명
+      </div>
     </div>
   </div>
 </div>
@@ -49,123 +115,39 @@ CSS 파일 3개를 `css/reading-result.css` 1개로 합친다.
 
 ---
 
-## Structure Differences (CRITICAL)
+## Migration Strategy
 
-### daily1 vs daily2/academic: JS HTML 생성 구조 차이
+### Phase 1: CSS 추출 — `css/reading-result.css` 생성
+기준 파일의 CSS를 그대로 추출하되:
+- `daily1-` prefix → `rd-` prefix로 변경
+- `#daily1ExplainScreen` 스코핑 → 3개 화면 공통 스코핑
+- 기준 파일의 CSS 변수(`--signature-purple` 등) 유지
 
-#### 1. 문제 카드 (Result Item)
-| Part | daily1 | daily2 & academic |
-|------|--------|-------------------|
-| 문제카드 | `<div class="daily1-result-item">` + `<div class="daily1-result-icon">` + `<div class="daily1-result-content">` | `<div class="daily2/academic-result-item">` + `<div class="question-header">` + `<div class="question-text">` |
-| 문제번호 | `<strong>1.</strong>` inside daily1-question-text | `<span class="question-number">1</span>` |
-| 정/오답 아이콘 | `daily1-result-icon` (별도 div) | `<span class="result-status">` inside question-header |
-| 답변 영역 wrapper | 없음 (바로 answer-row) | `<div class="answer-summary">` |
+### Phase 2: JS 3개 파일 새로 작성
+기준 파일의 HTML 구조를 기준으로 JS의 render 함수들을 **새로 작성**한다.
+기존 파일의 코드를 치환하는 것이 아니라, 기준 파일의 구조를 보고 작성한다.
 
-#### 2. 지문 패널 (Passage Panel)
-| Part | daily1 | daily2 & academic |
-|------|--------|-------------------|
-| 지문 wrapper | `<div class="daily1-passage-panel-result">` | `<div class="passage-section">` |
-| 지문 제목 | `<h4 class="result-passage-title">` | `<h4 class="passage-title">` |
-| 내용 wrapper | `<div class="sentence-translations">` | `<div class="passage-content-bilingual">` |
-| 문제 wrapper | 없음 (답안이 바로 나옴) | `<div class="questions-section">` |
+#### 각 JS 파일이 유지해야 하는 고유 로직
+| 항목 | daily1 | daily2 | academic |
+|------|--------|--------|----------|
+| splitToMatchTranslations | 기본 버전 | `_d2` 버전 | `_ac` 버전 (<<>> 제거 + (A) 병합) |
+| 결과 타이틀 형식 | `Week N - 요일` | `Week N, 요일 - 일상리딩2` | `Week N, 요일 - 아카데믹리딩` |
+| userAnswer 처리 | getLabelFromIndex | options[index-1] 직접 접근 | 문자열→숫자 변환 후 접근 |
+| contentRaw 사용 | 없음 | 없음 | `contentRaw \|\| content` |
+| options label 존재 체크 | `options[0].label` 있으면/없으면 분기 | 항상 label 있음 | 항상 label 있음 |
 
-#### 3. 보기 해설 아코디언 (Options Explanation)
-| Part | daily1 | daily2 & academic |
-|------|--------|-------------------|
-| 컨테이너 | `.options-explanation-container` | `.options-explanation-section` |
-| 토글 버튼 | `.btn-toggle-options` | `.toggle-explanation-btn` |
-| 내용 wrapper | `.options-explanation-content` | `.options-details` |
-| 보기 아이템 | `.option-item` → `.option-header` + `.option-label` + `.option-text` | `.option-detail` → `.option-text` (label 포함) |
+#### 공통 HTML 구조 (3개 파일 모두 동일하게 생성)
+위 "Design Reference Structure" 섹션의 HTML 구조를 그대로 따른다.
+클래스명은 모두 `rd-` prefix를 사용한다.
 
-#### 4. CSS 디자인 차이
-| Part | daily1 | daily2 & academic |
-|------|--------|-------------------|
-| 전체 테마 | 커스텀 CSS 변수 (`--d1-*`) | 글로벌 CSS 변수 (`--text-primary`, etc.) |
-| 문제카드 레이아웃 | flex (아이콘 + 컨텐츠 나란히) | 단일 컬럼 (아이콘 숨김) |
-| 정답/오답 카드 배경 | 모두 흰색 | 정답=초록 배경, 오답=빨간 배경 |
-| 문제 해석 | 회색 배경 박스 | 화살표(→) prefix |
-| 문장 번역 | prefix 없음 | 화살표(→) prefix |
-| 답변값 스타일 | 텍스트만 (배경 없음) | pill 형태 (배경+테두리) |
+### Phase 3: index.html 수정
+- CSS link 3개 → `css/reading-result.css` 1개로 교체
+- JS script 태그는 변경 없음
 
----
-
-## Migration Strategy (TO-BE)
-
-### New Unified Prefix: `rd-`
-
-#### Phase 1: JS Class Name Replacement
-
-**daily1-result.js** - 변경할 클래스명:
-```
-daily1-passage-panel-result  → rd-passage-panel
-daily1-result-item           → rd-result-item
-daily1-result-icon           → rd-result-icon
-daily1-result-content        → rd-result-content
-daily1-question-text         → rd-question-text
-daily1-answer-row            → rd-answer-row
-daily1-answer-label          → rd-answer-label
-daily1-answer-value          → rd-answer-value
-daily1-tooltip               → rd-tooltip
-daily1-options-{id}          → rd-options-{id}  (toggle ID prefix)
-daily1-original-{id}         → rd-original-{id}  (tab pane ID)
-daily1-translation-{id}      → rd-translation-{id}  (tab pane ID)
-```
-
-**daily2-result.js** - 변경할 클래스명:
-```
-daily2-result-item           → rd-result-item
-daily2-answer-row            → rd-answer-row
-daily2-answer-label          → rd-answer-label
-daily2-answer-value          → rd-answer-value
-daily2-tooltip               → rd-tooltip
-daily2-toggle-{id}           → rd-toggle-{id}  (toggle ID prefix)
-```
-
-**academic-result.js** - 변경할 클래스명:
-```
-academic-result-item         → rd-result-item
-academic-answer-row          → rd-answer-row
-academic-answer-label        → rd-answer-label
-academic-answer-value        → rd-answer-value
-academic-tooltip             → rd-tooltip
-academic-toggle-{id}         → rd-toggle-{id}  (toggle ID prefix)
-```
-
-#### Phase 2: HTML Structure Unification
-
-daily1의 HTML 생성 구조를 daily2/academic과 통일한다.
-(daily2/academic 구조가 더 간결하므로 이쪽을 기준으로 한다)
-
-**daily1의 renderDaily1Answers 변경 사항:**
-- `<div class="daily1-result-icon">` → `<span class="result-status">` inside question-header
-- `<div class="daily1-result-content">` → 제거 (불필요한 wrapper)
-- `<div class="daily1-question-text"><strong>N.</strong>` → `<div class="question-header"><span class="question-number">N</span>`
-- answer-row를 `<div class="answer-summary">` 안으로 이동
-
-**daily1의 renderDaily1OptionsExplanation 변경 사항:**
-- `.options-explanation-container` → `.options-explanation-section`
-- `.btn-toggle-options` → `.toggle-explanation-btn`
-- `.options-explanation-content` → `.options-details`
-- `.option-item` → `.option-detail`
-- `.option-header` + `.option-label` + `.option-text` → `.option-text` (label 통합)
-
-**daily1의 renderDaily1SetResult 변경 사항:**
-- `.daily1-passage-panel-result` → `.passage-section`
-- `.result-passage-title` → `.passage-title`
-- `.sentence-translations` → `.passage-content-bilingual`
-- `<div class="questions-section">` wrapper 추가
-
-#### Phase 3: CSS Consolidation
-
-새 파일 `css/reading-result.css` 생성:
-- daily2/academic 디자인을 기준으로 통합 (daily1도 동일한 디자인 적용)
-- `rd-` prefix 사용
-- 화면별 스코핑: `#daily1ExplainScreen`, `#daily2ExplainScreen`, `#academicExplainScreen` 에 공통 padding 적용
-- 글로벌 CSS 변수 사용 (`--text-primary`, `--primary-color`, etc.)
-
-#### Phase 4: index.html Updates
-- 3개 CSS link → 1개로 교체
-- JS script 태그는 변경 없음 (파일명 유지)
+### Phase 4: 검증 + 정리
+- `validate-migration.sh` 실행
+- 구 CSS 파일 3개 삭제
+- 커밋 + PR
 
 ---
 
@@ -182,75 +164,33 @@ daily1ResultTotalCount, daily2ResultTotalCount, academicResultTotalCount
 daily1ResultDetails, daily2ResultDetails, academicResultDetails
 ```
 
-### Window Function Names (explain-viewer.js의 RESULT_TYPE_MAP에서 참조)
+### Window Function Names
 ```
-window.showDaily1Results
-window.showDaily2Results
-window.showAcademicResults
-```
-
-### Toggle Function Names (JS에서 onclick HTML을 생성)
-```
-window.toggleDaily1Options (daily1-result.js 내부에서 생성하는 onclick에서 호출)
-window.toggleDaily2Options (daily2-result.js 내부에서 생성하는 onclick에서 호출)
-window.toggleAcademicOptions (academic-result.js 내부에서 생성하는 onclick에서 호출)
+window.showDaily1Results, window.showDaily2Results, window.showAcademicResults
+window.toggleDaily1Options, window.toggleDaily2Options, window.toggleAcademicOptions
+window.switchDaily1Tab
+window.renderDaily1SetResult, window.renderDaily2SetResult, window.renderAcademicSetResult
+window.renderDaily1Answers, window.renderDaily2Answers, window.renderAcademicAnswers
+window.renderDaily1OptionsExplanation, window.renderDaily2OptionsExplanation, window.renderAcademicOptionsExplanation
+window.bindDaily1ToggleEvents, window.bindDaily2ToggleEvents, window.bindAcademicToggleEvents
 ```
 
-### Tab Function Names (daily1 전용)
-```
-window.switchDaily1Tab (daily1-result.js에서 onclick HTML 생성)
-```
+### splitToMatchTranslations 함수
+3개 모두 로직이 다르므로 각각 유지.
 
-### splitToMatchTranslations Functions
-3개 모두 로직이 약간 다르므로 각각 유지:
-- `splitToMatchTranslations` (daily1 - 기본)
-- `splitToMatchTranslations_d2` (daily2)
-- `splitToMatchTranslations_ac` (academic - `<<>>` 제거 + `(A)` 병합 로직)
-
-### Other Screens Using Same Class Names
-`academic-summary`, `academic-stats`, `academic-stat-box` → lectureExplainScreen 전용 (이번 마이그레이션 대상 아님)
-
----
-
-## Validation Checklist
-
-### Pre-migration
-- [ ] 기존 3개 CSS/JS의 모든 클래스명 전수 추출
-- [ ] `rd-` prefix 매핑 테이블 완성
-
-### Post-migration: Automated (validate-migration.sh)
-- [ ] JS에서 사용하는 모든 `rd-` 클래스가 CSS에 정의되어 있는지 확인
-- [ ] JS에서 `daily1-`, `daily2-`, `academic-` prefix가 하나도 남아있지 않은지 확인
-- [ ] CSS에서 `daily1-`, `daily2-`, `academic-` prefix가 하나도 남아있지 않은지 확인
-- [ ] 구 CSS 파일 3개가 삭제 대상으로 표시되었는지 확인
-- [ ] 신규 CSS 파일 `css/reading-result.css`가 존재하는지 확인
-- [ ] index.html에서 구 CSS link 3개가 제거되고 신규 1개가 추가되었는지 확인
-- [ ] window function exports가 모두 존재하는지 확인
-- [ ] HTML element ID 참조가 모두 유효한지 확인
-
-### Post-migration: Manual (브라우저 확인)
-- [ ] daily1 결과 화면: 점수 카드 높이 일치
-- [ ] daily1 결과 화면: 지문 + 번역 표시
-- [ ] daily1 결과 화면: 문제 정답/오답 표시
-- [ ] daily1 결과 화면: 보기 상세 해설 펼치기/접기
-- [ ] daily1 결과 화면: 인터랙티브 단어 툴팁
-- [ ] daily2 결과 화면: 동일 항목 전체 확인
-- [ ] academic 결과 화면: 동일 항목 전체 확인
-- [ ] 반응형(768px 이하) 레이아웃 확인
-- [ ] 다른 화면(fillblanks, response, conver 등)에 영향 없는지 확인
+### 다른 화면의 클래스
+`academic-summary`, `academic-stats`, `academic-stat-box` → lectureExplainScreen 전용 (대상 아님)
 
 ---
 
 ## Execution Order
 
-1. **validate-migration.sh 먼저 실행** → 현재 상태의 baseline 기록
-2. **JS 수정**: daily1-result.js 구조 통일 + 3개 파일 prefix 변경
-3. **CSS 통합**: reading-result.css 생성 (daily2/academic 디자인 기준)
-4. **index.html 수정**: CSS link 교체
-5. **validate-migration.sh 다시 실행** → 마이그레이션 완료 검증
-6. **수동 브라우저 테스트**
-7. **구 CSS 파일 삭제**: reading-daily1-result.css, reading-daily2-result.css, reading-academic-result.css
-8. **최종 커밋 + PR**
+1. 기준 파일에서 CSS 추출 → `css/reading-result.css` 생성 (`rd-` prefix)
+2. JS 3개 파일을 기준 파일의 HTML 구조로 새로 작성 (고유 로직 유지)
+3. index.html CSS link 교체
+4. `validate-migration.sh` 실행 → 검증
+5. 구 CSS 파일 3개 삭제
+6. 커밋 + PR
 
 ---
 
@@ -259,5 +199,6 @@ window.switchDaily1Tab (daily1-result.js에서 onclick HTML 생성)
 대화가 압축/초기화된 경우:
 ```
 MIGRATION-PLAN.md 읽고 이어서 작업해.
-현재 단계: [Phase N] / [Step M]
+기준 파일: /home/user/uploaded_files/daily1, daily2, academic 해설.txt
+현재 단계: [Phase N]
 ```
