@@ -126,7 +126,7 @@ body {
     box-shadow: var(--shadow-lg);
 }
 
-.section-card i {
+.section-card > .card-icon i {
     font-size: 48px;
     color: var(--primary-color);
     margin-bottom: 15px;
