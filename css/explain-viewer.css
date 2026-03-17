@@ -258,12 +258,8 @@
     height: 100%;
     gap: 0;
     padding: 24px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: #f8f9fa;
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px rgba(148, 128, 197, 0.08);
 }
 
 .explain-memo-header {
@@ -323,16 +319,15 @@
     font-family: inherit;
     line-height: 1.7;
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.5);
-    box-shadow: inset 0 2px 8px rgba(148, 128, 197, 0.06);
+    background: #ffffff;
     resize: none;
     outline: none;
     transition: background 0.2s, box-shadow 0.2s;
 }
 
 .explain-memo-textarea:focus {
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: inset 0 2px 8px rgba(148, 128, 197, 0.1);
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(148, 128, 197, 0.15);
 }
 
 .explain-memo-textarea::placeholder {
@@ -341,7 +336,7 @@
 }
 
 .explain-memo-textarea:disabled {
-    background: rgba(249, 250, 251, 0.5);
+    background: #f1f2f3;
     color: var(--text-secondary);
     cursor: not-allowed;
 }
@@ -350,17 +345,16 @@
 .explain-memo-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 12px;
     padding: 12px 0 0;
     flex-shrink: 0;
 }
 
 .explain-memo-info {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex: 1;
-    margin-right: 12px;
+    gap: 8px;
 }
 
 .explain-memo-autosave {
