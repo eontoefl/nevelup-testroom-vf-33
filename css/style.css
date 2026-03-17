@@ -290,17 +290,56 @@ body {
 }
 
 
-/* user-info - top-nav-bar 안에서 사용 */
-.top-nav-bar .user-info {
-    position: static;
-    background: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
+/* user-card — 상단 네비 로그인 정보 */
+.user-card {
+    background-color: #ffffff;
+    width: fit-content;
+    min-width: 240px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -5px rgba(148, 128, 197, 0.12),
+                0 4px 12px -2px rgba(0, 0, 0, 0.04);
+}
+
+.user-card-content {
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-name-wrapper {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 17px;
+}
+
+.user-icon {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+}
+
+.user-name {
+    color: #2d2d2d;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0;
+}
+
+.top-nav-bar .program-badge {
+    background-color: rgba(148, 128, 197, 0.08);
+    color: var(--primary-color);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    height: fit-content;
 }
 
 .btn-back {
@@ -327,21 +366,6 @@ body {
     color: var(--primary-color);
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* user-info를 뒤로가기 버튼 오른쪽으로 이동 */
-.user-info {
-    position: absolute;
-    top: 20px;
-    left: 80px;  /* 20px (버튼 left) + 48px (버튼 width) + 12px (간격) = 80px */
-    background: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 17px;
 }
 
 /* Section Select Screen */
@@ -1311,30 +1335,6 @@ body {
     background: #7b64b5;
 }
 
-.user-info {
-    position: absolute;
-    top: 20px;
-    left: 80px;  /* 뒤로가기 버튼 오른쪽 */
-    background: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 17px;
-}
-
-.user-info i {
-    color: var(--primary-color);
-    font-size: 24px;
-}
-
-.user-info strong {
-    color: var(--text-primary);
-    font-weight: 700;
-}
-
 /* Responsive for login */
 @media (max-width: 1024px) {
     .login-grid {
@@ -1379,12 +1379,6 @@ body {
 
     .login-header i {
         font-size: 32px;
-    }
-
-    .user-info {
-        position: static;
-        margin: 10px auto;
-        width: fit-content;
     }
 }
 
