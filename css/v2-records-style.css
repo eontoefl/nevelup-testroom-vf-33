@@ -64,26 +64,6 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-.v2r-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: .85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .18s;
-}
-.v2r-back-btn:hover {
-  border-color: var(--signature);
-  color: var(--signature);
-  background: var(--signature-pale);
-}
-
 .v2r-topbar-title {
   font-size: .95rem;
   font-weight: 700;
@@ -612,27 +592,6 @@ body {
   padding: 8px 0 16px;
 }
 
-.v2r-back-link {
-  padding: 10px 24px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: .85rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all .18s;
-}
-.v2r-back-link:hover {
-  border-color: var(--signature);
-  color: var(--signature);
-  background: var(--signature-pale);
-}
-
 /* ══════════════════════════════════════════
    Responsive
 ══════════════════════════════════════════ */
@@ -652,7 +611,6 @@ body {
   .v2r-summary-card { padding: 14px 12px; }
   .v2r-sc-value { font-size: 1.2rem; }
   .v2r-topbar-title { font-size: .85rem; }
-  .v2r-back-btn span { display: none; }
 
   .v2r-filters { gap: 8px; }
   .v2r-filter-group select { min-width: 100px; font-size: .8rem; padding: 7px 28px 7px 10px; }

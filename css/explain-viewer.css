@@ -15,25 +15,6 @@
     z-index: 10;
 }
 
-.btn-back-to-dashboard {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 8px;
-    transition: all 0.2s;
-    font-family: inherit;
-    white-space: nowrap;
-}
-
-.btn-back-to-dashboard:hover {
-    background: var(--bg-color);
-    color: var(--text-primary);
-}
-
 .explain-viewer-title-area {
     display: flex;
     align-items: center;

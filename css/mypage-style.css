@@ -104,21 +104,6 @@ body {
   color: var(--on-surface);
 }
 
-.mp-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--on-surface-variant);
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-family: inherit;
-  transition: color 0.2s;
-}
-.mp-back-btn:hover { color: var(--primary); }
-
 .mp-logout-btn {
   width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
@@ -976,7 +961,6 @@ body {
     margin-bottom: 16px;
   }
   .mp-topbar-title { font-size: 0.85rem; }
-  .mp-back-btn span { display: none; }
   .score-tabs { gap: 4px; }
   .score-tab { padding: 7px 14px; font-size: 0.8rem; }
   .score-chart-wrap { padding: 14px 10px; min-height: 240px; }
