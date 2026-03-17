@@ -490,32 +490,6 @@ body {
     font-size: 18px;
 }
 
-.btn-back-to-schedule {
-    background: transparent;
-    border: 2px solid var(--border-color);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--text-primary);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-    font-family: 'Pretendard Variable', Pretendard, sans-serif;
-    font-weight: 500;
-    justify-self: start;
-}
-
-.btn-back-to-schedule:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    background: var(--bg-color);
-}
-
-.btn-back-to-schedule i {
-    font-size: 14px;
-}
 
 .test-title i {
     color: var(--primary-color);
@@ -964,10 +938,6 @@ body {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
     
-    .btn-back-to-schedule {
-        position: static;
-        margin-bottom: 10px;
-    }
     
     .test-title {
         margin: 0;
