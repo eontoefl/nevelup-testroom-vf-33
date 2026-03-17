@@ -15,3 +15,9 @@ window.currentTest = currentTest;
 
 // 요일 목록 (토요일 제외)
 const daysOfWeek = ['일', '월', '화', '수', '목', '금'];
+
+// 요일 영문 약어 매핑
+const dayEnShort = {
+    '일': 'SUN', '월': 'MON', '화': 'TUE',
+    '수': 'WED', '목': 'THU', '금': 'FRI'
+};

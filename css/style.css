@@ -1389,26 +1389,48 @@ body {
 }
 
 /* Schedule Screen */
-.schedule-header {
-    text-align: center;
-    margin-bottom: 50px;
+#scheduleScreen > .container {
+    max-width: 1152px;
+    padding: 0 3rem;
+    margin-top: 3.75rem;
 }
 
-.schedule-header i {
-    font-size: 64px;
-    color: var(--primary-color);
-    margin-bottom: 20px;
+#scheduleScreen > .top-nav-bar {
+    padding: 1.5rem 3rem;
+}
+
+.schedule-header {
+    margin-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.calendar-icon-box {
+    width: 4rem;
+    height: 4rem;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(148, 128, 197, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .schedule-header h1 {
-    font-size: 42px;
-    margin-bottom: 10px;
+    font-size: 3rem;
+    font-weight: 800;
     color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
 }
 
-.schedule-header .subtitle {
-    font-size: 18px;
+.schedule-header p {
     color: var(--text-secondary);
+    font-size: 1.125rem;
 }
 
 .program-badge {
@@ -1422,55 +1444,70 @@ body {
     margin-left: 8px;
 }
 
+.schedule-section {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
 .schedule-container {
     max-width: 1000px;
     margin: 0 auto;
 }
 
 .week-block {
-    background: var(--surface-color);
-    padding: 30px;
-    border-radius: 16px;
-    margin-bottom: 30px;
-    box-shadow: var(--shadow-lg);
+    width: 100%;
+}
+
+.week-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .week-title {
-    font-size: 24px;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--primary-color);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    background-color: rgba(148, 128, 197, 0.05);
+    padding: 0.25rem 1rem;
+    border-radius: 0.5rem;
+    white-space: nowrap;
 }
 
-.week-title i {
-    font-size: 20px;
+.week-divider {
+    height: 1px;
+    flex-grow: 1;
+    background-color: var(--border-color);
 }
 
 .days-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 15px;
+    gap: 1rem;
 }
 
+/* Day Card Styling */
 .day-button {
-    background: var(--bg-color);
-    border: 2px solid var(--border-color);
-    padding: 20px 15px;
-    border-radius: 12px;
-    text-align: center;
+    background: var(--surface-color);
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
     font-family: 'Pretendard Variable', Pretendard, sans-serif;
 }
 
 .day-button:hover {
-    transform: translateY(-3px);
-    border-color: #77bf7e;
-    background: var(--surface-color);
-    box-shadow: 0 8px 20px rgba(119, 191, 126, 0.3);
+    transform: translateY(-4px);
+    background-color: #f8fafc;
 }
 
 .day-button:active {
@@ -1478,16 +1515,27 @@ body {
 }
 
 .day-name {
-    font-size: 20px;
+    font-size: 0.75rem;
     font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 8px;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
 }
 
+.progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.dot-done { background-color: var(--success-color); box-shadow: 0 0 8px rgba(119, 191, 126, 0.4); }
+.dot-partial { background-color: var(--warning-color); box-shadow: 0 0 8px rgba(255, 179, 71, 0.4); }
+.dot-none { background-color: #cbd5e1; }
+
 .day-tasks {
-    font-size: 15px;
-    color: var(--text-secondary);
-    line-height: 1.4;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 /* ================================================
@@ -1543,7 +1591,7 @@ body {
     height: 7px;
 }
 
-/* 요일 버튼 내 진도 표시 */
+/* 요일 버튼 내 진도 표시 (구 스타일 — 호환성 유지) */
 .day-progress {
     margin-top: 8px;
     font-size: 12px;
@@ -3087,21 +3135,27 @@ body {
 }
 
 /* Responsive for schedule */
-@media (max-width: 768px) {
-    .schedule-header h1 {
-        font-size: 32px;
-    }
-    
-    .schedule-header i {
-        font-size: 48px;
-    }
-    
+@media (max-width: 1024px) {
     .days-grid {
         grid-template-columns: repeat(3, 1fr);
     }
     
+    .top-nav-bar {
+        padding: 1.5rem;
+    }
+    
+    .container {
+        padding: 0 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .schedule-header h1 {
+        font-size: 2.25rem;
+    }
+
     .week-block {
-        padding: 20px;
+        padding: 0;
     }
     
     /* 리스닝 응답고르기 반응형 */
@@ -3187,13 +3241,22 @@ body {
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     .days-grid {
         grid-template-columns: repeat(2, 1fr);
     }
     
+    .schedule-header h1 {
+        font-size: 2.25rem;
+    }
+    
+    .schedule-header {
+        align-items: center;
+        text-align: center;
+    }
+    
     .day-button {
-        padding: 15px 10px;
+        padding: 1rem 0.5rem;
     }
     
     .daily1-main-title h2 {

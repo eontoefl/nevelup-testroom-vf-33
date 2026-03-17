@@ -468,15 +468,17 @@
         <!-- 🔔 알림 JS는 notification.js에서 로드됨 -->
 
         <div class="container" style="position: relative;">
-            <div class="schedule-header">
-                <i class="fas fa-calendar-alt"></i>
-                <h1>학습 일정</h1>
-                <p class="subtitle">원하는 주차와 요일을 선택하세요</p>
-            </div>
+            <header class="schedule-header">
+                <div class="calendar-icon-box">
+                    <i class="fas fa-calendar-days"></i>
+                </div>
+                <h1>Study Schedule</h1>
+                <p>Plan your learning journey. Select the desired week and day.</p>
+            </header>
             
-            <div id="scheduleContainer" class="schedule-container">
+            <section class="schedule-section" id="scheduleContainer">
                 <!-- 주차별 일정이 여기에 동적으로 생성됩니다 -->
-            </div>
+            </section>
             
 
             

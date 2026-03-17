@@ -79,13 +79,29 @@ function renderSchedule(program) {
     
     console.log(`📅 [스케줄 렌더링] program: ${program}, programType: ${programType}, totalWeeks: ${totalWeeks}`);
     
+    // startDate 기반 날짜 계산
+    const startDate = currentUser && currentUser.startDate ? new Date(currentUser.startDate + 'T00:00:00') : null;
+    
+    // 월 영문 약어
+    const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    
     for (let week = 1; week <= totalWeeks; week++) {
         const weekBlock = document.createElement('div');
         weekBlock.className = 'week-block';
         
-        const weekTitle = document.createElement('div');
+        // 새 week-header 구조: 제목 + 구분선
+        const weekHeader = document.createElement('div');
+        weekHeader.className = 'week-header';
+        
+        const weekTitle = document.createElement('h2');
         weekTitle.className = 'week-title';
-        weekTitle.innerHTML = `<i class="fas fa-calendar-week"></i> Week ${week}`;
+        weekTitle.textContent = `Week ${String(week).padStart(2, '0')}`;
+        
+        const weekDivider = document.createElement('div');
+        weekDivider.className = 'week-divider';
+        
+        weekHeader.appendChild(weekTitle);
+        weekHeader.appendChild(weekDivider);
         
         const daysGrid = document.createElement('div');
         daysGrid.className = 'days-grid';
@@ -101,9 +117,9 @@ function renderSchedule(program) {
         };
         
         // 요일별 버튼 생성 (토요일 제외)
-        daysOfWeek.forEach(dayKr => {
+        daysOfWeek.forEach((dayKr, dayIndex) => {
             const dayEn = dayMapping[dayKr];
-            const dayButton = document.createElement('div');
+            const dayButton = document.createElement('button');
             dayButton.className = 'day-button';
             
             // 해당 날짜의 과제 목록 가져오기
@@ -113,28 +129,31 @@ function renderSchedule(program) {
                 selectDay(week, dayKr, dayEn);
             };
             
-            // 과제 정보 표시
-            const taskInfo = tasks.length > 0 ? `${tasks.length}개 과제` : '휴무';
+            // 날짜 계산: startDate + (week-1)*7 + dayIndex
+            let dateStr = '';
+            if (startDate) {
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + (week - 1) * 7 + dayIndex);
+                dateStr = `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
+            }
             
-            // 진도율 표시 (ProgressTracker가 로드됐으면)
-            let progressHTML = '';
+            // 진도율 dot (ProgressTracker가 로드됐으면)
+            let dotClass = 'dot-none';
             if (tasks.length > 0 && typeof ProgressTracker !== 'undefined' && ProgressTracker._loaded) {
                 const progress = ProgressTracker.getDayProgress(programType, week, dayEn);
                 if (progress.total > 0) {
                     if (progress.completed === progress.total) {
-                        progressHTML = '<div class="day-progress day-progress-done"><span class="check-icon"></span> 완료</div>';
+                        dotClass = 'dot-done';
                     } else if (progress.completed > 0) {
-                        progressHTML = '<div class="day-progress day-progress-partial">' + progress.completed + '/' + progress.total + '</div>';
-                    } else {
-                        progressHTML = '<div class="day-progress day-progress-none">0/' + progress.total + '</div>';
+                        dotClass = 'dot-partial';
                     }
                 }
             }
             
             dayButton.innerHTML = `
-                <div class="day-name">${dayKr}</div>
-                <div class="day-tasks">${taskInfo}</div>
-                ${progressHTML}
+                <span class="day-name">${dayEnShort[dayKr]}</span>
+                <div class="progress-dot ${dotClass}"></div>
+                <span class="day-tasks">${dateStr}</span>
             `;
             
             // 휴무일인 경우 스타일 변경
@@ -147,7 +166,7 @@ function renderSchedule(program) {
             daysGrid.appendChild(dayButton);
         });
         
-        weekBlock.appendChild(weekTitle);
+        weekBlock.appendChild(weekHeader);
         weekBlock.appendChild(daysGrid);
         container.appendChild(weekBlock);
     }
