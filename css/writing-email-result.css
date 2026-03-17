@@ -2,6 +2,10 @@
    이메일 작성 채점 화면 스타일
 ================================================ */
 
+#emailExplainScreen {
+    padding: 24px 48px;
+}
+
 /* 결과 화면 헤더 */
 #emailExplainScreen .result-header {
     margin-bottom: 20px;

@@ -5,6 +5,7 @@
 
 /* ── 변수 (daily1 전용) ── */
 #daily1ExplainScreen {
+    padding: 24px 48px;
     --d1-purple: #9480c5;
     --d1-purple-light: #b3a4d9;
     --d1-green: #77bf7e;
@@ -507,33 +508,7 @@
     color: var(--d1-text);
 }
 
-/* ── 하단 액션 버튼 (스코핑: 공통 클래스) ── */
-#daily1ExplainScreen .result-actions {
-    margin-top: 40px;
-    display: flex;
-    justify-content: center;
-}
 
-#daily1ExplainScreen .result-actions .btn.btn-primary.btn-large {
-    padding: 16px 40px;
-    font-size: 1.1rem;
-    border-radius: 14px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: none;
-    background: var(--d1-purple);
-    color: white;
-    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.3);
-}
-
-#daily1ExplainScreen .result-actions .btn.btn-primary.btn-large:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(148, 128, 197, 0.4);
-}
 
 /* ── 반응형 ── */
 @media (max-width: 768px) {

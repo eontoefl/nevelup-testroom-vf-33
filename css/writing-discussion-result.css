@@ -2,6 +2,10 @@
    토론형 글쓰기 채점 화면 스타일
 ================================================ */
 
+#discussionExplainScreen {
+    padding: 24px 48px;
+}
+
 /* 결과 화면 헤더 */
 #discussionExplainScreen .result-header {
     margin-bottom: 20px;

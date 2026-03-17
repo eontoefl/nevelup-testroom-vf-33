@@ -1,5 +1,9 @@
 /* 일상리딩2 결과 화면 스타일 - 일상리딩1과 동일한 모던하고 간결한 디자인 */
 
+#daily2ExplainScreen {
+    padding: 24px 48px;
+}
+
 /* 세트 섹션 */
 .result-set-section {
     margin-bottom: 30px;
