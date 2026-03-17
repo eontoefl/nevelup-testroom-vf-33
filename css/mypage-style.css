@@ -330,6 +330,9 @@ body {
   color: var(--on-surface);
   margin-bottom: 4px;
 }
+#challengeStatus {
+  font-size: 1.4rem;
+}
 .sc-total {
   font-size: 1rem;
   font-weight: 500;
@@ -934,6 +937,7 @@ body {
   .summary-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .summary-card { padding: 16px 14px; }
   .sc-value { font-size: 1.3rem; }
+  #challengeStatus { font-size: 1.1rem; }
   .g-day { gap: 3px; }
   .grass-legend { margin-left: 52px; }
   .section-block:has(.grass-wrap) .grass-legend {
