@@ -178,38 +178,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 2rem;
     padding: 12px 24px;
-    background: var(--surface-color);
-    border-top: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 50px;
+    box-shadow: 0 10px 30px -5px rgba(148, 128, 197, 0.15);
     flex-shrink: 0;
     position: sticky;
     bottom: 0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .explain-nav-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    background: var(--surface-color);
-    border: 1.5px solid var(--border-color);
-    border-radius: 10px;
-    font-size: 13px;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 40px;
+    background: transparent;
+    color: #9480c5;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
     font-family: inherit;
 }
 
 .explain-nav-btn:hover:not(:disabled) {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    background: rgba(148, 128, 197, 0.06);
+    background: rgba(148, 128, 197, 0.08);
+    transform: translateY(-1px);
 }
 
 .explain-nav-btn:active:not(:disabled) {
-    transform: scale(0.97);
+    transform: translateY(0);
+    background: rgba(148, 128, 197, 0.15);
 }
 
 .explain-nav-btn:disabled {
@@ -221,11 +227,25 @@
     font-size: 12px;
 }
 
+#explainNextBtn {
+    background: rgba(148, 128, 197, 0.05);
+}
+
+#explainNextBtn:hover:not(:disabled) {
+    background: #9480c5;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.3);
+}
+
 .explain-nav-indicator {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    letter-spacing: 0.02em;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #8e8eaf;
+    letter-spacing: 0.05em;
+    padding: 4px 12px;
+    background: #f8f9fc;
+    border-radius: 20px;
+    user-select: none;
 }
 
 /* ============================= */
@@ -459,11 +479,16 @@
     }
 
     .explain-nav-bar {
-        padding: 10px 16px;
+        gap: 1rem;
+        padding: 8px 16px;
     }
 
     .explain-nav-btn {
-        padding: 7px 14px;
-        font-size: 12px;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+
+    .explain-nav-indicator {
+        font-size: 0.8rem;
     }
 }
