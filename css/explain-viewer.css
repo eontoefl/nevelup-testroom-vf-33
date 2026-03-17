@@ -133,11 +133,13 @@
 /* 실전풀이 아이콘 배경 */
 #explainBtnInitial .explain-select-icon {
     background-color: #fdf2f2;
+    color: #e5a08d;
 }
 
 /* 다시풀기 아이콘 배경 */
 #explainBtnCurrent .explain-select-icon {
     background-color: #eef2ff;
+    color: #6366f1;
 }
 
 .explain-select-label {
