@@ -6,7 +6,7 @@
 
 /* ── Variables ── */
 #fillBlanksExplainScreen {
-  padding: 24px;
+  padding: 24px 48px;
   --fb-primary: #9480c5;
   --fb-primary-soft: #f4f2f9;
   --fb-success: #77bf7e;
