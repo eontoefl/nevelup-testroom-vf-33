@@ -86,7 +86,7 @@
 }
 
 #fillBlanksExplainScreen .stat-item {
-  background: var(--fb-bg);
+  background: #ffffff;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
