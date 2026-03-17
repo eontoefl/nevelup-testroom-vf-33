@@ -327,21 +327,18 @@ async function backToTaskDashboard() {
 }
 
 /**
- * 과제 대시보드 → 스케줄 복귀
+ * 과제 대시보드 → 과제 선택 화면 복귀
  * HTML: onclick="backToScheduleFromDashboard()"
  */
 function backToScheduleFromDashboard() {
-    console.log('🔙 [대시보드] 스케줄로 복귀');
+    console.log('🔙 [대시보드] 과제 선택 화면으로 복귀');
     
     // 대시보드 상태 초기화
     window._taskDashboardState = null;
     
-    // navigation.js의 backToSchedule() 호출
-    if (typeof backToSchedule === 'function') {
-        backToSchedule();
-    } else {
-        // 안전장치: backToSchedule이 없으면 직접 화면 전환
-        showScreen('scheduleScreen');
+    // 과제 선택 화면으로 복귀
+    if (typeof showScreen === 'function') {
+        showScreen('taskListScreen');
     }
 }
 
