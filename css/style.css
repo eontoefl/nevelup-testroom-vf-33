@@ -1965,17 +1965,6 @@ body {
     color: var(--success-color);
 }
 
-.result-actions {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-.result-actions .btn {
-    padding: 16px 40px;
-    font-size: 18px;
-}
-
 /* 일상리딩1 스타일 */
 .daily1-layout {
     display: grid;

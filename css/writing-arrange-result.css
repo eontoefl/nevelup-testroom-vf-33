@@ -1,5 +1,9 @@
 /* Writing - 단어배열 채점 결과 화면 (Ultra Compact & Modern) */
 
+#arrangeExplainScreen {
+    padding: 24px 48px;
+}
+
 /* 문제 카드 - 최소한의 스타일 */
 .arrange-result-item {
     margin-bottom: 20px;

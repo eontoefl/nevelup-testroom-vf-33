@@ -7,6 +7,7 @@
 #responseExplainScreen {
     font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     background: #f7f6fb;
+    padding: 24px 48px;
 }
 
 /* ── 결과 컨테이너 ── */
@@ -433,34 +434,6 @@
     background: #77bf7e;
     padding: 2px 10px;
     border-radius: 20px;
-}
-
-/* ── 하단 버튼 ── */
-#responseExplainScreen .result-actions {
-    margin-top: 32px;
-    text-align: center;
-}
-
-#responseExplainScreen .result-actions .btn {
-    font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 12px 28px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-}
-
-#responseExplainScreen .result-actions .btn-primary {
-    background: #9480c5;
-    color: #fff;
-}
-#responseExplainScreen .result-actions .btn-primary:hover {
-    background: #7a66b0;
 }
 
 /* ── 반응형 ── */
