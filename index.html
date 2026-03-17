@@ -396,6 +396,7 @@
             const notice = document.getElementById('noticeContainer');
             if (userInfo && notice) {
                 notice.style.width = userInfo.offsetWidth + 'px';
+                notice.style.left = userInfo.getBoundingClientRect().left + 'px';
             }
         }
         // alignNoticeToUserInfo는 main.js의 showScreen에서 호출됨
