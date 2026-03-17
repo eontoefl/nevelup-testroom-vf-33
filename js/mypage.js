@@ -880,13 +880,6 @@ function goToV2Records() {
     window.location.href = 'v2-records.html';
 }
 
-function handleLogout() {
-    if (confirm('로그아웃 하시겠습니까?')) {
-        sessionStorage.removeItem('currentUser');
-        window.location.href = 'index.html';
-    }
-}
-
 // ================================================
 // 유틸리티
 // ================================================
