@@ -216,7 +216,7 @@
 }
 
 #fillBlanksExplainScreen .result-blank.incorrect i { color: var(--fb-error); }
-#fillBlanksExplainScreen .result-blank.incorrect .blank-user { color: #dc2626; }
+#fillBlanksExplainScreen .result-blank.incorrect .blank-user { color: #dc2626; text-decoration: none; }
 
 
 /* ── Blank: 1차 틀림 + 2차 맞음 ── */
