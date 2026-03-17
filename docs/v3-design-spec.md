@@ -141,12 +141,12 @@
 
 | 상태 | 조건 | 메모장 표시 |
 |---|---|---|
-| **작성 가능** | initial_record 있음 + 오답노트 미제출 + 마감 전 | 빈 메모장, 자동 저장, 제출 버튼 활성화 |
-| **읽기전용** | 오답노트 이미 제출됨 | 제출된 내용 표시, 수정 불가 |
-| **잠김** | 마감 후 + 오답노트 미제출 | "마감으로 인해 작성이 불가합니다" 안내 |
+| **작성 가능** | initial_record 있음 + 마감 전 | 메모장 표시, 자동 저장, 제출 버튼 활성화 (제출 후에도 마감 전이면 수정·재제출 가능) |
+| **잠김** | 마감 후 | "마감으로 인해 작성이 불가합니다" 안내 (제출 여부 무관) |
+| **읽기전용** | 마감 후 + 오답노트 제출됨 | 제출된 내용 표시, 수정 불가 |
 
-- 제출 시 → `error_note_text` DB 저장 + `error_note_submitted` = true + **인증률 반영**
-- 제출 후 수정 불가
+- 제출 시 → `error_note_text` DB 저장 (덮어쓰기) + `error_note_submitted` = true + **인증률 반영**
+- **마감 전이면 제출 후에도 수정·재제출 가능** (마감 시점에 잠금)
 
 **다시풀기 탭의 메모장 (`current_error_note_text`):**
 
@@ -171,7 +171,7 @@
 
 | 구분 | 컬럼 | 인증률 반영 | 제출 규칙 |
 |---|---|---|---|
-| **실전풀이용** | `error_note_text` + `error_note_submitted` | ✅ 반영 (50% → 100%) | 1회 제출 후 영구 잠금 |
+| **실전풀이용** | `error_note_text` + `error_note_submitted` | ✅ 반영 (50% → 100%) | 마감 전 수정·재제출 가능, 마감 시 잠금 |
 | **다시풀기용** | `current_error_note_text` | ❌ 무관 | 매번 덮어쓰기 가능 |
 
 - current_record는 인증률에 일절 관여하지 않음 (풀이든 오답노트든 무관)
@@ -275,7 +275,7 @@
 ├── writing_email_text    ← Email 작성 원문. 최초 1회만 저장. 불변.
 ├── writing_discussion_text ← Discussion 작성 원문. 최초 1회만 저장. 불변.
 │
-├── error_note_text       ← initial_record용 오답노트 (제출 후 수정 불가, 인증률 반영)
+├── error_note_text       ← initial_record용 오답노트 (마감 전 수정 가능, 마감 시 잠금, 인증률 반영)
 ├── error_note_submitted  ← initial_record용 오답노트 제출 여부
 │
 ├── current_error_note_text ← current_record용 오답노트 (덤어쓰기, 인증률 무관)
@@ -298,7 +298,7 @@ V2 테이블에 데이터 0건 (학생 미사용) → V3 전용 테이블을 처
 | `initial_record` | JSONB | 최초 실전풀이 결과 (불변) |
 | `initial_level` | FLOAT | 최초 레벨 (reading/listening만, 나머지 NULL) |
 | `current_record` | JSONB | 다시풀기 최신 결과 (덮어쓰기, initial_record와 동일 구조) |
-| `error_note_text` | TEXT | initial_record용 오답노트 내용 (제출 후 수정 불가, 인증률 반영) |
+| `error_note_text` | TEXT | initial_record용 오답노트 내용 (마감 전 수정 가능, 마감 시 잠금, 인증률 반영) |
 | `error_note_submitted` | BOOL | initial_record용 오답노트 제출 여부 (기본 false) |
 | `current_error_note_text` | TEXT | current_record용 오답노트 (덮어쓰기, 인증률 무관) |
 | `speaking_file_1` | TEXT | 스피킹 녹음 파일 경로 (오답노트 전용) |
@@ -604,10 +604,10 @@ V2 테이블에 데이터 0건 (학생 미사용) → V3 전용 테이블을 처
 
 ### 8-2. 실전풀이용 오답노트 (`error_note_text`)
 
-- 제출 후 **영구 잠금** (읽기전용, 수정 불가)
+- **마감 전**: 제출 후에도 수정·재제출 가능 (덮어쓰기)
+- **마감 시**: initial_record와 함께 잠김 (읽기전용, 수정 불가)
 - **인증률 반영** (50% → 100%)
-- 마감 시 initial_record와 함께 잠김
-  - 마감 전에 오답노트를 못 쓴 경우 → 마감 후 제출 불가
+- 마감 전에 오답노트를 못 쓴 경우 → 마감 후 제출 불가
 
 ### 8-3. 다시풀기용 오답노트 (`current_error_note_text`) ✅ 확정
 
@@ -775,3 +775,4 @@ V2 테이블에 데이터 0건 (학생 미사용) → V3 전용 테이블을 처
 | 2026-03-05 | 10차 회의 반영: current_error_note_text 컬럼 추가 확정, 다시풀기용 오답노트 저장·덮어쓰기 구조 확정, 메모장을 탭별 분리(실전풀이용/다시풀기용 각 1개), 시나리오 B·C 학생도 current_record에서 오답노트 작성 가능 |
 | 2026-03-05 | 11차 회의 반영: 주간 포트폴리오 오답노트=실전풀이용만 포함(다시풀기용은 추후), Current Record 스피킹 녹음 파일 첨부 불필요 확정+안내 메시지 표시, 잔디 3단계(0%/50%/100%) 확정(current_record만 있으면 0%), 점수 추이 차트에 current_record 미반영 확정 |
 | 2026-03-12 | V3 구현 반영: vocab/intro-book 마감 후 동작 명시 — 마감 전 제출 시 locked_auth_rate 즉시 확정, 마감 후 제출 시 current_record에 저장(인증률 무관), 마감 시 미제출은 0% 확정. vocab/intro-book 마감 시나리오 추가. |
+| 2026-03-17 | 오답노트 잠금 시점 변경: 제출 즉시 영구 잠금 → 마감 시점에 잠금. 마감 전이면 제출 후에도 수정·재제출 가능 (덮어쓰기). 마감 후에는 제출 여부 무관하게 잠금. §2-5-A, §2-5-C, §3-2, §8-2 반영. |

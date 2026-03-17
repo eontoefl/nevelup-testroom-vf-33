@@ -195,7 +195,7 @@ var ProgressTracker = {
                 // 완료 배지 추가
                 var badge = document.createElement('div');
                 badge.className = 'task-complete-badge';
-                badge.innerHTML = '<span class="check-icon check-icon-sm"></span>';
+                badge.innerHTML = '<i class="fas fa-check"></i> 제출됨';
                 card.appendChild(badge);
                 card.classList.add('task-completed');
             } else {

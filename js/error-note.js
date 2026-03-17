@@ -7,7 +7,7 @@
  * 역할:
  *   해설 화면(explainViewerScreen) 우측 메모장 제어
  *   - 선택 모드(실전풀이/다시풀기)에 따라 오답노트 로드·저장
- *   - 실전풀이 → error_note_text + error_note_submitted (제출 후 영구 잠금)
+ *   - 실전풀이 → error_note_text + error_note_submitted (마감 시 잠금, 마감 전 수정·재제출 가능)
  *   - 다시풀기 → current_error_note_text (덮어쓰기 가능)
  *   - 단어 수 카운트, 자동저장(localStorage), 제출(DB)
  *   - 마감 후 실전풀이 오답노트 작성 불가
@@ -84,20 +84,20 @@ var ErrorNote = {
         // ── 실전풀이 탭 ──
         if (tab === 'initial') {
             var hasInitial = row && row.initial_record != null;
-            var alreadySubmitted = row && row.error_note_submitted === true;
             var existingText = (row && row.error_note_text) || '';
 
-            if (alreadySubmitted) {
-                // 이미 제출됨 → 읽기전용
-                this._showReadonly(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, existingText, '제출 완료된 오답노트입니다. (수정 불가)');
-            } else if (deadlinePassed) {
-                // 마감 지남 + 미제출 → 잠김
-                this._showLocked(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, '마감으로 인해 작성이 불가합니다.');
+            if (deadlinePassed) {
+                // 마감 지남 → 제출 여부 무관하게 잠김
+                if (existingText) {
+                    this._showReadonly(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, existingText, '마감으로 인해 수정이 불가합니다.');
+                } else {
+                    this._showLocked(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, '마감으로 인해 작성이 불가합니다.');
+                }
             } else if (!hasInitial) {
                 // 실전풀이 안 함 → 잠김
                 this._showLocked(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, '실전풀이를 완료한 후 작성할 수 있습니다.');
             } else {
-                // 작성 가능
+                // 마감 전 → 제출 후에도 수정·재제출 가능
                 this._showEditable(textarea, submitBtn, statusArea, bodyArea, footerArea, existingText);
             }
 
@@ -140,28 +140,35 @@ var ErrorNote = {
         var isSpeaking = this._sectionType === 'speaking';
         var isInitialTab = this._activeTab === 'initial';
         var row = this._dbRow;
-        var alreadySubmitted = row && row.error_note_submitted === true;
+        var deadlinePassed = window._deadlinePassedMode || false;
         var hasFile = row && row.speaking_file_1;
 
         // 스피킹 + 실전풀이 탭만 표시
         if (isSpeaking && isInitialTab) {
             fileArea.style.display = 'block';
 
-            if (alreadySubmitted) {
-                // 이미 제출됨 → 잠금
+            if (deadlinePassed) {
+                // 마감 지남 → 잠금
                 if (fileInput) { fileInput.disabled = true; fileInput.style.display = 'none'; }
                 if (fileMsg) {
                     if (hasFile) {
                         fileMsg.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> 파일 첨부 완료';
                     } else {
-                        fileMsg.textContent = '파일 없이 제출되었습니다.';
+                        fileMsg.textContent = '마감으로 인해 파일 첨부가 불가합니다.';
                     }
                     fileMsg.style.color = '#64748b';
                 }
             } else {
-                // 작성 가능
+                // 마감 전 → 제출 여부 무관하게 파일 첨부 가능
                 if (fileInput) { fileInput.disabled = false; fileInput.style.display = ''; fileInput.value = ''; }
-                if (fileMsg) { fileMsg.textContent = '녹음 파일을 첨부해주세요. (최대 25MB)'; fileMsg.style.color = '#64748b'; }
+                if (fileMsg) {
+                    if (hasFile) {
+                        fileMsg.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> 파일 첨부됨 (변경 가능)';
+                    } else {
+                        fileMsg.textContent = '녹음 파일을 첨부해주세요. (최대 25MB)';
+                    }
+                    fileMsg.style.color = '#64748b';
+                }
             }
         } else if (isSpeaking && !isInitialTab) {
             // 다시풀기 탭 → 안내 메시지
@@ -456,18 +463,20 @@ var ErrorNote = {
             this._isSubmitted = true;
 
             if (this._activeTab === 'initial') {
-                // 실전풀이 오답노트 → 영구 잠금
-                if (textarea) {
-                    textarea.readOnly = true;
-                    textarea.disabled = true;
-                }
+                // 실전풀이 오답노트 → 제출 완료 표시 (마감 전이면 수정·재제출 가능)
                 if (submitBtn) {
                     submitBtn.textContent = '제출 완료';
                     submitBtn.classList.add('submitted');
+                    // 3초 후 재제출 가능하도록 복원
+                    setTimeout(function() {
+                        if (submitBtn) {
+                            submitBtn.textContent = '제출하기';
+                            submitBtn.classList.remove('submitted');
+                            submitBtn.disabled = false;
+                        }
+                    }, 3000);
                 }
-                // 스피킹 파일 영역 잠금
-                this._lockSpeakingFileArea();
-                console.log('📝 [메모장] 실전풀이 오답노트 제출 완료 (영구 잠금)');
+                console.log('📝 [메모장] 실전풀이 오답노트 제출 완료 (마감 전 수정·재제출 가능)');
             } else {
                 // 다시풀기 오답노트 → 제출 완료 표시 (재수정 가능)
                 if (submitBtn) {
