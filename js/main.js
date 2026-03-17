@@ -229,7 +229,9 @@ function showTaskListScreen(week, dayKr, tasks) {
     const subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
     
     if (welcomeHeader) {
-        welcomeHeader.textContent = `Week ${week} - ${dayKr}요일`;
+        var dayEnMap = { '일': 'SUNDAY', '월': 'MONDAY', '화': 'TUESDAY', '수': 'WEDNESDAY', '목': 'THURSDAY', '금': 'FRIDAY', '토': 'SATURDAY' };
+        var dayEn = dayEnMap[dayKr] || dayKr;
+        welcomeHeader.textContent = `Week ${week} - ${dayEn}`;
     }
     if (subtitle) {
         subtitle.textContent = `${tasks.length}개의 과제가 있습니다`;
