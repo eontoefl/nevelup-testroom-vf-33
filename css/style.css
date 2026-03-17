@@ -343,29 +343,29 @@ body {
 }
 
 .btn-back {
-    background: white;
-    border: 2px solid var(--border-color);
+    background: #ffffff;
+    border: none;
     padding: 0;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 15px;
-    color: var(--text-primary);
+    font-size: 16px;
+    color: #636e72;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0;
-    transition: all 0.3s;
-    box-shadow: var(--shadow);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     width: 38px;
     height: 38px;
     flex-shrink: 0;
 }
 
 .btn-back:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    transform: scale(1.05);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    background: #f8f9fa;
+    color: #9480c5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.15);
 }
 
 /* Section Select Screen */
@@ -3301,7 +3301,6 @@ body {
 #taskListScreen .btn-back:hover {
     background: #eee;
     transform: translateX(-3px);
-    border-color: transparent;
     box-shadow: none;
 }
 
