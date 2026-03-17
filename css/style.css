@@ -1385,7 +1385,7 @@ body {
 /* Schedule Screen */
 #scheduleScreen > .container {
     max-width: 1152px;
-    padding: 0 3rem;
+    padding: 0 3rem 4rem;
     margin-top: 3.75rem;
 }
 
