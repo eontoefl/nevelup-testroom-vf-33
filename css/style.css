@@ -302,7 +302,7 @@ body {
 }
 
 .user-card-content {
-    padding: 20px 28px;
+    padding: 10px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
