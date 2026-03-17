@@ -170,13 +170,13 @@ function _applyButtonStates(hasInitial, hasCurrent, deadlinePassed) {
     // ── 풀이 버튼 ──
     if (hasInitial || (deadlinePassed && !hasInitial)) {
         // 다시 풀기 모드
-        if (btnPracticeIcon) btnPracticeIcon.textContent = '🔄';
+        if (btnPracticeIcon) btnPracticeIcon.className = 'fa-solid fa-arrows-rotate';
         if (btnPracticeText) btnPracticeText.textContent = '다시 풀기';
         if (btnPracticeStatus) btnPracticeStatus.textContent = hasInitial ? '완료' : '미완료';
         if (btnPractice) btnPractice.disabled = false;
     } else {
         // 실전 풀이 모드
-        if (btnPracticeIcon) btnPracticeIcon.textContent = '📝';
+        if (btnPracticeIcon) btnPracticeIcon.className = 'fa-solid fa-pen-to-square';
         if (btnPracticeText) btnPracticeText.textContent = '실전 풀이';
         if (btnPracticeStatus) btnPracticeStatus.textContent = '미완료';
         if (btnPractice) btnPractice.disabled = false;
