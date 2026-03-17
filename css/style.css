@@ -329,31 +329,6 @@ body {
     font-size: 17px;
 }
 
-/* logout-btn - top-nav-bar 안에서 사용 */
-.top-nav-bar .logout-btn {
-    position: static;
-    background: transparent;
-    border: 2px solid var(--border-color);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-    font-family: 'Pretendard Variable', Pretendard, sans-serif;
-    font-weight: 500;
-    flex-shrink: 0;
-}
-
-.top-nav-bar .logout-btn:hover {
-    border-color: var(--danger-color);
-    color: var(--danger-color);
-    background: #fee2e2;
-}
-
 .btn-back {
     position: absolute;
     top: 20px;
@@ -1343,31 +1318,6 @@ body {
     vertical-align: middle;
 }
 
-/* Logout button in welcome screen */
-.logout-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: transparent;
-    border: 2px solid var(--border-color);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-    font-family: 'Pretendard Variable', Pretendard, sans-serif;
-    font-weight: 500;
-}
-
-.logout-btn:hover {
-    border-color: var(--danger-color);
-    color: var(--danger-color);
-    background: #fee2e2;
-}
 
 /* 마이페이지 버튼 */
 .mypage-btn {
@@ -1460,7 +1410,7 @@ body {
         font-size: 32px;
     }
 
-    .user-info, .logout-btn {
+    .user-info {
         position: static;
         margin: 10px auto;
         width: fit-content;
