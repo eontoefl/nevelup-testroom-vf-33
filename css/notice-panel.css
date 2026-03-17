@@ -1,0 +1,88 @@
+/* ============================= */
+/* 공지사항 패널 — Ethereal 디자인  */
+/* ============================= */
+
+/* 컨테이너 */
+#noticeContainer {
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    border: none;
+}
+
+/* 헤더 */
+.notice-header {
+    background: #9480c5;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ffffff;
+}
+
+.notice-header i {
+    font-size: 1.1rem;
+}
+
+.notice-header span {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+}
+
+/* 리스트 */
+#noticeList {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 공지 아이템 (JS 동적 생성) */
+.notice-item {
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: none;
+}
+
+.notice-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.04);
+}
+
+.notice-item-tag {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.notice-item-content {
+    font-weight: 600;
+    color: #1a1a1a;
+    word-break: keep-all;
+}
+
+/* 로딩/빈 상태 메시지 */
+.notice-empty-msg {
+    text-align: center;
+    padding: 20px 0;
+    color: #999;
+    font-size: 13px;
+}
+
+/* 1400px 이하에서 숨김 */
+@media (max-width: 1400px) {
+    #noticeContainer { display: none !important; }
+}
