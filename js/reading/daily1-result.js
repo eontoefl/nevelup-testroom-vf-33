@@ -79,7 +79,6 @@ function showDaily1Results(data) {
 function renderDaily1SetResult(setResult, setIndex) {
     const passage = setResult.passage;
     const translations = passage.translations || [];
-    const interactiveWords = passage.interactiveWords || [];
     
     const cleanContent = passage.content
         .replace(/\\n/g, '\n')
@@ -92,10 +91,12 @@ function renderDaily1SetResult(setResult, setIndex) {
         const translation = translations[idx] || '';
         
         let sentenceHTML = escapeHtml(sentence).replace(/\n/g, '<br>');
-        interactiveWords.forEach(wordData => {
-            const regex = new RegExp(`(?<![\\w-])${wordData.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`, 'gi');
-            sentenceHTML = sentenceHTML.replace(regex, (match) => `<span class="interactive-word" data-translation="${escapeHtml(wordData.translation)}" data-explanation="${escapeHtml(wordData.explanation)}">${match}</span>`);
-        });
+        if (passage.interactiveWords) {
+            passage.interactiveWords.forEach(wordData => {
+                const regex = new RegExp(`(?<![\\w-])${wordData.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`, 'gi');
+                sentenceHTML = sentenceHTML.replace(regex, (match) => `<span class="interactive-word" data-word="${wordData.word}" data-translation="${escapeHtml(wordData.translation)}" data-explanation="${escapeHtml(wordData.explanation)}">${match}</span>`);
+            });
+        }
         
         sentencesHTML += `
             <div class="sentence-pair">
@@ -105,127 +106,120 @@ function renderDaily1SetResult(setResult, setIndex) {
         `;
     });
     
+    let answersHTML = '';
+    setResult.answers.forEach((answer, qIdx) => {
+        answersHTML += renderDaily1Answers(answer, qIdx, setResult.setId);
+    });
+    
     return `
         <div class="result-set-section">
             <h3 class="result-section-title">
                 <i class="fas fa-book-open"></i> Set ${setIndex + 1}: ${escapeHtml(setResult.mainTitle)}
             </h3>
             
-            <div class="daily1-passage-panel-result">
+            <div class="rd-passage-panel">
                 <h4 class="result-passage-title">${escapeHtml(passage.title)}</h4>
                 <div class="sentence-translations">
                     ${sentencesHTML}
                 </div>
             </div>
             
-            ${renderDaily1Answers(setResult)}
+            ${answersHTML}
         </div>
     `;
 }
 
 // 문제별 답안 렌더링
-function renderDaily1Answers(setResult) {
-    let html = '';
+function renderDaily1Answers(answer, qIdx, setId) {
+    const isCorrect = answer.isCorrect;
+    const correctIcon = isCorrect 
+        ? '<i class="fas fa-check-circle"></i>' 
+        : '<i class="fas fa-times-circle"></i>';
     
-    setResult.answers.forEach((answer, answerIndex) => {
-        const resultClass = answer.isCorrect ? 'correct' : 'incorrect';
-        const icon = answer.isCorrect ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>';
-        const userAnswerIndex = answer.userAnswer;
-        const correctAnswerIndex = answer.correctAnswer;
-        
-        let userAnswerOption = null;
-        let correctAnswerOption = null;
-        
-        if (Array.isArray(answer.options) && answer.options.length > 0 && answer.options[0].label) {
-            userAnswerOption = answer.options.find(opt => opt.label === getLabelFromIndex(userAnswerIndex));
-            correctAnswerOption = answer.options.find(opt => opt.label === getLabelFromIndex(correctAnswerIndex));
-        } else {
-            userAnswerOption = { label: getLabelFromIndex(userAnswerIndex), text: answer.options[userAnswerIndex - 1] || '미응답', translation: '', explanation: '' };
-            correctAnswerOption = { label: getLabelFromIndex(correctAnswerIndex), text: answer.options[correctAnswerIndex - 1] || '', translation: '', explanation: '' };
-        }
-        
-        const userAnswerText = userAnswerOption ? `${userAnswerOption.label}) ${userAnswerOption.text}` : '미응답';
-        const correctAnswerText = correctAnswerOption ? `${correctAnswerOption.label}) ${correctAnswerOption.text}` : '';
-        
-        html += `
-            <div class="daily1-result-item ${resultClass}">
-                <div class="daily1-result-icon">${icon}</div>
-                <div class="daily1-result-content">
-                    <div class="daily1-question-text">
-                        <strong>${answer.questionNum}.</strong> ${escapeHtml(answer.question)}
-                    </div>
-                    ${answer.questionTranslation ? `
-                    <div class="question-translation">
-                        <i class="fas fa-comment-dots"></i> 문제 해석: ${escapeHtml(answer.questionTranslation)}
-                    </div>
-                    ` : ''}
-                    
-                    <div class="daily1-answer-row">
-                        <span class="daily1-answer-label">${answer.isCorrect ? '✓ 내 답변:' : '✗ 내 답변:'}</span>
-                        <span class="daily1-answer-value ${resultClass}">${escapeHtml(userAnswerText)}</span>
-                    </div>
-                    ${!answer.isCorrect ? `
-                    <div class="daily1-answer-row">
-                        <span class="daily1-answer-label">✓ 정답:</span>
-                        <span class="daily1-answer-value correct">${escapeHtml(correctAnswerText)}</span>
-                    </div>
-                    ` : ''}
-                    
-                    ${renderDaily1OptionsExplanation(answer, setResult.setId, answerIndex)}
+    const userAnswerIndex = answer.userAnswer;
+    const correctAnswerIndex = answer.correctAnswer;
+    
+    let userAnswerOption = null;
+    let correctAnswerOption = null;
+    
+    if (Array.isArray(answer.options) && answer.options.length > 0 && answer.options[0].label) {
+        userAnswerOption = answer.options.find(opt => opt.label === getLabelFromIndex(userAnswerIndex));
+        correctAnswerOption = answer.options.find(opt => opt.label === getLabelFromIndex(correctAnswerIndex));
+    } else {
+        userAnswerOption = { label: getLabelFromIndex(userAnswerIndex), text: answer.options[userAnswerIndex - 1] || '미응답', translation: '', explanation: '' };
+        correctAnswerOption = { label: getLabelFromIndex(correctAnswerIndex), text: answer.options[correctAnswerIndex - 1] || '', translation: '', explanation: '' };
+    }
+    
+    const userAnswerText = userAnswerOption ? `${userAnswerOption.label}) ${userAnswerOption.text}` : '미응답';
+    const correctAnswerText = correctAnswerOption ? `${correctAnswerOption.label}) ${correctAnswerOption.text}` : '';
+    
+    const toggleId = `rd-options-${setId}-${qIdx}`;
+    
+    return `
+        <div class="rd-result-item ${isCorrect ? 'correct' : 'incorrect'}">
+            <div class="rd-result-icon">${correctIcon}</div>
+            <div class="rd-result-content">
+                <div class="rd-question-text">
+                    <strong>${answer.questionNum}.</strong> ${escapeHtml(answer.question)}
                 </div>
+                ${answer.questionTranslation ? `
+                <div class="question-translation">
+                    <i class="fas fa-comment-dots"></i> 문제 해석: ${escapeHtml(answer.questionTranslation)}
+                </div>
+                ` : ''}
+                <div class="rd-answer-row">
+                    <span class="rd-answer-label">${isCorrect ? '✓' : '✗'} 내 답변:</span>
+                    <span class="rd-answer-value ${isCorrect ? 'correct' : 'incorrect'}">${escapeHtml(userAnswerText)}</span>
+                </div>
+                ${!isCorrect ? `
+                <div class="rd-answer-row">
+                    <span class="rd-answer-label">✓ 정답:</span>
+                    <span class="rd-answer-value correct">${escapeHtml(correctAnswerText)}</span>
+                </div>
+                ` : ''}
+                ${renderDaily1OptionsExplanation(answer, toggleId)}
             </div>
-        `;
-    });
-    
-    return html;
+        </div>
+    `;
 }
 
 // 보기 상세 해설 렌더링
-function renderDaily1OptionsExplanation(answer, setId, answerIndex) {
+function renderDaily1OptionsExplanation(answer, toggleId) {
     if (!answer.options || answer.options.length === 0 || !answer.options[0].label) {
         return '';
     }
     
-    const toggleId = `daily1-options-${setId}-${answerIndex}`;
     const userAnswerLabel = getLabelFromIndex(answer.userAnswer);
     const correctAnswerLabel = getLabelFromIndex(answer.correctAnswer);
     
-    let optionsHTML = answer.options.map(option => {
+    let optionsHTML = '';
+    answer.options.forEach((option) => {
+        const isCorrectOption = option.label === correctAnswerLabel;
         const isUserAnswer = option.label === userAnswerLabel;
-        const isCorrectAnswer = option.label === correctAnswerLabel;
         
         let badge = '';
-        if (isCorrectAnswer) {
+        if (isCorrectOption) {
             badge = '<span class="option-badge correct-badge">✓ 정답</span>';
         } else if (isUserAnswer) {
             badge = '<span class="option-badge incorrect-badge">✗ 내가 선택한 오답</span>';
         }
         
-        const explanationClass = isCorrectAnswer ? 'correct' : 'incorrect';
-        const explanationIcon = isCorrectAnswer ? '💡' : '⚠️';
-        const explanationLabel = isCorrectAnswer ? '정답 이유:' : '오답 이유:';
-        
-        return `
+        optionsHTML += `
             <div class="option-item">
                 <div class="option-header">
                     <span class="option-label">${option.label})</span>
                     <span class="option-text">${escapeHtml(option.text)}</span>
                     ${badge}
                 </div>
-                ${option.translation ? `
-                <div class="option-translation">
-                    └─ ${escapeHtml(option.translation)}
-                </div>
-                ` : ''}
+                ${option.translation ? `<div class="option-translation">${escapeHtml(option.translation)}</div>` : ''}
                 ${option.explanation ? `
-                <div class="option-explanation ${explanationClass}">
-                    <strong>${explanationIcon} ${explanationLabel}</strong><br>
-                    ${escapeHtml(option.explanation)}
+                <div class="option-explanation ${isCorrectOption ? 'correct' : 'incorrect'}">
+                    <strong><i class="fas ${isCorrectOption ? 'fa-lightbulb' : 'fa-circle-exclamation'}"></i> ${isCorrectOption ? '정답 이유:' : '오답 이유:'}</strong><br>${escapeHtml(option.explanation)}
                 </div>
                 ` : ''}
             </div>
         `;
-    }).join('');
+    });
     
     return `
         <div class="options-explanation-container">
@@ -233,7 +227,7 @@ function renderDaily1OptionsExplanation(answer, setId, answerIndex) {
                 <span class="toggle-text">보기 상세 해설 펼치기</span>
                 <i class="fas fa-chevron-down"></i>
             </button>
-            <div id="${toggleId}" class="options-explanation-content" style="display: none;">
+            <div class="options-explanation-content" id="${toggleId}" style="display: none;">
                 ${optionsHTML}
             </div>
         </div>
@@ -242,8 +236,8 @@ function renderDaily1OptionsExplanation(answer, setId, answerIndex) {
 
 // 탭 전환
 function switchDaily1Tab(setIndex, tabType) {
-    const originalPane = document.getElementById(`daily1-original-${setIndex}`);
-    const translationPane = document.getElementById(`daily1-translation-${setIndex}`);
+    const originalPane = document.getElementById(`rd-original-${setIndex}`);
+    const translationPane = document.getElementById(`rd-translation-${setIndex}`);
     const tabs = document.querySelectorAll(`#daily1ResultDetails .result-set-section:nth-child(${setIndex + 1}) .passage-tab`);
     
     if (tabType === 'original') {
@@ -260,22 +254,22 @@ function switchDaily1Tab(setIndex, tabType) {
 }
 
 // 보기 해설 펼치기/접기
-function toggleDaily1Options(toggleId) {
-    const content = document.getElementById(toggleId);
+function toggleDaily1Options(id) {
+    const content = document.getElementById(id);
     const button = content.previousElementSibling;
     const icon = button.querySelector('i');
     const text = button.querySelector('.toggle-text');
     
-    if (content.style.display === 'none') {
+    if (content.style.display === 'none' || content.style.display === '') {
         content.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
-        text.textContent = '보기 상세 해설 접기';
+        button.classList.add('is-active');
+        icon.className = 'fas fa-chevron-up';
+        text.innerText = '보기 상세 해설 접기';
     } else {
         content.style.display = 'none';
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
-        text.textContent = '보기 상세 해설 펼치기';
+        button.classList.remove('is-active');
+        icon.className = 'fas fa-chevron-down';
+        text.innerText = '보기 상세 해설 펼치기';
     }
 }
 
@@ -294,11 +288,11 @@ function showDaily1Tooltip(event) {
     const translation = word.getAttribute('data-translation');
     const explanation = word.getAttribute('data-explanation');
     
-    const existingTooltip = document.querySelector('.daily1-tooltip');
+    const existingTooltip = document.querySelector('.rd-tooltip');
     if (existingTooltip) existingTooltip.remove();
     
     const tooltip = document.createElement('div');
-    tooltip.className = 'daily1-tooltip';
+    tooltip.className = 'rd-tooltip';
     tooltip.innerHTML = `
         <div class="tooltip-translation">${escapeHtml(translation)}</div>
         ${explanation ? `<div class="tooltip-explanation">${escapeHtml(explanation)}</div>` : ''}
@@ -313,7 +307,7 @@ function showDaily1Tooltip(event) {
 
 // 툴팁 숨기기
 function hideDaily1Tooltip() {
-    const tooltip = document.querySelector('.daily1-tooltip');
+    const tooltip = document.querySelector('.rd-tooltip');
     if (tooltip) tooltip.remove();
 }
 
