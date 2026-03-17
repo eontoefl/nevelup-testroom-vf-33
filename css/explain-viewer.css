@@ -61,7 +61,7 @@
     flex: 0 0 60%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
     border-right: 1px solid var(--border-color);
 }
 
@@ -165,8 +165,6 @@
 /* ============================= */
 
 .explain-content-area {
-    flex: 1;
-    overflow-y: auto;
     position: relative;
 }
 
