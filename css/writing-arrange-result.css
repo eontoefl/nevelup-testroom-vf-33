@@ -5,14 +5,14 @@
 
 :root {
     --primary-purple: #9480c5;
-    --success-green: #77bf7e; /* Updated to match SCREEN_26 success green */
-    --success-bg: #e2f5e9;    /* Updated light green background */
-    --error-red: #ef5350;     /* Matches red icon/text in SCREEN_26 */
-    --error-bg: #ffebee;      /* Light red background for wrong chips */
-    --text-dark: #2c3e50;     /* Refined dark text */
-    --text-gray: #94a3b8;     /* Refined gray for labels */
-    --bg-gray: #f8fafc;       /* Slightly lighter background */
-    --card-shadow: 0 10px 30px rgba(148, 128, 197, 0.05);
+    --success-green: #77bf7e;
+    --success-bg: #e2f5e9;
+    --error-red: #ef5350;
+    --error-bg: #ffebee;
+    --text-dark: #2c3e50;
+    --text-gray: #94a3b8;
+    --bg-gray: #f8fafc;
+    --card-shadow: 0 9px 27px rgba(148, 128, 197, 0.05);
 }
 
 #arrangeExplainScreen {
@@ -25,57 +25,57 @@
 }
 
 #arrangeExplainScreen .test-content {
-    max-width: 1000px;
+    max-width: 920px;
     margin: 0 auto;
-    padding: 60px 20px;
+    padding: 54px 18px;
 }
 
 /* 1. Header & Summary Stats */
 #arrangeExplainScreen .result-header {
-    margin-bottom: 40px;
+    margin-bottom: 36px;
 }
 
 #arrangeExplainScreen #arrangeResultDayTitle {
-    font-size: 32px;
+    font-size: 29px;
     font-weight: 800;
     color: var(--text-dark);
     letter-spacing: -0.02em;
-    margin-bottom: 32px;
+    margin-bottom: 29px;
     text-transform: uppercase;
     margin-top: 0;
 }
 
 #arrangeExplainScreen .result-summary {
     display: flex;
-    gap: 20px;
-    margin-bottom: 48px;
+    gap: 18px;
+    margin-bottom: 43px;
 }
 
 #arrangeExplainScreen .result-score-card {
     flex: 1;
     background: #ffffff;
-    padding: 32px 24px;
-    border-radius: 20px;
+    padding: 29px 22px;
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
 }
 
 /* Highlight card matching SCREEN_26 */
 #arrangeExplainScreen .result-score-card:first-child {
     background: var(--primary-purple);
-    box-shadow: 0 10px 25px rgba(148, 128, 197, 0.3);
+    box-shadow: 0 9px 23px rgba(148, 128, 197, 0.3);
 }
 
 #arrangeExplainScreen .result-score-card .score-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 12px;
+    margin-bottom: 11px;
 }
 
 #arrangeExplainScreen .result-score-card:first-child .score-label {
@@ -83,7 +83,7 @@
 }
 
 #arrangeExplainScreen .result-score-card .score-value {
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 800;
     color: var(--text-dark);
 }
@@ -95,32 +95,32 @@
 #arrangeExplainScreen .result-stats {
     flex: 3;
     display: flex;
-    gap: 20px;
+    gap: 18px;
 }
 
 #arrangeExplainScreen .stat-item {
     flex: 1;
     background: #ffffff;
-    padding: 32px 24px;
-    border-radius: 20px;
+    padding: 29px 22px;
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
 }
 
 #arrangeExplainScreen .stat-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 12px;
+    margin-bottom: 11px;
 }
 
 #arrangeExplainScreen .stat-value {
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 800;
     color: var(--text-dark);
 }
@@ -136,9 +136,9 @@
 /* 2. Result Items (Question Cards) */
 #arrangeExplainScreen .arrange-result-item {
     background: #ffffff;
-    border-radius: 32px;
-    padding: 40px;
-    margin-bottom: 40px;
+    border-radius: 29px;
+    padding: 36px;
+    margin-bottom: 36px;
     box-shadow: var(--card-shadow);
     border: none;
 }
@@ -147,20 +147,20 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 29px;
     padding: 0;
     border-bottom: none;
 }
 
 #arrangeExplainScreen .arrange-question-number {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-dark);
     margin: 0;
 }
 
 #arrangeExplainScreen .arrange-result-status {
-    font-size: 24px;
+    font-size: 22px;
 }
 
 #arrangeExplainScreen .arrange-result-status.correct {
@@ -174,20 +174,20 @@
 /* 3. Profiles & Text Areas */
 #arrangeExplainScreen .arrange-result-profile-row {
     display: flex;
-    gap: 20px;
+    gap: 18px;
     align-items: flex-start;
-    margin-bottom: 32px;
+    margin-bottom: 29px;
 }
 
 #arrangeExplainScreen .arrange-result-profile {
-    width: 56px;
-    height: 56px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     overflow: hidden;
     background: #f1f5f9;
     flex-shrink: 0;
     border: none;
-    box-shadow: 0 6px 15px rgba(0,0,0,0.06); /* Profile shadow matching style */
+    box-shadow: 0 5px 14px rgba(0,0,0,0.06);
 }
 
 #arrangeExplainScreen .arrange-result-profile img {
@@ -202,26 +202,26 @@
 
 #arrangeExplainScreen .arrange-answer-label {
     display: block;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
 }
 
 #arrangeExplainScreen .arrange-given-text {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-dark);
     line-height: 1.5;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
     margin-top: 0;
     letter-spacing: -0.01em;
 }
 
 #arrangeExplainScreen .arrange-translation {
-    font-size: 14px;
+    font-size: 13px;
     color: #94a3b8;
     line-height: 1.6;
     margin: 0;
@@ -230,13 +230,13 @@
 /* 4. Sentence Structures (Result View) */
 #arrangeExplainScreen .arrange-correct-sentence,
 #arrangeExplainScreen .arrange-user-sentence {
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1.6;
     margin-bottom: 0;
     margin-top: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 7px;
     align-items: center;
 }
 
@@ -256,10 +256,10 @@
 
 #arrangeExplainScreen .arrange-result-blank,
 #arrangeExplainScreen .arrange-option-display {
-    padding: 8px 14px;
-    border-radius: 10px;
+    padding: 7px 13px;
+    border-radius: 9px;
     font-weight: 500;
-    font-size: 15px;
+    font-size: 14px;
     display: inline-block;
     background: #f1f5f9;
     color: var(--text-dark);
@@ -267,7 +267,7 @@
 
 #arrangeExplainScreen .arrange-result-blank.correct-blank {
     background: var(--success-bg);
-    color: #388e3c; /* Darker green text for readability on light green bg */
+    color: #388e3c;
 }
 
 #arrangeExplainScreen .arrange-result-blank.wrong-blank {
@@ -290,54 +290,54 @@
 
 /* 6. Options Display (Word Bank) */
 #arrangeExplainScreen .arrange-options-display {
-    margin-top: 32px;
-    padding: 24px;
+    margin-top: 29px;
+    padding: 22px;
     background: #f8fafc;
-    border-radius: 20px;
+    border-radius: 18px;
 }
 
 #arrangeExplainScreen .arrange-options-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     display: block;
 }
 
 #arrangeExplainScreen .arrange-options-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 9px;
 }
 
 /* 7. Explanation Section */
 #arrangeExplainScreen .arrange-explanation-section {
-    margin-top: 40px;
-    padding: 28px;
-    background: #fffcf0; /* Warm yellow background from SCREEN_26 */
-    border-radius: 20px;
+    margin-top: 36px;
+    padding: 25px;
+    background: #fffcf0;
+    border-radius: 18px;
     display: block;
 }
 
 #arrangeExplainScreen .arrange-explanation-title {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 16px;
+    gap: 11px;
+    font-size: 14px;
     font-weight: 700;
-    color: #b45309; /* Amber brown color for text */
-    margin-bottom: 12px;
+    color: #b45309;
+    margin-bottom: 11px;
 }
 
 #arrangeExplainScreen .arrange-explanation-title i {
     color: #f59e0b;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 #arrangeExplainScreen .arrange-explanation-text {
-    font-size: 15px;
+    font-size: 14px;
     color: #64748b;
     line-height: 1.7;
     margin: 0;
@@ -358,7 +358,7 @@
 }
 
 #arrangeExplainScreen .arrange-correct-translation {
-    font-size: 14px;
+    font-size: 13px;
     color: #94a3b8;
     line-height: 1.6;
     margin: 0;
@@ -375,7 +375,7 @@
 /* Responsive */
 @media (max-width: 768px) {
     #arrangeExplainScreen .test-content {
-        padding: 40px 16px;
+        padding: 36px 14px;
     }
 
     #arrangeExplainScreen .result-summary {
@@ -384,20 +384,19 @@
 
     #arrangeExplainScreen .result-stats {
         flex-direction: column;
-        gap: 16px;
+        gap: 14px;
     }
 
     #arrangeExplainScreen .arrange-result-item {
-        padding: 24px;
+        padding: 22px;
     }
 
     #arrangeExplainScreen .arrange-result-profile {
-        width: 48px;
-        height: 48px;
+        width: 43px;
+        height: 43px;
     }
 
     #arrangeExplainScreen #arrangeResultDayTitle {
-        font-size: 28px;
+        font-size: 25px;
     }
 }
-
