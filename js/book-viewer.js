@@ -294,14 +294,6 @@ async function renderPage(pageNum) {
             viewport: viewport
         }).promise;
 
-        // 확대 시 zoomed 클래스 토글 (스크롤 활성화)
-        const isZoomed = BookViewer.scale > 1.0;
-        viewer.classList.toggle('zoomed', isZoomed);
-
-        // 페이지 넘김 시 스크롤 위치 초기화
-        viewer.scrollTop = 0;
-        viewer.scrollLeft = 0;
-
     } catch (err) {
         console.error('❌ [BookViewer] 페이지 렌더링 실패:', err);
     }
@@ -328,6 +320,10 @@ function goToPage(pageNum) {
     updateBookmarkIcon();
     updateMemoDot();
     updatePageButtons();
+
+    // 스크롤 위치 초기화 (확대 상태에서 페이지 넘길 때)
+    DOM.bookViewer.scrollTop = 0;
+    DOM.bookViewer.scrollLeft = 0;
 
     // 렌더링
     renderPage(pageNum);

@@ -303,12 +303,6 @@
   padding: 30px;
 }
 
-/* 확대 시 뷰어가 스크롤 모드로 전환 */
-.book-viewer.zoomed {
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-
 .book-canvas-wrapper {
   background: #fff;
   box-shadow: var(--bv-shadow-deep);
