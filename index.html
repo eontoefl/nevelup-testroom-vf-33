@@ -964,21 +964,23 @@
             </div>
 
             <!-- 문제 보기 (접기 가능) -->
-            <div class="email-result-toggle" onclick="toggleEmailProblem()">
-                <i class="fas fa-chevron-down" id="emailProblemToggleIcon"></i>
-                <span>문제 보기</span>
-            </div>
-            <div class="email-result-problem" id="emailResultProblem" style="display: none;">
-                <p class="email-problem-situation" id="emailResultSituation"></p>
-                <p class="email-problem-task" id="emailResultTask"></p>
-                <ul class="email-problem-instructions">
-                    <li id="emailResultInstruction1"></li>
-                    <li id="emailResultInstruction2"></li>
-                    <li id="emailResultInstruction3"></li>
-                </ul>
-                <div class="email-problem-meta">
-                    <p><strong>To:</strong> <span id="emailResultTo"></span></p>
-                    <p><strong>Subject:</strong> <span id="emailResultSubject"></span></p>
+            <div class="email-result-section">
+                <div class="email-result-toggle" onclick="toggleEmailProblem()">
+                    <i class="fas fa-chevron-down" id="emailProblemToggleIcon"></i>
+                    <span>문제 보기</span>
+                </div>
+                <div class="email-result-problem" id="emailResultProblem" style="display: none;">
+                    <p class="email-problem-situation" id="emailResultSituation"></p>
+                    <p class="email-problem-task" id="emailResultTask"></p>
+                    <ul class="email-problem-instructions">
+                        <li id="emailResultInstruction1"></li>
+                        <li id="emailResultInstruction2"></li>
+                        <li id="emailResultInstruction3"></li>
+                    </ul>
+                    <div class="email-problem-meta">
+                        <p><strong>To:</strong> <span id="emailResultTo"></span></p>
+                        <p><strong>Subject:</strong> <span id="emailResultSubject"></span></p>
+                    </div>
                 </div>
             </div>
 
