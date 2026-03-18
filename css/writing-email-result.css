@@ -153,7 +153,7 @@
     gap: 10px;
     cursor: pointer;
     padding: 14px 20px;
-    background: #fdfdfe;
+    background: #ffffff;
     border-radius: 14px;
     transition: all 0.25s ease;
     font-size: 15px;
@@ -163,7 +163,7 @@
 }
 
 #emailExplainScreen .email-result-toggle:hover {
-    background: #ebe5f7;
+    background: #f8f6fc;
 }
 
 #emailExplainScreen .email-result-toggle i {
@@ -173,7 +173,7 @@
 }
 
 #emailExplainScreen .email-result-toggle.active {
-    background: #ebe5f7;
+    background: #ffffff;
 }
 
 #emailExplainScreen .email-result-toggle.active i {
@@ -191,7 +191,7 @@
     color: #475569;
     margin-bottom: 18px;
     padding: 18px 22px;
-    background: #f8fafc;
+    background: #ffffff;
     border-radius: 14px;
 }
 
@@ -229,7 +229,7 @@
 
 #emailExplainScreen .email-problem-meta {
     padding: 16px 22px;
-    background: #f4f1fa;
+    background: #ffffff;
     border-radius: 14px;
     margin-top: 14px;
 }
