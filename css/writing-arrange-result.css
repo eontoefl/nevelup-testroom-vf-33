@@ -27,12 +27,12 @@
 #arrangeExplainScreen .test-content {
     max-width: 920px;
     margin: 0 auto;
-    padding: 54px 18px;
+    padding: 40px 18px;
 }
 
 /* 1. Header & Summary Stats */
 #arrangeExplainScreen .result-header {
-    margin-bottom: 36px;
+    margin-bottom: 24px;
 }
 
 #arrangeExplainScreen #arrangeResultDayTitle {
@@ -40,21 +40,21 @@
     font-weight: 800;
     color: var(--text-dark);
     letter-spacing: -0.02em;
-    margin-bottom: 29px;
+    margin-bottom: 20px;
     text-transform: uppercase;
     margin-top: 0;
 }
 
 #arrangeExplainScreen .result-summary {
     display: flex;
-    gap: 18px;
-    margin-bottom: 43px;
+    gap: 16px;
+    margin-bottom: 28px;
 }
 
 #arrangeExplainScreen .result-score-card {
     flex: 1;
     background: #ffffff;
-    padding: 29px 22px;
+    padding: 22px 18px;
     border-radius: 18px;
     display: flex;
     flex-direction: column;
@@ -75,7 +75,7 @@
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 11px;
+    margin-bottom: 8px;
 }
 
 #arrangeExplainScreen .result-score-card:first-child .score-label {
@@ -95,13 +95,13 @@
 #arrangeExplainScreen .result-stats {
     flex: 3;
     display: flex;
-    gap: 18px;
+    gap: 16px;
 }
 
 #arrangeExplainScreen .stat-item {
     flex: 1;
     background: #ffffff;
-    padding: 29px 22px;
+    padding: 22px 18px;
     border-radius: 18px;
     display: flex;
     flex-direction: column;
@@ -116,7 +116,7 @@
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 11px;
+    margin-bottom: 8px;
 }
 
 #arrangeExplainScreen .stat-value {
@@ -137,8 +137,8 @@
 #arrangeExplainScreen .arrange-result-item {
     background: #ffffff;
     border-radius: 29px;
-    padding: 36px;
-    margin-bottom: 36px;
+    padding: 28px;
+    margin-bottom: 24px;
     box-shadow: var(--card-shadow);
     border: none;
 }
@@ -147,7 +147,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 29px;
+    margin-bottom: 20px;
     padding: 0;
     border-bottom: none;
 }
@@ -174,9 +174,9 @@
 /* 3. Profiles & Text Areas */
 #arrangeExplainScreen .arrange-result-profile-row {
     display: flex;
-    gap: 18px;
+    gap: 16px;
     align-items: flex-start;
-    margin-bottom: 29px;
+    margin-bottom: 18px;
 }
 
 #arrangeExplainScreen .arrange-result-profile {
@@ -290,8 +290,8 @@
 
 /* 6. Options Display (Word Bank) */
 #arrangeExplainScreen .arrange-options-display {
-    margin-top: 29px;
-    padding: 22px;
+    margin-top: 20px;
+    padding: 18px;
     background: #f8fafc;
     border-radius: 18px;
 }
@@ -302,7 +302,7 @@
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     display: block;
 }
 
@@ -314,8 +314,8 @@
 
 /* 7. Explanation Section */
 #arrangeExplainScreen .arrange-explanation-section {
-    margin-top: 36px;
-    padding: 25px;
+    margin-top: 24px;
+    padding: 20px;
     background: #fffcf0;
     border-radius: 18px;
     display: block;
@@ -328,7 +328,7 @@
     font-size: 14px;
     font-weight: 700;
     color: #b45309;
-    margin-bottom: 11px;
+    margin-bottom: 8px;
 }
 
 #arrangeExplainScreen .arrange-explanation-title i {
@@ -375,7 +375,7 @@
 /* Responsive */
 @media (max-width: 768px) {
     #arrangeExplainScreen .test-content {
-        padding: 36px 14px;
+        padding: 28px 14px;
     }
 
     #arrangeExplainScreen .result-summary {
@@ -384,11 +384,11 @@
 
     #arrangeExplainScreen .result-stats {
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
     }
 
     #arrangeExplainScreen .arrange-result-item {
-        padding: 22px;
+        padding: 18px;
     }
 
     #arrangeExplainScreen .arrange-result-profile {
