@@ -3280,7 +3280,7 @@ body {
 #taskListScreen .top-nav-bar {
     background: var(--surface-color);
     height: 72px;
-    padding: 0 5%;
+    padding: 0 max(20px, calc((100% - 1100px) / 2 + 20px));
     position: sticky;
     top: 0;
     z-index: 100;
