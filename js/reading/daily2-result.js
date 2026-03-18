@@ -62,11 +62,6 @@ function showDaily2Results(data) {
     document.getElementById('daily2ResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('daily2ResultTotalCount').textContent = totalQuestions;
     
-    const week = window.currentTest ? window.currentTest.currentWeek : 1;
-    const day = window.currentTest ? window.currentTest.currentDay : '월';
-    const dayTitle = `Week ${week}, ${day}요일 - 일상리딩2`;
-    document.getElementById('daily2ResultDayTitle').textContent = dayTitle;
-    
     const detailsContainer = document.getElementById('daily2ResultDetails');
     let detailsHTML = '';
     

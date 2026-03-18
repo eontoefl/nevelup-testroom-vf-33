@@ -25,9 +25,6 @@ function showFillBlanksExplainScreen(data) {
     const totalScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
     
     // 결과 화면 업데이트
-    const week = currentTest.currentWeek || 1;
-    const day = currentTest.currentDay || '일';
-    document.getElementById('resultDayTitle').textContent = `Week ${week} - ${getDayName(day)}`;
     document.getElementById('resultTotalScore').textContent = `${totalScore}%`;
     document.getElementById('resultCorrectCount').textContent = totalCorrect;
     document.getElementById('resultIncorrectCount').textContent = totalIncorrect;
