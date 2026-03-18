@@ -95,19 +95,16 @@
 #emailExplainScreen .word-count-feedback.perfect {
     background: #e2f5e9;
     color: #388e3c;
-    border: none;
 }
 
 #emailExplainScreen .word-count-feedback.too-short {
     background: #fff8e1;
     color: #e65100;
-    border: none;
 }
 
 #emailExplainScreen .word-count-feedback.too-long {
     background: #ffebee;
     color: #c62828;
-    border: none;
 }
 
 /* ── Side-by-side Answers Row ── */
@@ -133,6 +130,16 @@
     border: none;
 }
 
+/* ── Toggle Section (문제 보기) — 배경 #fdfdfe ── */
+#emailExplainScreen .email-result-section:has(.email-result-toggle) {
+    background: #fdfdfe;
+}
+
+/* ── Model Answer Section — 배경 #fffcf0 ── */
+#emailExplainScreen .email-answers-row > .email-result-section:last-child {
+    background: #fffcf0;
+}
+
 /* ── Section Label ── */
 #emailExplainScreen .email-result-label {
     font-size: 10px;
@@ -144,7 +151,7 @@
     margin-top: 0;
 }
 
-/* ── Toggle Button (문제 보기) ── */
+/* ── Toggle Button ── */
 #emailExplainScreen .email-result-toggle {
     display: flex;
     align-items: center;
@@ -243,37 +250,8 @@
     font-weight: 700;
 }
 
-/* ── Answer Box (내 답안) ── */
-#emailExplainScreen .email-result-answer-box {
-    padding: 0;
-    background: #f8fafc;
-    border: 1px solid #e8e4f0;
-    border-radius: 18px;
-    min-height: 120px;
-    overflow: hidden;
-}
-
-#emailExplainScreen .email-result-answer-box .email-result-meta {
-    padding: 18px 22px;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    margin-bottom: 0;
-    border-bottom: 1px dashed #d6d0e5;
-}
-
-#emailExplainScreen .email-result-answer-box .email-result-meta p {
-    margin: 4px 0;
-    font-size: 14px;
-    color: #64748b;
-}
-
-#emailExplainScreen .email-result-answer-box .email-result-meta strong {
-    color: #2c3e50;
-    font-weight: 700;
-}
-
-#emailExplainScreen .email-result-answer-box pre {
+/* ── Answer pre (직접 섹션 안에 배치) ── */
+#emailExplainScreen .email-result-section pre {
     font-family: 'Pretendard', sans-serif;
     font-size: 15px;
     line-height: 1.8;
@@ -281,49 +259,7 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     margin: 0;
-    padding: 22px;
-    background: transparent;
-}
-
-/* ── Sample Answer Box (모범 답안) ── */
-#emailExplainScreen .email-result-sample-box {
     padding: 0;
-    background: #f0faf2;
-    border: 1px solid #c8e6cd;
-    border-radius: 18px;
-    min-height: 120px;
-    overflow: hidden;
-}
-
-#emailExplainScreen .email-result-sample-box .email-result-meta {
-    padding: 18px 22px;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    margin-bottom: 0;
-    border-bottom: 1px dashed #a5d6a7;
-}
-
-#emailExplainScreen .email-result-sample-box .email-result-meta p {
-    margin: 4px 0;
-    font-size: 14px;
-    color: #2e7d32;
-}
-
-#emailExplainScreen .email-result-sample-box .email-result-meta strong {
-    color: #1b5e20;
-    font-weight: 700;
-}
-
-#emailExplainScreen .email-result-sample-box pre {
-    font-family: 'Pretendard', sans-serif;
-    font-size: 15px;
-    line-height: 1.8;
-    color: #2e7d32;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    margin: 0;
-    padding: 22px;
     background: transparent;
 }
 
@@ -363,14 +299,8 @@
 }
 
 @keyframes emailFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Bullet Item ── */
@@ -414,6 +344,13 @@
     letter-spacing: 0.02em;
 }
 
+#emailExplainScreen .bullet-label i {
+    color: #9480c5;
+    margin-right: 6px;
+    width: 14px;
+    text-align: center;
+}
+
 #emailExplainScreen .bullet-text {
     font-size: 14px;
     line-height: 1.7;
@@ -421,12 +358,6 @@
     padding: 14px 18px;
     background: #f8fafc;
     border-radius: 12px;
-}
-
-#emailExplainScreen .bullet-text.sample-text {
-    background: #f0faf2;
-    color: #2e7d32;
-    font-style: italic;
 }
 
 #emailExplainScreen .bullet-text.key-text {
@@ -438,16 +369,8 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-    #emailExplainScreen {
-        padding: 0;
-    }
-
     #emailExplainScreen .test-content {
         padding: 24px 14px;
-    }
-
-    #emailExplainScreen .result-container {
-        padding: 0;
     }
 
     #emailExplainScreen .result-header h2 {
@@ -474,9 +397,7 @@
         border-radius: 18px;
     }
 
-    #emailExplainScreen .email-result-answer-box pre,
-    #emailExplainScreen .email-result-sample-box pre {
-        padding: 16px;
+    #emailExplainScreen .email-result-section pre {
         font-size: 14px;
     }
 

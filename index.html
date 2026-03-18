@@ -987,31 +987,19 @@
             <!-- 내 답안 + 모범 답안 (양옆 배치) -->
             <div class="email-answers-row">
                 <div class="email-result-section">
-                    <h3 class="email-result-label">내 답안</h3>
-                    <div class="email-result-answer-box">
-                        <div class="email-result-meta">
-                            <p><strong>To:</strong> <span id="emailResultUserTo"></span></p>
-                            <p><strong>Subject:</strong> <span id="emailResultUserSubject"></span></p>
-                        </div>
-                        <pre id="emailResultUserAnswer"></pre>
-                    </div>
+                    <h3 class="email-result-label">Your Draft</h3>
+                    <pre id="emailResultUserAnswer"></pre>
                 </div>
 
                 <div class="email-result-section">
-                    <h3 class="email-result-label">모범 답안</h3>
-                    <div class="email-result-sample-box">
-                        <div class="email-result-meta">
-                            <p><strong>To:</strong> <span id="emailResultSampleTo"></span></p>
-                            <p><strong>Subject:</strong> <span id="emailResultSampleSubject"></span></p>
-                        </div>
-                        <pre id="emailResultSampleAnswer"></pre>
-                    </div>
+                    <h3 class="email-result-label">Model Answer</h3>
+                    <pre id="emailResultSampleAnswer"></pre>
                 </div>
             </div>
 
             <!-- 피드백 (3개 Bullet) -->
             <div class="email-result-section">
-                <h3 class="email-result-label">피드백</h3>
+                <h3 class="email-result-label">Key Improvement Points</h3>
                 <div class="email-bullets-container" id="emailResultBullets">
                     <!-- Bullet 내용은 JS로 동적 생성 -->
                 </div>
