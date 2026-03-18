@@ -10,95 +10,71 @@
     padding: 24px 48px;
 }
 
-/* ── 결과 컨테이너 ── */
-#responseExplainScreen .result-container {
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 24px 20px 60px;
-}
-
 /* ── 결과 헤더 ── */
-#responseExplainScreen .result-header h2 {
+#responseExplainScreen h2 {
     font-size: 18px;
     font-weight: 700;
     color: #1e1e2f;
     margin: 0 0 20px;
+    max-width: 880px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
 }
 
-/* ── 점수 요약 ── */
-#responseExplainScreen .result-summary {
-    display: flex;
-    align-items: stretch;
+/* ── 점수 요약 (4칸 그리드) ── */
+#responseExplainScreen .response-summary {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 20px 20px 0;
+}
+
+#responseExplainScreen .response-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 0;
     background: #fff;
     border-radius: 14px;
     overflow: hidden;
     box-shadow: 0 2px 12px rgba(148,128,197,0.1);
-    margin-bottom: 28px;
 }
 
-#responseExplainScreen .result-score-card {
-    text-align: center;
-    padding: 24px 32px;
-    background: #faf9fd;
+#responseExplainScreen .response-stat-box {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    min-width: 130px;
+    align-items: center;
+    gap: 4px;
+    padding: 18px 8px;
+    border-right: 1px solid #f0edf5;
+}
+#responseExplainScreen .response-stat-box:last-child {
+    border-right: none;
 }
 
-#responseExplainScreen .result-score-card .score-label {
+#responseExplainScreen .response-stat-label {
     font-size: 11px;
     font-weight: 600;
     color: #999;
     letter-spacing: 0.5px;
-    margin-bottom: 6px;
 }
 
-#responseExplainScreen .result-score-card .score-value {
-    font-size: 34px;
+#responseExplainScreen .response-stat-value {
+    font-size: 19px;
     font-weight: 800;
     color: #9480c5;
 }
-
-#responseExplainScreen .result-stats {
-    display: flex;
-    flex: 1;
+#responseExplainScreen .response-stat-value.first {
+    color: #8fa5bb;
+}
+#responseExplainScreen .response-stat-value.second {
+    color: #9480c5;
 }
 
-#responseExplainScreen .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 20px 0;
-    flex: 1;
-    border-right: 1px solid #f0edf5;
-}
-#responseExplainScreen .stat-item:last-child {
-    border-right: none;
-}
-
-#responseExplainScreen .stat-item .stat-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #999;
-    letter-spacing: 0.3px;
-}
-
-#responseExplainScreen .stat-item .stat-value {
-    font-size: 22px;
-    font-weight: 800;
-    color: #4a4a6a;
-}
-
-#responseExplainScreen .stat-item .stat-value.correct {
-    color: #4a9e52;
-}
-
-#responseExplainScreen .stat-item .stat-value.incorrect {
-    color: #d94452;
+/* ── 결과 콘텐츠 ── */
+#responseExplainScreen .response-content {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
 /* ── 세트 타이틀 ── */
@@ -468,17 +444,14 @@
 
 /* ── 반응형 ── */
 @media (max-width: 640px) {
-    #responseExplainScreen .result-summary {
-        flex-direction: column;
+    #responseExplainScreen .response-stats {
+        grid-template-columns: repeat(2, 1fr);
     }
-    #responseExplainScreen .result-score-card {
-        padding: 18px;
+    #responseExplainScreen .response-stat-box:nth-child(2) {
+        border-right: none;
+    }
+    #responseExplainScreen .response-stat-box:nth-child(1),
+    #responseExplainScreen .response-stat-box:nth-child(2) {
         border-bottom: 1px solid #f0edf5;
-    }
-    #responseExplainScreen .result-stats {
-        padding: 0;
-    }
-    #responseExplainScreen .stat-item {
-        padding: 14px 0;
     }
 }
