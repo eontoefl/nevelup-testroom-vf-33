@@ -884,26 +884,23 @@
     </div>
 
                     <div id="lectureExplainScreen" style="display:none">
-        <!-- 헤더 -->
-
-        <!-- 요약 통계 (1차/2차 비교 형식) -->
         <div class="academic-summary">
             <div class="academic-stats">
                 <div class="academic-stat-box">
-                    <span class="academic-stat-label">총 문제</span>
+                    <span class="academic-stat-label">총 점수</span>
+                    <span class="academic-stat-value" id="lectureResultScoreValue">0%</span>
+                </div>
+                <div class="academic-stat-box">
+                    <span class="academic-stat-label">정답</span>
+                    <span class="academic-stat-value first" id="lectureResultCorrectCount">0</span>
+                </div>
+                <div class="academic-stat-box">
+                    <span class="academic-stat-label">오답</span>
+                    <span class="academic-stat-value second" id="lectureResultIncorrectCount">0</span>
+                </div>
+                <div class="academic-stat-box">
+                    <span class="academic-stat-label">전체</span>
                     <span class="academic-stat-value" id="lectureResultTotalCount">0</span>
-                </div>
-                <div class="academic-stat-box">
-                    <span class="academic-stat-label">1차 정답</span>
-                    <span class="academic-stat-value first" id="lectureResultFirstCount">0/0 (0%)</span>
-                </div>
-                <div class="academic-stat-box">
-                    <span class="academic-stat-label">2차 정답</span>
-                    <span class="academic-stat-value second" id="lectureResultSecondCount">0/0 (0%)</span>
-                </div>
-                <div class="academic-stat-box improvement">
-                    <span class="academic-stat-label">개선</span>
-                    <span class="academic-stat-value" id="lectureResultImprovement">+0문제 (+0%)</span>
                 </div>
             </div>
         </div>
