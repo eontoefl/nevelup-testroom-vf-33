@@ -984,27 +984,28 @@
                 </div>
             </div>
 
-            <!-- 내 답안 -->
-            <div class="email-result-section">
-                <h3 class="email-result-label">내 답안</h3>
-                <div class="email-result-answer-box">
-                    <div class="email-result-meta">
-                        <p><strong>To:</strong> <span id="emailResultUserTo"></span></p>
-                        <p><strong>Subject:</strong> <span id="emailResultUserSubject"></span></p>
+            <!-- 내 답안 + 모범 답안 (양옆 배치) -->
+            <div class="email-answers-row">
+                <div class="email-result-section">
+                    <h3 class="email-result-label">내 답안</h3>
+                    <div class="email-result-answer-box">
+                        <div class="email-result-meta">
+                            <p><strong>To:</strong> <span id="emailResultUserTo"></span></p>
+                            <p><strong>Subject:</strong> <span id="emailResultUserSubject"></span></p>
+                        </div>
+                        <pre id="emailResultUserAnswer"></pre>
                     </div>
-                    <pre id="emailResultUserAnswer"></pre>
                 </div>
-            </div>
 
-            <!-- 모범 답안 -->
-            <div class="email-result-section">
-                <h3 class="email-result-label">모범 답안</h3>
-                <div class="email-result-sample-box">
-                    <div class="email-result-meta">
-                        <p><strong>To:</strong> <span id="emailResultSampleTo"></span></p>
-                        <p><strong>Subject:</strong> <span id="emailResultSampleSubject"></span></p>
+                <div class="email-result-section">
+                    <h3 class="email-result-label">모범 답안</h3>
+                    <div class="email-result-sample-box">
+                        <div class="email-result-meta">
+                            <p><strong>To:</strong> <span id="emailResultSampleTo"></span></p>
+                            <p><strong>Subject:</strong> <span id="emailResultSampleSubject"></span></p>
+                        </div>
+                        <pre id="emailResultSampleAnswer"></pre>
                     </div>
-                    <pre id="emailResultSampleAnswer"></pre>
                 </div>
             </div>
 
