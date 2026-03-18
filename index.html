@@ -951,15 +951,22 @@
             <!-- 상단 정보 -->
             <div class="email-result-summary">
                 <div class="result-status">
-                    <i class="fas fa-check-circle"></i> Write an Email Complete
+                    <div class="result-status-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div>
+                        <div class="result-status-label">Result Status</div>
+                        <div class="result-status-value">Evaluation Complete</div>
+                    </div>
                 </div>
                 <div class="result-word-count-box">
+                    <div class="result-word-count-label">Word Count</div>
                     <div class="result-word-count">
-                        단어 수: <span id="emailResultWordCount">0</span> words
+                        <span id="emailResultWordCount">0</span> Words
                     </div>
-                    <div class="word-count-feedback" id="emailWordCountFeedback">
-                        <!-- 단어 수 피드백 -->
-                    </div>
+                </div>
+                <div class="word-count-feedback" id="emailWordCountFeedback">
+                    <!-- 단어 수 피드백 -->
                 </div>
             </div>
 
