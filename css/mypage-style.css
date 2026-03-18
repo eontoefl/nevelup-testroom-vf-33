@@ -892,28 +892,30 @@ body {
 .v2-records-link-wrap {
   display: flex;
   justify-content: center;
-  margin-top: 48px;
+  margin-top: 24px;
 }
 .v2-records-link-btn {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 32px;
-  background-color: var(--surface-container-low);
-  color: var(--on-surface-variant);
-  border-radius: 16px;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: var(--signature-light);
+  color: var(--signature-dark);
+  border-radius: 12px;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   font-family: inherit;
-  border: none;
+  border: 1px solid rgba(148, 128, 197, 0.2);
   cursor: pointer;
   transition: all 0.2s;
 }
 .v2-records-link-btn:hover {
-  background-color: #ebecef;
+  background-color: var(--signature);
+  color: #fff;
+  border-color: var(--signature);
   box-shadow: var(--shadow-sm);
 }
-.v2-records-link-btn i:first-child { font-size: 1rem; }
+.v2-records-link-btn i:first-child { font-size: 0.82rem; }
 .v2-records-arrow {
   font-size: 0.7rem;
   opacity: 0.5;
