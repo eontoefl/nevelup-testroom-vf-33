@@ -295,6 +295,7 @@
     border-radius: 6px;
     margin: 0;
     margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .explain-memo-status i {
