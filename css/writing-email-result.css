@@ -130,11 +130,6 @@
     border: none;
 }
 
-/* ── Toggle Section (문제 보기) — 배경 #fdfdfe ── */
-#emailExplainScreen .email-result-section:has(.email-result-toggle) {
-    background: #fdfdfe;
-}
-
 /* ── Model Answer Section — 배경 #fffcf0 ── */
 #emailExplainScreen .email-answers-row > .email-result-section:last-child {
     background: #fffcf0;
@@ -158,7 +153,7 @@
     gap: 10px;
     cursor: pointer;
     padding: 14px 20px;
-    background: #f4f1fa;
+    background: #fdfdfe;
     border-radius: 14px;
     transition: all 0.25s ease;
     font-size: 15px;
@@ -351,20 +346,15 @@
     text-align: center;
 }
 
-#emailExplainScreen .bullet-text {
+#emailExplainScreen .bullet-section {
     font-size: 14px;
     line-height: 1.7;
     color: #374151;
-    padding: 14px 18px;
-    background: #f8fafc;
-    border-radius: 12px;
 }
 
-#emailExplainScreen .bullet-text.key-text {
-    background: #fffcf0;
-    color: #b45309;
+#emailExplainScreen .key-text {
+    color: #9480c5;
     font-weight: 600;
-    border-left: 3px solid #f59e0b;
 }
 
 /* ── Responsive ── */

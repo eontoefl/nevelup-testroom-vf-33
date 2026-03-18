@@ -203,15 +203,15 @@ function showBulletFeedback(bulletNum, event) {
             <div class="bullet-content">
                 <div class="bullet-section">
                     <div class="bullet-label"><i class="fas fa-thumbtack"></i> 꼭 말해야하는 부분</div>
-                    <div class="bullet-text">${bullet.must}</div>
+                    ${bullet.must}
                 </div>
                 <div class="bullet-section">
                     <div class="bullet-label"><i class="fas fa-award"></i> 만점 포인트들</div>
-                    <div class="bullet-text">${bullet.points}</div>
+                    ${bullet.points}
                 </div>
                 <div class="bullet-section">
                     <div class="bullet-label"><i class="fas fa-key"></i> 핵심</div>
-                    <div class="bullet-text key-text">${bullet.key}</div>
+                    <span class="key-text">${bullet.key}</span>
                 </div>
             </div>
         </div>
