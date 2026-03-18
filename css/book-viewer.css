@@ -435,13 +435,19 @@
 }
 
 .book-page-indicator {
-  font-weight: 600;
-  color: var(--bv-text-main);
+  font-weight: 400;
+  color: var(--bv-text-muted);
 }
 
 /* 메모 버튼 */
 .book-btn-memo {
   position: relative;
+  font-size: 1.15rem;
+}
+
+/* 전체화면 버튼 */
+.book-btn-fullscreen {
+  font-size: 1.1rem;
 }
 
 .book-memo-dot {
