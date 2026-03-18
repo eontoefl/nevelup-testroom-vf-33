@@ -267,14 +267,14 @@ async function renderPage(pageNum) {
         const canvas = DOM.pdfCanvas;
         const ctx = canvas.getContext('2d');
 
-        // 화면에 맞추기 위한 기본 배율 계산
+        // 뷰어 영역(바깥 컨테이너) 기준으로 fitScale 계산
         const viewport0 = page.getViewport({ scale: 1 });
-        const wrapper = DOM.canvasWrapper;
-        const wrapperW = wrapper.clientWidth;
-        const wrapperH = wrapper.clientHeight;
+        const viewer = DOM.bookViewer;
+        const viewerW = viewer.clientWidth - 60; // padding 30px * 2
+        const viewerH = viewer.clientHeight - 60;
 
-        const fitScaleW = wrapperW / viewport0.width;
-        const fitScaleH = wrapperH / viewport0.height;
+        const fitScaleW = viewerW / viewport0.width;
+        const fitScaleH = viewerH / viewport0.height;
         BookViewer.fitScale = Math.min(fitScaleW, fitScaleH);
 
         const effectiveScale = BookViewer.fitScale * BookViewer.scale;
@@ -293,6 +293,14 @@ async function renderPage(pageNum) {
             canvasContext: ctx,
             viewport: viewport
         }).promise;
+
+        // 확대 시 zoomed 클래스 토글 (스크롤 활성화)
+        const isZoomed = BookViewer.scale > 1.0;
+        viewer.classList.toggle('zoomed', isZoomed);
+
+        // 페이지 넘김 시 스크롤 위치 초기화
+        viewer.scrollTop = 0;
+        viewer.scrollLeft = 0;
 
     } catch (err) {
         console.error('❌ [BookViewer] 페이지 렌더링 실패:', err);
@@ -999,6 +1007,9 @@ function handleTouchMove(e) {
 function handleTouchEnd(e) {
     if (!BookViewer.touchMoved) return;
     if (e.changedTouches.length === 0) return;
+
+    // 확대 상태에서는 스크롤 이동이므로 페이지 넘기기 비활성화
+    if (BookViewer.scale > 1.0) return;
 
     const dx = e.changedTouches[0].clientX - BookViewer.touchStartX;
     const dy = e.changedTouches[0].clientY - BookViewer.touchStartY;
