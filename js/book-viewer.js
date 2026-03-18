@@ -121,9 +121,9 @@ function cacheDom() {
     DOM.memoDot = document.getElementById('memoDot');
     DOM.btnFullscreen = document.getElementById('btnFullscreen');
 
-    // 메모 패널
-    DOM.memoPanel = document.getElementById('memoPanel');
-    DOM.memoOverlay = document.getElementById('memoOverlay');
+    // 메모 사이드바 (왼쪽)
+    DOM.memoSidebar = document.getElementById('memoSidebar');
+    DOM.memoSidebarOverlay = document.getElementById('memoSidebarOverlay');
     DOM.memoPageLabel = document.getElementById('memoPageLabel');
     DOM.memoTextarea = document.getElementById('memoTextarea');
     DOM.memoCharCount = document.getElementById('memoCharCount');
@@ -320,6 +320,11 @@ function goToPage(pageNum) {
     updateBookmarkIcon();
     updateMemoDot();
     updatePageButtons();
+
+    // 메모 사이드바가 열려있으면 현재 페이지 메모로 자동 갱신
+    if (isMemoSidebarOpen()) {
+        updateMemoContent();
+    }
 
     // 스크롤 위치 초기화 (확대 상태에서 페이지 넘길 때)
     DOM.bookViewer.scrollTop = 0;
@@ -644,7 +649,24 @@ function updateMemoDot() {
     DOM.memoDot.classList.toggle('hidden', !hasMemo);
 }
 
-function openMemoPanel() {
+function openMemoSidebar() {
+    updateMemoContent();
+    DOM.memoSidebar.classList.add('active');
+    DOM.memoSidebarOverlay.classList.add('active');
+    setTimeout(() => DOM.memoTextarea.focus(), 400);
+}
+
+function closeMemoSidebar() {
+    DOM.memoSidebar.classList.remove('active');
+    DOM.memoSidebarOverlay.classList.remove('active');
+}
+
+function isMemoSidebarOpen() {
+    return DOM.memoSidebar.classList.contains('active');
+}
+
+/** 현재 페이지 메모 내용으로 사이드바 갱신 */
+function updateMemoContent() {
     const page = BookViewer.currentPage;
     const memo = BookViewer.memos[page];
 
@@ -652,25 +674,6 @@ function openMemoPanel() {
     DOM.memoTextarea.value = memo ? memo.content : '';
     DOM.memoCharCount.textContent = DOM.memoTextarea.value.length;
     DOM.btnMemoDelete.classList.toggle('hidden', !memo);
-
-    DOM.memoOverlay.classList.remove('hidden');
-    DOM.memoPanel.classList.remove('hidden');
-
-    // 애니메이션
-    requestAnimationFrame(() => {
-        DOM.memoPanel.classList.add('active');
-    });
-
-    // 포커스
-    setTimeout(() => DOM.memoTextarea.focus(), 400);
-}
-
-function closeMemoPanel() {
-    DOM.memoPanel.classList.remove('active');
-    setTimeout(() => {
-        DOM.memoOverlay.classList.add('hidden');
-        DOM.memoPanel.classList.add('hidden');
-    }, 400);
 }
 
 async function saveMemo() {
@@ -716,7 +719,7 @@ async function saveMemo() {
     if (result) {
         BookViewer.memos[page] = result;
         updateMemoDot();
-        closeMemoPanel();
+        closeMemoSidebar();
         showToast('메모가 저장되었습니다.');
     } else {
         showToast('저장 실패. 다시 시도해주세요.', true);
@@ -740,7 +743,7 @@ async function deleteMemo() {
     if (result !== null) {
         delete BookViewer.memos[page];
         updateMemoDot();
-        closeMemoPanel();
+        closeMemoSidebar();
         showToast('메모가 삭제되었습니다.');
     } else {
         showToast('삭제 실패. 다시 시도해주세요.', true);
@@ -903,12 +906,14 @@ function bindEvents() {
     DOM.btnZoomIn.addEventListener('click', zoomIn);
     DOM.btnZoomOut.addEventListener('click', zoomOut);
     DOM.btnPageJump.addEventListener('click', openPageJump);
-    DOM.btnMemo.addEventListener('click', openMemoPanel);
+    DOM.btnMemo.addEventListener('click', () => {
+        isMemoSidebarOpen() ? closeMemoSidebar() : openMemoSidebar();
+    });
     DOM.btnFullscreen.addEventListener('click', toggleFullscreen);
 
-    // 메모 패널
-    DOM.btnMemoClose.addEventListener('click', closeMemoPanel);
-    DOM.memoOverlay.addEventListener('click', closeMemoPanel);
+    // 메모 사이드바
+    DOM.btnMemoClose.addEventListener('click', closeMemoSidebar);
+    DOM.memoSidebarOverlay.addEventListener('click', closeMemoSidebar);
     DOM.btnMemoSave.addEventListener('click', saveMemo);
     DOM.btnMemoDelete.addEventListener('click', deleteMemo);
     DOM.memoTextarea.addEventListener('input', () => {
@@ -932,7 +937,7 @@ function bindEvents() {
     document.addEventListener('keydown', (e) => {
         // 모달이나 메모 패널이 열려있으면 무시
         if (!DOM.pageJumpOverlay.classList.contains('hidden')) return;
-        if (!DOM.memoPanel.classList.contains('hidden')) return;
+        if (isMemoSidebarOpen()) return;
 
         switch (e.key) {
             case 'ArrowLeft':

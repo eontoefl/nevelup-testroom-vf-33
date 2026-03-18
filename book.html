@@ -149,26 +149,22 @@
 
 
   <!-- ============================================ -->
-  <!-- 6. 메모 패널 (하단에서 슬라이드업)             -->
+  <!-- 6. 메모 사이드바 (왼쪽, 목차 사이드바와 대칭)   -->
   <!-- ============================================ -->
-  <div class="book-memo-overlay hidden" id="memoOverlay"></div>
+  <div class="book-memo-sidebar-overlay" id="memoSidebarOverlay"></div>
 
-  <div class="book-memo-panel hidden" id="memoPanel">
-    <!-- 메모 헤더 -->
-    <div class="book-memo-header">
-      <h3 class="book-memo-title">
-        <div class="book-memo-title-icon">
-          <i class="fa-regular fa-comment-dots"></i>
-        </div>
+  <aside class="book-memo-sidebar" id="memoSidebar">
+    <div class="book-memo-sidebar-header">
+      <h3 class="book-memo-sidebar-title">
+        <i class="fa-regular fa-comment-dots"></i>
         <span id="memoPageLabel">0페이지 메모</span>
       </h3>
-      <button class="book-memo-close" id="btnMemoClose" title="닫기">
+      <button class="book-memo-sidebar-close" id="btnMemoClose" title="닫기">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
 
-    <!-- 메모 입력 -->
-    <div class="book-memo-body">
+    <div class="book-memo-sidebar-body">
       <textarea
         class="book-memo-textarea"
         id="memoTextarea"
@@ -180,8 +176,7 @@
       </div>
     </div>
 
-    <!-- 메모 하단 버튼 -->
-    <div class="book-memo-footer">
+    <div class="book-memo-sidebar-footer">
       <button class="book-modal-btn book-memo-btn-delete hidden" id="btnMemoDelete">
         <i class="fa-regular fa-trash-can"></i> 삭제
       </button>
@@ -189,7 +184,7 @@
         <i class="fa-regular fa-floppy-disk"></i> 저장하기
       </button>
     </div>
-  </div>
+  </aside>
 
 
   <!-- ============================================ -->
