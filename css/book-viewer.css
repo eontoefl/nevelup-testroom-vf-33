@@ -296,30 +296,32 @@
 .book-viewer {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 30px;
 }
 
+/* 확대 시 뷰어가 스크롤 모드로 전환 */
+.book-viewer.zoomed {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
 .book-canvas-wrapper {
-  max-width: 100%;
-  max-height: 100%;
   background: #fff;
   box-shadow: var(--bv-shadow-deep);
   border-radius: 12px;
   overflow: hidden;
-  aspect-ratio: 1 / 1.414;
-  height: 100%;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .book-canvas {
-  max-width: 100%;
-  max-height: 100%;
+  display: block;
 }
 
 /* 로딩 스피너 */
