@@ -82,11 +82,6 @@ function showAcademicResults(data) {
     document.getElementById('academicResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('academicResultTotalCount').textContent = totalQuestions;
     
-    const week = window.currentTest ? window.currentTest.currentWeek : 1;
-    const day = window.currentTest ? window.currentTest.currentDay : '월';
-    const dayTitle = `Week ${week}, ${day}요일 - 아카데믹리딩`;
-    document.getElementById('academicResultDayTitle').textContent = dayTitle;
-    
     const detailsContainer = document.getElementById('academicResultDetails');
     let detailsHTML = '';
     

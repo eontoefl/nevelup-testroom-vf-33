@@ -3466,3 +3466,18 @@ body {
         font-size: 1.8rem;
     }
 }
+
+/* ── 결과 화면 뱃지 (공통) ── */
+.result-badge {
+    display: block;
+    width: fit-content;
+    padding: 6px 14px;
+    background: #f0edf5;
+    color: #9480c5;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    max-width: 880px;
+    margin: 0 auto 16px;
+}

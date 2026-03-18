@@ -60,10 +60,6 @@ function showDaily1Results(data) {
     document.getElementById('daily1ResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('daily1ResultTotalCount').textContent = totalQuestions;
     
-    const week = currentTest.currentWeek || 1;
-    const day = currentTest.currentDay || '월';
-    document.getElementById('daily1ResultDayTitle').textContent = `Week ${week} - ${getDayName(day)}`;
-    
     const detailsContainer = document.getElementById('daily1ResultDetails');
     let detailsHTML = '';
     
