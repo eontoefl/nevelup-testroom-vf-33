@@ -284,29 +284,31 @@
     letter-spacing: -0.02em;
 }
 
-/* 상태 메시지 (잠김/읽기전용) */
+/* 상태 메시지 (잠김/읽기전용) - 가로 배너 */
 .explain-memo-status {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 24px;
-    background: rgba(148, 128, 197, 0.06);
-    border-radius: 16px;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #F0EDF5;
+    border-radius: 6px;
+    border-left: 3px solid #8B7BAE;
+    margin: 0 16px;
 }
 
 .explain-memo-status i {
-    color: var(--text-secondary);
-    font-size: 24px;
+    color: #8B7BAE;
+    font-size: 14px;
+    flex-shrink: 0;
 }
 
 .explain-memo-status p {
     font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.5;
+    color: #666666;
+    line-height: 1.4;
     margin: 0;
-    text-align: center;
+    text-align: left;
 }
 
 /* 메모 작성 영역 */
