@@ -39,12 +39,6 @@ function showAnnouncementResults(data) {
     document.getElementById('announcementResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('announcementResultTotalCount').textContent = totalQuestions;
     
-    // Week/Day 정보
-    const week = window.currentTest ? window.currentTest.currentWeek : 1;
-    const day = window.currentTest ? window.currentTest.currentDay : '월';
-    const dayTitle = `Week ${week}, ${day}요일 - 공지사항`;
-    document.getElementById('announcementResultDayTitle').textContent = dayTitle;
-    
     // 세부 결과 렌더링
     const detailsContainer = document.getElementById('announcementResultDetails');
     let detailsHTML = '';

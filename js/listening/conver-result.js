@@ -39,12 +39,6 @@ function showConverResults(data) {
     document.getElementById('converResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('converResultTotalCount').textContent = totalQuestions;
     
-    // Week/Day 정보
-    const week = window.currentTest ? window.currentTest.currentWeek : 1;
-    const day = window.currentTest ? window.currentTest.currentDay : '월';
-    const dayTitle = `Week ${week}, ${day}요일 - 컨버`;
-    document.getElementById('converResultDayTitle').textContent = dayTitle;
-    
     // 세부 결과 렌더링
     const detailsContainer = document.getElementById('converResultDetails');
     let detailsHTML = '';

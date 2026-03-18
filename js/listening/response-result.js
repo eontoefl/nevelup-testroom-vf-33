@@ -39,12 +39,6 @@ function showResponseResults(data) {
     document.getElementById('responseResultIncorrectCount').textContent = totalIncorrect;
     document.getElementById('responseResultTotalCount').textContent = totalQuestions;
     
-    // Week/Day 정보
-    const week = window.currentTest ? window.currentTest.currentWeek : 1;
-    const day = window.currentTest ? window.currentTest.currentDay : '월';
-    const dayTitle = `Week ${week}, ${day}요일 - 응답고르기`;
-    document.getElementById('responseResultDayTitle').textContent = dayTitle;
-    
     // 세부 결과 렌더링
     const detailsContainer = document.getElementById('responseResultDetails');
     let detailsHTML = '';
