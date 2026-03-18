@@ -421,10 +421,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bv-surface);
+  background: #f8f7fb;
   padding: 8px 16px;
   border-radius: 100px;
-  box-shadow: var(--bv-shadow-soft);
 }
 
 .book-zoom-level {
