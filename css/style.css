@@ -343,29 +343,29 @@ body {
 }
 
 .btn-back {
-    background: #ffffff;
+    background: #f8f9fa;
     border: none;
     padding: 0;
-    border-radius: 50%;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 16px;
-    color: #636e72;
+    color: var(--primary-color);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    width: 38px;
-    height: 38px;
+    box-shadow: none;
+    width: 34px;
+    height: 34px;
     flex-shrink: 0;
 }
 
 .btn-back:hover {
-    background: #f8f9fa;
-    color: #9480c5;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.15);
+    background: #eee;
+    color: var(--primary-color);
+    transform: translateX(-3px);
+    box-shadow: none;
 }
 
 /* Section Select Screen */
@@ -3285,23 +3285,6 @@ body {
     top: 0;
     z-index: 100;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
-}
-
-#taskListScreen .btn-back {
-    background: #f8f9fa;
-    border: none;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    color: var(--primary-color);
-    box-shadow: none;
-    padding: 0;
-}
-
-#taskListScreen .btn-back:hover {
-    background: #eee;
-    transform: translateX(-3px);
-    box-shadow: none;
 }
 
 #taskListScreen .user-card {
