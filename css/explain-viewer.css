@@ -33,7 +33,7 @@
 /* 메인 레이아웃: 좌우 split */
 .explain-viewer-body {
     display: flex;
-    height: calc(100vh - 57px);
+    height: calc(100vh - 71px);
     overflow: hidden;
 }
 
