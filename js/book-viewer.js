@@ -935,7 +935,7 @@ function bindEvents() {
 
     // 키보드 단축키
     document.addEventListener('keydown', (e) => {
-        // 모달이나 메모 패널이 열려있으면 무시
+        // 모달이나 메모 사이드바가 열려있으면 무시
         if (!DOM.pageJumpOverlay.classList.contains('hidden')) return;
         if (isMemoSidebarOpen()) return;
 
