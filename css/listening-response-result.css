@@ -436,6 +436,36 @@
     border-radius: 20px;
 }
 
+/* ── 세트 헤더 ── */
+.response-set-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(148, 128, 197, 0.08);
+    margin-bottom: 16px;
+    margin-top: 28px;
+}
+.response-set-header:first-child {
+    margin-top: 0;
+}
+.response-set-badge {
+    font-size: 15px;
+    font-weight: 700;
+    color: #9480c5;
+}
+.response-set-badge i {
+    margin-right: 6px;
+    font-size: 14px;
+}
+.response-set-meta {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
 /* ── 반응형 ── */
 @media (max-width: 640px) {
     #responseExplainScreen .result-summary {

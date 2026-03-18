@@ -604,6 +604,36 @@
     background: #7a66b0;
 }
 
+/* ── 세트 헤더 ── */
+.announce-set-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(148, 128, 197, 0.08);
+    margin-bottom: 16px;
+    margin-top: 28px;
+}
+.announce-set-header:first-child {
+    margin-top: 0;
+}
+.announce-set-badge {
+    font-size: 15px;
+    font-weight: 700;
+    color: #9480c5;
+}
+.announce-set-badge i {
+    margin-right: 6px;
+    font-size: 14px;
+}
+.announce-set-meta {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
 /* ── 반응형 ── */
 @media (max-width: 640px) {
     #announcementExplainScreen .announce-stats {
