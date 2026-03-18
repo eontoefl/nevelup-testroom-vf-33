@@ -93,6 +93,14 @@
   color: var(--bv-primary);
 }
 
+.book-btn-bookmark.bookmarked {
+  background: var(--bv-primary-light);
+}
+
+.book-btn-bookmark.bookmarked i {
+  color: var(--bv-primary);
+}
+
 
 /* ================================================
  * 2. Progress Bar
@@ -728,7 +736,45 @@
 
 
 /* ================================================
- * 8. Utility
+ * 8. Toast Notification
+ * ================================================ */
+.book-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bv-surface);
+  color: var(--bv-text-main);
+  padding: 14px 28px;
+  border-radius: 100px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  z-index: 300;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.book-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.book-toast i {
+  color: var(--bv-success);
+}
+
+.book-toast-error i {
+  color: #f87171;
+}
+
+
+/* ================================================
+ * 9. Utility
  * ================================================ */
 .hidden {
   display: none !important;
@@ -736,7 +782,7 @@
 
 
 /* ================================================
- * 9. Mobile Responsive
+ * 10. Mobile Responsive
  * ================================================ */
 @media (max-width: 768px) {
   .book-topbar {
