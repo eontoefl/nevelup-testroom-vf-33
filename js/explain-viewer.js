@@ -321,7 +321,8 @@ function _showScreenAtIndex(index) {
     if (newScreen) newScreen.style.display = '';
 
     // 스크롤 맨 위로
-    window.scrollTo(0, 0);
+    var contentArea = document.getElementById('explainContentArea');
+    if (contentArea) contentArea.scrollTop = 0;
 
     // 네비게이션 표시 업데이트
     _updateNavIndicator();
