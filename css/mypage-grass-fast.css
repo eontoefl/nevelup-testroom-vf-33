@@ -4,42 +4,42 @@
 
 /* 외부 그리드 */
 .grass-fast-grid {
-  grid-template-columns: 80px repeat(6, 1fr);
+  grid-template-columns: 88px repeat(6, 1fr);
 }
 
 /* 내부 슬롯 */
-.grass-fast-grid .g-day-4 { grid-template-columns: repeat(4, 12px); }
-.grass-fast-grid .g-day-3 { grid-template-columns: repeat(3, 12px); }
-.grass-fast-grid .g-day-2 { grid-template-columns: repeat(2, 12px); }
+.grass-fast-grid .g-day-4 { grid-template-columns: repeat(4, 13px); }
+.grass-fast-grid .g-day-3 { grid-template-columns: repeat(3, 13px); }
+.grass-fast-grid .g-day-2 { grid-template-columns: repeat(2, 13px); }
 
 /* 잔디 셀 */
 .grass-fast-grid .g {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
 }
 
 /* ── 반응형 ── */
 @media (max-width: 600px) {
   .grass-fast-grid {
-    column-gap: 8px;
-    row-gap: 6px;
-    grid-template-columns: 60px repeat(6, 1fr);
+    column-gap: 9px;
+    row-gap: 7px;
+    grid-template-columns: 66px repeat(6, 1fr);
   }
-  .grass-fast-grid .g { width: 10px; height: 10px; border-radius: 2px; }
-  .grass-fast-grid .g-day-4 { grid-template-columns: repeat(4, 10px); }
-  .grass-fast-grid .g-day-3 { grid-template-columns: repeat(3, 10px); }
-  .grass-fast-grid .g-day-2 { grid-template-columns: repeat(2, 10px); }
+  .grass-fast-grid .g { width: 11px; height: 11px; border-radius: 2px; }
+  .grass-fast-grid .g-day-4 { grid-template-columns: repeat(4, 11px); }
+  .grass-fast-grid .g-day-3 { grid-template-columns: repeat(3, 11px); }
+  .grass-fast-grid .g-day-2 { grid-template-columns: repeat(2, 11px); }
 }
 
 @media (max-width: 420px) {
   .grass-fast-grid {
     column-gap: 4px;
     row-gap: 4px;
-    grid-template-columns: 48px repeat(6, 1fr);
+    grid-template-columns: 53px repeat(6, 1fr);
   }
-  .grass-fast-grid .g { width: 8px; height: 8px; border-radius: 2px; }
-  .grass-fast-grid .g-day-4 { grid-template-columns: repeat(4, 8px); }
-  .grass-fast-grid .g-day-3 { grid-template-columns: repeat(3, 8px); }
-  .grass-fast-grid .g-day-2 { grid-template-columns: repeat(2, 8px); }
+  .grass-fast-grid .g { width: 9px; height: 9px; border-radius: 2px; }
+  .grass-fast-grid .g-day-4 { grid-template-columns: repeat(4, 9px); }
+  .grass-fast-grid .g-day-3 { grid-template-columns: repeat(3, 9px); }
+  .grass-fast-grid .g-day-2 { grid-template-columns: repeat(2, 9px); }
 }
