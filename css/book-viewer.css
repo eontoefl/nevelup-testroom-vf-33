@@ -1,0 +1,811 @@
+/* ================================================
+ * book-viewer.css
+ * PDF 뷰어 전용 스타일 (입문서 뷰어)
+ * ================================================ */
+
+/* ── CSS Variables ── */
+:root {
+  --bv-primary: #9480c5;
+  --bv-primary-light: #e9e5f3;
+  --bv-bg: #f1f4f8;
+  --bv-surface: #ffffff;
+  --bv-text-main: #2d3436;
+  --bv-text-muted: #636e72;
+  --bv-success: #77bf7e;
+  --bv-glass-bg: rgba(255, 255, 255, 0.7);
+  --bv-glass-border: rgba(255, 255, 255, 0.4);
+  --bv-shadow-soft: 0 10px 30px rgba(148, 128, 197, 0.08);
+  --bv-shadow-deep: 0 20px 50px rgba(0, 0, 0, 0.05);
+  --bv-transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  --bv-radius-lg: 24px;
+  --bv-radius-md: 16px;
+}
+
+/* ── Reset ── */
+.book-viewer-page * {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.book-viewer-page {
+  font-family: 'Pretendard', sans-serif;
+  background-color: var(--bv-bg);
+  color: var(--bv-text-main);
+  margin: 0;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ================================================
+ * 1. Top Bar
+ * ================================================ */
+.book-topbar {
+  height: 64px;
+  background: var(--bv-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 50;
+  position: relative;
+}
+
+.book-topbar-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--bv-text-main);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+}
+
+.book-topbar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bv-text-muted);
+  transition: var(--bv-transition);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.book-topbar-btn:hover {
+  background: var(--bv-primary-light);
+  color: var(--bv-primary);
+}
+
+.book-topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.book-btn-bookmark i {
+  color: var(--bv-primary);
+}
+
+
+/* ================================================
+ * 2. Progress Bar
+ * ================================================ */
+.book-progress-bar {
+  position: absolute;
+  top: 64px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(148, 128, 197, 0.05);
+  z-index: 49;
+}
+
+.book-progress-fill {
+  height: 100%;
+  background: var(--bv-primary);
+  transition: width 0.4s ease;
+  box-shadow: 0 0 10px rgba(148, 128, 197, 0.2);
+}
+
+
+/* ================================================
+ * 3. Sidebar (목차 + 북마크)
+ * ================================================ */
+.book-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 52, 54, 0.15);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.book-sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.book-sidebar {
+  position: fixed;
+  top: 16px;
+  right: -340px;
+  bottom: 16px;
+  width: 320px;
+  background: var(--bv-glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--bv-glass-border);
+  border-radius: var(--bv-radius-lg);
+  z-index: 101;
+  transition: right 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  box-shadow: var(--bv-shadow-deep);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.book-sidebar.active {
+  right: 16px;
+}
+
+.book-sidebar-tabs {
+  display: flex;
+  padding: 24px 20px 0;
+  gap: 8px;
+}
+
+.book-sidebar-tab {
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--bv-text-muted);
+  transition: var(--bv-transition);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+}
+
+.book-sidebar-tab.active {
+  color: var(--bv-primary);
+  background: var(--bv-surface);
+  box-shadow: var(--bv-shadow-soft);
+}
+
+.book-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.book-toc-list,
+.book-bookmark-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.book-toc-item,
+.book-bookmark-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: var(--bv-radius-md);
+  cursor: pointer;
+  transition: var(--bv-transition);
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: var(--bv-text-muted);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.book-toc-item:hover,
+.book-bookmark-item:hover {
+  background: var(--bv-surface);
+  transform: translateX(-4px);
+  color: var(--bv-text-main);
+}
+
+.book-toc-item.active {
+  background: var(--bv-surface);
+  color: var(--bv-primary);
+  font-weight: 700;
+  box-shadow: var(--bv-shadow-soft);
+}
+
+.book-toc-label-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.book-toc-page,
+.book-bookmark-page {
+  font-size: 0.8rem;
+  color: var(--bv-primary);
+  font-weight: 700;
+  background: var(--bv-primary-light);
+  padding: 2px 10px;
+  border-radius: 8px;
+}
+
+.book-toc-memo-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--bv-primary);
+  border-radius: 50%;
+  margin-left: 8px;
+  display: inline-block;
+}
+
+/* 북마크 삭제 버튼 */
+.book-bookmark-remove {
+  color: #cbd5e1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.book-bookmark-remove:hover {
+  color: #f87171;
+}
+
+.book-bookmark-icon {
+  color: var(--bv-primary);
+  opacity: 0.6;
+}
+
+.book-bookmark-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.book-bookmark-empty {
+  text-align: center;
+  color: var(--bv-text-muted);
+  padding: 40px 0;
+  font-size: 0.9rem;
+}
+
+
+/* ================================================
+ * 4. PDF Viewer Main Area
+ * ================================================ */
+.book-viewer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+}
+
+.book-canvas-wrapper {
+  max-width: 100%;
+  max-height: 100%;
+  background: #fff;
+  box-shadow: var(--bv-shadow-deep);
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1.414;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.book-canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* 로딩 스피너 */
+.book-loading {
+  position: absolute;
+  inset: 0;
+  background: var(--bv-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.book-loading p {
+  color: var(--bv-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.book-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(148, 128, 197, 0.1);
+  border-top-color: var(--bv-primary);
+  border-radius: 50%;
+  animation: bv-spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes bv-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 페이지 넘기기 버튼 */
+.book-page-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bv-surface);
+  color: var(--bv-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--bv-shadow-soft);
+  transition: var(--bv-transition);
+  z-index: 20;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.book-page-btn:hover {
+  background: var(--bv-primary);
+  color: #fff;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 15px 35px rgba(148, 128, 197, 0.3);
+}
+
+.book-page-prev { left: 40px; }
+.book-page-next { right: 40px; }
+
+
+/* ================================================
+ * 5. Bottom Toolbar
+ * ================================================ */
+.book-toolbar {
+  height: 80px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  z-index: 50;
+}
+
+.book-toolbar-left,
+.book-toolbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.book-toolbar-right {
+  gap: 8px;
+}
+
+.book-toolbar-btn {
+  padding: 12px 18px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--bv-text-muted);
+  transition: var(--bv-transition);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.book-toolbar-btn:hover {
+  background: var(--bv-surface);
+  color: var(--bv-primary);
+  box-shadow: var(--bv-shadow-soft);
+}
+
+.book-toolbar-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bv-surface);
+  padding: 8px 16px;
+  border-radius: 100px;
+  box-shadow: var(--bv-shadow-soft);
+}
+
+.book-zoom-level {
+  font-weight: 700;
+  font-size: 0.9rem;
+  min-width: 60px;
+  text-align: center;
+  color: var(--bv-primary);
+}
+
+.book-page-indicator {
+  font-weight: 700;
+  color: var(--bv-text-main);
+}
+
+/* 페이지 아이콘 */
+.book-toolbar-btn .fa-file-lines {
+  font-size: 1.2rem;
+}
+
+/* 메모 버튼 */
+.book-btn-memo {
+  position: relative;
+}
+
+.book-btn-memo .fa-comment-dots {
+  font-size: 1.3rem;
+}
+
+.book-memo-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--bv-primary);
+  border-radius: 50%;
+  position: absolute;
+  top: 8px;
+  right: 14px;
+}
+
+.book-memo-dot.hidden {
+  display: none !important;
+}
+
+/* 전체화면 버튼 */
+.book-btn-fullscreen .fa-expand {
+  font-size: 1.1rem;
+}
+
+
+/* ================================================
+ * 6. Memo Panel (하단 슬라이드업)
+ * ================================================ */
+.book-memo-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 52, 54, 0.1);
+  backdrop-filter: blur(8px);
+  z-index: 140;
+}
+
+.book-memo-panel {
+  position: fixed;
+  bottom: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 600px;
+  background: var(--bv-glass-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--bv-glass-border);
+  border-radius: 32px 32px 16px 16px;
+  box-shadow: var(--bv-shadow-deep);
+  z-index: 150;
+  transition: bottom 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  padding: 32px;
+  margin-bottom: 20px;
+}
+
+.book-memo-panel.active {
+  bottom: 0;
+}
+
+.book-memo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.book-memo-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.book-memo-title-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bv-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bv-primary);
+}
+
+.book-memo-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--bv-text-muted);
+  font-size: 1.5rem;
+  transition: color 0.2s ease;
+}
+
+.book-memo-close:hover {
+  color: var(--bv-text-main);
+}
+
+.book-memo-textarea {
+  width: 100%;
+  height: 160px;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 24px;
+  resize: none;
+  font-family: inherit;
+  color: var(--bv-text-main);
+  margin: 24px 0 8px;
+  font-size: 1rem;
+  line-height: 1.6;
+  transition: var(--bv-transition);
+}
+
+.book-memo-textarea:focus {
+  outline: none;
+  background: #fff;
+  box-shadow: var(--bv-shadow-soft);
+}
+
+.book-memo-char-count {
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--bv-text-muted);
+}
+
+.book-memo-char-count span {
+  color: var(--bv-primary);
+}
+
+.book-memo-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.book-memo-btn-delete {
+  color: var(--bv-text-muted);
+  background: var(--bv-bg);
+}
+
+.book-memo-btn-save {
+  background: var(--bv-primary);
+  color: white;
+  box-shadow: 0 12px 30px rgba(148, 128, 197, 0.3);
+}
+
+.book-memo-btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(148, 128, 197, 0.4);
+}
+
+
+/* ================================================
+ * 7. Modals (페이지 이동 + 완독)
+ * ================================================ */
+.book-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 52, 54, 0.2);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.book-modal {
+  background: var(--bv-surface);
+  border-radius: 32px;
+  padding: 48px 40px;
+  width: 90%;
+  max-width: 440px;
+  text-align: center;
+  box-shadow: var(--bv-shadow-deep);
+}
+
+.book-modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.book-modal-input {
+  width: 100%;
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  padding: 20px;
+  border: none;
+  background: var(--bv-bg);
+  border-radius: 24px;
+  margin: 32px 0 16px;
+  color: var(--bv-primary);
+}
+
+.book-modal-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(148, 128, 197, 0.2);
+}
+
+.book-modal-hint {
+  color: var(--bv-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.book-modal-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.book-modal-btn {
+  padding: 16px 32px;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--bv-transition);
+  border: none;
+  font-size: 1rem;
+  flex: 1;
+}
+
+.book-modal-btn-cancel {
+  background: var(--bv-bg);
+  color: var(--bv-text-muted);
+}
+
+.book-modal-btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.book-modal-btn-confirm {
+  background: var(--bv-primary);
+  color: white;
+  box-shadow: 0 12px 30px rgba(148, 128, 197, 0.3);
+}
+
+.book-modal-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(148, 128, 197, 0.4);
+}
+
+/* 완독 축하 모달 */
+.book-complete-icon {
+  font-size: 4rem;
+  color: var(--bv-success);
+  margin-bottom: 24px;
+}
+
+.book-complete-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.book-complete-desc {
+  color: var(--bv-text-muted);
+  font-weight: 600;
+  margin: 12px 0 40px;
+}
+
+.book-complete-btn {
+  width: 100%;
+  padding: 20px;
+  font-size: 1.1rem;
+}
+
+
+/* ================================================
+ * 8. Utility
+ * ================================================ */
+.hidden {
+  display: none !important;
+}
+
+
+/* ================================================
+ * 9. Mobile Responsive
+ * ================================================ */
+@media (max-width: 768px) {
+  .book-topbar {
+    padding: 0 16px;
+  }
+
+  .book-viewer {
+    padding: 12px;
+  }
+
+  .book-page-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .book-page-prev { left: 8px; }
+  .book-page-next { right: 8px; }
+
+  .book-toolbar {
+    height: 64px;
+    padding: 0 16px;
+  }
+
+  .book-toolbar-btn {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  .book-toolbar-center {
+    padding: 6px 12px;
+  }
+
+  .book-sidebar {
+    width: 280px;
+    top: 0;
+    bottom: 0;
+    border-radius: 0;
+  }
+
+  .book-sidebar.active {
+    right: 0;
+  }
+
+  .book-memo-panel {
+    width: 100%;
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    margin-bottom: 0;
+  }
+
+  .book-modal {
+    padding: 32px 24px;
+    border-radius: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .book-toolbar-center {
+    gap: 4px;
+    padding: 4px 8px;
+  }
+
+  .book-zoom-level {
+    min-width: 45px;
+    font-size: 0.8rem;
+  }
+
+  .book-page-indicator {
+    font-size: 0.85rem;
+  }
+}
