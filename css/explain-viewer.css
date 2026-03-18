@@ -291,10 +291,10 @@
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background: #F0EDF5;
+    background: #ffffff;
     border-radius: 6px;
-    border-left: 3px solid #8B7BAE;
-    margin: 0 16px;
+    margin: 0;
+    margin-bottom: 12px;
 }
 
 .explain-memo-status i {
