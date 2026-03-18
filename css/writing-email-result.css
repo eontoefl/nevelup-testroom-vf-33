@@ -48,11 +48,11 @@
     justify-content: space-between;
     align-items: center;
     padding: 22px 28px;
-    background: #ffffff;
+    background: #9480c5;
     border-radius: 18px;
     margin-bottom: 24px;
     border: none;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 10px 25px -5px rgba(148, 128, 197, 0.3);
 }
 
 #emailExplainScreen .result-status {
@@ -61,12 +61,12 @@
     gap: 10px;
     font-size: 16px;
     font-weight: 700;
-    color: #77bf7e;
+    color: #ffffff;
 }
 
 #emailExplainScreen .result-status i {
     font-size: 22px;
-    color: #77bf7e;
+    color: #ffffff;
 }
 
 #emailExplainScreen .result-word-count-box {
@@ -76,7 +76,7 @@
 #emailExplainScreen .result-word-count {
     font-size: 16px;
     font-weight: 700;
-    color: #2c3e50;
+    color: #ffffff;
     margin-bottom: 6px;
 }
 
@@ -93,17 +93,17 @@
 }
 
 #emailExplainScreen .word-count-feedback.perfect {
-    background: #e2f5e9;
+    background: #ffffff;
     color: #388e3c;
 }
 
 #emailExplainScreen .word-count-feedback.too-short {
-    background: #fff8e1;
+    background: #ffffff;
     color: #e65100;
 }
 
 #emailExplainScreen .word-count-feedback.too-long {
-    background: #ffebee;
+    background: #ffffff;
     color: #c62828;
 }
 
