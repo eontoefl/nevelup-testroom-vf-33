@@ -170,11 +170,13 @@ function _showSelectPanel() {
     var navBar = document.getElementById('explainNavBar');
     var rightPanel = document.getElementById('explainMemoPanel');
     var rightWrap = rightPanel ? rightPanel.parentElement : null;
+    var leftPanel = document.querySelector('.explain-viewer-left');
 
     if (selectPanel) selectPanel.style.display = '';
     if (contentArea) contentArea.style.display = 'none';
     if (navBar) navBar.style.display = 'none';
     if (rightWrap) rightWrap.style.display = 'none';
+    if (leftPanel) { leftPanel.style.flex = '1'; leftPanel.style.borderRight = 'none'; }
 
     // 모든 빨간 그릇 숨기기
     _hideAllExplainScreens();
@@ -186,11 +188,13 @@ function _showContentArea() {
     var navBar = document.getElementById('explainNavBar');
     var rightPanel = document.getElementById('explainMemoPanel');
     var rightWrap = rightPanel ? rightPanel.parentElement : null;
+    var leftPanel = document.querySelector('.explain-viewer-left');
 
     if (selectPanel) selectPanel.style.display = 'none';
     if (contentArea) contentArea.style.display = '';
     if (navBar) navBar.style.display = '';
     if (rightWrap) rightWrap.style.display = '';
+    if (leftPanel) { leftPanel.style.flex = ''; leftPanel.style.borderRight = ''; }
 }
 
 function _hideAllExplainScreens() {
