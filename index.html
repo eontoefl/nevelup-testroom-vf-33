@@ -795,37 +795,29 @@
     </div>
 
                     <div id="responseExplainScreen" style="display:none">
-        
-        <div class="test-content">
-            <div class="result-container">
-                <div class="result-header">
-                    <h2 id="responseResultDayTitle">Week 1 - 월요일</h2>
-                    <div class="result-summary">
-                        <div class="result-score-card">
-                            <div class="score-label">총 점수</div>
-                            <div class="score-value" id="responseResultScoreValue">85%</div>
-                        </div>
-                        <div class="result-stats">
-                            <div class="stat-item">
-                                <span class="stat-label">정답</span>
-                                <span class="stat-value correct" id="responseResultCorrectCount">10</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">오답</span>
-                                <span class="stat-value incorrect" id="responseResultIncorrectCount">2</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">전체</span>
-                                <span class="stat-value" id="responseResultTotalCount">12</span>
-                            </div>
-                        </div>
-                    </div>
+        <h2 id="responseResultDayTitle">Week 1 - 월요일</h2>
+        <div class="response-summary">
+            <div class="response-stats">
+                <div class="response-stat-box">
+                    <span class="response-stat-label">총 점수</span>
+                    <span class="response-stat-value" id="responseResultScoreValue">0%</span>
                 </div>
-                
-                <div class="result-details" id="responseResultDetails">
-                    <!-- 세부 채점 결과가 여기에 표시됩니다 -->
+                <div class="response-stat-box">
+                    <span class="response-stat-label">정답</span>
+                    <span class="response-stat-value first" id="responseResultCorrectCount">0</span>
+                </div>
+                <div class="response-stat-box">
+                    <span class="response-stat-label">오답</span>
+                    <span class="response-stat-value second" id="responseResultIncorrectCount">0</span>
+                </div>
+                <div class="response-stat-box">
+                    <span class="response-stat-label">전체</span>
+                    <span class="response-stat-value" id="responseResultTotalCount">0</span>
                 </div>
             </div>
+        </div>
+        <div class="response-content" id="responseResultDetails">
+            <!-- 세부 채점 결과가 여기에 표시됩니다 -->
         </div>
     </div>
 
