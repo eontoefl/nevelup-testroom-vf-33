@@ -100,12 +100,12 @@ function renderAll() {
 // 데드라인 연장 알림 배너 렌더링
 // ================================================
 function renderDeadlineExtensionBanner() {
-    const container = document.getElementById('deadlineExtensionBanner');
-    if (!container) return;
+    // 기존 배너가 있으면 제거
+    const existing = document.getElementById('deadlineExtensionBanner');
+    if (existing) existing.remove();
 
-    // 활성 연장 건 필터 (마감이 아직 안 지난 것만)
+    // 데이터 없으면 아무것도 안 함 (DOM에 빈 요소 남기지 않음)
     if (!mpDeadlineExtensions || mpDeadlineExtensions.length === 0 || !mpUser.startDate) {
-        container.innerHTML = '';
         return;
     }
 
@@ -132,10 +132,7 @@ function renderDeadlineExtensionBanner() {
         }
     });
 
-    if (activeExtensions.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
+    if (activeExtensions.length === 0) return;
 
     // 마감이 가까운 순으로 정렬
     activeExtensions.sort((a, b) => a.deadline - b.deadline);
@@ -153,7 +150,10 @@ function renderDeadlineExtensionBanner() {
         </div>`;
     }).join('');
 
-    container.innerHTML = `
+    // 배너 동적 생성
+    const banner = document.createElement('div');
+    banner.id = 'deadlineExtensionBanner';
+    banner.innerHTML = `
         <div class="ext-banner">
             <div class="ext-banner-header">
                 <i class="fa-solid fa-calendar-plus"></i> 데드라인 연장 안내
@@ -161,6 +161,12 @@ function renderDeadlineExtensionBanner() {
             ${items}
         </div>
     `;
+
+    // ① 학습 현황 요약과 ② 잔디 심기 사이에 삽입
+    const grassSection = document.querySelector('.page-wrap .section-block:nth-of-type(2)');
+    if (grassSection) {
+        grassSection.parentNode.insertBefore(banner, grassSection);
+    }
 
     console.log(`📊 [MyPage] 데드라인 연장 알림 ${activeExtensions.length}건 표시`);
 }
