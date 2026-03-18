@@ -10,7 +10,7 @@
   --bv-bg: #f1f4f8;
   --bv-surface: #ffffff;
   --bv-text-main: #2d3436;
-  --bv-text-muted: #636e72;
+  --bv-text-muted: #9ca3ab;
   --bv-success: #77bf7e;
   --bv-glass-bg: rgba(255, 255, 255, 0.7);
   --bv-glass-border: rgba(255, 255, 255, 0.4);
@@ -55,8 +55,8 @@
 }
 
 .book-topbar-title {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
   color: var(--bv-text-main);
   position: absolute;
   left: 50%;
@@ -76,7 +76,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .book-topbar-btn:hover {
@@ -346,8 +346,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--bv-surface);
   color: var(--bv-text-muted);
@@ -359,7 +359,7 @@
   z-index: 20;
   border: none;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .book-page-btn:hover {
@@ -377,8 +377,8 @@
  * 5. Bottom Toolbar
  * ================================================ */
 .book-toolbar {
-  height: 80px;
-  background: transparent;
+  height: 72px;
+  background: var(--bv-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -397,18 +397,18 @@
 }
 
 .book-toolbar-btn {
-  padding: 12px 18px;
-  border-radius: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: var(--bv-text-muted);
   transition: var(--bv-transition);
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .book-toolbar-btn:hover {
@@ -428,30 +428,21 @@
 }
 
 .book-zoom-level {
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.85rem;
   min-width: 60px;
   text-align: center;
   color: var(--bv-primary);
 }
 
 .book-page-indicator {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--bv-text-main);
-}
-
-/* 페이지 아이콘 */
-.book-toolbar-btn .fa-file-lines {
-  font-size: 1.2rem;
 }
 
 /* 메모 버튼 */
 .book-btn-memo {
   position: relative;
-}
-
-.book-btn-memo .fa-comment-dots {
-  font-size: 1.3rem;
 }
 
 .book-memo-dot {
@@ -468,10 +459,7 @@
   display: none !important;
 }
 
-/* 전체화면 버튼 */
-.book-btn-fullscreen .fa-expand {
-  font-size: 1.1rem;
-}
+
 
 
 /* ================================================
@@ -804,13 +792,13 @@
   .book-page-next { right: 8px; }
 
   .book-toolbar {
-    height: 64px;
+    height: 56px;
     padding: 0 16px;
   }
 
   .book-toolbar-btn {
-    padding: 10px 12px;
-    font-size: 0.85rem;
+    padding: 8px 10px;
+    font-size: 0.8rem;
   }
 
   .book-toolbar-center {
