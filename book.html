@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes" />
+  <title>입문서 – 내벨업 테스트룸</title>
+
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <!-- PDF.js -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.min.mjs" type="module"></script>
+
+  <!-- 공통 스타일 (CSS 변수 등) -->
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- PDF 뷰어 전용 스타일 (선생님이 디자인) -->
+  <link rel="stylesheet" href="css/book-viewer.css?v=001" />
+</head>
+<body>
+
+  <!-- ============================================ -->
+  <!-- 1. 상단바 (Top Bar)                          -->
+  <!-- ============================================ -->
+  <header class="book-topbar">
+    <!-- 뒤로가기 -->
+    <button class="book-topbar-btn book-btn-back" id="btnBack" title="뒤로가기">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+
+    <!-- 제목 -->
+    <h1 class="book-topbar-title" id="bookTitle">TOEFL 입문서</h1>
+
+    <!-- 우측 버튼들 -->
+    <div class="book-topbar-actions">
+      <!-- 북마크 현재 페이지 -->
+      <button class="book-topbar-btn book-btn-bookmark" id="btnBookmark" title="북마크">
+        <i class="fa-regular fa-bookmark"></i>
+      </button>
+      <!-- 목차/북마크 사이드바 토글 -->
+      <button class="book-topbar-btn book-btn-sidebar" id="btnSidebar" title="목차">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+
+  <!-- ============================================ -->
+  <!-- 2. 사이드바 (목차 + 북마크 목록)              -->
+  <!-- ============================================ -->
+  <div class="book-sidebar-overlay" id="sidebarOverlay"></div>
+
+  <aside class="book-sidebar" id="sidebar">
+    <!-- 사이드바 탭 -->
+    <div class="book-sidebar-tabs">
+      <button class="book-sidebar-tab active" data-tab="toc">
+        <i class="fa-solid fa-list"></i> 목차
+      </button>
+      <button class="book-sidebar-tab" data-tab="bookmarks">
+        <i class="fa-solid fa-bookmark"></i> 북마크
+      </button>
+    </div>
+
+    <!-- 탭 내용: 목차 -->
+    <div class="book-sidebar-content" id="tabToc">
+      <ul class="book-toc-list" id="tocList">
+        <!-- JS에서 동적 생성 -->
+        <!-- 예시 구조:
+        <li class="book-toc-item" data-page="1">
+          <span class="book-toc-label">홈에디션이란?</span>
+          <span class="book-toc-page">1</span>
+          <span class="book-toc-memo-dot"></span>  ← 메모 있으면 표시
+        </li>
+        -->
+      </ul>
+    </div>
+
+    <!-- 탭 내용: 북마크 목록 -->
+    <div class="book-sidebar-content hidden" id="tabBookmarks">
+      <ul class="book-bookmark-list" id="bookmarkList">
+        <!-- JS에서 동적 생성 -->
+        <!-- 예시 구조:
+        <li class="book-bookmark-item" data-page="5">
+          <i class="fa-solid fa-bookmark"></i>
+          <span class="book-bookmark-page">5페이지</span>
+          <button class="book-bookmark-remove" title="삭제">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </li>
+        -->
+      </ul>
+      <p class="book-bookmark-empty hidden" id="bookmarkEmpty">
+        북마크가 없습니다
+      </p>
+    </div>
+  </aside>
+
+
+  <!-- ============================================ -->
+  <!-- 3. PDF 뷰어 본문 (메인 영역)                  -->
+  <!-- ============================================ -->
+  <main class="book-viewer" id="bookViewer">
+
+    <!-- 로딩 스피너 -->
+    <div class="book-loading" id="bookLoading">
+      <div class="book-spinner"></div>
+      <p>입문서를 불러오는 중...</p>
+    </div>
+
+    <!-- PDF 캔버스 영역 -->
+    <div class="book-canvas-wrapper" id="canvasWrapper">
+      <canvas class="book-canvas" id="pdfCanvas"></canvas>
+    </div>
+
+    <!-- 페이지 넘기기 좌우 터치 영역 (모바일 스와이프 + PC 클릭) -->
+    <button class="book-page-btn book-page-prev" id="btnPrevPage" title="이전 페이지">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <button class="book-page-btn book-page-next" id="btnNextPage" title="다음 페이지">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+
+  </main>
+
+
+  <!-- ============================================ -->
+  <!-- 4. 하단 툴바 (Bottom Toolbar)                 -->
+  <!-- ============================================ -->
+  <footer class="book-toolbar" id="bookToolbar">
+
+    <!-- 좌측: 페이지 정보 + 이동 -->
+    <div class="book-toolbar-left">
+      <button class="book-toolbar-btn" id="btnPageJump" title="페이지 이동">
+        <i class="fa-regular fa-file"></i>
+        <span class="book-page-indicator">
+          <span id="currentPage">1</span> / <span id="totalPages">1</span>
+        </span>
+      </button>
+    </div>
+
+    <!-- 중앙: 줌 컨트롤 -->
+    <div class="book-toolbar-center">
+      <button class="book-toolbar-btn" id="btnZoomOut" title="축소">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <span class="book-zoom-level" id="zoomLevel">100%</span>
+      <button class="book-toolbar-btn" id="btnZoomIn" title="확대">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+
+    <!-- 우측: 메모 + 전체화면 -->
+    <div class="book-toolbar-right">
+      <button class="book-toolbar-btn book-btn-memo" id="btnMemo" title="메모">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span class="book-memo-dot hidden" id="memoDot"></span>
+      </button>
+      <button class="book-toolbar-btn" id="btnFullscreen" title="전체화면">
+        <i class="fa-solid fa-expand"></i>
+      </button>
+    </div>
+
+  </footer>
+
+
+  <!-- ============================================ -->
+  <!-- 5. 메모 패널 (하단에서 슬라이드업)             -->
+  <!-- ============================================ -->
+  <div class="book-memo-overlay hidden" id="memoOverlay"></div>
+
+  <div class="book-memo-panel hidden" id="memoPanel">
+    <!-- 메모 헤더 -->
+    <div class="book-memo-header">
+      <h3 class="book-memo-title">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span id="memoPageLabel">0페이지 메모</span>
+      </h3>
+      <button class="book-memo-close" id="btnMemoClose" title="닫기">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- 메모 입력 -->
+    <div class="book-memo-body">
+      <textarea
+        class="book-memo-textarea"
+        id="memoTextarea"
+        placeholder="이 페이지에 대한 메모를 작성하세요..."
+        maxlength="1000"
+      ></textarea>
+      <div class="book-memo-char-count">
+        <span id="memoCharCount">0</span> / 1000
+      </div>
+    </div>
+
+    <!-- 메모 하단 버튼 -->
+    <div class="book-memo-footer">
+      <button class="book-memo-btn book-memo-btn-delete hidden" id="btnMemoDelete">
+        <i class="fa-regular fa-trash-can"></i> 삭제
+      </button>
+      <button class="book-memo-btn book-memo-btn-save" id="btnMemoSave">
+        <i class="fa-regular fa-floppy-disk"></i> 저장하기
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- 6. 페이지 이동 모달                           -->
+  <!-- ============================================ -->
+  <div class="book-modal-overlay hidden" id="pageJumpOverlay">
+    <div class="book-modal" id="pageJumpModal">
+      <h3 class="book-modal-title">페이지 이동</h3>
+      <div class="book-modal-body">
+        <input
+          type="number"
+          class="book-modal-input"
+          id="pageJumpInput"
+          min="1"
+          placeholder="페이지 번호 입력"
+        />
+        <p class="book-modal-hint">
+          1 ~ <span id="pageJumpMax">28</span> 페이지
+        </p>
+      </div>
+      <div class="book-modal-actions">
+        <button class="book-modal-btn book-modal-btn-cancel" id="btnPageJumpCancel">
+          취소
+        </button>
+        <button class="book-modal-btn book-modal-btn-confirm" id="btnPageJumpConfirm">
+          이동
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- 7. 완독 축하 모달                             -->
+  <!-- ============================================ -->
+  <div class="book-modal-overlay hidden" id="completeOverlay">
+    <div class="book-modal book-modal-complete" id="completeModal">
+      <div class="book-complete-icon">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h3 class="book-complete-title">입문서 읽기 완료!</h3>
+      <p class="book-complete-desc">
+        모든 페이지를 읽었습니다. 수고하셨습니다!
+      </p>
+      <button class="book-modal-btn book-modal-btn-confirm" id="btnCompleteClose">
+        확인
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- 8. 읽기 진행률 바 (상단바 아래)                -->
+  <!-- ============================================ -->
+  <div class="book-progress-bar" id="progressBar">
+    <div class="book-progress-fill" id="progressFill" style="width: 0%"></div>
+  </div>
+
+
+  <!-- ============================================ -->
+  <!-- JS: Supabase 클라이언트 + 뷰어 로직           -->
+  <!-- ============================================ -->
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/book-viewer.js?v=001" type="module"></script>
+
+</body>
+</html>
