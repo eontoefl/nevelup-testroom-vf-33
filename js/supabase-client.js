@@ -349,7 +349,7 @@ async function getCompletedTasksV3(userId) {
     
     var query = 'user_id=eq.' + userId
         + '&initial_record=not.is.null'
-        + '&select=id,section_type,module_number,week,day';
+        + '&select=id,section_type,module_number,week,day,error_note_submitted';
     
     var rows = await supabaseSelect('study_results_v3', query);
     console.log('📊 [V3] 완료 과제:', (rows ? rows.length : 0) + '건');

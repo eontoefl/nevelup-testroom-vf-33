@@ -237,6 +237,9 @@ function showTaskListScreen(week, dayKr, tasks) {
         subtitle.textContent = `${tasks.length}개의 과제가 있습니다`;
     }
     
+    // 마감 배너 표시
+    _renderDeadlineBanner(week, dayKr);
+    
     // 과제 목록 표시
     const sectionsGrid = document.querySelector('#taskListScreen .sections-grid');
     if (sectionsGrid) {
@@ -294,3 +297,66 @@ function showTaskListScreen(week, dayKr, tasks) {
 //   및 모든 V1 프로토타입 함수들 (initReadingSection, loadReadingPassage, etc.)
 // — toeflData 하드코딩 데이터 기반 V1 전용 코드였으며,
 //   V3에서는 섹션별 모듈 컨트롤러 + Supabase 데이터로 완전 대체됨
+
+// ========================================
+// 마감 배너 렌더링
+// ========================================
+function _renderDeadlineBanner(week, dayKr) {
+    // 기존 배너 제거
+    var existing = document.getElementById('taskListDeadlineBanner');
+    if (existing) existing.remove();
+
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+    if (!user || !user.startDate) return;
+
+    var dayMap = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+    var dayOffset = dayMap[dayKr];
+    if (dayOffset === undefined) return;
+
+    var startDate = new Date(user.startDate + 'T00:00:00');
+    if (isNaN(startDate.getTime())) return;
+
+    var taskDate = new Date(startDate);
+    taskDate.setDate(taskDate.getDate() + (week - 1) * 7 + dayOffset);
+
+    var deadline = new Date(taskDate);
+    deadline.setDate(deadline.getDate() + 1);
+    deadline.setHours(4, 0, 0, 0);
+
+    // 연장 체크
+    var taskDateStr = taskDate.getFullYear() + '-' +
+        String(taskDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(taskDate.getDate()).padStart(2, '0');
+    var extensions = window._deadlineExtensions || [];
+    var ext = extensions.find(function(e) { return e.original_date === taskDateStr; });
+    if (ext) {
+        deadline.setDate(deadline.getDate() + (ext.extra_days || 1));
+    }
+
+    var now = new Date();
+    var banner = document.createElement('div');
+    banner.id = 'taskListDeadlineBanner';
+
+    if (now > deadline) {
+        banner.className = 'task-deadline-banner deadline-passed';
+        banner.innerHTML = '<i class="fas fa-lock"></i> 마감됨';
+    } else {
+        var diff = deadline - now;
+        var hours = Math.floor(diff / (1000 * 60 * 60));
+        var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        var timeText = hours > 0 ? hours + '시간 ' + minutes + '분 남음' : minutes + '분 남음';
+
+        if (hours < 6) {
+            banner.className = 'task-deadline-banner deadline-urgent';
+            banner.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + timeText;
+        } else {
+            banner.className = 'task-deadline-banner deadline-normal';
+            banner.innerHTML = '<i class="fas fa-clock"></i> 오늘 마감 · ' + timeText;
+        }
+    }
+
+    var welcomeHeader = document.querySelector('#taskListScreen .welcome-header');
+    if (welcomeHeader) {
+        welcomeHeader.parentNode.insertBefore(banner, welcomeHeader.nextSibling);
+    }
+}

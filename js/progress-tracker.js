@@ -59,7 +59,8 @@ var ProgressTracker = {
                             ProgressTracker._completedTasks[key] = {
                                 week: rec.week,
                                 day: rec.day,
-                                completedAt: rec.completed_at
+                                completedAt: rec.completed_at,
+                                errorNoteSubmitted: !!rec.error_note_submitted
                             };
                         }
                         // vocab, intro-book은 week_day 키도 추가 (날짜별 구분)
@@ -175,31 +176,66 @@ var ProgressTracker = {
     },
 
     // ========================================
-    // UI: 과제 목록(section-card)에 체크 아이콘 추가
+    // 과제 상태 조회 (3단계: null/pending/done)
+    // ========================================
+    getTaskStatus(taskName) {
+        var parsed = (typeof parseTaskName === 'function') ? parseTaskName(taskName) : null;
+        if (!parsed) return null;
+
+        var type = parsed.type;
+        var key = null;
+
+        if (type === 'reading' || type === 'listening') {
+            key = type + '_' + parsed.params.module;
+        } else if (type === 'writing' || type === 'speaking') {
+            key = type + '_' + parsed.params.number;
+        } else if (type === 'vocab' || type === 'intro-book') {
+            var ct = window.currentTest;
+            if (ct && ct.currentWeek && ct.currentDay) {
+                key = type + '_w' + ct.currentWeek + '_' + ct.currentDay;
+            }
+        }
+
+        if (!key || !this._completedTasks[key]) return null; // 미시작
+
+        var task = this._completedTasks[key];
+        // vocab, intro-book은 오답노트 없으므로 바로 done
+        if (type === 'vocab' || type === 'intro-book') return 'done';
+        return task.errorNoteSubmitted ? 'done' : 'pending';
+    },
+
+    // ========================================
+    // UI: 과제 목록(section-card)에 상태 뱃지 표시
     // ========================================
     updateTaskCards() {
         if (!this._loaded) return;
 
         var cards = document.querySelectorAll('#taskListScreen .section-card');
         cards.forEach(function(card) {
-            // 기존 체크 제거
+            // 기존 뱃지 제거
             var existingCheck = card.querySelector('.task-complete-badge');
             if (existingCheck) existingCheck.remove();
+            card.classList.remove('task-completed', 'task-pending');
 
             // h3에서 과제명 추출
             var h3 = card.querySelector('h3');
             if (!h3) return;
             var taskName = h3.textContent.trim();
 
-            if (ProgressTracker.isTaskNameCompleted(taskName)) {
-                // 완료 배지 추가
+            var status = ProgressTracker.getTaskStatus(taskName);
+
+            if (status === 'done') {
                 var badge = document.createElement('div');
-                badge.className = 'task-complete-badge';
-                badge.innerHTML = '<i class="fas fa-check"></i> 제출됨';
+                badge.className = 'task-complete-badge task-badge-done';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> 완료';
                 card.appendChild(badge);
                 card.classList.add('task-completed');
-            } else {
-                card.classList.remove('task-completed');
+            } else if (status === 'pending') {
+                var badge = document.createElement('div');
+                badge.className = 'task-complete-badge task-badge-pending';
+                badge.innerHTML = '<i class="fas fa-pen"></i> 노트 미작성';
+                card.appendChild(badge);
+                card.classList.add('task-pending');
             }
         });
     },
