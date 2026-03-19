@@ -45,15 +45,6 @@
     color: #555555;
     font-weight: 400;
     font-size: 0.95rem;
-    margin-bottom: 0.5rem;
-}
-
-.repeat-result-title {
-    font-size: 2rem;
-    font-weight: 900;
-    letter-spacing: -0.05em;
-    margin-bottom: 0.25rem;
-    color: var(--text-primary, #0f172a);
 }
 
 /* ── 왼쪽: 일러스트 이미지 ── */
@@ -236,10 +227,6 @@
     .repeat-result-right-col {
         grid-column: 1;
         grid-row: auto;
-    }
-
-    .repeat-result-title {
-        font-size: 1.5rem;
     }
 
     .repeat-result-listen-btn {
