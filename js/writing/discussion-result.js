@@ -51,12 +51,6 @@ function showDiscussionResult(data) {
         console.warn('💬 [토론형 채점] 프로필 없음 - 기본값 사용');
     }
     
-    // 제목 업데이트
-    const titleElement = document.getElementById('discussionResultTitle');
-    if (titleElement) {
-        titleElement.textContent = data.weekDay || 'Week 1, 월요일';
-    }
-    
     // 단어 수 표시
     const wordCountElement = document.getElementById('discussionResultWordCount');
     const wordCountFeedbackElement = document.getElementById('discussionWordCountFeedback');
