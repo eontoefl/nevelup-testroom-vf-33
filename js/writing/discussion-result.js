@@ -213,18 +213,14 @@ function showDiscussionBulletFeedback(bulletNum, event) {
     
     // Bullet 피드백 HTML 생성 (sentence, ets, strategy만 표시)
     const bulletHtml = `
-        <div class="bullet-item">
-            <div class="bullet-content">
-                <span class="bullet-badge">Bullet ${bullet.bulletNum}</span>
-                <div class="bullet-section">
-                    <div class="bullet-label"><i class="fas fa-thumbtack"></i> ETS가 요구하는 필수 요소</div>
-                    ${bullet.ets}
-                </div>
-                <div class="bullet-section">
-                    <div class="bullet-label"><i class="fas fa-award"></i> 효과적인 작성 전략</div>
-                    <span class="key-text">${bullet.strategy}</span>
-                </div>
-            </div>
+        <span class="bullet-badge">Bullet ${bullet.bulletNum}</span>
+        <div class="bullet-section">
+            <div class="bullet-label"><i class="fas fa-thumbtack"></i> ETS가 요구하는 필수 요소</div>
+            ${bullet.ets}
+        </div>
+        <div class="bullet-section">
+            <div class="bullet-label"><i class="fas fa-award"></i> 효과적인 작성 전략</div>
+            <span class="key-text">${bullet.strategy}</span>
         </div>
     `;
     
