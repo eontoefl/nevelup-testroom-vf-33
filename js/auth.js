@@ -182,6 +182,17 @@ window.addEventListener('DOMContentLoaded', () => {
         // 이미 로그인되어 있으면 학습 일정 화면으로
         currentUser = JSON.parse(savedUser);
         console.log('📋 세션 복원:', currentUser.name);
+        // startDate 최신값 동기화 (DB 변경 반영)
+        if (currentUser.applicationId) {
+            supabaseSelect('applications', `id=eq.${currentUser.applicationId}&select=schedule_start`)
+                .then(rows => {
+                    if (rows && rows[0] && rows[0].schedule_start) {
+                        currentUser.startDate = rows[0].schedule_start;
+                        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        console.log('📋 startDate 동기화 완료:', currentUser.startDate);
+                    }
+                });
+        }
         showScreen('scheduleScreen');
     } else {
         // 로그인 화면 표시
