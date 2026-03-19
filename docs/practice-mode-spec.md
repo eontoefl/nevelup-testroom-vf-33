@@ -27,6 +27,14 @@
 | **기본 선택값** | `sessionStorage`에 저장된 마지막 모드 복원. 없으면 `'regular'` 기본 |
 | **권한 없을 때** | `canAccessPractice`가 false이면 연습코스 탭 자체를 숨김 |
 
+### 2-1-1. 현재 학습 위치 상태 관리
+
+| 항목 | 내용 |
+|---|---|
+| **정규코스** | 기존 `currentTest` 객체 사용 (`currentWeek`, `currentDay`) |
+| **연습코스** | 별도 `currentPractice` 객체 사용 (`practiceNumber`) |
+| **분리 이유** | 정규코스의 주/요일 구조와 연습코스의 Practice 번호 구조가 다르므로 별도 관리 |
+
 ### 2-2. 연습코스 스케줄 화면
 
 | 항목 | 내용 |
