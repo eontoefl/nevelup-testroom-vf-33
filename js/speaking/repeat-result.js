@@ -93,8 +93,56 @@ function showRepeatResultNarration(set, index) {
     // 다시 듣기 버튼 설정
     const listenBtn = document.getElementById('repeatResultListenBtn');
     if (listenBtn) {
-        listenBtn.onclick = () => playRepeatResultAudio(audio.audio);
+        _resetListenBtnUI(listenBtn);
+        listenBtn.onclick = () => _toggleRepeatResultAudio(audio.audio, listenBtn);
     }
+}
+
+/**
+ * 버튼 UI를 재생 상태로 리셋
+ */
+function _resetListenBtnUI(btn) {
+    if (!btn) return;
+    const icon = btn.querySelector('i');
+    const label = btn.querySelector('span');
+    if (icon) { icon.className = 'fas fa-play-circle'; }
+    if (label) { label.textContent = 'Listen Again'; }
+}
+
+/**
+ * 재생/일시정지 토글
+ */
+function _toggleRepeatResultAudio(audioUrl, btn) {
+    // 현재 재생 중이면 일시정지
+    if (_repeatResultAudio && !_repeatResultAudio.paused) {
+        _repeatResultAudio.pause();
+        _resetListenBtnUI(btn);
+        return;
+    }
+    
+    // 일시정지 상태에서 같은 오디오면 이어서 재생
+    if (_repeatResultAudio && _repeatResultAudio.paused && _repeatResultAudio._srcUrl === audioUrl) {
+        _repeatResultAudio.play().catch(e => console.error('❌ [repeat-result] 재생 실패:', e));
+        _setListenBtnPause(btn);
+        return;
+    }
+    
+    // 새 오디오 재생
+    playRepeatResultAudio(audioUrl);
+    _setListenBtnPause(btn);
+    
+    // 재생 완료 시 버튼 복원
+    if (_repeatResultAudio) {
+        _repeatResultAudio.onended = () => _resetListenBtnUI(btn);
+    }
+}
+
+function _setListenBtnPause(btn) {
+    if (!btn) return;
+    const icon = btn.querySelector('i');
+    const label = btn.querySelector('span');
+    if (icon) { icon.className = 'fas fa-pause-circle'; }
+    if (label) { label.textContent = 'Pause'; }
 }
 
 /**
@@ -118,6 +166,7 @@ function playRepeatResultAudio(audioUrl) {
     
     // 새 오디오 재생
     _repeatResultAudio = new Audio(audioUrl);
+    _repeatResultAudio._srcUrl = audioUrl;
     _repeatResultAudio.play().catch(error => {
         console.error('❌ [repeat-result] 오디오 재생 실패:', error);
     });
@@ -133,6 +182,7 @@ function cleanupRepeatResult() {
         _repeatResultAudio = null;
     }
     _repeatResultCurrentIndex = 0;
+    _resetListenBtnUI(document.getElementById('repeatResultListenBtn'));
 }
 
 // 전역 노출
