@@ -367,3 +367,37 @@ function _renderDeadlineBanner(week, dayKr) {
         welcomeHeader.parentNode.insertBefore(banner, welcomeHeader.nextSibling);
     }
 }
+
+// ================================================
+// URL 해시로 과제 목록 복귀 (#taskList/week/day)
+// book.html 뒤로가기 시 scheduleScreen 대신 taskListScreen 표시
+// ================================================
+(function handleTaskListHash() {
+    var hash = window.location.hash;
+    if (!hash || !hash.startsWith('#taskList')) return;
+
+    // 해시 사용 후 제거 (새로고침 시 중복 방지)
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+
+    // 로그인 상태 확인
+    if (!currentUser) return;
+
+    // 해시 파싱: #taskList/1/월
+    var parts = hash.replace('#taskList', '').split('/').filter(Boolean);
+    var week = parts[0] ? parseInt(parts[0], 10) : null;
+    var dayKr = parts[1] ? decodeURIComponent(parts[1]) : null;
+
+    // week/day 있으면 해당 날짜의 과제 목록 표시
+    if (week && dayKr) {
+        var dayMapping = { '일': 'sunday', '월': 'monday', '화': 'tuesday', '수': 'wednesday', '목': 'thursday', '금': 'friday' };
+        var dayEn = dayMapping[dayKr];
+        if (dayEn) {
+            selectDay(week, dayKr, dayEn);
+            console.log('📋 [해시복귀] taskListScreen 표시 — Week' + week + ' ' + dayKr);
+            return;
+        }
+    }
+
+    // week/day 없으면 scheduleScreen 유지 (기본 동작)
+    console.log('📋 [해시복귀] week/day 정보 없음 — scheduleScreen 유지');
+})();
