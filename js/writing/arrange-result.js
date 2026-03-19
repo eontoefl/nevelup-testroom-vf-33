@@ -23,12 +23,6 @@ function showArrangeResult(data) {
     document.getElementById('arrangeResultIncorrectCount').textContent = resultsData.total - resultsData.correct;
     document.getElementById('arrangeResultTotalCount').textContent = resultsData.total;
     
-    // Week/Day 정보
-    const week = window.currentTest ? window.currentTest.currentWeek : 1;
-    const day = window.currentTest ? window.currentTest.currentDay : '월';
-    const dayTitle = `Week ${week}, ${day}요일 - Build a Sentence`;
-    document.getElementById('arrangeResultDayTitle').textContent = dayTitle;
-    
     // 세부 결과 렌더링
     const detailsContainer = document.getElementById('arrangeResultDetails');
     let html = '';

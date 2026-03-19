@@ -15,12 +15,6 @@ function showEmailResult(data) {
         return;
     }
     
-    // 제목 업데이트
-    const titleElement = document.getElementById('emailResultTitle');
-    if (titleElement) {
-        titleElement.textContent = data.weekDay || 'Week 1, 월요일';
-    }
-    
     // 단어 수 표시
     const wordCountElement = document.getElementById('emailResultWordCount');
     const wordCountFeedbackElement = document.getElementById('emailWordCountFeedback');
