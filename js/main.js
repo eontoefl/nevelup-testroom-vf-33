@@ -342,16 +342,23 @@ function _renderDeadlineBanner(week, dayKr) {
         banner.innerHTML = '<i class="fas fa-lock"></i> 마감됨';
     } else {
         var diff = deadline - now;
-        var hours = Math.floor(diff / (1000 * 60 * 60));
+        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        var timeText = hours > 0 ? hours + '시간 ' + minutes + '분 남음' : minutes + '분 남음';
 
-        if (hours < 6) {
+        var timeText = '';
+        if (days > 0) timeText = days + '일 ' + hours + '시간 ' + minutes + '분 남음';
+        else if (hours > 0) timeText = hours + '시간 ' + minutes + '분 남음';
+        else timeText = minutes + '분 남음';
+
+        var deadlineLabel = days === 0 ? '오늘 마감' : days === 1 ? '내일 마감' : days + '일 후 마감';
+
+        if (days === 0 && hours < 6) {
             banner.className = 'task-deadline-banner deadline-urgent';
             banner.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + timeText;
         } else {
             banner.className = 'task-deadline-banner deadline-normal';
-            banner.innerHTML = '<i class="fas fa-clock"></i> 오늘 마감 · ' + timeText;
+            banner.innerHTML = '<i class="fas fa-clock"></i> ' + deadlineLabel + ' · ' + timeText;
         }
     }
 
