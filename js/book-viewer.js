@@ -906,7 +906,13 @@ function bindEvents() {
     // 상단바
     DOM.btnBack.addEventListener('click', () => {
         saveProgress().then(() => {
-            window.location.href = 'index.html';
+            // URL 파라미터에서 week/day 가져와서 해시에 포함
+            var tp = BookViewer.taskParams;
+            if (tp && tp.week && tp.day) {
+                window.location.href = 'index.html#taskList/' + tp.week + '/' + encodeURIComponent(tp.day);
+            } else {
+                window.location.href = 'index.html#taskList';
+            }
         });
     });
     DOM.btnBookmark.addEventListener('click', () => toggleBookmark());
