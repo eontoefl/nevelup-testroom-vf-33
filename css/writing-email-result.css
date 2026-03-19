@@ -324,8 +324,9 @@
 #emailExplainScreen .email-bullets-container {
     display: none;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
     animation: emailFadeIn 0.3s ease;
+    margin-top: 8px;
 }
 
 #emailExplainScreen .email-bullets-container.show {
@@ -335,15 +336,6 @@
 @keyframes emailFadeIn {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Bullet Item ── */
-#emailExplainScreen .bullet-item {
-    background: #ffffff;
-    border: 1px solid #e8e4f0;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
 }
 
 #emailExplainScreen .bullet-badge {
@@ -357,13 +349,6 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     margin-bottom: 4px;
-}
-
-#emailExplainScreen .bullet-content {
-    padding: 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
 }
 
 #emailExplainScreen .bullet-section {
@@ -429,9 +414,5 @@
 
     #emailExplainScreen .email-result-section pre {
         font-size: 14px;
-    }
-
-    #emailExplainScreen .bullet-content {
-        padding: 16px;
     }
 }

@@ -283,8 +283,9 @@
 #discussionExplainScreen .discussion-bullets-container {
     display: none;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
     animation: discussionFadeIn 0.3s ease;
+    margin-top: 8px;
 }
 
 #discussionExplainScreen .discussion-bullets-container.show {
@@ -294,15 +295,6 @@
 @keyframes discussionFadeIn {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Bullet Item ── */
-#discussionExplainScreen .bullet-item {
-    background: #ffffff;
-    border: 1px solid #e8e4f0;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
 }
 
 #discussionExplainScreen .bullet-badge {
@@ -316,13 +308,6 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     margin-bottom: 4px;
-}
-
-#discussionExplainScreen .bullet-content {
-    padding: 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
 }
 
 #discussionExplainScreen .bullet-section {
@@ -388,9 +373,5 @@
 
     #discussionExplainScreen .discussion-result-section pre {
         font-size: 14px;
-    }
-
-    #discussionExplainScreen .bullet-content {
-        padding: 16px;
     }
 }
