@@ -14,7 +14,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <!-- PDF 뷰어 전용 스타일 -->
-  <link rel="stylesheet" href="css/book-viewer.css?v=002" />
+  <link rel="stylesheet" href="css/book-viewer.css?v=003_taskbar" />
 </head>
 <body class="book-viewer-page">
 
@@ -44,6 +44,13 @@
   <!-- ============================================ -->
   <div class="book-progress-bar" id="progressBar">
     <div class="book-progress-fill" id="progressFill" style="width: 0%"></div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 2-1. 과제 상태 바 (URL 파라미터 있을 때만 표시) -->
+  <!-- ============================================ -->
+  <div class="book-task-bar hidden" id="taskBar">
+    <span id="taskBarText"></span>
   </div>
 
 
@@ -240,7 +247,7 @@
   <!-- JS: Supabase 클라이언트 + 뷰어 로직           -->
   <!-- ============================================ -->
   <script src="js/supabase-client.js"></script>
-  <script src="js/book-viewer.js?v=002"></script>
+  <script src="js/book-viewer.js?v=003_taskbar"></script>
 
 </body>
 </html>
