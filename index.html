@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/listening-academic-result-v2.css?v=20260221_v2">
 <link rel="stylesheet" href="css/writing-arrange-result.css?v=003">
 <link rel="stylesheet" href="css/writing-email-result.css?v=015">
-<link rel="stylesheet" href="css/writing-discussion-result.css?v=003">
+<link rel="stylesheet" href="css/writing-discussion-result.css?v=004">
     <link rel="stylesheet" href="css/discussion-style-v2.css?v=015">
     <link rel="stylesheet" href="css/notification.css?v=001">
     <link rel="stylesheet" href="css/notice-panel.css?v=001">
@@ -1027,15 +1027,22 @@
             <!-- 상단 정보 -->
             <div class="discussion-result-summary">
                 <div class="result-status">
-                    <i class="fas fa-check-circle"></i> 작성 완료
+                    <div class="result-status-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div>
+                        <div class="result-status-label">Result Status</div>
+                        <div class="result-status-value">Evaluation Complete</div>
+                    </div>
                 </div>
                 <div class="result-word-count-box">
+                    <div class="result-word-count-label">Word Count</div>
                     <div class="result-word-count">
-                        단어 수: <span id="discussionResultWordCount">0</span> words
+                        <span id="discussionResultWordCount">0</span> Words
                     </div>
-                    <div class="word-count-feedback" id="discussionWordCountFeedback">
-                        <!-- 단어 수 피드백 -->
-                    </div>
+                </div>
+                <div class="word-count-feedback" id="discussionWordCountFeedback">
+                    <!-- 단어 수 피드백 -->
                 </div>
             </div>
 
@@ -1052,25 +1059,22 @@
                 </div>
             </div>
 
-            <!-- 내 답안 -->
-            <div class="discussion-result-section">
-                <h3 class="discussion-result-label">내 답안</h3>
-                <div class="discussion-result-answer-box">
+            <!-- 내 답안 + 모범 답안 (양옆 배치) -->
+            <div class="discussion-answers-row">
+                <div class="discussion-result-section">
+                    <h3 class="discussion-result-label">Your Draft</h3>
                     <pre id="discussionResultUserAnswer"></pre>
                 </div>
-            </div>
 
-            <!-- 모범 답안 -->
-            <div class="discussion-result-section">
-                <h3 class="discussion-result-label">모범 답안</h3>
-                <div class="discussion-result-sample-box">
+                <div class="discussion-result-section">
+                    <h3 class="discussion-result-label">Model Answer</h3>
                     <pre id="discussionResultSampleAnswer"></pre>
                 </div>
             </div>
 
-            <!-- 피드백 (3개 Bullet) -->
+            <!-- 피드백 -->
             <div class="discussion-result-section">
-                <h3 class="discussion-result-label">피드백</h3>
+                <h3 class="discussion-result-label">Key Improvement Points</h3>
                 <div class="discussion-bullets-container" id="discussionResultBullets">
                     <!-- Bullet 내용은 JS로 동적 생성 -->
                 </div>

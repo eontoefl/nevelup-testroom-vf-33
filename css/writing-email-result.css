@@ -164,7 +164,9 @@
 
 #emailExplainScreen .email-result-section:has(.email-result-toggle) {
     padding: 18px 28px;
-} — 배경 #fffcf0 ── */
+}
+
+/* ── Model Answer Section — 배경 #fffcf0 ── */
 #emailExplainScreen .email-answers-row > .email-result-section:last-child {
     background: #fffcf0;
 }
