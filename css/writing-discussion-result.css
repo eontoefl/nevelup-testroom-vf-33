@@ -230,6 +230,31 @@
     border-radius: 0;
 }
 
+/* ── Student Opinions ── */
+#discussionExplainScreen .discussion-opinions {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #f0edf5;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#discussionExplainScreen .discussion-opinion-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9480c5;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+
+#discussionExplainScreen .discussion-opinion-text {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #475569;
+}
+
 /* ── Side-by-side Answers Row ── */
 #discussionExplainScreen .discussion-answers-row {
     display: flex;
