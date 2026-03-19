@@ -3419,7 +3419,41 @@ body {
     line-height: 1.5;
 }
 
-/* ── 완료 상태 ── */
+/* ── 과제 상태 뱃지 (공통) ── */
+#taskListScreen .task-complete-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 노트 미작성 (보라) */
+#taskListScreen .task-badge-pending {
+    background: #f0edf5;
+    color: #9480c5;
+}
+
+#taskListScreen .section-card.task-pending {
+    border-color: rgba(148, 128, 197, 0.25);
+}
+
+#taskListScreen .section-card.task-pending .card-icon {
+    background: rgba(148, 128, 197, 0.12);
+    color: #9480c5;
+}
+
+/* 완료 (초록) */
+#taskListScreen .task-badge-done {
+    background: #e8f5e9;
+    color: #4a9e52;
+}
+
 #taskListScreen .section-card.task-completed {
     background: #f6fff8;
     border-color: transparent;
@@ -3435,20 +3469,37 @@ body {
     color: var(--success-color);
 }
 
-#taskListScreen .task-complete-badge {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: var(--success-color);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 700;
+/* ── 마감 배너 ── */
+.task-deadline-banner {
     display: flex;
     align-items: center;
-    gap: 5px;
-    box-shadow: 0 4px 10px rgba(119, 191, 126, 0.2);
+    justify-content: center;
+    gap: 6px;
+    width: fit-content;
+    margin: 0 auto 20px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.task-deadline-banner i {
+    font-size: 13px;
+}
+
+.deadline-normal {
+    background: #f0f7ff;
+    color: #5b8db8;
+}
+
+.deadline-urgent {
+    background: #fff4ec;
+    color: #d97b3a;
+}
+
+.deadline-passed {
+    background: #f2f2f2;
+    color: #999;
 }
 
 /* ── 반응형 ── */
