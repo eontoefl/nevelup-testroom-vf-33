@@ -12,7 +12,7 @@
     width: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto;
     gap: 0.75rem 2rem;
     align-items: center;
     min-height: calc(100vh - 120px);
