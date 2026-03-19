@@ -221,16 +221,16 @@ function showDiscussionBulletFeedback(bulletNum, event) {
     const bulletHtml = `
         <div class="bullet-item">
             <div class="bullet-header">
-                <span class="bullet-number">📝 문장 ${bullet.bulletNum}</span>
+                <span class="bullet-number">Bullet ${bullet.bulletNum}</span>
             </div>
             <div class="bullet-content">
                 <div class="bullet-section">
-                    <div class="bullet-label">✅ ETS가 요구하는 필수 요소</div>
-                    <div class="bullet-text">${bullet.ets}</div>
+                    <div class="bullet-label"><i class="fas fa-thumbtack"></i> ETS가 요구하는 필수 요소</div>
+                    ${bullet.ets}
                 </div>
                 <div class="bullet-section">
-                    <div class="bullet-label">🎯 효과적인 작성 전략</div>
-                    <div class="bullet-text strategy-text">${bullet.strategy}</div>
+                    <div class="bullet-label"><i class="fas fa-award"></i> 효과적인 작성 전략</div>
+                    <span class="key-text">${bullet.strategy}</span>
                 </div>
             </div>
         </div>
