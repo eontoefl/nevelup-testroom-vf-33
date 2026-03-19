@@ -133,19 +133,36 @@ async function openIntroBookGuide(params) {
         window._deadlinePassedMode = false;
     }
 
-    // ── 인증 여부 확인 (DB 조회) ──
+    // ── 인증 여부 + 누적 메모 수 확인 (DB 조회) ──
     var alreadyCertified = false;
+    var currentMemoCount = 0;
     try {
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
         if (user && user.id && user.id !== 'dev-user-001') {
+            // 인증 여부
             var result = await getStudyResultV3(user.id, 'intro-book', current, week, day);
             if (result && result.locked_auth_rate === 100) {
                 alreadyCertified = true;
             }
+            // 누적 메모 수 조회
+            if (typeof supabaseSelect === 'function') {
+                var bookRows = await supabaseSelect('tr_book_documents', 'is_active=eq.true&order=sort_order.asc&limit=1');
+                if (bookRows && bookRows.length > 0) {
+                    var memoRows = await supabaseSelect(
+                        'tr_book_memos',
+                        'user_id=eq.' + user.id + '&book_id=eq.' + bookRows[0].id + '&select=id'
+                    );
+                    currentMemoCount = (memoRows && memoRows.length) ? memoRows.length : 0;
+                }
+            }
+            console.log('📖 [IntroBook] 누적 메모:', currentMemoCount, '/ 오늘 기준:', requiredMemos);
         }
     } catch (e) {
-        console.warn('📖 [IntroBook] 인증 조회 실패:', e);
+        console.warn('📖 [IntroBook] 인증/메모 조회 실패:', e);
     }
+
+    // ── 남은 메모 수 계산 ──
+    var remainingMemos = Math.max(0, requiredMemos - currentMemoCount);
 
     // ── 팝업 본문 결정 ──
     var bodyHtml = '';
@@ -160,7 +177,10 @@ async function openIntroBookGuide(params) {
     } else {
         bodyHtml =
             '<p style="font-size:14px;color:#333;line-height:1.7;margin:0 0 10px;">'
-            + '오늘 과제 인증을 위해 <strong>메모 ' + requiredMemos + '개</strong>를 작성해주세요.</p>'
+            + '오늘 과제 인증을 위해 <strong>메모 ' + remainingMemos + '개</strong>를 작성해주세요.</p>'
+            + (currentMemoCount > 0
+                ? '<p style="font-size:12px;color:#9ca3ab;margin:0 0 10px;">이미 ' + currentMemoCount + '개 작성됨 · 오늘 목표 ' + requiredMemos + '개</p>'
+                : '')
             + '<p style="font-size:13px;color:#888;line-height:1.6;margin:0;">'
             + '입문서는 ' + total + '일에 걸쳐 완독하는 과제입니다.<br>'
             + '메모만 남기고 끝이 아니니, 틈틈이 꼼꼼히 읽어주세요!</p>';
