@@ -49,13 +49,14 @@ window.currentPractice = currentPractice;
 | 항목 | 내용 |
 |---|---|
 | **구성** | Practice 1 ~ Practice 60 버튼 나열 (주/요일 구분 없음) |
-| **레이아웃** | 6열 × 10행 그리드 (P1~P6 / P7~P12 / ... / P55~P60), 페이지 스크롤 |
+| **레이아웃** | 6열 × 10행 그리드 (Practice 1~Practice 6 / Practice 7~Practice 12 / ... / Practice 55~Practice 60), 페이지 스크롤 |
 | **모바일 대응** | 불필요 (데스크탑 전용) |
 | **클릭 시** | 해당 Practice의 과제 목록 화면으로 이동 (정규코스의 요일 클릭과 동일한 흐름) |
 | **과제 구성** | Fast 과정의 하루 스케줄과 동일한 패턴 (보카 + R/L/W/S 조합) |
 | **입문서 정독** | 없음 (연습코스에서는 제외) |
 | **타이틀** | 📝 "연습 일정" |
 | **서브타이틀** | "원하는 Practice를 선택하세요" |
+| **버튼 표기** | "Practice 1", "Practice 2", … "Practice 60" (풀네임 표기) |
 | **진도 표시** | 각 Practice 버튼에 완료 상태 표시 (예: `3/3 ✓`, `1/3`, 미시작은 빈 상태) |
 
 ### 2-3. 문제 세트 번호
@@ -320,6 +321,16 @@ Practice 전용 테이블. `study_results_v3`와 별도 분리.
 | **풀이 순서** | 자유 — 아무 Practice나 원하는 순서로 풀 수 있음 |
 | **`_deadlinePassedMode`** | 연습코스에서는 항상 `false` |
 
+#### 구현 원칙: 마감 관련 로직 진입 자체를 차단
+
+연습코스에서는 마감이라는 개념 자체가 없다. 따라서 마감 체크 함수(`isTaskDeadlinePassed`)와 인증률 확정 함수(`_lockAuthRate`)를 연습코스일 때 **호출하지 않는다**. 내부에 안전장치를 덧대는 것이 아니라, 호출 지점에서 `courseMode`를 확인하여 **연습코스면 해당 함수를 아예 실행하지 않는다.**
+
+| 함수 | 정규코스 | 연습코스 |
+|------|---------|----------|
+| `isTaskDeadlinePassed()` | 정상 호출 | **호출하지 않음** → 즉시 `false` 반환 |
+| `_lockAuthRate()` | 마감 후 인증률 확정 | **호출하지 않음** → 연습코스에는 인증률 개념 없음 |
+| `loadDeadlineExtensions()` | 데드라인 연장 데이터 로드 | **호출하지 않음** |
+
 ### 2-10. 실전풀이 / 다시풀기
 
 | 항목 | 내용 |
@@ -327,6 +338,18 @@ Practice 전용 테이블. `study_results_v3`와 별도 분리.
 | **구조** | 정규코스와 동일: `initial_record`(첫 풀이, 불변) + `current_record`(다시풀기, 덮어쓰기) |
 | **해설 뷰어** | 유지 |
 | **오답노트** | 유지 |
+
+#### 구현 원칙: 오답노트 저장소 완전 분리
+
+오답노트(`error-note.js`)가 학습 기록을 업데이트할 때, 현재는 정규코스 테이블(`study_results_v3`)에 직접 저장한다. 연습코스에서는 **처음부터 연습코스 전용 테이블(`study_results_practice`)에 저장**해야 한다.
+
+기존 정규코스 저장 로직을 감싸서 분기하는 것이 아니라, 오답노트 초기화(`ErrorNote.init`) 시점에 `courseMode`를 확인하여 **어느 테이블을 사용할지 결정하고, 이후 저장은 해당 테이블로만 진행한다.**
+
+| 시점 | 정규코스 | 연습코스 |
+|------|---------|----------|
+| 오답노트 초기화 | `study_results_v3` 행 참조 | `study_results_practice` 행 참조 |
+| 오답노트 제출(저장) | `study_results_v3` 테이블에 UPDATE | `study_results_practice` 테이블에 UPDATE |
+| 스피킹 녹음 파일 저장 | 동일 (Supabase Storage) | 동일 (Supabase Storage) |
 
 ### 2-11. 팝업 문구 (연습코스용)
 
@@ -409,28 +432,214 @@ Practice 전용 테이블. `study_results_v3`와 별도 분리.
 
 ---
 
-## 4. 공홈 대시보드 연동 요청서 (별도 전달용)
+## 4. 관리자 대시보드 구현 명세서 (공식홈페이지 전달용)
 
-> **대상**: 공홈 대시보드 개발자
-> **건명**: 알림톡 발송 시 정규코스/연습코스 구분 기능 추가
+> **대상**: 공식홈페이지 관리자 대시보드 개발자
+> **건명**: 연습코스 관리 기능 추가 (5개 기능)
+> **우선순위**: 연습코스 학생 기능 개발 완료 후 순차 진행
 
-### 요청 내용
+---
 
-현재 공홈 대시보드에서 알림톡을 발송할 때 수강생 전체 대상으로만 보낼 수 있는데, **정규코스 / 연습코스 구분 발송** 기능이 필요합니다.
+### 4-1. 연습코스 권한 관리
 
-### 필요 작업
+> 학생별로 연습코스 이용 권한을 켜거나 끄는 기능
 
-1. **공지 테이블에 `target_mode` 컬럼 추가**
-   - 값: `'all'`(전체) | `'regular'`(정규코스만) | `'practice'`(연습코스만)
-   - 기본값: `'all'`
-2. **대시보드 알림톡 작성 화면에 대상 선택 드롭다운 추가**
-   - 전체 / 정규코스 수강생 / 연습코스 수강생
-3. **프론트(학습앱) 공지 로드 시 `target_mode` 필터링**
-   - 현재 `courseMode`와 매칭되는 공지 + `'all'` 공지만 표시
+#### 화면 구성
 
-### 우선순위
+- 기존 학생 관리 목록에 **"연습코스" 열 추가**
+- 각 학생 행에 토글 스위치 표시 (ON/OFF)
+- 토글 변경 시 즉시 반영, 별도 저장 버튼 불필요
 
-낮음 (연습코스 v1 출시 후 진행)
+#### 동작
+
+| 동작 | 설명 |
+|------|------|
+| **토글 ON** | 해당 학생의 `applications.practice_enabled`를 `true`로 변경 |
+| **토글 OFF** | 해당 학생의 `applications.practice_enabled`를 `false`로 변경 |
+| **일괄 변경** | 체크박스로 여러 학생 선택 후 "연습코스 일괄 ON/OFF" 버튼 |
+
+#### 참조 테이블
+
+- `applications` 테이블의 `practice_enabled` 컬럼 (boolean, default false)
+
+#### 비즈니스 규칙
+
+- 현재 정책: 정규코스 입금 확인(`deposit_confirmed_by_admin = true`)된 학생에게 자동 부여
+- 관리자가 수동으로 개별 제어 가능 (입금 여부와 무관하게 ON/OFF)
+
+---
+
+### 4-2. 연습코스 학습 현황 조회
+
+> 학생별로 60개 Practice 중 어디까지 학습했는지 한눈에 파악하는 기능
+
+#### 화면 구성
+
+- **목록 뷰**: 학생 이름, 이메일, 전체 진행률(예: "18/60 완료"), 마지막 학습일
+- **상세 뷰** (학생 클릭 시): 60개 Practice 격자를 한눈에 표시
+  - 완료된 Practice: 초록색 표시
+  - 일부만 완료 (예: 과제 3개 중 2개): 노란색 표시
+  - 미시작: 회색 표시
+
+#### 데이터 조회
+
+```
+-- 학생별 전체 진행률 (목록 뷰)
+SELECT user_id, 
+       COUNT(DISTINCT practice_number) as completed_count,
+       MAX(completed_at) as last_study_date
+FROM study_results_practice 
+WHERE initial_record IS NOT NULL
+GROUP BY user_id
+
+-- 특정 학생 상세 (상세 뷰)
+SELECT practice_number, section_type, 
+       CASE WHEN initial_record IS NOT NULL THEN true ELSE false END as completed
+FROM study_results_practice 
+WHERE user_id = {선택한 학생 ID}
+```
+
+#### 참조 테이블
+
+- `study_results_practice` — 학생별 Practice 완료 여부 조회
+- `tr_practice_schedule` — Practice별 과제 개수 확인 (진행률 분모)
+
+---
+
+### 4-3. 연습코스 성적 열람
+
+> 관리자가 특정 학생의 연습코스 성적을 영역별로 확인하는 기능
+
+#### 화면 구성
+
+- 학생 선택 후 성적 상세 화면 진입
+- **탭 구성**: Reading / Listening / Writing / Speaking
+- 각 탭에서:
+  - Practice별 레벨 점수 목록 (표 형태)
+  - 레벨 추이 차트 (학생 마이페이지와 동일한 형태)
+  - 평균 레벨, 최고 레벨, 최저 레벨 요약 카드
+
+#### 데이터 조회
+
+```
+-- 특정 학생의 영역별 성적
+SELECT practice_number, module_number, initial_level, completed_at
+FROM study_results_practice
+WHERE user_id = {학생 ID} AND section_type = {선택한 영역}
+ORDER BY practice_number ASC
+```
+
+#### 참조 테이블
+
+- `study_results_practice` — `initial_level` (1차 풀이 레벨), `section_type` (영역 구분)
+
+#### 표시 항목
+
+| 항목 | 설명 |
+|------|------|
+| **Practice 번호** | Practice 1, Practice 2, ... |
+| **모듈 번호** | Module 13, Module 14, ... |
+| **1차 레벨** | 소수점 1자리 (예: 3.8) |
+| **완료 일시** | 날짜 + 시간 |
+| **평균/최고/최저** | 해당 영역 전체 레벨의 통계값 |
+
+---
+
+### 4-4. 연습코스 이용자 통계
+
+> 연습코스 전체 운영 현황을 숫자로 한눈에 파악하는 대시보드 위젯
+
+#### 화면 구성
+
+- 기존 관리자 대시보드 메인 화면에 **"연습코스 현황" 카드 영역 추가**
+- 요약 카드 4개 + 하단에 간단한 차트 1개
+
+#### 요약 카드
+
+| 카드 | 표시 값 | 조회 방식 |
+|------|---------|----------|
+| **전체 이용자** | 연습코스 권한이 켜진 학생 수 | `applications`에서 `practice_enabled = true` 수 |
+| **활성 이용자** | 최근 7일 내 학습 기록이 있는 학생 수 | `study_results_practice`에서 `completed_at >= now() - 7일` 고유 user_id 수 |
+| **총 학습 건수** | 전체 Practice 풀이 건수 (initial_record 기준) | `study_results_practice`에서 `initial_record IS NOT NULL` 수 |
+| **평균 진행률** | 이용자당 평균 Practice 완료 수 / 60 | 위 학습 건수 ÷ 이용자 수 ÷ 60 × 100% |
+
+#### Practice별 참여율 차트
+
+- 막대 차트: X축 = Practice 1~60, Y축 = 참여 학생 수
+- 어떤 Practice가 인기 있고 어떤 Practice가 덜 풀리는지 한눈에 파악 가능
+
+#### 데이터 조회
+
+```
+-- Practice별 참여 학생 수
+SELECT practice_number, COUNT(DISTINCT user_id) as participant_count
+FROM study_results_practice
+WHERE initial_record IS NOT NULL
+GROUP BY practice_number
+ORDER BY practice_number ASC
+```
+
+#### 참조 테이블
+
+- `applications` — 권한 보유자 수
+- `study_results_practice` — 학습 건수, 활성 이용자, 참여율
+
+---
+
+### 4-5. 코스별 공지 구분 발송
+
+> 공지사항 발송 시 정규코스/연습코스 학생을 구분하여 대상 지정하는 기능
+
+#### DB 변경
+
+| 변경 | 내용 |
+|------|------|
+| **테이블** | 기존 공지 테이블 (예: `tr_notifications`) |
+| **컬럼 추가** | `target_mode` (text, default `'all'`) |
+| **허용 값** | `'all'` (전체) / `'regular'` (정규코스만) / `'practice'` (연습코스만) |
+
+```sql
+-- 공지 테이블에 대상 모드 컬럼 추가
+ALTER TABLE tr_notifications ADD COLUMN IF NOT EXISTS target_mode text DEFAULT 'all';
+```
+
+#### 화면 구성 (관리자 — 공지 작성)
+
+- 기존 공지 작성 화면에 **"발송 대상" 드롭다운 추가**
+- 선택지: 전체 / 정규코스 수강생 / 연습코스 수강생
+- 기본값: "전체"
+
+#### 화면 구성 (학생 — 학습앱)
+
+- 공지 로드 시 `target_mode` 필터링:
+  - 정규코스 모드 → `target_mode = 'all'` 또는 `'regular'`인 공지만 표시
+  - 연습코스 모드 → `target_mode = 'all'` 또는 `'practice'`인 공지만 표시
+
+#### 데이터 조회 (학습앱에서 공지 로드 시)
+
+```
+-- 현재 코스 모드에 맞는 공지만 조회
+SELECT * FROM tr_notifications
+WHERE (target_mode = 'all' OR target_mode = {현재 courseMode})
+  AND (user_id = {현재 사용자} OR user_id IS NULL)
+ORDER BY created_at DESC
+```
+
+#### 참조 테이블
+
+- `tr_notifications` — 기존 공지 테이블에 `target_mode` 컬럼 추가
+
+---
+
+### 4-6. 구현 우선순위 권장
+
+| 순서 | 기능 | 이유 |
+|------|------|------|
+| 1순위 | 4-1. 권한 관리 | 연습코스 오픈 전 필수 (학생 접근 제어) |
+| 2순위 | 4-2. 학습 현황 조회 | 운영 시작 후 즉시 필요 (누가 하고 있는지 확인) |
+| 3순위 | 4-4. 이용자 통계 | 운영 보고용 (전체 현황 파악) |
+| 4순위 | 4-3. 성적 열람 | 개별 학생 관리용 (필요 시 조회) |
+| 5순위 | 4-5. 코스별 공지 발송 | 연습코스 안정화 후 진행 가능 |
 
 ---
 
@@ -453,18 +662,17 @@ Practice 전용 테이블. `study_results_v3`와 별도 분리.
 | `js/main.js` | `initScheduleScreen()`, `renderSchedule()` 분기 추가, 마이페이지 버튼 URL 분기 |
 | `js/schedule-data.js` | Practice 스케줄 로드 함수 추가 (`tr_practice_schedule` 조회) |
 | `js/supabase-client.js` | Practice용 DB 함수 추가 (`study_results_practice` 대상 CRUD) |
-| `js/task-router.js` | 연습코스 마감 체크 스킵 (`_deadlinePassedMode = false`), 팝업 문구 분기 |
+| `js/task-router.js` | 연습코스일 때 마감 체크 함수를 호출하지 않음 (진입 차단), 팝업 문구 분기 |
 | `js/task-dashboard.js` | 연습코스일 때 DB 테이블 분기 (`study_results_practice`) |
 | `js/progress-tracker.js` | 연습코스 진도 추적 (`study_results_practice` 조회) |
-| `js/navigation.js` | 모드에 따른 뒤로가기 동작 분기 |
 | `js/app-state.js` | `courseMode` 상태 변수 추가 |
 | `css/style.css` | 세그먼트 컨트롤 스타일, Practice 버튼 그리드 스타일 |
 | `js/reading/reading-module-controller.js` | 연습코스일 때 `currentPractice.practiceNumber` 사용, Practice용 DB 함수 호출 (`getStudyResultPractice`, `upsertInitialRecordPractice`, `upsertCurrentRecordPractice`) |
 | `js/listening/listening-module-controller.js` | 위와 동일 (리스닝 모듈) |
 | `js/speaking/speaking-module-controller.js` | 위와 동일 (스피킹 모듈) |
 | `js/writing/writing-module-controller.js` | 위와 동일 (라이팅 모듈) |
-| `js/explain-viewer.js` | 해설 뷰어에서 `courseMode`에 따라 `study_results_practice` 테이블 조회, `week`/`day` 대신 `practice_number` 사용 |
-| `js/error-note.js` | 오답노트에서 `courseMode`에 따라 `study_results_practice` 테이블 업데이트 |
+| `js/explain-viewer.js` | 해설 뷰어 진입 시 `courseMode`를 먼저 확인하여, 연습코스면 처음부터 `getStudyResultPractice()`로 연습코스 저장소에서 조회하고 헤더를 "Practice N"으로 세팅. 정규코스 조회 함수를 거치지 않음 |
+| `js/error-note.js` | 오답노트 초기화 시 `courseMode`를 확인하여 처음부터 연습코스 저장소(`study_results_practice`)를 참조하고 저장. 정규코스 저장소를 거치지 않음 |
 | `js/vocab-test-logic-v2.js` | 연습코스일 때 `week`/`day` 대신 `practiceNumber` 사용, Practice용 DB 함수 호출, 헤더 텍스트 "Practice N"으로 분기 |
 
 ### Supabase (DB 작업)
