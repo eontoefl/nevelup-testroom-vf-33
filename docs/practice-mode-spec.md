@@ -1,7 +1,7 @@
 # 연습코스(Practice Mode) 구현 명세서
 
 > **상태**: 확정 완료
-> **최종 수정**: 2026-03-17
+> **최종 수정**: 2026-03-19
 
 ---
 
@@ -222,6 +222,7 @@ Practice 전용 테이블. `study_results_v3`와 별도 분리.
 | **로그인 시 처리** | `getStudentProgram()`에서 `practice_enabled` 값 함께 조회 → `currentUser.canAccessPractice`에 저장 |
 | **UI 반영** | `canAccessPractice === false`이면 세그먼트 컨트롤에서 연습코스 탭 숨김 |
 | **admin 예외** | `test@me.com` 계정은 `practice_enabled` 무관하게 항상 연습코스 접근 가능 |
+| **dev 모드 (빈 로그인)** | 개발 테스트용 빈값 로그인 시에도 `canAccessPractice = true`로 설정하여 연습코스 테스트 가능 |
 | **미래 확장** | 관리자가 Supabase 대시보드에서 특정 유저의 `practice_enabled`를 수동 ON/OFF 가능 |
 
 ### 2-8. 화면별 텍스트 분기
@@ -378,7 +379,7 @@ Practice 전용 테이블. `study_results_v3`와 별도 분리.
 | 파일 | 수정 내용 |
 |---|---|
 | `index.html` | scheduleScreen에 세그먼트 컨트롤 추가, 연습코스 스케줄 렌더링 영역 추가 |
-| `js/auth.js` | 로그인 시 `practice_enabled` 조회 → `currentUser.canAccessPractice` 설정 |
+| `js/auth.js` | 로그인 시 `practice_enabled` 조회 → `currentUser.canAccessPractice` 설정. dev 모드(빈 로그인) 시에도 `canAccessPractice = true` 설정 |
 | `js/main.js` | `initScheduleScreen()`, `renderSchedule()` 분기 추가, 마이페이지 버튼 URL 분기 |
 | `js/schedule-data.js` | Practice 스케줄 로드 함수 추가 (`tr_practice_schedule` 조회) |
 | `js/supabase-client.js` | Practice용 DB 함수 추가 (`study_results_practice` 대상 CRUD) |
@@ -388,6 +389,13 @@ Practice 전용 테이블. `study_results_v3`와 별도 분리.
 | `js/navigation.js` | 모드에 따른 뒤로가기 동작 분기 |
 | `js/app-state.js` | `courseMode` 상태 변수 추가 |
 | `css/style.css` | 세그먼트 컨트롤 스타일, Practice 버튼 그리드 스타일 |
+| `js/reading/reading-module-controller.js` | 연습코스일 때 `currentPractice.practiceNumber` 사용, Practice용 DB 함수 호출 (`getStudyResultPractice`, `upsertInitialRecordPractice`, `upsertCurrentRecordPractice`) |
+| `js/listening/listening-module-controller.js` | 위와 동일 (리스닝 모듈) |
+| `js/speaking/speaking-module-controller.js` | 위와 동일 (스피킹 모듈) |
+| `js/writing/writing-module-controller.js` | 위와 동일 (라이팅 모듈) |
+| `js/explain-viewer.js` | 해설 뷰어에서 `courseMode`에 따라 `study_results_practice` 테이블 조회, `week`/`day` 대신 `practice_number` 사용 |
+| `js/error-note.js` | 오답노트에서 `courseMode`에 따라 `study_results_practice` 테이블 업데이트 |
+| `js/vocab-test-logic-v2.js` | 연습코스일 때 `week`/`day` 대신 `practiceNumber` 사용, Practice용 DB 함수 호출, 헤더 텍스트 "Practice N"으로 분기 |
 
 ### Supabase (DB 작업)
 
