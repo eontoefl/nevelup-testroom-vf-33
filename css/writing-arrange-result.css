@@ -32,7 +32,7 @@
 
 /* 1. Header & Summary Stats */
 #arrangeExplainScreen .result-header {
-    margin-bottom: 0;
+    margin-bottom: 24px;
     border-bottom: none;
     padding-bottom: 0;
 }
