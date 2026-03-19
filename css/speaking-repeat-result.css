@@ -19,6 +19,11 @@
     align-content: center;
 }
 
+/* ── 뱃지 (전체 너비) ── */
+.repeat-result-main > .result-badge {
+    grid-column: 1 / -1;
+}
+
 /* ── 히어로 섹션 (전체 너비) ── */
 .repeat-result-hero {
     grid-column: 1 / -1;
