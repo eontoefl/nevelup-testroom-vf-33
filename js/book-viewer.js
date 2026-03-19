@@ -75,6 +75,11 @@ const BookViewer = {
 
     // PDF URL (Supabase Storage 또는 직접 경로)
     pdfUrl: null,
+
+    // ── 과제 상태 바 관련 ──
+    taskParams: null,     // { current, total, week, day, deadline }
+    requiredMemos: 0,     // current × 2
+    isCertified: false,   // 인증 완료 여부
 };
 
 // ================================================
@@ -91,6 +96,10 @@ function cacheDom() {
 
     // 진행률 바
     DOM.progressFill = document.getElementById('progressFill');
+
+    // 과제 상태 바
+    DOM.taskBar = document.getElementById('taskBar');
+    DOM.taskBarText = document.getElementById('taskBarText');
 
     // 사이드바
     DOM.sidebar = document.getElementById('sidebar');
@@ -156,6 +165,9 @@ async function init() {
     const user = JSON.parse(sessionStorage.getItem('currentUser'));
     BookViewer.userId = user.id;
 
+    // URL 파라미터 파싱 (과제 모드 여부 판단)
+    parseTaskParams();
+
     // DB에서 책 정보 로드
     const loaded = await loadBookData();
     if (!loaded) {
@@ -171,6 +183,9 @@ async function init() {
 
     // 메모 전체 로드
     await loadAllMemos();
+
+    // 과제 상태 바 초기화 (메모 로드 후)
+    await initTaskBar();
 
     // 로딩 숨기기
     DOM.bookLoading.classList.add('hidden');
@@ -719,8 +734,14 @@ async function saveMemo() {
     if (result) {
         BookViewer.memos[page] = result;
         updateMemoDot();
+        updateTaskBar();
         closeMemoSidebar();
         showToast('메모가 저장되었습니다.');
+
+        // 신규 메모일 때만 인증 판정 (수정은 개수 변화 없음)
+        if (!existing) {
+            await checkAndCertify();
+        }
     } else {
         showToast('저장 실패. 다시 시도해주세요.', true);
     }
@@ -743,6 +764,7 @@ async function deleteMemo() {
     if (result !== null) {
         delete BookViewer.memos[page];
         updateMemoDot();
+        updateTaskBar();
         closeMemoSidebar();
         showToast('메모가 삭제되었습니다.');
     } else {
@@ -1032,6 +1054,154 @@ function getPinchDistance(touches) {
 }
 
 // ================================================
-// 21. 시작
+// 21. 과제 상태 바 (메모 카운트 + 자동 인증)
+// ================================================
+
+/**
+ * URL 파라미터 파싱 — book.html?current=2&total=3&week=1&day=월
+ * 파라미터가 없으면 일반 열람 모드 (상태 바 숨김)
+ */
+function parseTaskParams() {
+    var params = new URLSearchParams(window.location.search);
+    var current = parseInt(params.get('current'), 10);
+    var total = parseInt(params.get('total'), 10);
+
+    if (!current || !total) {
+        BookViewer.taskParams = null;
+        console.log('📖 [TaskBar] URL 파라미터 없음 — 일반 열람 모드');
+        return;
+    }
+
+    BookViewer.taskParams = {
+        current: current,
+        total: total,
+        week: params.get('week') || '1',
+        day: params.get('day') || '월',
+        deadline: params.get('deadline') || null
+    };
+    BookViewer.requiredMemos = current * 2;
+
+    console.log('📖 [TaskBar] 과제 모드:', current + '/' + total + '일차, 필요 메모:', BookViewer.requiredMemos);
+}
+
+/**
+ * 상태 바 초기화
+ * - 파라미터 없으면 숨김
+ * - DB에서 기존 인증 여부 확인
+ * - 상태 바 텍스트 + 스타일 설정
+ */
+async function initTaskBar() {
+    if (!BookViewer.taskParams) return;
+
+    // body에 클래스 추가 (CSS 레이아웃 조정용)
+    document.body.classList.add('has-task-bar');
+    DOM.taskBar.classList.remove('hidden');
+
+    // DB에서 인증 여부 확인
+    try {
+        if (BookViewer.userId && BookViewer.userId !== 'dev-user-001' && typeof getStudyResultV3 === 'function') {
+            var tp = BookViewer.taskParams;
+            var result = await getStudyResultV3(BookViewer.userId, 'intro-book', tp.current, tp.week, tp.day);
+            if (result && result.locked_auth_rate === 100) {
+                BookViewer.isCertified = true;
+                console.log('📖 [TaskBar] 이미 인증 완료');
+            }
+        }
+    } catch (e) {
+        console.warn('📖 [TaskBar] 인증 조회 실패:', e);
+    }
+
+    updateTaskBar();
+}
+
+/**
+ * 상태 바 텍스트 + 스타일 업데이트
+ * - 인증완료: ✅ 오늘 과제 인증 완료
+ * - 마감지남: ⚠️ 마감 지남 — 인증 불가
+ * - 진행중:  📝 오늘 메모 X/Y
+ */
+function updateTaskBar() {
+    if (!BookViewer.taskParams || !DOM.taskBar) return;
+
+    var memoCount = getMemoCount();
+    var required = BookViewer.requiredMemos;
+
+    // 클래스 초기화
+    DOM.taskBar.classList.remove('certified', 'deadline-passed');
+
+    if (BookViewer.isCertified) {
+        DOM.taskBarText.textContent = '✅ 오늘 과제 인증 완료';
+        DOM.taskBar.classList.add('certified');
+    } else if (BookViewer.taskParams.deadline === 'passed') {
+        DOM.taskBarText.textContent = '⚠️ 마감 지남 — 메모 작성은 가능하지만 인증 불가';
+        DOM.taskBar.classList.add('deadline-passed');
+    } else {
+        DOM.taskBarText.textContent = '📝 오늘 메모 ' + memoCount + '/' + required;
+    }
+}
+
+/**
+ * 현재 메모 총 개수 반환
+ */
+function getMemoCount() {
+    return Object.keys(BookViewer.memos).length;
+}
+
+/**
+ * 메모 저장 후 인증 판정
+ * - 과제 파라미터 없으면 무시
+ * - 이미 인증됐으면 무시
+ * - 마감 지났으면 무시
+ * - 메모 수 ≥ requiredMemos 이면 인증 처리
+ */
+async function checkAndCertify() {
+    if (!BookViewer.taskParams) return;
+    if (BookViewer.isCertified) return;
+    if (BookViewer.taskParams.deadline === 'passed') return;
+
+    var memoCount = getMemoCount();
+    var required = BookViewer.requiredMemos;
+
+    if (memoCount < required) return;
+
+    console.log('🎉 [TaskBar] 인증 조건 충족! 메모:', memoCount, '/', required);
+
+    var tp = BookViewer.taskParams;
+
+    // 개발 모드 체크
+    if (!BookViewer.userId || BookViewer.userId === 'dev-user-001') {
+        console.log('📖 [TaskBar] 개발 모드 — DB 저장 생략');
+        BookViewer.isCertified = true;
+        updateTaskBar();
+        showToast('🎉 오늘 과제가 인증되었습니다!');
+        return;
+    }
+
+    // DB 저장
+    try {
+        if (typeof upsertInitialRecord === 'function') {
+            await upsertInitialRecord(
+                BookViewer.userId,
+                'intro-book',
+                tp.current,
+                tp.week,
+                tp.day,
+                { memo_count: memoCount, completedAt: new Date().toISOString() },
+                { locked_auth_rate: 100 }
+            );
+            console.log('✅ [TaskBar] study_results_v3 저장 완료');
+        }
+
+        BookViewer.isCertified = true;
+        updateTaskBar();
+        showToast('🎉 오늘 과제가 인증되었습니다!');
+    } catch (e) {
+        console.error('❌ [TaskBar] 인증 저장 실패:', e);
+        showToast('인증 저장에 실패했습니다. 다시 시도해주세요.', true);
+    }
+}
+
+// ================================================
+// 22. 시작
 // ================================================
 document.addEventListener('DOMContentLoaded', init);
