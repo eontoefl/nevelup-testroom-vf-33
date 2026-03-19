@@ -99,93 +99,129 @@ function isTaskDeadlinePassed() {
     return passed;
 }
 
-// 입문서 정독 모달 열기
-function openIntroBookModal(taskName) {
-    const modal = document.getElementById('introBookModal');
-    const taskElement = document.getElementById('introBookTask');
-    
-    if (taskElement) {
-        taskElement.textContent = taskName;
-    }
-    
-    modal.classList.add('active');
-}
+// ================================================================
+// 입문서 정독 — 안내 팝업 + book.html 이동
+// ================================================================
 
-// 입문서 정독 모달 닫기
-function closeIntroBookModal() {
-    const modal = document.getElementById('introBookModal');
-    modal.classList.remove('active');
-    // 메모 초기화
-    var memo = document.getElementById('introBookMemo');
-    if (memo) memo.value = '';
-}
+/**
+ * 입문서 정독 안내 팝업 (동적 DOM 생성)
+ * - 미인증: 오늘 필요한 메모 수 안내 + "시작하기" 버튼
+ * - 인증 완료: 이미 인증됨 안내 + "계속 읽기" 버튼
+ * - 마감 지남: 경고 표시 + book.html에 deadline=passed 전달
+ *
+ * @param {object} params - parseTaskName() 반환값의 params
+ *   params.current {number} 현재 일차 (예: 2)
+ *   params.total   {number} 전체 일수 (예: 3)
+ */
+async function openIntroBookGuide(params) {
+    var current = params.current;
+    var total   = params.total;
 
-// 입문서 제출 (메모 + Supabase V3 저장)
-async function submitIntroBook() {
-    var memo = document.getElementById('introBookMemo');
-    var memoText = memo ? memo.value.trim() : '';
+    // ── 스케줄 정보 ──
+    var ct   = window.currentTest;
+    var week = (ct && ct.currentWeek) ? ct.currentWeek : 1;
+    var day  = (ct && ct.currentDay)  ? ct.currentDay  : '월';
 
-    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-    if (!user || !user.id || user.id === 'dev-user-001') {
-        console.log('📖 [IntroBook] 개발 모드 — 저장 생략');
-        alert('제출 완료! (개발 모드)');
-        closeIntroBookModal();
-        return;
-    }
+    // ── 메모 기준 계산 ──
+    var requiredMemos = current * 2;
 
-    var scheduleInfo = { week: 1, day: '월' };
-    var ct = window.currentTest;
-    if (ct && ct.currentWeek) {
-        scheduleInfo = { week: ct.currentWeek, day: ct.currentDay || '월' };
+    // ── 마감 체크 ──
+    var deadlinePassed = isTaskDeadlinePassed();
+    if (deadlinePassed) {
+        window._deadlinePassedMode = true;
+    } else {
+        window._deadlinePassedMode = false;
     }
 
-    // V3 인증률: 20단어 이상 → 100, 미만 → 0
-    var introWordCount = memoText.split(/\s+/).filter(function(w) { return w.length > 0; }).length;
-    var introAuthRate = (introWordCount >= 20) ? 100 : 0;
-
-    // V3 JSON 구조 생성
-    var recordJson = {
-        memo_text: memoText,
-        word_count: introWordCount,
-        completedAt: new Date().toISOString()
-    };
-
+    // ── 인증 여부 확인 (DB 조회) ──
+    var alreadyCertified = false;
     try {
-        if (window._deadlinePassedMode) {
-            // 마감 후 제출 → current_record에 저장 (연습 기록, 인증률 무관)
-            await upsertCurrentRecord(user.id, 'intro-book', 1, scheduleInfo.week, scheduleInfo.day, recordJson);
-            console.log('📖 [IntroBook] 마감 후 제출 — current_record 저장 완료');
-        } else {
-            // 마감 전 제출 → initial_record에 저장 + locked_auth_rate 즉시 확정
-            await upsertInitialRecord(user.id, 'intro-book', 1, scheduleInfo.week, scheduleInfo.day, recordJson, {
-                locked_auth_rate: introAuthRate
-            });
-            console.log('📖 [IntroBook] 기록 저장 완료, 단어수:', introWordCount, '인증률:', introAuthRate + '%');
-        }
-
-        if (window.ProgressTracker) {
-            ProgressTracker.markCompleted('intro-book', 1);
+        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+        if (user && user.id && user.id !== 'dev-user-001') {
+            var result = await getStudyResultV3(user.id, 'intro-book', current, week, day);
+            if (result && result.locked_auth_rate === 100) {
+                alreadyCertified = true;
+            }
         }
     } catch (e) {
-        console.error('📖 [IntroBook] 저장 실패:', e);
+        console.warn('📖 [IntroBook] 인증 조회 실패:', e);
     }
 
-    alert('입문서 정독 제출 완료!');
-    closeIntroBookModal();
+    // ── 팝업 본문 결정 ──
+    var bodyHtml = '';
+    var btnLabel = '시작하기';
+
+    if (alreadyCertified) {
+        bodyHtml =
+            '<p style="font-size:15px;color:#16a34a;font-weight:600;margin:0 0 8px;">'
+            + '✅ 오늘 과제는 이미 인증되었습니다.</p>'
+            + '<p style="font-size:14px;color:#666;margin:0;">계속 읽으시겠습니까?</p>';
+        btnLabel = '계속 읽기';
+    } else {
+        bodyHtml =
+            '<p style="font-size:14px;color:#333;line-height:1.7;margin:0 0 10px;">'
+            + '오늘 과제 인증을 위해 <strong>메모 ' + requiredMemos + '개</strong>를 작성해주세요.</p>'
+            + '<p style="font-size:13px;color:#888;line-height:1.6;margin:0;">'
+            + '입문서는 ' + total + '일에 걸쳐 완독하는 과제입니다.<br>'
+            + '메모만 남기고 끝이 아니니, 틈틈이 꼼꼼히 읽어주세요!</p>';
+
+        if (deadlinePassed) {
+            bodyHtml +=
+                '<p style="font-size:13px;color:#ef4444;margin:12px 0 0;font-weight:600;">'
+                + '⚠️ 마감 시간이 지났습니다. 메모는 작성 가능하지만 인증에는 반영되지 않습니다.</p>';
+        }
+    }
+
+    // ── 기존 팝업 제거 ──
+    var existingOverlay = document.getElementById('introBookGuideOverlay');
+    if (existingOverlay) existingOverlay.remove();
+    var existingPopup = document.getElementById('introBookGuidePopup');
+    if (existingPopup) existingPopup.remove();
+
+    // ── 오버레이 ──
+    var overlay = document.createElement('div');
+    overlay.id = 'introBookGuideOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;';
+
+    // ── 팝업 ──
+    var popup = document.createElement('div');
+    popup.id = 'introBookGuidePopup';
+    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:32px 28px;max-width:380px;width:90%;z-index:99999;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+    popup.innerHTML =
+        '<div style="font-size:36px;margin-bottom:8px;">📖</div>'
+        + '<h3 style="margin:0 0 16px;font-size:17px;color:#1a1a1a;line-height:1.5;">'
+        + '입문서 정독 (' + current + '/' + total + '일차)</h3>'
+        + '<div style="margin-bottom:24px;">' + bodyHtml + '</div>'
+        + '<div style="display:flex;gap:10px;">'
+        + '  <button id="introBookGuideBack" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:14px;font-weight:600;color:#666;cursor:pointer;">돌아가기</button>'
+        + '  <button id="introBookGuideGo" style="flex:1;padding:12px;border-radius:10px;border:none;background:#5B4A9E;font-size:14px;font-weight:600;color:#fff;cursor:pointer;">' + btnLabel + '</button>'
+        + '</div>';
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+
+    // ── 이벤트: 돌아가기 ──
+    function closeGuide() {
+        overlay.remove();
+        popup.remove();
+    }
+    document.getElementById('introBookGuideBack').onclick = closeGuide;
+    overlay.onclick = closeGuide;
+
+    // ── 이벤트: 시작하기 / 계속 읽기 ──
+    document.getElementById('introBookGuideGo').onclick = function() {
+        closeGuide();
+        var url = 'book.html?current=' + current
+            + '&total=' + total
+            + '&week=' + week
+            + '&day=' + encodeURIComponent(day);
+        if (deadlinePassed) url += '&deadline=passed';
+        window.location.href = url;
+    };
 }
 
-// 모달 외부 클릭 시 닫기 + 데드라인 연장 데이터 로드
+// ★ 데드라인 연장 데이터 미리 로드 (캐시)
 document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('introBookModal');
-    if (modal) {
-        modal.addEventListener('click', function(event) {
-            if (event.target === modal) {
-                closeIntroBookModal();
-            }
-        });
-    }
-
-    // ★ 데드라인 연장 데이터 미리 로드 (캐시)
     setTimeout(function() {
         if (typeof loadDeadlineExtensions === 'function') {
             loadDeadlineExtensions();
@@ -293,9 +329,9 @@ function _executeTaskCore(taskName) {
             break;
             
         case 'intro-book':
-            // 입문서 정독 PDF 모달 열기
-            console.log(`  🔹 입문서 정독 모달 열기`);
-            openIntroBookModal(taskName);
+            // 입문서 정독 — executeTask()에서 이미 처리됨 (여기에 오면 안 됨)
+            console.log(`  🔹 입문서 정독 — _executeTaskCore 도달 (정상 흐름 아님)`);
+            openIntroBookGuide(parsed.params);
             break;
             
         case 'reading':
