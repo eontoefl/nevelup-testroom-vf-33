@@ -28,6 +28,24 @@
 .repeat-result-hero {
     grid-column: 1 / -1;
     margin-bottom: 1rem;
+    text-align: center;
+}
+
+.repeat-result-scenario-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary-color, #9480c5);
+    margin-bottom: 0.25rem;
+}
+
+.repeat-result-context {
+    color: #555555;
+    font-weight: 400;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
 }
 
 .repeat-result-title {
@@ -36,12 +54,6 @@
     letter-spacing: -0.05em;
     margin-bottom: 0.25rem;
     color: var(--text-primary, #0f172a);
-}
-
-.repeat-result-context {
-    color: var(--primary-color, #9480c5);
-    font-weight: 500;
-    font-size: 1.125rem;
 }
 
 /* ── 왼쪽: 일러스트 이미지 ── */
@@ -114,13 +126,13 @@
 }
 
 .repeat-result-listen-btn {
-    height: 3.25rem;
-    padding: 0 2rem;
+    height: 2.75rem;
+    padding: 0 1.75rem;
     background: var(--primary-color, #9480c5);
     color: white;
     border: none;
     border-radius: 2rem;
-    font-size: 1.125rem;
+    font-size: 0.875rem;
     font-weight: 700;
     font-family: inherit;
     display: flex;
@@ -142,7 +154,7 @@
 }
 
 .repeat-result-listen-btn i {
-    font-size: 1.25rem;
+    font-size: 1rem;
 }
 
 /* ── Script / Translation 카드 스택 ── */
@@ -175,11 +187,11 @@
 }
 
 .repeat-result-card-header i {
-    font-size: 1.25rem;
+    font-size: 1rem;
 }
 
 .repeat-result-card-header h3 {
-    font-size: 1.125rem;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.025em;
@@ -188,7 +200,7 @@
 
 .repeat-result-card-body {
     color: var(--text-primary, #0f172a);
-    font-size: 1.125rem;
+    font-size: 0.95rem;
     line-height: 1.5;
     min-height: 0;
     display: flex;
@@ -242,6 +254,6 @@
     }
 
     .repeat-result-card-body {
-        font-size: 1rem;
+        font-size: 0.875rem;
     }
 }
