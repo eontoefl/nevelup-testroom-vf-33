@@ -257,7 +257,14 @@ function confirmTaskStart(taskName, onConfirm) {
 function executeTask(taskName) {
     console.log(`📝 [과제실행] ${taskName}`);
     
-    // ── 시작 확인 팝업 → "시작하기" 누르면 실제 실행 ──
+    // ── 입문서 정독은 자체 안내 팝업 사용 (confirmTaskStart 바이패스) ──
+    const parsed = parseTaskName(taskName);
+    if (parsed.type === 'intro-book') {
+        openIntroBookGuide(parsed.params);
+        return;
+    }
+    
+    // ── 그 외 과제: 시작 확인 팝업 → "시작하기" 누르면 실제 실행 ──
     confirmTaskStart(taskName, function() {
         _executeTaskCore(taskName);
     });
