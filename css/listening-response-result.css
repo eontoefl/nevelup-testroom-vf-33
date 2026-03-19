@@ -118,14 +118,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 20px;
+    padding: 10px 20px;
     background: #faf9fd;
 }
 
 #responseExplainScreen .question-number {
     font-size: 14px;
     font-weight: 700;
-    color: #1e1e2f;
+    color: #666666;
+    margin-bottom: 0;
 }
 
 #responseExplainScreen .result-status i {
