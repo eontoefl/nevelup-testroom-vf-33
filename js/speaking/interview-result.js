@@ -56,14 +56,14 @@ function renderInterviewResult(set) {
 function _renderQuestionsSection(set) {
     let html = `
         <div class="interview-result-section">
-            <div class="interview-result-header" onclick="toggleInterviewQuestions()">
-                <span id="questionsToggleIcon">▼</span>
-                <span class="interview-result-title">문제 보기</span>
+            <div class="interview-result-toggle active" onclick="toggleInterviewQuestions()">
+                <i class="fas fa-chevron-down" id="questionsToggleIcon"></i>
+                <span>문제 보기</span>
             </div>
             <div id="questionsContent" class="interview-result-content" style="display: block;">
                 <div class="interview-question-block">
                     <div class="interview-scenario">
-                        <strong>시나리오:</strong>
+                        <strong>Scenario</strong>
                         <div class="interview-scenario-text">${set.contextText}</div>
                         <span class="interview-translation">${set.contextTranslation || ''}</span>
                     </div>
@@ -75,7 +75,7 @@ function _renderQuestionsSection(set) {
         const video = set.videos[i];
         html += `
                 <div class="interview-question-block">
-                    <strong>문제 ${i + 1}:</strong>
+                    <strong>Question ${i + 1}</strong>
                     <span class="interview-question-text">${video.script}</span>
                     <span class="interview-translation">${video.translation}</span>
                 </div>
@@ -100,9 +100,9 @@ function _renderModelAnswerSection(set, index) {
     
     let html = `
         <div class="interview-result-section">
-            <div class="interview-result-header" onclick="toggleInterviewModelAnswer(${index})">
-                <span id="${answerId}ToggleIcon">▶</span>
-                <span class="interview-result-title">모범답안 ${index + 1} 보기</span>
+            <div class="interview-result-toggle" onclick="toggleInterviewModelAnswer(${index})">
+                <i class="fas fa-chevron-down" id="${answerId}ToggleIcon"></i>
+                <span>Model Answer ${index + 1}</span>
             </div>
             <div id="${answerId}Content" class="interview-result-content" style="display: none;">
                 <div class="interview-audio-button">
@@ -137,7 +137,7 @@ function _renderModelAnswerSection(set, index) {
                         
                         <!-- 해석 펼치기/접기 -->
                         <div class="interview-translation-toggle" onclick="toggleInterviewTranslation(${index})">
-                            <span id="translation${index}ToggleIcon">▶</span>
+                            <i class="fas fa-chevron-down" id="translation${index}ToggleIcon"></i>
                             <span>해석 보기</span>
                         </div>
                         <div id="translation${index}Content" class="interview-script-translation" style="display: none;">
@@ -242,13 +242,18 @@ function _parseLineWithHighlights(line, highlights) {
 function toggleInterviewQuestions() {
     const content = document.getElementById('questionsContent');
     const icon = document.getElementById('questionsToggleIcon');
+    const toggle = icon.closest('.interview-result-toggle');
     
     if (content.style.display === 'none') {
         content.style.display = 'block';
-        icon.textContent = '▼';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        if (toggle) toggle.classList.add('active');
     } else {
         content.style.display = 'none';
-        icon.textContent = '▶';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        if (toggle) toggle.classList.remove('active');
     }
 }
 
@@ -259,13 +264,18 @@ function toggleInterviewModelAnswer(index) {
     const answerId = `answer${index}`;
     const content = document.getElementById(`${answerId}Content`);
     const icon = document.getElementById(`${answerId}ToggleIcon`);
+    const toggle = icon.closest('.interview-result-toggle');
     
     if (content.style.display === 'none') {
         content.style.display = 'block';
-        icon.textContent = '▼';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        if (toggle) toggle.classList.add('active');
     } else {
         content.style.display = 'none';
-        icon.textContent = '▶';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        if (toggle) toggle.classList.remove('active');
     }
 }
 
@@ -275,13 +285,18 @@ function toggleInterviewModelAnswer(index) {
 function toggleInterviewTranslation(index) {
     const content = document.getElementById(`translation${index}Content`);
     const icon = document.getElementById(`translation${index}ToggleIcon`);
+    const toggle = icon.closest('.interview-translation-toggle');
     
     if (content.style.display === 'none') {
         content.style.display = 'block';
-        icon.textContent = '▼';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        if (toggle) toggle.classList.add('active');
     } else {
         content.style.display = 'none';
-        icon.textContent = '▶';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        if (toggle) toggle.classList.remove('active');
     }
 }
 
@@ -397,8 +412,8 @@ function showInterviewFeedback(answerIndex, highlightKey) {
     
     // 피드백 HTML 생성
     feedbackDiv.innerHTML = `
+        <span class="interview-feedback-badge">${feedback.title}</span>
         <div class="interview-feedback-content">
-            <h4 class="interview-feedback-title">${feedback.title}</h4>
             <p class="interview-feedback-description">${feedback.description}</p>
         </div>
     `;

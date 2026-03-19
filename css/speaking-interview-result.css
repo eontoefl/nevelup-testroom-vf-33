@@ -1,309 +1,371 @@
-/* 스피킹 - 인터뷰 채점화면 스타일 */
-/* 색상 팔레트: 
-   시그니처 보라색 #9480c5
-   강조 민트 #77bf7e
-   서브 블루그레이 #b9c9da
-*/
+/* ================================================
+   Ethereal Dashboard Theme – Interview Speaking Result
+   Scoped to #interviewExplainScreen
+================================================ */
 
-.interview-result-container {
-    max-width: 900px;
+/* ── Container ── */
+#interviewExplainScreen {
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f8fafc;
+    color: #2c3e50;
+    padding: 0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+#interviewExplainScreen .test-content {
+    max-width: 920px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 40px 18px;
 }
 
-/* 섹션 */
-.interview-result-section {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(148, 128, 197, 0.12);
+#interviewExplainScreen .interview-result-container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* ── Section Cards ── */
+#interviewExplainScreen .interview-result-section {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 28px;
     margin-bottom: 20px;
-    overflow: hidden;
-    border: 1px solid #e8e8f0;
+    box-shadow: 0 9px 27px rgba(148, 128, 197, 0.05);
+    border: none;
+    overflow: visible;
 }
 
-/* 헤더 (펼치기/접기) */
-.interview-result-header {
-    background: linear-gradient(135deg, #9480c5 0%, #8570b8 100%);
-    color: white;
-    padding: 16px 20px;
-    cursor: pointer;
+/* ── Toggle container padding ── */
+#interviewExplainScreen .interview-result-section:has(.interview-result-toggle) {
+    padding: 18px 28px;
+}
+
+/* ── Toggle Button ── */
+#interviewExplainScreen .interview-result-toggle {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 18px;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.interview-result-header:hover {
-    background: linear-gradient(135deg, #8570b8 0%, #7660ab 100%);
-    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.3);
-}
-
-.interview-result-title {
-    flex: 1;
-}
-
-/* 콘텐츠 */
-.interview-result-content {
-    padding: 24px;
-    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-}
-
-/* 시나리오 */
-.interview-scenario {
-    background: linear-gradient(135deg, #f8f6ff 0%, #f3f0ff 100%);
-    padding: 16px 20px 12px 16px;
-    margin: 0 0 8px 0;
-    border-radius: 10px;
-    line-height: 1.8;
-    border-left: 4px solid #9480c5;
-    font-size: 17px !important;
-}
-
-.interview-scenario strong {
-    font-size: 16px !important;
+    gap: 10px;
+    cursor: pointer;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    transition: all 0.25s ease;
+    font-size: 15px;
     font-weight: 700;
-    display: block;
-    margin-bottom: 8px;
-}
-
-.interview-scenario-text {
-    font-size: 17px !important;
-    color: #2d3748;
-    line-height: 1.7;
-    margin-bottom: 8px;
-}
-
-/* 문제 블록 */
-.interview-question-block {
-    padding: 12px 0 16px 0;
-    border-bottom: 1px solid #e8e8f0;
-    line-height: 1.8;
-    font-size: 17px !important;
-}
-
-.interview-question-block:last-child {
-    border-bottom: none;
-}
-
-.interview-question-block:first-child {
-    padding: 0 0 8px 0;
-    border-bottom: none;
-}
-
-.interview-question-block strong {
-    color: #4c4163;
-    font-size: 16px !important;
-    font-weight: 700;
-    display: block;
-    margin-bottom: 8px;
-}
-
-/* 문제 영어 텍스트 */
-.interview-question-text {
-    font-size: 17px !important;
-    color: #2d3748;
-    display: block;
-    line-height: 1.7;
-    margin-bottom: 8px;
-}
-
-/* 해석 */
-.interview-translation {
-    display: block;
-    color: #6b7280;
-    font-size: 15px !important;
-    margin-top: 0;
-    font-style: italic;
-    background: linear-gradient(90deg, transparent 0%, #f8f9fa 100%);
-    padding: 6px 10px;
-    border-radius: 4px;
-    line-height: 1.7;
-}
-
-/* 오디오 버튼 */
-.interview-audio-button {
-    margin-bottom: 20px;
-}
-
-.interview-play-button {
-    background: linear-gradient(135deg, #b9c9da 0%, #a8b9ce 100%);
-    color: white;
+    color: #9480c5;
     border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-size: 16px;
+}
+
+#interviewExplainScreen .interview-result-toggle:hover {
+    opacity: 0.7;
+}
+
+#interviewExplainScreen .interview-result-toggle i {
+    transition: transform 0.3s ease;
+    color: #9480c5;
+    font-size: 13px;
+}
+
+#interviewExplainScreen .interview-result-toggle.active {
+    opacity: 1;
+}
+
+#interviewExplainScreen .interview-result-toggle.active i {
+    transform: rotate(180deg);
+}
+
+/* ── Toggle Content (problem / model answer) ── */
+#interviewExplainScreen .interview-result-content {
+    padding: 18px 0 0 0;
+    margin-top: 18px;
+    border-top: 1px solid #f0edf5;
+    background: transparent;
+}
+
+/* ── Scenario ── */
+#interviewExplainScreen .interview-scenario {
+    background: transparent;
+    padding: 0;
+    margin: 0 0 16px 0;
+    border-radius: 0;
+    line-height: 1.8;
+    border-left: none;
+    font-size: 15px;
+}
+
+#interviewExplainScreen .interview-scenario strong {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9480c5;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: 6px;
+}
+
+#interviewExplainScreen .interview-scenario-text {
+    font-size: 15px;
+    color: #475569;
+    line-height: 1.8;
+    margin-bottom: 6px;
+}
+
+/* ── Translation ── */
+#interviewExplainScreen .interview-translation {
+    display: block;
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 4px;
+    font-style: italic;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    line-height: 1.7;
+}
+
+/* ── Question Block ── */
+#interviewExplainScreen .interview-question-block {
+    padding: 14px 0;
+    border-bottom: 1px solid #f0edf5;
+    line-height: 1.8;
+    font-size: 15px;
+}
+
+#interviewExplainScreen .interview-question-block:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+#interviewExplainScreen .interview-question-block:first-child {
+    padding-top: 0;
+    border-bottom: 1px solid #f0edf5;
+}
+
+#interviewExplainScreen .interview-question-block strong {
+    color: #9480c5;
+    font-size: 12px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+#interviewExplainScreen .interview-question-text {
+    font-size: 15px;
+    color: #475569;
+    display: block;
+    line-height: 1.8;
+    margin-bottom: 4px;
+}
+
+/* ── Audio Button ── */
+#interviewExplainScreen .interview-audio-button {
+    margin-bottom: 18px;
+}
+
+#interviewExplainScreen .interview-play-button {
+    background: #9480c5;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.3s;
-    box-shadow: 0 2px 8px rgba(185, 201, 218, 0.3);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.25);
 }
 
-.interview-play-button:hover {
-    background: linear-gradient(135deg, #a8b9ce 0%, #98a9be 100%);
-    box-shadow: 0 4px 12px rgba(185, 201, 218, 0.45);
+#interviewExplainScreen .interview-play-button:hover {
+    background: #8570b8;
+    box-shadow: 0 6px 16px rgba(148, 128, 197, 0.35);
     transform: translateY(-1px);
 }
+
+#interviewExplainScreen .interview-play-button i {
+    font-size: 14px;
 }
 
-.interview-play-button i {
-    font-size: 18px;
+/* ── Model Answer ── */
+#interviewExplainScreen .interview-model-answer {
+    margin-bottom: 0;
 }
 
-/* 모범답안 */
-.interview-model-answer {
-    margin-bottom: 20px;
+#interviewExplainScreen .interview-answer-full {
+    margin-bottom: 0;
 }
 
-/* 모범답안 전체 */
-.interview-answer-full {
-    margin-bottom: 24px;
-}
-
-.interview-answer-full .interview-script {
-    font-size: 17px;
+#interviewExplainScreen .interview-answer-full .interview-script {
+    font-size: 15px;
     line-height: 1.8;
-    color: #2d3748;
+    color: #374151;
     margin: 0 0 16px 0;
-    font-weight: 500;
+    font-weight: 400;
 }
 
-/* 해석 토글 버튼 */
-.interview-translation-toggle {
+/* ── Translation Toggle ── */
+#interviewExplainScreen .interview-translation-toggle {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     color: #9480c5;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
-    padding: 8px 14px;
-    border-radius: 8px;
-    transition: all 0.2s;
-    margin-bottom: 12px;
-    background: #f8f6ff;
-    border: 1px solid #e8e3f3;
+    padding: 0;
+    border-radius: 0;
+    transition: all 0.2s ease;
+    margin-bottom: 0;
+    background: transparent;
+    border: none;
 }
 
-.interview-translation-toggle:hover {
-    background: #f3f0ff;
-    border-color: #9480c5;
-    transform: translateX(2px);
+#interviewExplainScreen .interview-translation-toggle:hover {
+    opacity: 0.7;
+    background: transparent;
+    border-color: transparent;
+    transform: none;
 }
 
-.interview-translation-toggle span:first-child {
+#interviewExplainScreen .interview-translation-toggle i {
+    font-size: 11px;
+    color: #9480c5;
+    transition: transform 0.3s ease;
+}
+
+#interviewExplainScreen .interview-translation-toggle.active i {
+    transform: rotate(180deg);
+}
+
+#interviewExplainScreen .interview-answer-full .interview-script-translation {
     font-size: 14px;
-}
-
-.interview-answer-full .interview-script-translation {
-    font-size: 16px;
     line-height: 1.8;
-    color: #4a5568;
-    margin: 0;
-    padding: 18px;
-    background: linear-gradient(135deg, #fafafa 0%, #f7fafc 100%);
-    border-radius: 10px;
-    margin-top: 12px;
-    border: 1px solid #e8e3f3;
+    color: #94a3b8;
+    font-style: italic;
+    margin: 12px 0 0 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
 }
 
-/* 이전 스타일 (사용 안 함, 제거 예정) */
-.interview-answer-line {
-    display: none;
-}
-
-/* 하이라이트 (클릭 가능) */
-.interview-highlight {
-    color: #77bf7e;
+/* ── Highlight (clickable) ── */
+#interviewExplainScreen .interview-highlight {
+    color: #9480c5;
     font-weight: 600;
     cursor: pointer;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: #a8d6ac;
-    transition: all 0.3s;
+    text-decoration: none;
+    border-bottom: 1px dotted #b8a9db;
+    transition: all 0.2s ease;
     position: relative;
 }
 
-.interview-highlight:hover {
-    color: #5da964;
-    background: linear-gradient(135deg, #f0f9f1 0%, #e8f5e9 100%);
-    padding: 2px 6px;
-    border-radius: 6px;
-    text-decoration-color: #77bf7e;
-    box-shadow: 0 2px 6px rgba(119, 191, 126, 0.2);
+#interviewExplainScreen .interview-highlight:hover {
+    background: rgba(148, 128, 197, 0.1);
+    border-bottom: 2px solid #9480c5;
+    padding: 2px 4px;
+    border-radius: 4px;
+    box-shadow: none;
+    color: #9480c5;
 }
 
-/* 피드백 */
-.interview-feedback {
-    margin-top: 24px;
-    padding: 20px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #f0f9f1 0%, #ffffff 100%);
-    border: 2px solid #c8e6ca;
-    box-shadow: 0 2px 8px rgba(119, 191, 126, 0.15);
+#interviewExplainScreen .interview-highlight.active {
+    background: rgba(148, 128, 197, 0.18);
+    border-bottom: 2px solid #7c6bb0;
+    padding: 2px 4px;
+    border-radius: 4px;
 }
 
-.interview-feedback-content {
-    background: linear-gradient(135deg, #fafafa 0%, #f7fafc 100%);
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid #e0ebe0;
-}
-
-.interview-feedback-title {
-    color: #77bf7e;
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0 0 12px 0;
+/* ── Feedback ── */
+#interviewExplainScreen .interview-feedback {
+    margin-top: 18px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 12px;
+    animation: interviewFadeIn 0.3s ease;
 }
 
-.interview-feedback-title::before {
-    content: '💡';
-    font-size: 20px;
+@keyframes interviewFadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.interview-feedback-description {
-    color: #374151;
-    font-size: 15px;
+#interviewExplainScreen .interview-feedback-badge {
+    display: inline-block;
+    align-self: flex-start;
+    background: #9480c5;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+#interviewExplainScreen .interview-feedback-content {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    border: none;
+}
+
+#interviewExplainScreen .interview-feedback-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 8px 0;
+    display: block;
+    gap: 0;
+}
+
+#interviewExplainScreen .interview-feedback-title::before {
+    display: none;
+}
+
+#interviewExplainScreen .interview-feedback-description {
+    color: #475569;
+    font-size: 14px;
     line-height: 1.8;
     margin: 0;
 }
 
-/* 반응형 */
+/* ── Unused legacy ── */
+#interviewExplainScreen .interview-answer-line {
+    display: none;
+}
+
+/* ── Responsive ── */
 @media (max-width: 768px) {
-    .interview-result-container {
-        padding: 12px;
+    #interviewExplainScreen .test-content {
+        padding: 24px 14px;
     }
-    
-    .interview-result-section {
-        margin-bottom: 16px;
+
+    #interviewExplainScreen .interview-result-section {
+        padding: 20px 16px;
+        border-radius: 18px;
     }
-    
-    .interview-result-header {
-        padding: 12px 16px;
-        font-size: 16px;
+
+    #interviewExplainScreen .interview-result-content {
+        padding: 14px 0 0 0;
     }
-    
-    .interview-result-content {
-        padding: 16px;
+
+    #interviewExplainScreen .interview-answer-full .interview-script {
+        font-size: 14px;
     }
-    
-    .interview-scenario {
-        padding: 16px;
-    }
-    
-    .interview-script {
-        font-size: 15px;
-    }
-    
-    .interview-script-translation {
+
+    #interviewExplainScreen .interview-play-button {
+        padding: 8px 16px;
         font-size: 13px;
     }
 }
