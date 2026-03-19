@@ -191,10 +191,8 @@ function showBulletFeedback(bulletNum, event) {
     // Bullet 피드백 HTML 생성 (모범답안 해당 부분 제외)
     const bulletHtml = `
         <div class="bullet-item">
-            <div class="bullet-header">
-                <span class="bullet-number">Bullet ${bullet.bulletNum}</span>
-            </div>
             <div class="bullet-content">
+                <span class="bullet-badge">Bullet ${bullet.bulletNum}</span>
                 <div class="bullet-section">
                     <div class="bullet-label"><i class="fas fa-thumbtack"></i> 꼭 말해야하는 부분</div>
                     ${bullet.must}
