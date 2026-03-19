@@ -340,6 +340,7 @@
 
 #emailExplainScreen .bullet-badge {
     display: inline-block;
+    align-self: flex-start;
     background: #9480c5;
     color: #ffffff;
     font-size: 11px;
