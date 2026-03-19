@@ -10,6 +10,11 @@
  *   5. 이전/다음 버튼으로 빨간 그릇 간 전환
  *   6. 뒤로가기: 해설 화면 → 선택 화면 → 대시보드 (2단계)
  *
+ * visibleScreens 항목 형식:
+ *   - 일반 유형: { screenId: 'xxxExplainScreen' }
+ *   - repeat 개별 문제: { screenId: 'repeatExplainScreen', subIndex: 0~N, repeatData: { set } }
+ *   → _showScreenAtIndex에서 subIndex 유무로 분기
+ *
  * 의존:
  *   - supabase-client.js  (getStudyResultV3, getCurrentUser)
  *   - task-dashboard.js   (backToTaskDashboard, SECTION_ICONS, SECTION_LABELS)
@@ -278,11 +283,25 @@ function _onSelectExplain(mode) {
                 return;
             }
 
-            // show 함수 호출 — 빨간 그릇에 데이터 채움
-            showFn(data);
+            // ── repeat 특수 처리: 문제별로 개별 항목 등록 ──
+            if (def.type === 'repeat' && data.set && data.set.audios) {
+                var audiosCount = data.set.audios.length;
+                for (var i = 0; i < audiosCount; i++) {
+                    st.visibleScreens.push({
+                        screenId: def.screenId,
+                        subIndex: i,
+                        repeatData: data
+                    });
+                }
+                // 첫 문제 렌더링 (화면에 데이터 채움)
+                showFn(data);
+                console.log('📖 [해설] repeat ' + audiosCount + '개 문제 등록 완료');
+                return;
+            }
 
-            // 이 그릇은 데이터가 있으므로 보여줄 목록에 추가
-            st.visibleScreens.push(def.screenId);
+            // ── 일반 유형: 기존 방식 ──
+            showFn(data);
+            st.visibleScreens.push({ screenId: def.screenId });
             console.log('📖 [해설] ' + def.type + ' 렌더링 완료');
 
         } catch (err) {
@@ -320,15 +339,24 @@ function _showScreenAtIndex(index) {
     if (index >= st.visibleScreens.length) index = st.visibleScreens.length - 1;
 
     // 현재 보이는 그릇 숨기기
-    var currentScreenId = st.visibleScreens[st.currentIndex];
+    var currentItem = st.visibleScreens[st.currentIndex];
+    var currentScreenId = currentItem.screenId;
     var currentScreen = document.getElementById(currentScreenId);
     if (currentScreen) currentScreen.style.display = 'none';
 
     // 새 그릇 보이기
     st.currentIndex = index;
-    var newScreenId = st.visibleScreens[index];
+    var newItem = st.visibleScreens[index];
+    var newScreenId = newItem.screenId;
     var newScreen = document.getElementById(newScreenId);
     if (newScreen) newScreen.style.display = '';
+
+    // ── repeat subIndex 처리: 해당 문제로 전환 ──
+    if (newItem.subIndex != null && newItem.repeatData) {
+        if (typeof showRepeatResultNarration === 'function') {
+            showRepeatResultNarration(newItem.repeatData.set, newItem.subIndex);
+        }
+    }
 
     // 스크롤 맨 위로
     var contentArea = document.getElementById('explainContentArea');

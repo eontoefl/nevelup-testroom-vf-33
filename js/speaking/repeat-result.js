@@ -4,6 +4,11 @@
  * 
  * 완전 독립형: 컴포넌트 없이 데이터만으로 복습 화면을 표시합니다.
  * 오디오 재생을 자체적으로 처리합니다.
+ * 
+ * 네비게이션:
+ *   - 이전/다음 문제 전환은 explain-viewer.js의 하단 플로팅 네비가 담당
+ *   - explain-viewer가 showRepeatResultNarration(set, index)를 직접 호출
+ *   - 이 파일은 데이터 표시 + 오디오 재생만 담당
  */
 
 // 내부 상태
@@ -11,7 +16,7 @@ let _repeatResultAudio = null;
 let _repeatResultCurrentIndex = 0;
 
 /**
- * 복습 화면 표시
+ * 복습 화면 표시 (초기 렌더링)
  * @param {Object} data - { set: { contextText, audios: [{audio, image, script, translation}] } }
  */
 function showRepeatResult(data) {
@@ -37,19 +42,26 @@ function showRepeatResult(data) {
 
 /**
  * 나레이션 표시 (복습 화면)
+ * explain-viewer.js에서 문제 전환 시 직접 호출
  * @param {Object} set - 세트 데이터
  * @param {number} index - 오디오 인덱스
  */
 function showRepeatResultNarration(set, index) {
-    console.log(`🎯 [repeat-result] 오디오 ${index + 1} 표시`);
+    console.log(`🎯 [repeat-result] 오디오 ${index + 1}/${set.audios.length} 표시`);
+    
+    // 기존 오디오 정지
+    if (_repeatResultAudio) {
+        _repeatResultAudio.pause();
+        _repeatResultAudio = null;
+    }
     
     _repeatResultCurrentIndex = index;
     const audio = set.audios[index];
     
-    // 진행 상태 업데이트
-    const progressEl = document.getElementById('repeatResultProgress');
-    if (progressEl) {
-        progressEl.textContent = `Question ${index + 1} of ${set.audios.length}`;
+    // Context 표시 (문제 전환 시에도 갱신)
+    const contextEl = document.getElementById('repeatResultContext');
+    if (contextEl) {
+        contextEl.textContent = set.contextText;
     }
     
     // 이미지 표시
@@ -80,29 +92,6 @@ function showRepeatResultNarration(set, index) {
     if (listenBtn) {
         listenBtn.onclick = () => playRepeatResultAudio(audio.audio);
     }
-    
-    // 이전/다음 버튼 표시
-    const prevBtn = document.getElementById('repeatResultPrevBtn');
-    const nextBtn = document.getElementById('repeatResultNextBtn');
-    
-    if (prevBtn) {
-        if (index === 0) {
-            prevBtn.style.display = 'none';
-        } else {
-            prevBtn.style.display = 'inline-block';
-            prevBtn.onclick = () => showRepeatResultNarration(set, index - 1);
-        }
-    }
-    
-    if (nextBtn) {
-        if (index === set.audios.length - 1) {
-            nextBtn.textContent = '완료';
-            nextBtn.onclick = () => completeRepeatResult();
-        } else {
-            nextBtn.textContent = '다음';
-            nextBtn.onclick = () => showRepeatResultNarration(set, index + 1);
-        }
-    }
 }
 
 /**
@@ -132,22 +121,6 @@ function playRepeatResultAudio(audioUrl) {
 }
 
 /**
- * 복습 완료
- */
-function completeRepeatResult() {
-    console.log('✅ [repeat-result] 복습 완료');
-    
-    // 오디오 정지
-    if (_repeatResultAudio) {
-        _repeatResultAudio.pause();
-        _repeatResultAudio = null;
-    }
-    
-    // backToSchedule는 Module이 제공
-    return true;
-}
-
-/**
  * Cleanup (화면 전환 시 호출)
  */
 function cleanupRepeatResult() {
@@ -163,7 +136,6 @@ function cleanupRepeatResult() {
 window.showRepeatResult = showRepeatResult;
 window.showRepeatResultNarration = showRepeatResultNarration;
 window.playRepeatResultAudio = playRepeatResultAudio;
-window.completeRepeatResult = completeRepeatResult;
 window.cleanupRepeatResult = cleanupRepeatResult;
 
 console.log('✅ [repeat-result] 로드 완료');
