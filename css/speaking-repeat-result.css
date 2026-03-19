@@ -1,117 +1,207 @@
-/* Speaking - 따라말하기 복습 화면 스타일 */
+/* =============================================
+   Speaking - 따라말하기 복습(결과) 화면 스타일
+   새 디자인: 세로 카드 스택 레이아웃
+   ============================================= */
 
-.repeat-result-container {
-    max-width: 800px;
+/* ── 메인 컨테이너 ── */
+.repeat-result-main {
+    flex: 1;
+    padding: 2.5rem 10% 5rem;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 40px 20px;
-}
-
-/* 이미지 박스 */
-.repeat-result-image-box {
-    margin-bottom: 40px;
-    text-align: center;
-}
-
-.repeat-result-image {
-    max-width: 600px;
     width: 100%;
-    height: auto;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* 다시 듣기 버튼 */
-.repeat-result-audio-box {
-    margin-bottom: 40px;
-    text-align: center;
+/* ── 히어로 섹션 ── */
+.repeat-result-hero {
+    margin-bottom: 2rem;
 }
 
-.btn-listen-again {
-    padding: 15px 40px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+.repeat-result-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary, #0f172a);
+}
+
+.repeat-result-context {
+    color: var(--primary-color, #9480c5);
+    font-weight: 500;
+    font-size: 1.125rem;
+}
+
+/* ── 일러스트 이미지 ── */
+.repeat-result-illustration-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 2rem;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(148, 128, 197, 0.15);
+    margin-bottom: 2.5rem;
+    position: relative;
+    background: #f1f4f8;
+}
+
+.repeat-result-illustration-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, rgba(148, 128, 197, 0.15), transparent);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.repeat-result-illustration-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+}
+
+.repeat-result-illustration-container:hover img {
+    transform: scale(1.05);
+}
+
+/* 이미지 없을 때 fallback */
+.repeat-result-no-image {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--text-secondary, #64748b);
+    font-size: 1rem;
+    z-index: 2;
+}
+
+.repeat-result-no-image i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+}
+
+/* ── 다시 듣기 버튼 ── */
+.repeat-result-actions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
+.repeat-result-listen-btn {
+    height: 4rem;
+    padding: 0 2.5rem;
+    background: var(--primary-color, #9480c5);
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.btn-listen-again:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-}
-
-.btn-listen-again:active {
-    transform: translateY(0);
-}
-
-.btn-listen-again i {
-    font-size: 20px;
-}
-
-/* 결과 섹션 */
-.repeat-result-section {
-    background: white;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
-}
-
-.repeat-result-label {
-    font-size: 16px;
+    border-radius: 2rem;
+    font-size: 1.125rem;
     font-weight: 700;
-    color: #8b5cf6;
-    margin-bottom: 15px;
+    font-family: inherit;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(148, 128, 197, 0.08);
+    transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
-.repeat-result-label i {
-    font-size: 18px;
+.repeat-result-listen-btn:hover {
+    opacity: 0.95;
+    box-shadow: 0 20px 40px rgba(148, 128, 197, 0.15);
 }
 
-.repeat-result-text {
-    font-size: 18px;
-    line-height: 1.8;
-    color: #2d3748;
+.repeat-result-listen-btn:active {
+    transform: scale(0.98);
+}
+
+.repeat-result-listen-btn i {
+    font-size: 1.25rem;
+}
+
+/* ── Script / Translation 카드 스택 ── */
+.repeat-result-content-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.repeat-result-card {
+    background: var(--surface-color, #ffffff);
+    padding: 2.5rem 2rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 30px rgba(148, 128, 197, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: transform 0.2s ease;
+}
+
+.repeat-result-card:hover {
+    transform: translateY(-4px);
+}
+
+.repeat-result-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--primary-color, #9480c5);
+}
+
+.repeat-result-card-header i {
+    font-size: 1.25rem;
+}
+
+.repeat-result-card-header h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin: 0;
+}
+
+.repeat-result-card-body {
+    color: var(--text-primary, #0f172a);
+    font-size: 1.25rem;
+    line-height: 1.6;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
     word-wrap: break-word;
 }
 
-.repeat-result-text.translation {
-    color: #4a5568;
+.repeat-result-italic {
+    font-style: italic;
+    color: #334155;
 }
 
-/* 이전/다음 버튼 — 하단 플로팅 네비(explainNavBar)로 통합되어 사용하지 않음 */
-
-/* 반응형 */
+/* ── 반응형 ── */
 @media (max-width: 768px) {
-    .repeat-result-container {
-        padding: 20px 15px;
+    .repeat-result-main {
+        padding: 1.5rem 1.5rem 5rem;
     }
-    
-    .repeat-result-image {
-        max-width: 100%;
+
+    .repeat-result-title {
+        font-size: 2rem;
     }
-    
-    .btn-listen-again {
-        padding: 12px 30px;
-        font-size: 16px;
+
+    .repeat-result-illustration-container {
+        border-radius: 1rem;
     }
-    
-    .repeat-result-section {
-        padding: 20px;
+
+    .repeat-result-listen-btn {
+        width: 100%;
+        max-width: 300px;
     }
-    
-    .repeat-result-text {
-        font-size: 16px;
+
+    .repeat-result-card {
+        padding: 1.5rem 1.25rem;
+        border-radius: 1rem;
+    }
+
+    .repeat-result-card-body {
+        font-size: 1.1rem;
     }
 }

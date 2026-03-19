@@ -66,12 +66,15 @@ function showRepeatResultNarration(set, index) {
     
     // 이미지 표시
     const illustrationImg = document.getElementById('repeatResultIllustration');
+    const noImageEl = document.getElementById('repeatResultNoImage');
     if (illustrationImg) {
         if (audio.image && audio.image !== 'PLACEHOLDER') {
             illustrationImg.src = audio.image;
             illustrationImg.style.display = 'block';
+            if (noImageEl) noImageEl.style.display = 'none';
         } else {
             illustrationImg.style.display = 'none';
+            if (noImageEl) noImageEl.style.display = 'flex';
         }
     }
     

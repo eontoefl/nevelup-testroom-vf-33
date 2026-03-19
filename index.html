@@ -1084,43 +1084,52 @@
     </div>
 
                     <div id="repeatExplainScreen" style="display:none">
-        
-        <div class="test-content">
-            <div class="repeat-result-container">
-                <!-- Context 영역 -->
-                <div id="repeatResultContext" class="repeat-result-context" style="text-align:center; padding:12px 16px; font-size:14px; color:#666; background:#f0f0f0; border-radius:8px; margin-bottom:12px;"></div>
-                
-                <!-- 일러스트 이미지 -->
-                <div class="repeat-result-image-box">
-                    <img id="repeatResultIllustration" src="" alt="Illustration" class="repeat-result-image">
+
+        <div class="repeat-result-main">
+            <!-- 히어로 섹션 -->
+            <div class="repeat-result-hero">
+                <h1 class="repeat-result-title">Repeat Result</h1>
+                <p id="repeatResultContext" class="repeat-result-context"></p>
+            </div>
+
+            <!-- 일러스트 이미지 -->
+            <div class="repeat-result-illustration-container" id="repeatResultIllustrationContainer">
+                <div class="repeat-result-illustration-overlay"></div>
+                <img id="repeatResultIllustration" src="" alt="Illustration">
+                <div class="repeat-result-no-image" id="repeatResultNoImage" style="display:none;">
+                    <i class="fas fa-image"></i>
+                    <span>이미지가 로드되지 않았습니다</span>
                 </div>
-                
-                <!-- 다시 듣기 버튼 -->
-                <div class="repeat-result-audio-box">
-                    <button id="repeatResultListenBtn" class="btn-listen-again" onclick="playRepeatResultAudio()">
-                        <i class="fas fa-volume-up"></i> 다시 듣기
-                    </button>
-                </div>
-                
-                <!-- 스크립트 -->
-                <div class="repeat-result-section">
-                    <div class="repeat-result-label">
-                        <i class="fas fa-file-alt"></i> Script
+            </div>
+
+            <!-- 다시 듣기 버튼 -->
+            <div class="repeat-result-actions">
+                <button id="repeatResultListenBtn" class="repeat-result-listen-btn">
+                    <i class="fas fa-play-circle"></i>
+                    <span>Listen Again</span>
+                </button>
+            </div>
+
+            <!-- Script / Translation 카드 -->
+            <div class="repeat-result-content-stack">
+                <section class="repeat-result-card">
+                    <div class="repeat-result-card-header">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Script</h3>
                     </div>
-                    <div id="repeatResultScript" class="repeat-result-text"></div>
-                </div>
-                
-                <!-- 해석 -->
-                <div class="repeat-result-section">
-                    <div class="repeat-result-label">
-                        <i class="fas fa-language"></i> 해석
+                    <div class="repeat-result-card-body repeat-result-italic" id="repeatResultScript"></div>
+                </section>
+
+                <section class="repeat-result-card">
+                    <div class="repeat-result-card-header">
+                        <i class="fas fa-language"></i>
+                        <h3>Translation</h3>
                     </div>
-                    <div id="repeatResultTranslation" class="repeat-result-text translation"></div>
-                </div>
-                
-                <!-- 이전/다음 네비게이션은 하단 플로팅 네비(explainNavBar)가 담당 -->
+                    <div class="repeat-result-card-body" id="repeatResultTranslation"></div>
+                </section>
             </div>
         </div>
+
     </div>
 
                     <div id="interviewExplainScreen" style="display:none">
