@@ -219,18 +219,6 @@
 #fillBlanksExplainScreen .result-blank.incorrect .blank-user { color: #dc2626; text-decoration: none; }
 
 
-/* ── Blank: 1차 틀림 + 2차 맞음 ── */
-#fillBlanksExplainScreen .result-blank.improved {
-  box-shadow: 0 0 0 2px rgba(119, 191, 126, 0.6);
-  animation: fb-improved-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes fb-improved-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(119, 191, 126, 0.6); }
-  50%      { box-shadow: 0 0 0 3px rgba(119, 191, 126, 0.4); }
-}
-
-
 /* ── Explanation Box ── */
 #fillBlanksExplainScreen .blank-explanation-box {
   background: #ffffff;

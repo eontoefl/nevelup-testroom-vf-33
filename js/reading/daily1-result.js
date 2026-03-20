@@ -230,90 +230,10 @@ function renderDaily1OptionsExplanation(answer, toggleId) {
     `;
 }
 
-// 탭 전환
-function switchDaily1Tab(setIndex, tabType) {
-    const originalPane = document.getElementById(`rd-original-${setIndex}`);
-    const translationPane = document.getElementById(`rd-translation-${setIndex}`);
-    const tabs = document.querySelectorAll(`#daily1ResultDetails .result-set-section:nth-child(${setIndex + 1}) .passage-tab`);
-    
-    if (tabType === 'original') {
-        originalPane.style.display = 'block';
-        translationPane.style.display = 'none';
-        tabs[0].classList.add('active');
-        tabs[1].classList.remove('active');
-    } else {
-        originalPane.style.display = 'none';
-        translationPane.style.display = 'block';
-        tabs[0].classList.remove('active');
-        tabs[1].classList.add('active');
-    }
-}
-
-// 보기 해설 펼치기/접기
-function toggleDaily1Options(id) {
-    const content = document.getElementById(id);
-    const button = content.previousElementSibling;
-    const icon = button.querySelector('i');
-    const text = button.querySelector('.toggle-text');
-    
-    if (content.style.display === 'none' || content.style.display === '') {
-        content.style.display = 'block';
-        button.classList.add('is-active');
-        icon.className = 'fas fa-chevron-up';
-        text.innerText = '보기 상세 해설 접기';
-    } else {
-        content.style.display = 'none';
-        button.classList.remove('is-active');
-        icon.className = 'fas fa-chevron-down';
-        text.innerText = '보기 상세 해설 펼치기';
-    }
-}
-
-// 이벤트 바인딩
-function bindDaily1ToggleEvents() {
-    const interactiveWords = document.querySelectorAll('.interactive-word');
-    interactiveWords.forEach(word => {
-        word.addEventListener('mouseenter', showDaily1Tooltip);
-        word.addEventListener('mouseleave', hideDaily1Tooltip);
-    });
-}
-
-// 툴팁 표시
-function showDaily1Tooltip(event) {
-    const word = event.target;
-    const translation = word.getAttribute('data-translation');
-    const explanation = word.getAttribute('data-explanation');
-    
-    const existingTooltip = document.querySelector('.rd-tooltip');
-    if (existingTooltip) existingTooltip.remove();
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'rd-tooltip';
-    tooltip.innerHTML = `
-        <div class="tooltip-translation">${escapeHtml(translation)}</div>
-        ${explanation ? `<div class="tooltip-explanation">${escapeHtml(explanation)}</div>` : ''}
-    `;
-    
-    document.body.appendChild(tooltip);
-    
-    const rect = word.getBoundingClientRect();
-    tooltip.style.left = `${rect.left + window.scrollX}px`;
-    tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
-}
-
-// 툴팁 숨기기
-function hideDaily1Tooltip() {
-    const tooltip = document.querySelector('.rd-tooltip');
-    if (tooltip) tooltip.remove();
-}
-
 // 전역 노출
 window.showDaily1Results = showDaily1Results;
 window.renderDaily1SetResult = renderDaily1SetResult;
 window.renderDaily1Answers = renderDaily1Answers;
 window.renderDaily1OptionsExplanation = renderDaily1OptionsExplanation;
-window.switchDaily1Tab = switchDaily1Tab;
-window.toggleDaily1Options = toggleDaily1Options;
-window.bindDaily1ToggleEvents = bindDaily1ToggleEvents;
 
 console.log('✅ [Reading] daily1-result.js 로드 완료');

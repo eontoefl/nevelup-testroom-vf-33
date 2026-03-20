@@ -55,7 +55,7 @@ function showDaily2Results(data) {
     });
     
     const totalIncorrect = totalQuestions - totalCorrect;
-    const totalScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    const totalScore = Math.round((totalCorrect / totalQuestions) * 100);
     
     document.getElementById('daily2ResultScoreValue').textContent = totalScore + '%';
     document.getElementById('daily2ResultCorrectCount').textContent = totalCorrect;
@@ -83,12 +83,12 @@ function renderDaily2SetResult(setResult, setIdx) {
     sentences.forEach((sentence, idx) => {
         const translation = translations[idx] || '';
         
-        let highlightedSentence = sentence.trim().replace(/\n/g, '<br>');
+        let highlightedSentence = escapeHtml(sentence).replace(/\n/g, '<br>');
         if (setResult.passage.interactiveWords) {
             setResult.passage.interactiveWords.forEach(wordObj => {
                 const regex = new RegExp(`(?<![\w-])${wordObj.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\w-])`, 'gi');
                 highlightedSentence = highlightedSentence.replace(regex, 
-                    (match) => `<span class="interactive-word" data-word="${wordObj.word}" data-translation="${wordObj.translation}" data-explanation="${wordObj.explanation}">${match}</span>`
+                    (match) => `<span class="interactive-word" data-word="${wordObj.word}" data-translation="${escapeHtml(wordObj.translation)}" data-explanation="${escapeHtml(wordObj.explanation)}">${match}</span>`
                 );
             });
         }
@@ -96,7 +96,7 @@ function renderDaily2SetResult(setResult, setIdx) {
         sentencesHTML += `
             <div class="sentence-pair">
                 <div class="sentence-original">${highlightedSentence}</div>
-                ${translation && translation.trim() ? `<div class="sentence-translation">${translation}</div>` : ''}
+                ${translation && translation.trim() ? `<div class="sentence-translation">${escapeHtml(translation)}</div>` : ''}
             </div>
         `;
     });
@@ -109,11 +109,11 @@ function renderDaily2SetResult(setResult, setIdx) {
     return `
         <div class="result-set-section">
             <h3 class="result-section-title">
-                <i class="fas fa-book-open"></i> Set ${setIdx + 1}: ${setResult.mainTitle}
+                <i class="fas fa-book-open"></i> Set ${setIdx + 1}: ${escapeHtml(setResult.mainTitle)}
             </h3>
             
             <div class="rd-passage-panel">
-                <h4 class="result-passage-title">${setResult.passage.title}</h4>
+                <h4 class="result-passage-title">${escapeHtml(setResult.passage.title)}</h4>
                 <div class="sentence-translations">
                     ${sentencesHTML}
                 </div>
@@ -146,21 +146,21 @@ function renderDaily2Answers(answer, qIdx, setId) {
             <div class="rd-result-icon">${correctIcon}</div>
             <div class="rd-result-content">
                 <div class="rd-question-text">
-                    <strong>${answer.questionNum}.</strong> ${answer.question}
+                    <strong>${answer.questionNum}.</strong> ${escapeHtml(answer.question)}
                 </div>
                 ${answer.questionTranslation ? `
                 <div class="question-translation">
-                    <i class="fas fa-comment-dots"></i> 문제 해석: ${answer.questionTranslation}
+                    <i class="fas fa-comment-dots"></i> 문제 해석: ${escapeHtml(answer.questionTranslation)}
                 </div>
                 ` : ''}
                 <div class="rd-answer-row">
                     <span class="rd-answer-label">${isCorrect ? '✓' : '✗'} 내 답변:</span>
-                    <span class="rd-answer-value ${isCorrect ? 'correct' : 'incorrect'}">${userAnswerText}</span>
+                    <span class="rd-answer-value ${isCorrect ? 'correct' : 'incorrect'}">${escapeHtml(userAnswerText)}</span>
                 </div>
                 ${!isCorrect ? `
                 <div class="rd-answer-row">
                     <span class="rd-answer-label">✓ 정답:</span>
-                    <span class="rd-answer-value correct">${correctAnswerText}</span>
+                    <span class="rd-answer-value correct">${escapeHtml(correctAnswerText)}</span>
                 </div>
                 ` : ''}
                 ${renderDaily2OptionsExplanation(answer, toggleId)}
@@ -194,13 +194,13 @@ function renderDaily2OptionsExplanation(answer, toggleId) {
             <div class="option-item">
                 <div class="option-header">
                     <span class="option-label">${option.label})</span>
-                    <span class="option-text">${option.text}</span>
+                    <span class="option-text">${escapeHtml(option.text)}</span>
                     ${badge}
                 </div>
-                ${option.translation ? `<div class="option-translation">${option.translation}</div>` : ''}
+                ${option.translation ? `<div class="option-translation">${escapeHtml(option.translation)}</div>` : ''}
                 ${option.explanation ? `
                 <div class="option-explanation ${isCorrectOption ? 'correct' : 'incorrect'}">
-                    <strong><i class="fas ${isCorrectOption ? 'fa-lightbulb' : 'fa-circle-exclamation'}"></i> ${isCorrectOption ? '정답 이유:' : '오답 이유:'}</strong><br>${option.explanation}
+                    <strong><i class="fas ${isCorrectOption ? 'fa-lightbulb' : 'fa-circle-exclamation'}"></i> ${isCorrectOption ? '정답 이유:' : '오답 이유:'}</strong><br>${escapeHtml(option.explanation)}
                 </div>
                 ` : ''}
             </div>
@@ -220,70 +220,10 @@ function renderDaily2OptionsExplanation(answer, toggleId) {
     `;
 }
 
-// 보기 해설 토글
-function toggleDaily2Options(id) {
-    const content = document.getElementById(id);
-    const button = content.previousElementSibling;
-    const icon = button.querySelector('i');
-    const text = button.querySelector('.toggle-text');
-    
-    if (content.style.display === 'none' || content.style.display === '') {
-        content.style.display = 'block';
-        button.classList.add('is-active');
-        icon.className = 'fas fa-chevron-up';
-        text.innerText = '보기 상세 해설 접기';
-    } else {
-        content.style.display = 'none';
-        button.classList.remove('is-active');
-        icon.className = 'fas fa-chevron-down';
-        text.innerText = '보기 상세 해설 펼치기';
-    }
-}
-
-// 인터랙티브 단어 툴팁 이벤트 바인딩
-function bindDaily2ToggleEvents() {
-    const interactiveWords = document.querySelectorAll('.interactive-word');
-    interactiveWords.forEach(word => {
-        word.addEventListener('mouseenter', showDaily2Tooltip);
-        word.addEventListener('mouseleave', hideDaily2Tooltip);
-    });
-}
-
-// 툴팁 표시
-function showDaily2Tooltip(event) {
-    const word = event.target;
-    const translation = word.getAttribute('data-translation');
-    const explanation = word.getAttribute('data-explanation');
-    
-    const existingTooltip = document.querySelector('.rd-tooltip');
-    if (existingTooltip) existingTooltip.remove();
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'rd-tooltip';
-    tooltip.innerHTML = `
-        <div class="tooltip-translation">${translation}</div>
-        ${explanation ? `<div class="tooltip-explanation">${explanation}</div>` : ''}
-    `;
-    
-    document.body.appendChild(tooltip);
-    
-    const rect = word.getBoundingClientRect();
-    tooltip.style.left = `${rect.left + window.scrollX}px`;
-    tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
-}
-
-// 툴팁 숨기기
-function hideDaily2Tooltip() {
-    const tooltip = document.querySelector('.rd-tooltip');
-    if (tooltip) tooltip.remove();
-}
-
 // 전역 노출
 window.showDaily2Results = showDaily2Results;
 window.renderDaily2SetResult = renderDaily2SetResult;
 window.renderDaily2Answers = renderDaily2Answers;
 window.renderDaily2OptionsExplanation = renderDaily2OptionsExplanation;
-window.toggleDaily2Options = toggleDaily2Options;
-window.bindDaily2ToggleEvents = bindDaily2ToggleEvents;
 
 console.log('✅ [Reading] daily2-result.js 로드 완료');

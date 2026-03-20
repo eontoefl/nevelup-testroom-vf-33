@@ -22,7 +22,7 @@ function showFillBlanksExplainScreen(data) {
     });
     
     const totalIncorrect = totalQuestions - totalCorrect;
-    const totalScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    const totalScore = Math.round((totalCorrect / totalQuestions) * 100);
     
     // 결과 화면 업데이트
     document.getElementById('resultTotalScore').textContent = `${totalScore}%`;
@@ -71,18 +71,8 @@ function renderPassageWithAnswers(setResult, answerMap) {
     let html = '';
     let lastIndex = 0;
     
-    // blanks 가져오기 (우선순위: setResult.blanks → window.readingFillBlanksData)
-    let blanks = null;
-    
-    if (setResult.blanks && setResult.blanks.length > 0) {
-        blanks = setResult.blanks;
-    } else {
-        const fillBlanksData = window.readingFillBlanksData;
-        const set = fillBlanksData?.sets?.find(s => s.id === setResult.setId);
-        if (set) {
-            blanks = set.blanks;
-        }
-    }
+    // blanks 가져오기 (setResult에 항상 포함됨)
+    const blanks = setResult.blanks;
     
     if (!blanks || blanks.length === 0) {
         console.error('❌ [renderPassageWithAnswers] blanks를 찾을 수 없음!');
@@ -211,8 +201,6 @@ function closeBlankExplanation(setId, blankId) {
 
 // 전역 노출
 window.showFillBlanksExplainScreen = showFillBlanksExplainScreen;
-window.renderPassageWithAnswers = renderPassageWithAnswers;
-window.renderBlankExplanations = renderBlankExplanations;
 window.toggleBlankExplanation = toggleBlankExplanation;
 window.closeBlankExplanation = closeBlankExplanation;
 
