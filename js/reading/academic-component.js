@@ -195,14 +195,14 @@ class AcademicComponent {
             
             const optionDiv = document.createElement('div');
             optionDiv.className = 'answer-option';
-            optionDiv.dataset.value = label;
+            optionDiv.dataset.value = String(idx + 1);
             optionDiv.textContent = `${label}) ${text}`;
             
-            optionDiv.addEventListener('click', () => this.selectOption(label));
+            optionDiv.addEventListener('click', () => this.selectOption(idx + 1));
             
             // 이전 답안 복원
             const savedAnswer = this.answers[questionIndex];
-            if (savedAnswer === label) {
+            if (savedAnswer === idx + 1) {
                 optionDiv.classList.add('selected');
             }
             
@@ -219,7 +219,7 @@ class AcademicComponent {
         // 선택 UI 업데이트
         const options = document.querySelectorAll(`#${this.optionsId} .answer-option`);
         options.forEach(opt => {
-            if (opt.dataset.value === value) {
+            if (opt.dataset.value === String(value)) {
                 opt.classList.add('selected');
             } else {
                 opt.classList.remove('selected');
@@ -300,11 +300,8 @@ class AcademicComponent {
         };
         
         this.currentSet.questions.forEach((question, index) => {
-            const userAnswer = this.answers[index] || '';
-            
-            // userAnswer는 'A','B','C','D', correctAnswer는 숫자(1,2,3,4)
-            const userAnswerNumber = userAnswer ? userAnswer.charCodeAt(0) - 64 : 0;
-            const isCorrect = userAnswerNumber === question.correctAnswer;
+            const userAnswer = this.answers[index];
+            const isCorrect = userAnswer === question.correctAnswer;
             
             setResults.answers.push({
                 questionNum: question.questionNum || `Q${index + 1}`,

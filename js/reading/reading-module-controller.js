@@ -714,7 +714,7 @@ function _isQuestionAnswered(setIndex, questionIndex) {
         }
         return false;
     } else if (seq.type === 'academic') {
-        // Academic: answers[questionIndex] (0-based, 값은 'A','B' 등)
+        // Academic: answers[questionIndex] (0-based, 값은 숫자 1,2,3,4)
         return comp.answers[questionIndex] != null && comp.answers[questionIndex] !== '';
     } else {
         // Daily1/Daily2: answers['q1'], answers['q2'] 등 (1-based key)
