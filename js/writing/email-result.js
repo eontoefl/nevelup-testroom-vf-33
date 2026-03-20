@@ -134,7 +134,8 @@ function showEmailResult(data) {
         let htmlContent = sampleAnswerElement.innerHTML;
         
         // 하이라이트 마커를 실제 HTML 요소로 변환
-        for (let i = 1; i <= 3; i++) {
+        const bulletCount = data.question.bullets.length;
+        for (let i = 1; i <= bulletCount; i++) {
             const regex = new RegExp(`\\{\\{HIGHLIGHT_START_${i}\\}\\}([\\s\\S]*?)\\{\\{HIGHLIGHT_END_${i}\\}\\}`, 'g');
             htmlContent = htmlContent.replace(
                 regex,
@@ -236,3 +237,7 @@ function toggleEmailProblem() {
         }
     }
 }
+
+// 전역 노출
+window.showEmailResult = showEmailResult;
+console.log('✅ [Writing] email-result.js 로드 완료');

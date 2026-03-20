@@ -68,11 +68,11 @@ function renderArrangeResultItem(result, index) {
                         </div>
                         <div class="arrange-result-text-area">
                             <div class="arrange-given-text">
-                                ${escapeHtml_arrange(result.givenSentence)}
+                                ${escapeHtml_writing(result.givenSentence)}
                             </div>
                             ${result.givenTranslation ? `
                             <div class="arrange-translation">
-                                ${escapeHtml_arrange(result.givenTranslation)}
+                                ${escapeHtml_writing(result.givenTranslation)}
                             </div>
                             ` : ''}
                         </div>
@@ -109,7 +109,7 @@ function renderArrangeResultItem(result, index) {
                             </div>
                             ${result.correctTranslation ? `
                             <div class="arrange-correct-translation">
-                                ${escapeHtml_arrange(result.correctTranslation)}
+                                ${escapeHtml_writing(result.correctTranslation)}
                             </div>
                             ` : ''}
                         </div>
@@ -121,7 +121,7 @@ function renderArrangeResultItem(result, index) {
                     <div class="arrange-options-label">주어진 단어</div>
                     <div class="arrange-options-list">
                         ${result.optionWords ? result.optionWords.map(word => 
-                            `<span class="arrange-option-display">${escapeHtml_arrange(word)}</span>`
+                            `<span class="arrange-option-display">${escapeHtml_writing(word)}</span>`
                         ).join('') : ''}
                     </div>
                 </div>
@@ -136,7 +136,7 @@ function renderArrangeResultItem(result, index) {
                         해설
                     </div>
                     <div class="arrange-explanation-text">
-                        ${escapeHtml_arrange(result.explanation)}
+                        ${escapeHtml_writing(result.explanation)}
                     </div>
                 </div>
                 ` : ''}
@@ -152,7 +152,7 @@ function renderArrangeResultItem(result, index) {
  */
 function renderArrangeAnswerStructure(result, isCorrectAnswer) {
     if (!result.presentedWords) {
-        return escapeHtml_arrange(isCorrectAnswer ? result.correctAnswer : result.userAnswer);
+        return escapeHtml_writing(isCorrectAnswer ? result.correctAnswer : result.userAnswer);
     }
     
     const presentedWords = result.presentedWords;
@@ -165,15 +165,15 @@ function renderArrangeAnswerStructure(result, isCorrectAnswer) {
     presentedWords.forEach((word, index) => {
         if (word === '_') {
             if (isCorrectAnswer) {
-                html += `<span class="arrange-result-blank correct-blank">${escapeHtml_arrange(correctWords[correctIndex] || '')}</span> `;
+                html += `<span class="arrange-result-blank correct-blank">${escapeHtml_writing(correctWords[correctIndex] || '')}</span> `;
             } else {
                 const userWord = userFilledWords[index] || '___';
                 const isWrong = userWord !== correctWords[correctIndex];
-                html += `<span class="arrange-result-blank user-blank ${isWrong ? 'wrong-blank' : 'correct-blank'}">${escapeHtml_arrange(userWord)}</span> `;
+                html += `<span class="arrange-result-blank user-blank ${isWrong ? 'wrong-blank' : 'correct-blank'}">${escapeHtml_writing(userWord)}</span> `;
             }
             correctIndex++;
         } else {
-            html += `<span class="arrange-result-given">${escapeHtml_arrange(word)}</span> `;
+            html += `<span class="arrange-result-given">${escapeHtml_writing(word)}</span> `;
             correctIndex++;
         }
     });
@@ -185,16 +185,7 @@ function renderArrangeAnswerStructure(result, isCorrectAnswer) {
     return html;
 }
 
-/**
- * HTML 이스케이프
- */
-function escapeHtml_arrange(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
 
 // 전역 노출
 window.showArrangeResult = showArrangeResult;
-console.log('[arrange-result] 로드 완료');
+console.log('✅ [Writing] arrange-result.js 로드 완료');

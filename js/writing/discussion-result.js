@@ -166,8 +166,9 @@ function showDiscussionResult(data) {
         sampleAnswerElement.textContent = formattedAnswer;
         let htmlContent = sampleAnswerElement.innerHTML;
         
-        // 하이라이트 마커를 실제 HTML 요소로 변환 (최대 8개)
-        for (let i = 1; i <= 8; i++) {
+        // 하이라이트 마커를 실제 HTML 요소로 변환
+        const bulletCount = data.question.bullets.length;
+        for (let i = 1; i <= bulletCount; i++) {
             const regex = new RegExp(`\\{\\{HIGHLIGHT_START_${i}\\}\\}([\\s\\S]*?)\\{\\{HIGHLIGHT_END_${i}\\}\\}`, 'g');
             htmlContent = htmlContent.replace(
                 regex,
@@ -270,3 +271,7 @@ function replaceStudentNamesInResult(text, profiles) {
         .replace(/\{name1\}/g, profiles.student1.name)
         .replace(/\{name2\}/g, profiles.student2.name);
 }
+
+// 전역 노출
+window.showDiscussionResult = showDiscussionResult;
+console.log('✅ [Writing] discussion-result.js 로드 완료');
