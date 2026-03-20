@@ -296,7 +296,8 @@ class ArrangeComponent {
         
         // 첫 번째 빈칸인지 확인
         let word = this.draggedWord;
-        const isFirstBlank = question.presentedWords[0] === '_' && index === 0;
+        const firstBlankIndex = question.presentedWords.indexOf('_');
+        const isFirstBlank = index === firstBlankIndex;
         
         if (isFirstBlank && word) {
             // 첫 글자를 대문자로 변환
@@ -360,32 +361,38 @@ class ArrangeComponent {
             const questionKey = `${this.setData.setId}_q${question.questionNum}`;
             const userAnswer = this.answers[questionKey];
             
-            // 사용자가 입력한 전체 문장 만들기
-            const userFullAnswer = [];
+            // 사용자가 빈칸에 넣은 답만 순서대로 추출
+            const userBlankAnswers = [];
             question.presentedWords.forEach((word, idx) => {
                 if (word === '_') {
                     if (userAnswer && userAnswer[idx]) {
-                        userFullAnswer.push(userAnswer[idx]);
+                        userBlankAnswers.push(userAnswer[idx]);
                     } else {
-                        userFullAnswer.push('___');
+                        userBlankAnswers.push('___');
                     }
-                } else {
-                    userFullAnswer.push(word);
                 }
             });
             
-            // 정답 확인
+            // 정답 확인 (빈칸 답만 정답 목록과 순서대로 비교)
             let isCorrect = true;
-            if (userFullAnswer.length !== question.correctAnswer.length) {
+            if (userBlankAnswers.length !== question.correctAnswer.length) {
                 isCorrect = false;
             } else {
                 for (let i = 0; i < question.correctAnswer.length; i++) {
-                    if (userFullAnswer[i] !== question.correctAnswer[i]) {
+                    if (userBlankAnswers[i] !== question.correctAnswer[i]) {
                         isCorrect = false;
                         break;
                     }
                 }
             }
+            
+            // 결과 표시용 전체 문장 조합
+            const userFullAnswer = question.presentedWords.map((word, idx) => {
+                if (word === '_') {
+                    return (userAnswer && userAnswer[idx]) ? userAnswer[idx] : '___';
+                }
+                return word;
+            });
             
             console.log(`[ArrangeComponent] Q${question.questionNum} - ${isCorrect ? '정답' : '오답'}`);
             
