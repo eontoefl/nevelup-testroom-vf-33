@@ -1,7 +1,7 @@
 /**
  * ================================================
  * audio-player.js
- * AudioContext 기반 오디오 재생 유틸리티 (V3)
+ * AudioContext 기반 오디오 재생 유틸리티
  * ================================================
  * 
  * 역할: iPad Safari 호환 오디오 재생 엔진
@@ -157,4 +157,4 @@ class AudioPlayer {
     }
 }
 
-console.log('✅ AudioPlayer 클래스 로드 완료 (v=001)');
+console.log('✅ [Speaking] audio-player.js 로드 완료');

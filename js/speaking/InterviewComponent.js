@@ -1,6 +1,6 @@
 /**
  * ================================================
- * InterviewComponent.js v=002
+ * InterviewComponent.js
  * 인터뷰 컴포넌트
  * ================================================
  * 
@@ -679,4 +679,4 @@ class InterviewComponent {
 // ============================================
 // 전역 초기화
 // ============================================
-console.log('✅ InterviewComponent 클래스 로드 완료 (v=002)');
+console.log('✅ [Speaking] InterviewComponent.js 로드 완료');

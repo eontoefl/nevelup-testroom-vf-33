@@ -188,7 +188,5 @@ function cleanupRepeatResult() {
 // 전역 노출
 window.showRepeatResult = showRepeatResult;
 window.showRepeatResultNarration = showRepeatResultNarration;
-window.playRepeatResultAudio = playRepeatResultAudio;
-window.cleanupRepeatResult = cleanupRepeatResult;
 
-console.log('✅ [repeat-result] 로드 완료');
+console.log('✅ [Speaking] repeat-result.js 로드 완료');

@@ -115,4 +115,4 @@ function _parseHighlights(highlightsStr) {
 
 // 전역 노출
 window.loadInterviewData = loadInterviewData;
-console.log('[interview-loader] 로드 완료');
+console.log('✅ [Speaking] interview-loader.js 로드 완료');
