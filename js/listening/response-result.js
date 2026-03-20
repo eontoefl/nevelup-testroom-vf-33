@@ -26,7 +26,7 @@ function showResponseResults(data) {
     });
     
     const totalIncorrect = totalQuestions - totalCorrect;
-    const totalScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    const totalScore = Math.round((totalCorrect / totalQuestions) * 100);
     
     console.log('📊 총 문제:', totalQuestions);
     console.log('✅ 정답:', totalCorrect);
@@ -49,26 +49,22 @@ function showResponseResults(data) {
     
     detailsContainer.innerHTML = detailsHTML;
     
-    // 오디오 리스너 설정
-    setTimeout(() => {
-        responseResults.forEach((setResult, setIdx) => {
-            setResult.answers.forEach((answer, qIdx) => {
-                const audioId = `result-audio-${qIdx}`;
-                setupResponseAudioListeners(audioId);
-            });
+    // 오디오 리스너 설정 (DOM 렌더링 직후)
+    responseResults.forEach((setResult, setIdx) => {
+        setResult.answers.forEach((answer, qIdx) => {
+            const audioId = `result-audio-${qIdx}`;
+            setupResponseAudioListeners(audioId);
         });
-        console.log('✅ 응답고르기 오디오 리스너 설정 완료');
-    }, 100);
+    });
+    console.log('✅ 응답고르기 오디오 리스너 설정 완료');
     
     // 툴팁 이벤트 리스너 추가
-    setTimeout(() => {
-        const highlightedWords = document.querySelectorAll('.response-keyword-highlight');
-        highlightedWords.forEach(word => {
-            word.addEventListener('mouseenter', showResponseTooltip);
-            word.addEventListener('mouseleave', hideResponseTooltip);
-        });
-        console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
-    }, 100);
+    const highlightedWords = document.querySelectorAll('.response-keyword-highlight');
+    highlightedWords.forEach(word => {
+        word.addEventListener('mouseenter', showResponseTooltip);
+        word.addEventListener('mouseleave', hideResponseTooltip);
+    });
+    console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
     
     // 결과 데이터 정리 완료
 }
@@ -215,10 +211,10 @@ function renderResponseOptionsExplanation(answer) {
 // Script에 툴팁 추가
 function highlightResponseScript(scriptText, highlights) {
     if (!highlights || highlights.length === 0) {
-        return escapeHtml_response(scriptText);
+        return escapeHtml_listening(scriptText);
     }
     
-    let highlightedText = escapeHtml_response(scriptText);
+    let highlightedText = escapeHtml_listening(scriptText);
     
     highlights.forEach(highlight => {
         const word = highlight.word || '';
@@ -227,27 +223,16 @@ function highlightResponseScript(scriptText, highlights) {
         
         if (!word) return;
         
-        const regex = new RegExp(`\\b(${escapeRegex_response(word)})\\b`, 'gi');
+        const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
         highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="response-keyword-highlight" data-translation="${escapeHtml_response(translation)}" data-explanation="${escapeHtml_response(explanation)}">${match}</span>`;
+            return `<span class="response-keyword-highlight" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
         });
     });
     
     return highlightedText;
 }
 
-// 정규식 특수문자 이스케이프
-function escapeRegex_response(str) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// HTML 이스케이프 함수
-function escapeHtml_response(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// escapeHtml_listening, escapeRegex_listening → listening-utils.js 공용 함수 사용
 
 // 툴팁 표시
 function showResponseTooltip(event) {

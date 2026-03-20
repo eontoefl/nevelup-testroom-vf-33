@@ -26,7 +26,7 @@ function showConverResults(data) {
     });
     
     const totalIncorrect = totalQuestions - totalCorrect;
-    const totalScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    const totalScore = Math.round((totalCorrect / totalQuestions) * 100);
     
     console.log('📊 총 문제:', totalQuestions);
     console.log('✅ 정답:', totalCorrect);
@@ -49,22 +49,20 @@ function showConverResults(data) {
     
     detailsContainer.innerHTML = detailsHTML;
     
-    // 오디오 리스너 초기화 (DOM 렌더링 후)
-    setTimeout(() => {
-        console.log('🔧 오디오 리스너 초기화 시작...');
-        initConverResultAudioListeners();
-        console.log('✅ 오디오 리스너 초기화 완료');
-        
-        // 툴팁 이벤트 리스너 추가
-        const highlightedWords = document.querySelectorAll('.conver-keyword');
-        highlightedWords.forEach(word => {
-            word.addEventListener('mouseenter', showConverTooltip);
-            word.addEventListener('mouseleave', hideConverTooltip);
-        });
-        console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
-        
-        // 초기화 후 결과 데이터 정리 완료
-    }, 300);
+    // 오디오 리스너 초기화 (DOM 렌더링 직후)
+    console.log('🔧 오디오 리스너 초기화 시작...');
+    initConverResultAudioListeners();
+    console.log('✅ 오디오 리스너 초기화 완료');
+    
+    // 툴팁 이벤트 리스너 추가
+    const highlightedWords = document.querySelectorAll('.conver-keyword');
+    highlightedWords.forEach(word => {
+        word.addEventListener('mouseenter', showConverTooltip);
+        word.addEventListener('mouseleave', hideConverTooltip);
+    });
+    console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
+    
+    // 초기화 후 결과 데이터 정리 완료
 }
 
 // 세트별 결과 렌더링
@@ -210,10 +208,10 @@ function renderConverScript(script, scriptTrans, scriptHighlights = []) {
 // 스크립트 하이라이트
 function highlightConverScript(scriptText, highlights) {
     if (!highlights || highlights.length === 0) {
-        return escapeHtml_conver(scriptText);
+        return escapeHtml_listening(scriptText);
     }
     
-    let highlightedText = escapeHtml_conver(scriptText);
+    let highlightedText = escapeHtml_listening(scriptText);
     
     highlights.forEach(highlight => {
         const word = highlight.word || '';
@@ -222,27 +220,16 @@ function highlightConverScript(scriptText, highlights) {
         
         if (!word) return;
         
-        const regex = new RegExp(`\\b(${escapeRegex_conver(word)})\\b`, 'gi');
+        const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
         highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="conver-keyword" data-translation="${escapeHtml_conver(translation)}" data-explanation="${escapeHtml_conver(explanation)}">${match}</span>`;
+            return `<span class="conver-keyword" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
         });
     });
     
     return highlightedText;
 }
 
-// 정규식 이스케이프
-function escapeRegex_conver(str) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
-// HTML 이스케이프
-function escapeHtml_conver(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
 
 // 툴팁 표시
 function showConverTooltip(event) {
