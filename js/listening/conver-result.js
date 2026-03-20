@@ -54,14 +54,6 @@ function showConverResults(data) {
     initConverResultAudioListeners();
     console.log('✅ 오디오 리스너 초기화 완료');
     
-    // 툴팁 이벤트 리스너 추가
-    const highlightedWords = document.querySelectorAll('.conver-keyword');
-    highlightedWords.forEach(word => {
-        word.addEventListener('mouseenter', showConverTooltip);
-        word.addEventListener('mouseleave', hideConverTooltip);
-    });
-    console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
-    
     // 초기화 후 결과 데이터 정리 완료
 }
 
@@ -229,40 +221,6 @@ function highlightConverScript(scriptText, highlights) {
     return highlightedText;
 }
 
-
-
-// 툴팁 표시
-function showConverTooltip(event) {
-    const word = event.target;
-    const translation = word.getAttribute('data-translation');
-    const explanation = word.getAttribute('data-explanation');
-    
-    const existingTooltip = document.querySelector('.conver-tooltip');
-    if (existingTooltip) {
-        existingTooltip.remove();
-    }
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'conver-tooltip';
-    tooltip.innerHTML = `
-        <div class="tooltip-translation">${translation}</div>
-        ${explanation ? `<div class="tooltip-explanation">${explanation}</div>` : ''}
-    `;
-    
-    document.body.appendChild(tooltip);
-    
-    const rect = word.getBoundingClientRect();
-    tooltip.style.left = `${rect.left + window.scrollX}px`;
-    tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
-}
-
-// 툴팁 숨기기
-function hideConverTooltip() {
-    const tooltip = document.querySelector('.conver-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
-}
 
 // 문제별 결과 렌더링
 function renderConverAnswer(answer, qIdx, setIdx) {

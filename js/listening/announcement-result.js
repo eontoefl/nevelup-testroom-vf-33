@@ -54,14 +54,6 @@ function showAnnouncementResults(data) {
     initAnnouncementResultAudioListeners();
     console.log('✅ 오디오 리스너 초기화 완료');
     
-    // 툴팁 이벤트 리스너 추가
-    const highlightedWords = document.querySelectorAll('.announce-keyword');
-    highlightedWords.forEach(word => {
-        word.addEventListener('mouseenter', showAnnouncementTooltip);
-        word.addEventListener('mouseleave', hideAnnouncementTooltip);
-    });
-    console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
-    
     // 초기화 후 결과 데이터 정리 완료
 }
 
@@ -332,44 +324,6 @@ function renderAnnouncementOptionsExplanation(answer, qIdx, setIdx) {
     `;
 }
 
-// 툴팁 표시
-function showAnnouncementTooltip(e) {
-    const translation = e.target.dataset.translation;
-    const explanation = e.target.dataset.explanation;
-    
-    if (!translation && !explanation) return;
-    
-    // 기존 툴팁 제거
-    hideAnnouncementTooltip();
-    
-    // 툴팁 생성
-    const tooltip = document.createElement('div');
-    tooltip.className = 'announcement-tooltip';
-    tooltip.innerHTML = `
-        ${translation ? `<div class="tooltip-translation">${translation}</div>` : ''}
-        ${explanation ? `<div class="tooltip-explanation">${explanation}</div>` : ''}
-    `;
-    
-    document.body.appendChild(tooltip);
-    
-    // 위치 계산
-    const rect = e.target.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    
-    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-    let top = rect.top - tooltipRect.height - 10 + window.scrollY;
-    
-    // 화면 밖으로 나가지 않도록 조정
-    if (left < 10) left = 10;
-    if (left + tooltipRect.width > window.innerWidth - 10) {
-        left = window.innerWidth - tooltipRect.width - 10;
-    }
-    
-    tooltip.style.left = left + 'px';
-    tooltip.style.top = top + 'px';
-    tooltip.style.opacity = '1';
-}
-
 // 해설 토글 (ID 기반)
 function toggleAnnouncementExplanationById(toggleId) {
     const content = document.getElementById(toggleId);
@@ -406,12 +360,6 @@ function toggleAnnounceScriptSection(scriptId) {
     }
 }
 
-
-// 툴팁 숨기기
-function hideAnnouncementTooltip() {
-    const existingTooltips = document.querySelectorAll('.announcement-tooltip');
-    existingTooltips.forEach(tooltip => tooltip.remove());
-}
 
 // 오디오 재생/일시정지
 function toggleAnnouncementAudio(audioId) {
