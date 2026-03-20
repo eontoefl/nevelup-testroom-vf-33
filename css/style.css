@@ -3476,7 +3476,8 @@ body {
     justify-content: center;
     gap: 6px;
     width: fit-content;
-    margin: 0 auto 20px;
+    margin: 20px auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 8px 18px;
     border-radius: 20px;
     font-size: 13px;
