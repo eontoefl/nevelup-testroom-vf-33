@@ -94,4 +94,4 @@ async function _loadRepeatFromSupabase() {
 
 // 전역 노출
 window.loadRepeatData = loadRepeatData;
-console.log('[repeat-loader] 로드 완료');
+console.log('✅ [Speaking] repeat-loader.js 로드 완료');

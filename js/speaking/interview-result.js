@@ -18,6 +18,11 @@ let _interviewPlayingIndex = null;
 function showInterviewResult(data) {
     console.log('📊 [interview-result] 채점화면 표시');
     
+    if (!data || !data.set) {
+        console.error('❌ [interview-result] 채점 데이터 없음');
+        return;
+    }
+    
     _interviewResultData = data;
     const set = data.set;
     
@@ -424,25 +429,6 @@ function showInterviewFeedback(answerIndex, highlightKey) {
 }
 
 /**
- * 채점 완료
- */
-function completeInterviewResult() {
-    console.log('✅ [interview-result] 채점 완료');
-    
-    // 오디오 정지
-    if (_interviewPlayingAudio) {
-        _interviewPlayingAudio.pause();
-        _interviewPlayingAudio = null;
-    }
-    
-    _interviewResultData = null;
-    _interviewPlayingIndex = null;
-    
-    // backToSchedule는 Module이 제공
-    return true;
-}
-
-/**
  * Cleanup (화면 전환 시 호출)
  */
 function cleanupInterviewResult() {
@@ -457,13 +443,11 @@ function cleanupInterviewResult() {
 
 // 전역 노출
 window.showInterviewResult = showInterviewResult;
-window.renderInterviewResult = renderInterviewResult;
 window.toggleInterviewQuestions = toggleInterviewQuestions;
 window.toggleInterviewModelAnswer = toggleInterviewModelAnswer;
 window.toggleInterviewTranslation = toggleInterviewTranslation;
 window.playInterviewModelAnswerAudio = playInterviewModelAnswerAudio;
 window.showInterviewFeedback = showInterviewFeedback;
-window.completeInterviewResult = completeInterviewResult;
-window.cleanupInterviewResult = cleanupInterviewResult;
 
-console.log('✅ [interview-result] 로드 완료');
+
+console.log('✅ [Speaking] interview-result.js 로드 완료');

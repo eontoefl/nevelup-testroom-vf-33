@@ -1,7 +1,7 @@
 /**
  * ================================================
  * speaking-module-controller.js
- * 스피킹 모듈 컨트롤러 (V3)
+ * 스피킹 모듈 컨트롤러
  * ================================================
  * 
  * 역할: 2개 컴포넌트(Repeat × 1, Interview × 1)를 순서대로 진행시키는 지휘자
@@ -470,4 +470,4 @@ function cleanupSpeakingModule() {
 // 로드 확인
 // ============================================================
 
-console.log('✅ speaking-module-controller.js loaded (v=001)');
+console.log('✅ [Speaking] speaking-module-controller.js 로드 완료');
