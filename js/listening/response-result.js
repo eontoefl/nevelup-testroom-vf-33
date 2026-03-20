@@ -58,14 +58,6 @@ function showResponseResults(data) {
     });
     console.log('✅ 응답고르기 오디오 리스너 설정 완료');
     
-    // 툴팁 이벤트 리스너 추가
-    const highlightedWords = document.querySelectorAll('.response-keyword-highlight');
-    highlightedWords.forEach(word => {
-        word.addEventListener('mouseenter', showResponseTooltip);
-        word.addEventListener('mouseleave', hideResponseTooltip);
-    });
-    console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
-    
     // 결과 데이터 정리 완료
 }
 
@@ -233,39 +225,6 @@ function highlightResponseScript(scriptText, highlights) {
 }
 
 // escapeHtml_listening, escapeRegex_listening → listening-utils.js 공용 함수 사용
-
-// 툴팁 표시
-function showResponseTooltip(event) {
-    const word = event.target;
-    const translation = word.getAttribute('data-translation');
-    const explanation = word.getAttribute('data-explanation');
-    
-    const existingTooltip = document.querySelector('.response-tooltip');
-    if (existingTooltip) {
-        existingTooltip.remove();
-    }
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'response-tooltip';
-    tooltip.innerHTML = `
-        <div class="tooltip-translation">${translation}</div>
-        ${explanation ? `<div class="tooltip-explanation">${explanation}</div>` : ''}
-    `;
-    
-    document.body.appendChild(tooltip);
-    
-    const rect = word.getBoundingClientRect();
-    tooltip.style.left = `${rect.left + window.scrollX}px`;
-    tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
-}
-
-// 툴팁 숨기기
-function hideResponseTooltip() {
-    const tooltip = document.querySelector('.response-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
-}
 
 // 보기 해설 토글
 function toggleResponseOptions(toggleId) {
