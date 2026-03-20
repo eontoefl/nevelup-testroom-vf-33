@@ -2557,6 +2557,30 @@ function showGuidePopup(config) {
 }
 </script>
 
+<!-- 세트 전환 로딩 오버레이 (컴포넌트 전환 시 클릭 차단) -->
+<div id="setLoadingOverlay" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    background: rgba(255, 255, 255, 0.85);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+">
+    <div style="
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e8e0ff;
+        border-top-color: #6c5ce7;
+        border-radius: 50%;
+        animation: submitSpin 0.8s linear infinite;
+    "></div>
+    <p style="margin-top: 12px; color: #6c5ce7; font-size: 14px; font-weight: 600;">
+        Loading...
+    </p>
+</div>
+
 <!-- Submit 로딩 오버레이 (전체 화면) -->
 <div id="submitLoadingOverlay" style="
     display: none;

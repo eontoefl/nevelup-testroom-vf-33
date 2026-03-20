@@ -174,8 +174,14 @@ async function _goToSet(setIndex) {
 
     console.log(`\n▶️ [${setIndex + 1}/7] ${seq.label} 이동`);
 
+    // 로딩 오버레이 표시 (데이터 로드 완료까지 클릭 차단)
+    _showSetLoading();
+
     // 컴포넌트 초기화 (화면 전환 + 데이터 로드 포함)
     await comp.init();
+
+    // 로딩 오버레이 숨김
+    _hideSetLoading();
 
     // 문제 번호 표시 업데이트
     _updateProgress();
@@ -332,6 +338,22 @@ function _showSubmitLoading() {
  */
 function _hideSubmitLoading() {
     var overlay = document.getElementById('submitLoadingOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+/**
+ * 세트 전환 로딩 오버레이 표시 (데이터 로드 완료까지 클릭 차단)
+ */
+function _showSetLoading() {
+    var overlay = document.getElementById('setLoadingOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+/**
+ * 세트 전환 로딩 오버레이 숨기기
+ */
+function _hideSetLoading() {
+    var overlay = document.getElementById('setLoadingOverlay');
     if (overlay) overlay.style.display = 'none';
 }
 
