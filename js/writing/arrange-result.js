@@ -174,7 +174,6 @@ function renderArrangeAnswerStructure(result, isCorrectAnswer) {
             correctIndex++;
         } else {
             html += `<span class="arrange-result-given">${escapeHtml_writing(word)}</span> `;
-            correctIndex++;
         }
     });
     
