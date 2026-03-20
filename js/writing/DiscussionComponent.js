@@ -226,6 +226,12 @@ class DiscussionComponent {
             profiles = { student1: { name: 'Student 1' }, student2: { name: 'Student 2' } };
         }
         
+        // 교수 이름 보완: 이전 캐시에 name이 없을 경우 이미지로 판별하여 자동 추가
+        if (profiles.professor && !profiles.professor.name) {
+            profiles.professor.name = (profiles.professor.image && profiles.professor.image.includes('prof_F'))
+                ? 'Dr. Samantha' : 'Dr. Gupta';
+        }
+        
         console.log('🎨 [Discussion] 문제 렌더링:', setData);
         
         // Context 표시
