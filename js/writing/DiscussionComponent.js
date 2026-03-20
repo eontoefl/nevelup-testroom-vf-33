@@ -140,6 +140,7 @@ class DiscussionComponent {
         // 교수 랜덤 (남/녀)
         const professorGender = Math.random() < 0.5 ? 'male' : 'female';
         const professorImage = this.PROFESSOR_PROFILES[professorGender];
+        const professorName = professorGender === 'male' ? 'Dr. Gupta' : 'Dr. Samantha';
         
         // 학생 2명 (남/녀 조합)
         const femaleStudent = this.FEMALE_STUDENT_PROFILES[Math.floor(Math.random() * this.FEMALE_STUDENT_PROFILES.length)];
@@ -151,7 +152,7 @@ class DiscussionComponent {
             : [maleStudent, femaleStudent];
         
         return {
-            professor: { image: professorImage },
+            professor: { image: professorImage, name: professorName },
             student1: students[0],
             student2: students[1]
         };
@@ -225,6 +226,12 @@ class DiscussionComponent {
             profiles = { student1: { name: 'Student 1' }, student2: { name: 'Student 2' } };
         }
         
+        // 교수 이름 보완: 이전 캐시에 name이 없을 경우 이미지로 판별하여 자동 추가
+        if (profiles.professor && !profiles.professor.name) {
+            profiles.professor.name = (profiles.professor.image && profiles.professor.image.includes('prof_F'))
+                ? 'Dr. Samantha' : 'Dr. Gupta';
+        }
+        
         console.log('🎨 [Discussion] 문제 렌더링:', setData);
         
         // Context 표시
@@ -243,6 +250,12 @@ class DiscussionComponent {
         const professorImageElement = document.getElementById('discussionProfessorImage');
         if (professorImageElement) {
             professorImageElement.src = profiles.professor.image;
+        }
+        
+        // 교수 이름
+        const professorNameElement = document.getElementById('discussionProfessorName');
+        if (professorNameElement) {
+            professorNameElement.textContent = profiles.professor.name || '';
         }
         
         // 학생 1
