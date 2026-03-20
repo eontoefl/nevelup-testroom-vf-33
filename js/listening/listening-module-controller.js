@@ -280,15 +280,29 @@ function _listeningModuleSubmit() {
 
     // 현재 세트 먼저 제출 (아직 안 했을 수 있음)
     var comp = mod.components[mod.currentIndex];
-    if (comp && !mod.answers[mod.sequence[mod.currentIndex].type + '_set' + mod.sequence[mod.currentIndex].setNum]) {
+    var currentKey = mod.sequence[mod.currentIndex].type + '_set' + mod.sequence[mod.currentIndex].setNum;
+    if (comp && !mod.answers[currentKey] && comp.setData != null) {
         comp.submit();
     }
 
     // 모든 미제출 세트 일괄 제출
+    // ※ init()되지 않은 세트(문제 데이터 없음)는 건너뛰고 0점 처리
     mod.sequence.forEach(function(seq, i) {
         var key = seq.type + '_set' + seq.setNum;
         if (!mod.answers[key] && mod.components[i]) {
-            mod.components[i].submit();
+            // 문제 데이터가 있는지 확인 (init 완료 여부)
+            var hasData = mod.components[i].setData != null;
+            if (hasData) {
+                mod.components[i].submit();
+            } else {
+                // 데이터 없음 → 빈 결과(0점)로 기록
+                console.log('⚠️ [' + seq.label + '] 문제 데이터 없음 — 0점 처리');
+                mod.answers[key] = {
+                    type: seq.type,
+                    setNumber: seq.setNum,
+                    answers: []
+                };
+            }
         }
     });
 
