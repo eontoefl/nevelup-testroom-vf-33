@@ -23,9 +23,9 @@
 <link rel="stylesheet" href="css/fillblanks-result.css?v=001_ethereal">
 <link rel="stylesheet" href="css/final-explain-screen.css?v=030_designer_clean">
 <link rel="stylesheet" href="css/listening-response-result.css?v=031_question_header_fix">
-<link rel="stylesheet" href="css/listening-conver-result-v2.css?v=20260221_v2">
-<link rel="stylesheet" href="css/listening-announcement-result-v2.css?v=20260221_v2">
-<link rel="stylesheet" href="css/listening-academic-result-v2.css?v=20260221_v2">
+<link rel="stylesheet" href="css/listening-conver-result.css?v=003">
+<link rel="stylesheet" href="css/listening-announcement-result.css?v=003">
+<link rel="stylesheet" href="css/listening-lecture-result.css?v=003">
 <link rel="stylesheet" href="css/writing-arrange-result.css?v=005">
 <link rel="stylesheet" href="css/writing-email-result.css?v=018">
 <link rel="stylesheet" href="css/writing-discussion-result.css?v=008">
@@ -887,30 +887,30 @@
 
                     <div id="lectureExplainScreen" style="display:none">
         <div class="result-badge" id="lectureResultBadge">Q25 ~ Q32 · LECTURE</div>
-        <div class="academic-summary">
-            <div class="academic-stats">
-                <div class="academic-stat-box">
-                    <span class="academic-stat-label">총 점수</span>
-                    <span class="academic-stat-value" id="lectureResultScoreValue">0%</span>
+        <div class="lecture-summary">
+            <div class="lecture-stats">
+                <div class="lecture-stat-box">
+                    <span class="lecture-stat-label">총 점수</span>
+                    <span class="lecture-stat-value" id="lectureResultScoreValue">0%</span>
                 </div>
-                <div class="academic-stat-box">
-                    <span class="academic-stat-label">정답</span>
-                    <span class="academic-stat-value first" id="lectureResultCorrectCount">0</span>
+                <div class="lecture-stat-box">
+                    <span class="lecture-stat-label">정답</span>
+                    <span class="lecture-stat-value first" id="lectureResultCorrectCount">0</span>
                 </div>
-                <div class="academic-stat-box">
-                    <span class="academic-stat-label">오답</span>
-                    <span class="academic-stat-value second" id="lectureResultIncorrectCount">0</span>
+                <div class="lecture-stat-box">
+                    <span class="lecture-stat-label">오답</span>
+                    <span class="lecture-stat-value second" id="lectureResultIncorrectCount">0</span>
                 </div>
-                <div class="academic-stat-box">
-                    <span class="academic-stat-label">전체</span>
-                    <span class="academic-stat-value" id="lectureResultTotalCount">0</span>
+                <div class="lecture-stat-box">
+                    <span class="lecture-stat-label">전체</span>
+                    <span class="lecture-stat-value" id="lectureResultTotalCount">0</span>
                 </div>
             </div>
         </div>
 
         <!-- 세트별 결과 컨테이너 -->
-        <div class="academic-content" id="lectureResultDetails">
-            <!-- JS가 academic-set 카드들을 여기에 삽입 -->
+        <div class="lecture-content" id="lectureResultDetails">
+            <!-- JS가 lecture-set 카드들을 여기에 삽입 -->
         </div>
 
         <!-- 네비게이션 -->
@@ -2290,6 +2290,8 @@
     <script src="js/reading/academic-result.js"></script>
     <!-- [V3] 리딩 모듈 컨트롤러 — 7세트(35문제) 순서 제어 + DB 저장 -->
     <script src="js/reading/reading-module-controller.js?v=001"></script>
+    <!-- 리스닝 - 공용 유틸리티 -->
+    <script src="js/listening/listening-utils.js"></script>
     <!-- 리스닝 - 응답고르기 (Response) -->
     <script src="js/listening/response-loader.js"></script>
     <script src="js/listening/response-component.js"></script>

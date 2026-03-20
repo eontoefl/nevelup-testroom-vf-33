@@ -26,7 +26,7 @@ function showAnnouncementResults(data) {
     });
     
     const totalIncorrect = totalQuestions - totalCorrect;
-    const totalScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    const totalScore = Math.round((totalCorrect / totalQuestions) * 100);
     
     console.log('📊 총 문제:', totalQuestions);
     console.log('✅ 정답:', totalCorrect);
@@ -49,22 +49,20 @@ function showAnnouncementResults(data) {
     
     detailsContainer.innerHTML = detailsHTML;
     
-    // 오디오 리스너 초기화 (DOM 렌더링 후)
-    setTimeout(() => {
-        console.log('🔧 오디오 리스너 초기화 시작...');
-        initAnnouncementResultAudioListeners();
-        console.log('✅ 오디오 리스너 초기화 완료');
-        
-        // 툴팁 이벤트 리스너 추가
-        const highlightedWords = document.querySelectorAll('.announce-keyword');
-        highlightedWords.forEach(word => {
-            word.addEventListener('mouseenter', showAnnouncementTooltip);
-            word.addEventListener('mouseleave', hideAnnouncementTooltip);
-        });
-        console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
-        
-        // 초기화 후 결과 데이터 정리 완료
-    }, 500); // 300ms → 500ms로 증가
+    // 오디오 리스너 초기화 (DOM 렌더링 직후)
+    console.log('🔧 오디오 리스너 초기화 시작...');
+    initAnnouncementResultAudioListeners();
+    console.log('✅ 오디오 리스너 초기화 완료');
+    
+    // 툴팁 이벤트 리스너 추가
+    const highlightedWords = document.querySelectorAll('.announce-keyword');
+    highlightedWords.forEach(word => {
+        word.addEventListener('mouseenter', showAnnouncementTooltip);
+        word.addEventListener('mouseleave', hideAnnouncementTooltip);
+    });
+    console.log(`✅ 툴팁 이벤트 리스너 추가 완료: ${highlightedWords.length}개`);
+    
+    // 초기화 후 결과 데이터 정리 완료
 }
 
 // 세트별 결과 렌더링
@@ -231,10 +229,10 @@ function highlightAnnouncementScript(scriptText, highlights) {
     }
     
     if (!highlights || !Array.isArray(highlights) || highlights.length === 0) {
-        return escapeHtml_announcement(scriptText);
+        return escapeHtml_listening(scriptText);
     }
     
-    let highlightedText = escapeHtml_announcement(scriptText);
+    let highlightedText = escapeHtml_listening(scriptText);
     
     // 각 하이라이트 단어/구문에 대해 처리
     highlights.forEach((highlight, index) => {
@@ -245,10 +243,10 @@ function highlightAnnouncementScript(scriptText, highlights) {
         if (!word) return;
         
         // 단어/구문을 찾아서 하이라이트 추가
-        const regex = new RegExp(`\\b(${escapeRegex_announcement(word)})\\b`, 'gi');
+        const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
         const beforeReplace = highlightedText;
         highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="announce-keyword" data-translation="${escapeHtml_announcement(translation)}" data-explanation="${escapeHtml_announcement(explanation)}">${match}</span>`;
+            return `<span class="announce-keyword" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
         });
     });
     
@@ -510,17 +508,5 @@ function formatAnnouncementTime(seconds) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// HTML 이스케이프
-function escapeHtml_announcement(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// 정규표현식 이스케이프
-function escapeRegex_announcement(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
+console.log('✅ [Listening] announcement-result.js 로드 완료');
 
