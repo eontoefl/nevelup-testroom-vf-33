@@ -294,12 +294,11 @@ class ArrangeComponent {
             this.answers[questionKey] = {};
         }
         
-        // 첫 번째 빈칸인지 확인
+        // 문장 맨 앞 빈칸인지 확인 (0번 자리가 빈칸이고, 거기에 넣을 때만 대문자 변환)
         let word = this.draggedWord;
-        const firstBlankIndex = question.presentedWords.indexOf('_');
-        const isFirstBlank = index === firstBlankIndex;
+        const isFirstPosition = index === 0;
         
-        if (isFirstBlank && word) {
+        if (isFirstPosition && word) {
             // 첫 글자를 대문자로 변환
             word = word.charAt(0).toUpperCase() + word.slice(1);
             console.log(`[ArrangeComponent] 첫 번째 빈칸 - 대문자 변환: ${this.draggedWord} → ${word}`);
