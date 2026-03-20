@@ -155,15 +155,8 @@ function renderAcademicAnswers(answer, qIdx, setId) {
     const questionNum = answer.questionNum || `Q${qIdx + 1}`;
     const toggleId = `rd-toggle-${setId}-${qIdx}`;
     
-    // userAnswer를 숫자로 변환
-    let userAnswerIndex = answer.userAnswer;
-    if (typeof userAnswerIndex === 'string') {
-        const label = userAnswerIndex.toUpperCase();
-        userAnswerIndex = label.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-    }
-    
-    const userAnswerText = userAnswerIndex && answer.options && answer.options[userAnswerIndex - 1]
-        ? answer.options[userAnswerIndex - 1].label + ') ' + answer.options[userAnswerIndex - 1].text
+    const userAnswerText = answer.userAnswer && answer.options && answer.options[answer.userAnswer - 1]
+        ? answer.options[answer.userAnswer - 1].label + ') ' + answer.options[answer.userAnswer - 1].text
         : '미응답';
     
     const correctAnswerText = answer.options && answer.options[answer.correctAnswer - 1]
@@ -192,19 +185,19 @@ function renderAcademicAnswers(answer, qIdx, setId) {
                     <span class="rd-answer-value correct">${escapeHtml(correctAnswerText)}</span>
                 </div>
                 ` : ''}
-                ${renderAcademicOptionsExplanation(answer, toggleId, userAnswerIndex)}
+                ${renderAcademicOptionsExplanation(answer, toggleId)}
             </div>
         </div>
     `;
 }
 
 // 보기 상세 해설 렌더링
-function renderAcademicOptionsExplanation(answer, toggleId, userAnswerIndex) {
+function renderAcademicOptionsExplanation(answer, toggleId) {
     if (!answer.options || answer.options.length === 0 || !answer.options[0].label) {
         return '';
     }
     
-    const userAnswerLabel = getLabelFromIndex(userAnswerIndex);
+    const userAnswerLabel = getLabelFromIndex(answer.userAnswer);
     const correctAnswerLabel = getLabelFromIndex(answer.correctAnswer);
     
     let optionsHTML = '';
