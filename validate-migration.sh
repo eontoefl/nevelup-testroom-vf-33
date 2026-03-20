@@ -178,7 +178,6 @@ REQUIRED_EXPORTS=(
     "window.bindDaily1ToggleEvents"
     "window.bindDaily2ToggleEvents"
     "window.bindAcademicToggleEvents"
-    "window.switchDaily1Tab"
     "window.renderDaily1SetResult"
     "window.renderDaily2SetResult"
     "window.renderAcademicSetResult"
