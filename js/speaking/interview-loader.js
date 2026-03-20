@@ -93,7 +93,10 @@ async function _loadInterviewFromSupabase() {
 }
 
 /**
- * Highlights JSON 파싱
+ * Highlights 파싱
+ * 두 가지 형식 지원:
+ *   1) JSON: {"영어문구": {"title": "제목", "description": "설명"}, ...}
+ *   2) 텍스트: 영어문구::제목::설명 || 영어문구::제목::설명 || ...
  * @private
  */
 function _parseHighlights(highlightsStr) {
@@ -102,13 +105,46 @@ function _parseHighlights(highlightsStr) {
         return {};
     }
     
+    const trimmed = highlightsStr.trim();
+    
+    // 1) JSON 형식 시도
+    if (trimmed.startsWith('{')) {
+        try {
+            const parsed = JSON.parse(trimmed);
+            console.log('✅ [interview-loader] highlights JSON 파싱 성공:', Object.keys(parsed).length, '개');
+            return parsed;
+        } catch (e) {
+            console.warn('⚠️ [interview-loader] JSON 파싱 실패, 텍스트 형식으로 재시도');
+        }
+    }
+    
+    // 2) 텍스트 형식: 영어문구::제목::설명 || 영어문구::제목::설명
     try {
-        const parsed = JSON.parse(highlightsStr.trim());
-        console.log('✅ [interview-loader] highlights 파싱 성공:', Object.keys(parsed).length, '개');
-        return parsed;
+        const result = {};
+        const items = trimmed.split('||');
+        
+        for (const item of items) {
+            const parts = item.trim().split('::');
+            if (parts.length >= 3) {
+                const key = parts[0].trim();
+                const title = parts[1].trim();
+                const description = parts.slice(2).join('::').trim();
+                if (key) {
+                    result[key] = { title: title, description: description };
+                }
+            }
+        }
+        
+        const count = Object.keys(result).length;
+        if (count > 0) {
+            console.log('✅ [interview-loader] highlights 텍스트 파싱 성공:', count, '개');
+            return result;
+        }
+        
+        console.warn('⚠️ [interview-loader] highlights 파싱 결과 0개');
+        return {};
     } catch (e) {
-        console.error('❌ [interview-loader] highlights JSON 파싱 실패:', e);
-        console.error('❌ [interview-loader] 원본 데이터:', highlightsStr);
+        console.error('❌ [interview-loader] highlights 파싱 실패:', e);
         return {};
     }
 }
