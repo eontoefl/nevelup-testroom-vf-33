@@ -383,6 +383,127 @@
     font-weight: 600;
 }
 
+/* ── Rewrite UI ── */
+#emailExplainScreen .rewrite-area {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+#emailExplainScreen .rewrite-hints {
+    background: #f0edf5;
+    border-radius: 14px;
+    padding: 18px;
+}
+
+#emailExplainScreen .rewrite-hints-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #7c6bb0;
+    margin-bottom: 12px;
+}
+
+#emailExplainScreen .rewrite-hints-title i {
+    color: #f59e0b;
+    margin-right: 6px;
+}
+
+#emailExplainScreen .rewrite-hint-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+#emailExplainScreen .rewrite-hint-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    background: #9480c5;
+    padding: 2px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+#emailExplainScreen .rewrite-hint-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #475569;
+}
+
+#emailExplainScreen .rewrite-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 18px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #374151;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    resize: vertical;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+#emailExplainScreen .rewrite-textarea:focus {
+    outline: none;
+    border-color: #9480c5;
+}
+
+#emailExplainScreen .rewrite-textarea:disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+#emailExplainScreen .rewrite-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#emailExplainScreen .rewrite-wordcount {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+#emailExplainScreen .rewrite-save-btn {
+    padding: 10px 24px;
+    background: #9480c5;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#emailExplainScreen .rewrite-save-btn:hover {
+    background: #7c6bb0;
+}
+
+#emailExplainScreen .rewrite-save-btn:disabled {
+    background: #c4b5de;
+    cursor: not-allowed;
+}
+
+#emailExplainScreen .rewrite-feedback {
+    font-size: 13px;
+    font-weight: 600;
+    min-height: 20px;
+}
+
+#emailExplainScreen .rewrite-feedback-correct {
+    color: #388e3c;
+}
+
+#emailExplainScreen .rewrite-feedback-warn {
+    color: #ef5350;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
     #emailExplainScreen .test-content {
@@ -415,5 +536,15 @@
 
     #emailExplainScreen .email-result-section pre {
         font-size: 14px;
+    }
+
+    #emailExplainScreen .rewrite-textarea {
+        min-height: 160px;
+        padding: 14px;
+        font-size: 14px;
+    }
+
+    #emailExplainScreen .rewrite-hints {
+        padding: 14px;
     }
 }

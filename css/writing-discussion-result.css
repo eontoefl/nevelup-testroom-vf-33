@@ -367,6 +367,127 @@
     font-weight: 600;
 }
 
+/* ── Rewrite UI ── */
+#discussionExplainScreen .rewrite-area {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+#discussionExplainScreen .rewrite-hints {
+    background: #f0edf5;
+    border-radius: 14px;
+    padding: 18px;
+}
+
+#discussionExplainScreen .rewrite-hints-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #7c6bb0;
+    margin-bottom: 12px;
+}
+
+#discussionExplainScreen .rewrite-hints-title i {
+    color: #f59e0b;
+    margin-right: 6px;
+}
+
+#discussionExplainScreen .rewrite-hint-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+#discussionExplainScreen .rewrite-hint-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    background: #9480c5;
+    padding: 2px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+#discussionExplainScreen .rewrite-hint-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #475569;
+}
+
+#discussionExplainScreen .rewrite-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 18px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #374151;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    resize: vertical;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+#discussionExplainScreen .rewrite-textarea:focus {
+    outline: none;
+    border-color: #9480c5;
+}
+
+#discussionExplainScreen .rewrite-textarea:disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+#discussionExplainScreen .rewrite-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#discussionExplainScreen .rewrite-wordcount {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+#discussionExplainScreen .rewrite-save-btn {
+    padding: 10px 24px;
+    background: #9480c5;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#discussionExplainScreen .rewrite-save-btn:hover {
+    background: #7c6bb0;
+}
+
+#discussionExplainScreen .rewrite-save-btn:disabled {
+    background: #c4b5de;
+    cursor: not-allowed;
+}
+
+#discussionExplainScreen .rewrite-feedback {
+    font-size: 13px;
+    font-weight: 600;
+    min-height: 20px;
+}
+
+#discussionExplainScreen .rewrite-feedback-correct {
+    color: #388e3c;
+}
+
+#discussionExplainScreen .rewrite-feedback-warn {
+    color: #ef5350;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
     #discussionExplainScreen .test-content {
@@ -399,5 +520,15 @@
 
     #discussionExplainScreen .discussion-result-section pre {
         font-size: 14px;
+    }
+
+    #discussionExplainScreen .rewrite-textarea {
+        min-height: 160px;
+        padding: 14px;
+        font-size: 14px;
+    }
+
+    #discussionExplainScreen .rewrite-hints {
+        padding: 14px;
     }
 }
