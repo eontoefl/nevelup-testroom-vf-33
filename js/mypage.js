@@ -537,11 +537,11 @@ function renderGrass() {
 
     // ★ V3 데이터 기반 인증률 맵 (level 0~3)
     const completedMap = buildCompletedMap();
-    const currentDay = isBeforeStart() ? 0 : getCurrentScheduleDay();
 
-    // ★ 데드라인 연장된 dayNum 목록 계산
-    const extendedDayNums = buildExtendedDayNums();
+    // ★ 데드라인 연장된 dayNum → 연장 마감 시각 맵
+    const extendedDeadlineMap = buildExtendedDeadlineMap();
 
+    const now = new Date();
     const levelClasses = ['', 'level-1', 'level-2'];
 
     document.querySelectorAll(`#${gridId} .g`).forEach(cell => {
@@ -550,9 +550,14 @@ function renderGrass() {
         const key = `${dayNum}_${order}`;
 
         // ★ 연장된 셀 테두리 표시
-        if (extendedDayNums.has(dayNum)) {
+        const extDeadline = extendedDeadlineMap.get(dayNum);
+        if (extDeadline) {
             cell.classList.add('extended');
         }
+
+        // ★ 이 칸의 마감 시각 계산 (연장이 있으면 연장 마감, 없으면 기본 마감)
+        const deadline = extDeadline || getDeadlineForDayNum(dayNum);
+        const isPastDeadline = deadline && now >= deadline;
 
         const level = completedMap.get(key);
 
@@ -560,8 +565,8 @@ function renderGrass() {
             // 인증률 레벨에 따라 클래스 적용
             cell.classList.remove('empty', 'fail', 'success', 'level-1', 'level-2');
             cell.classList.add(levelClasses[level]);
-        } else if (dayNum < currentDay && !extendedDayNums.has(dayNum)) {
-            // ★ 기한 지남 + 미제출 → 빨간칸
+        } else if (isPastDeadline) {
+            // ★ 마감 시각이 지남 + 미제출 → 빨간칸
             cell.classList.remove('empty', 'success', 'level-1', 'level-2');
             cell.classList.add('fail');
         }
@@ -569,14 +574,41 @@ function renderGrass() {
 }
 
 /**
- * 데드라인 연장된 날짜 → dayNum 목록 (아직 마감 전인 것만)
+ * dayNum → 해당 과제의 기본 마감 시각 (다음 날 새벽 4시) 계산
+ * dayNum은 토요일을 제외한 일련번호 (1부터 시작)
+ * dayNum 1 = 시작일(일요일), 2 = 월요일, ..., 6 = 금요일, 7 = 다음주 일요일...
  */
-function buildExtendedDayNums() {
-    const set = new Set();
-    if (!mpUser.startDate || !mpDeadlineExtensions || mpDeadlineExtensions.length === 0) return set;
+function getDeadlineForDayNum(dayNum) {
+    if (!mpUser.startDate) return null;
+    const startDate = new Date(mpUser.startDate + 'T00:00:00');
+    if (isNaN(startDate.getTime())) return null;
+
+    // dayNum → 시작일 기준 실제 날짜 역산
+    // 6일 학습 + 1일 휴무(토) = 7일 주기
+    const zeroIndex = dayNum - 1;              // 0-based
+    const weekIndex = Math.floor(zeroIndex / 6); // 몇 번째 주 (0-based)
+    const dayIndex = zeroIndex % 6;              // 주 내 몇 번째 날 (0=일, 5=금)
+    const calendarDays = weekIndex * 7 + dayIndex; // 시작일 기준 경과 일수
+
+    const taskDate = new Date(startDate);
+    taskDate.setDate(taskDate.getDate() + calendarDays);
+
+    // 마감 = 다음 날 새벽 4시
+    const deadline = new Date(taskDate);
+    deadline.setDate(deadline.getDate() + 1);
+    deadline.setHours(4, 0, 0, 0);
+    return deadline;
+}
+
+/**
+ * 데드라인 연장된 dayNum → 연장된 마감 시각 맵 (아직 마감 전인 것만)
+ */
+function buildExtendedDeadlineMap() {
+    const map = new Map();
+    if (!mpUser.startDate || !mpDeadlineExtensions || mpDeadlineExtensions.length === 0) return map;
 
     const startDate = new Date(mpUser.startDate + 'T00:00:00');
-    if (isNaN(startDate.getTime())) return set;
+    if (isNaN(startDate.getTime())) return map;
 
     const now = new Date();
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
@@ -591,21 +623,20 @@ function buildExtendedDayNums() {
         extDeadline.setHours(4, 0, 0, 0);
         extDeadline.setDate(extDeadline.getDate() + (ext.extra_days || 1));
 
-        // 아직 마감 전이면 → dayNum 계산해서 추가
+        // 아직 마감 전이면 → dayNum 계산해서 맵에 추가
         if (now < extDeadline) {
             const diffMs = origDate - startDate;
             const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-            // 토요일(6) 제외한 일차 계산: 7일 중 6일 사용
             const weekIndex = Math.floor(diffDays / 7);
             const dayIndex = diffDays % 7;
             if (dayIndex < dayOrder.length) {
                 const dayNum = weekIndex * 6 + dayIndex + 1;
-                set.add(dayNum);
+                map.set(dayNum, extDeadline);
             }
         }
     });
 
-    return set;
+    return map;
 }
 
 /**
@@ -671,31 +702,8 @@ function buildCompletedMap() {
     return map;
 }
 
-/**
- * 현재 스케줄 진행 일차 계산
- */
-function getCurrentScheduleDay() {
-    if (!mpUser.startDate) return 1;
-    const start = new Date(mpUser.startDate);
-    start.setHours(0, 0, 0, 0);
-
-    // 새벽 4시 기준: 4시 이전이면 전날로 간주
-    const now = new Date();
-    const effectiveToday = new Date(now);
-    if (now.getHours() < 4) {
-        effectiveToday.setDate(effectiveToday.getDate() - 1);
-    }
-    effectiveToday.setHours(0, 0, 0, 0);
-
-    // 시작일부터 오늘까지 경과 일수 (토요일 제외)
-    let count = 0;
-    const d = new Date(start);
-    while (d <= effectiveToday) {
-        if (d.getDay() !== 6) count++; // 토요일 제외
-        d.setDate(d.getDate() + 1);
-    }
-    return Math.max(1, count);
-}
+// getCurrentScheduleDay() — 삭제됨
+// 잔디 판정이 dayNum 번호 비교에서 실제 마감 시각 비교로 변경되어 더 이상 불필요
 
 // ================================================
 // ③ 성적 추이 라인 차트 (initial_level 기반)
