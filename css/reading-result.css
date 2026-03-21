@@ -597,3 +597,129 @@
         flex-wrap: wrap;
     }
 }
+
+/* ============================================
+   재풀이 (Retry) UI
+   ============================================ */
+
+.retry-section {
+    margin-top: 12px;
+    padding: 16px;
+    background: #f8f7fc;
+    border-radius: 12px;
+    border: 1.5px solid #e8e4f0;
+}
+
+.retry-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #7c6bb5;
+    margin-bottom: 12px;
+}
+
+.retry-header i {
+    margin-right: 6px;
+}
+
+.retry-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.retry-option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1.5px solid #e0dce8;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.92rem;
+    color: #2d3436;
+    transition: all 0.15s ease;
+    line-height: 1.5;
+}
+
+.retry-option-btn:hover:not(:disabled) {
+    border-color: #9480c5;
+    background: #f5f3fa;
+}
+
+.retry-option-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.retry-option-label {
+    font-weight: 600;
+    color: #7c6bb5;
+    flex-shrink: 0;
+}
+
+.retry-option-text {
+    flex: 1;
+}
+
+/* 비활성 (이미 선택한 오답) */
+.retry-option-btn.retry-disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.retry-option-btn.retry-wrong-selected {
+    border-color: #e57373;
+    background: #fef2f2;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+/* 정답 맞춘 보기 */
+.retry-option-btn.retry-correct-selected {
+    border-color: #77bf7e;
+    background: #f0faf0;
+    opacity: 1;
+}
+
+/* 피드백 메시지 */
+.retry-feedback {
+    min-height: 0;
+    margin-bottom: 8px;
+}
+
+.retry-feedback:empty {
+    display: none;
+}
+
+.retry-feedback-correct {
+    color: #2d9a3e;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.retry-feedback-correct i {
+    margin-right: 4px;
+}
+
+.retry-feedback-wrong {
+    color: #d32f2f;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.retry-feedback-wrong i {
+    margin-right: 4px;
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+    .retry-section {
+        padding: 12px;
+    }
+    
+    .retry-option-btn {
+        padding: 10px 12px;
+        font-size: 0.88rem;
+    }
+}

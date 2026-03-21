@@ -294,13 +294,13 @@ function _onSelectExplain(mode) {
                     });
                 }
                 // 첫 문제 렌더링 (화면에 데이터 채움)
-                showFn(data);
+                showFn(data, mode);
                 console.log('📖 [해설] repeat ' + audiosCount + '개 문제 등록 완료');
                 return;
             }
 
             // ── 일반 유형: 기존 방식 ──
-            showFn(data);
+            showFn(data, mode);
             st.visibleScreens.push({ screenId: def.screenId });
             console.log('📖 [해설] ' + def.type + ' 렌더링 완료');
 
