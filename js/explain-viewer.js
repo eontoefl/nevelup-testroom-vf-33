@@ -407,13 +407,17 @@ function _extractData(def, recordJson, st) {
         case 'email':
             if (!recordJson.email) return null;
             return Object.assign({
-                weekDay: 'Week ' + st.week + ', ' + st.day + '요일'
+                weekDay: 'Week ' + st.week + ', ' + st.day + '요일',
+                _rewrite: st.dbRow.rewrite_record ? st.dbRow.rewrite_record.email || null : null,
+                _dbContext: { userId: st.dbRow.user_id, sectionType: st.sectionType, moduleNumber: st.moduleNumber, week: st.week, day: st.day }
             }, recordJson.email);
 
         case 'discussion':
             if (!recordJson.discussion) return null;
             return Object.assign({
-                weekDay: 'Week ' + st.week + ', ' + st.day + '요일'
+                weekDay: 'Week ' + st.week + ', ' + st.day + '요일',
+                _rewrite: st.dbRow.rewrite_record ? st.dbRow.rewrite_record.discussion || null : null,
+                _dbContext: { userId: st.dbRow.user_id, sectionType: st.sectionType, moduleNumber: st.moduleNumber, week: st.week, day: st.day }
             }, recordJson.discussion);
 
         case 'repeat':

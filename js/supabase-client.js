@@ -338,6 +338,34 @@ async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day,
 }
 
 /**
+ * V3 rewrite_record 저장 (해설 화면에서 다시 쓰기)
+ * 매번 덮어쓰기 — 최신 결과로 대체
+ */
+async function upsertRewriteRecord(userId, sectionType, moduleNumber, week, day, rewriteJson) {
+    console.log('💾 [V3] rewrite_record 저장:', sectionType, 'M' + moduleNumber);
+
+    var data = {
+        user_id: userId,
+        section_type: sectionType,
+        module_number: moduleNumber,
+        week: String(week),
+        day: day,
+        rewrite_record: rewriteJson
+    };
+
+    var result = await supabaseUpsert(
+        'study_results_v3',
+        data,
+        'user_id,section_type,module_number,week,day'
+    );
+
+    if (result) {
+        console.log('✅ [V3] rewrite_record 저장 완료:', result.id);
+    }
+    return result;
+}
+
+/**
  * V3 완료 과제 목록 조회 (progress-tracker용)
  * initial_record가 NULL이 아닌 레코드 = 완료된 과제
  * 
