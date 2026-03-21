@@ -70,9 +70,14 @@ async function startReadingModule(moduleNumber) {
         isRetake: false       // 다시풀기 여부
     };
 
-    // 다시풀기 여부 확인 (대시보드 상태에서 가져옴)
+    // 다시풀기 여부 확인
+    // 기준: initial_record 존재 OR 마감 지남 → current_record에 저장
     var state = window._taskDashboardState;
-    if (state) {
+    var deadlinePassed = window._deadlinePassedMode || false;
+    if (deadlinePassed) {
+        window.currentReadingModule.isRetake = true;
+        console.log('🔄 다시풀기 모드 (마감 지남)');
+    } else if (state) {
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
         if (user && user.id && user.id !== 'dev-user-001') {
             try {
@@ -82,7 +87,7 @@ async function startReadingModule(moduleNumber) {
                 );
                 if (existing && existing.initial_record != null) {
                     window.currentReadingModule.isRetake = true;
-                    console.log('🔄 다시풀기 모드');
+                    console.log('🔄 다시풀기 모드 (initial_record 존재)');
                 }
             } catch (e) {
                 console.warn('⚠️ 다시풀기 확인 실패 (무시하고 진행):', e);
