@@ -49,7 +49,7 @@ function showResponseResults(data, mode) {
     let detailsHTML = '';
     
     responseResults.forEach((setResult, setIdx) => {
-        detailsHTML += renderResponseSetResult(setResult, setIdx);
+        detailsHTML += renderResponseSetResult(setResult, setIdx, mode);
     });
     
     detailsContainer.innerHTML = detailsHTML;
@@ -67,7 +67,7 @@ function showResponseResults(data, mode) {
 }
 
 // 세트별 결과 렌더링
-function renderResponseSetResult(setResult, setIdx) {
+function renderResponseSetResult(setResult, setIdx, mode) {
     const setNum = setIdx + 1;
     const questionCount = setResult.answers ? setResult.answers.length : 0;
     

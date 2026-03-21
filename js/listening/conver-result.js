@@ -48,7 +48,7 @@ function showConverResults(data, mode) {
     let detailsHTML = '';
     
     converResults.forEach((setResult, setIdx) => {
-        detailsHTML += renderConverSetResult(setResult, setIdx);
+        detailsHTML += renderConverSetResult(setResult, setIdx, mode);
     });
     
     detailsContainer.innerHTML = detailsHTML;
@@ -61,7 +61,7 @@ function showConverResults(data, mode) {
 }
 
 // 세트별 결과 렌더링
-function renderConverSetResult(setResult, setIdx) {
+function renderConverSetResult(setResult, setIdx, mode) {
     const audioId = `conver-main-audio-${setIdx}`;
     
     const setNumber = setIdx + 1;
