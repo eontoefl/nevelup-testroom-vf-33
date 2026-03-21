@@ -383,6 +383,162 @@
 
 
 
+/* ── Retry (재풀이) ── */
+#fillBlanksExplainScreen .fb-retry-area {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+#fillBlanksExplainScreen .fb-retry-first-answer {
+  font-size: 0.95rem;
+  color: var(--fb-error);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#fillBlanksExplainScreen .fb-retry-first-answer i {
+  font-size: 14px;
+}
+
+#fillBlanksExplainScreen .fb-retry-wrong-word {
+  font-weight: 600;
+  text-decoration: line-through;
+  margin-left: 4px;
+}
+
+#fillBlanksExplainScreen .fb-retry-prompt {
+  font-size: 0.9rem;
+  color: var(--fb-text-muted);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+#fillBlanksExplainScreen .fb-retry-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+#fillBlanksExplainScreen .fb-retry-prefix {
+  font-size: 1.1rem;
+  color: var(--fb-text-muted);
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+#fillBlanksExplainScreen .fb-retry-inputs {
+  display: inline-flex;
+  gap: 3px;
+}
+
+#fillBlanksExplainScreen .fb-retry-char {
+  width: 28px;
+  height: 36px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: 'Pretendard', 'Courier New', monospace;
+  color: var(--fb-text);
+  background: #fafafa;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#fillBlanksExplainScreen .fb-retry-char:focus {
+  border-color: var(--fb-primary);
+  box-shadow: 0 0 0 3px rgba(148, 128, 197, 0.15);
+  background: #fff;
+}
+
+#fillBlanksExplainScreen .fb-retry-char:disabled {
+  background: var(--fb-success-soft);
+  border-color: var(--fb-success);
+  color: var(--fb-success);
+}
+
+#fillBlanksExplainScreen .fb-retry-submit {
+  margin-left: 12px;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--fb-primary);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+#fillBlanksExplainScreen .fb-retry-submit:hover {
+  background: #7c68b3;
+  transform: translateY(-1px);
+}
+
+#fillBlanksExplainScreen .fb-retry-submit:disabled {
+  background: var(--fb-success);
+  cursor: default;
+  transform: none;
+}
+
+#fillBlanksExplainScreen .fb-retry-feedback {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+}
+
+#fillBlanksExplainScreen .fb-retry-feedback:empty {
+  display: none;
+}
+
+#fillBlanksExplainScreen .fb-retry-feedback-correct {
+  color: var(--fb-success);
+}
+
+#fillBlanksExplainScreen .fb-retry-feedback-wrong {
+  color: var(--fb-error);
+}
+
+#fillBlanksExplainScreen .fb-retry-feedback-warn {
+  color: #d97706;
+}
+
+#fillBlanksExplainScreen .fb-retry-locked {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--fb-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#fillBlanksExplainScreen .fb-retry-locked i {
+  color: #9ca3af;
+}
+
+/* ── Retried blank indicator ── */
+#fillBlanksExplainScreen .result-blank.incorrect.retried {
+  background: #fef3c7;
+  color: #92400e;
+  border: none;
+}
+
+#fillBlanksExplainScreen .result-blank.incorrect.retried i {
+  color: var(--fb-success);
+}
+
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   #fillBlanksExplainScreen .result-section {
@@ -401,5 +557,15 @@
   #fillBlanksExplainScreen .common-mistakes-header-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+  #fillBlanksExplainScreen .fb-retry-char {
+    width: 24px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  #fillBlanksExplainScreen .fb-retry-submit {
+    margin-left: 8px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
   }
 }
