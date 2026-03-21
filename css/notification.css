@@ -86,16 +86,31 @@
     position: relative;
 }
 
-/* 알림 뱃지 (초록 dot) */
+/* 알림 뱃지 (빨간 원 + 숫자) */
 .notif-badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 8px;
-    height: 8px;
-    background: #77bf7e;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #ff3b30;
     border: 2px solid #ffffff;
-    border-radius: 50%;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+    animation: notifBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes notifBadgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
 }
 
 /* 뱃지 숨김 (읽지 않은 알림 0개) */
