@@ -298,44 +298,7 @@
     margin-top: 2px;
 }
 
-/* 키워드 하이라이트 */
-#converExplainScreen .conver-keyword {
-    color: #7a66b0;
-    font-weight: 600;
-    text-decoration: underline;
-    text-decoration-color: rgba(148,128,197,0.35);
-    text-underline-offset: 3px;
-    cursor: help;
-    position: relative;
-}
-#converExplainScreen .conver-keyword:hover {
-    text-decoration-color: rgba(148,128,197,0.7);
-}
-#converExplainScreen .conver-keyword:hover::after {
-    content: attr(data-translation) ' — ' attr(data-explanation);
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #2c2c3e;
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    z-index: 1000;
-}
-#converExplainScreen .conver-keyword:hover::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #2c2c3e;
-    z-index: 1000;
-}
+/* 키워드 하이라이트 → interactive-word + rd-tooltip (reading/utils.js) 공용 */
 
 /* ── 문제 영역 구분 ── */
 #converExplainScreen .conver-questions-divider {

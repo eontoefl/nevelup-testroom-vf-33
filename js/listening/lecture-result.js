@@ -78,6 +78,7 @@ function showLectureResults(data) {
     
     // 오디오 리스너 초기화 (DOM 렌더링 직후)
     initLectureResultAudioListeners();
+    if (typeof bindRdWordEvents === 'function') bindRdWordEvents();
     
     console.log('✅ [결과 화면] 표시 완료');
 }
@@ -230,7 +231,7 @@ function highlightLectureScript(scriptText, highlights) {
         
         const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
         highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="lecture-keyword" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
+            return `<span class="interactive-word" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
         });
     });
     
