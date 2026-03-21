@@ -1393,6 +1393,10 @@ body {
     padding: 1.5rem 3rem;
 }
 
+#scheduleScreen > .container {
+    padding-top: 0;
+}
+
 .schedule-header {
     margin-bottom: 3rem;
     display: flex;
