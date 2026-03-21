@@ -19,7 +19,7 @@
 let _repeatResultAudio = null;
 let _repeatResultCurrentIndex = 0;
 let _repeatResultMode = null;       // 'initial' | 'current'
-let _repeatScriptRevealed = false;  // initial 모드에서 스크립트 공개 여부
+let _repeatScriptRevealedMap = {};  // 문제 인덱스별 스크립트 공개 여부
 
 /**
  * 복습 화면 표시 (초기 렌더링)
@@ -37,7 +37,7 @@ function showRepeatResult(data, mode) {
     const set = data.set;
     _repeatResultCurrentIndex = 0;
     _repeatResultMode = mode || 'current';
-    _repeatScriptRevealed = false;
+    _repeatScriptRevealedMap = {};
     
     // Context 표시
     const contextEl = document.getElementById('repeatResultContext');
@@ -45,61 +45,65 @@ function showRepeatResult(data, mode) {
         contextEl.textContent = set.contextText;
     }
     
-    // initial 모드: 안내문구 + 스크립트 보기 버튼 삽입
-    _setupRepeatInitialUI();
-    
     // 첫 번째 오디오 표시
     showRepeatResultNarration(set, 0);
 }
 
 /**
- * initial 모드용 UI 세팅
- * - 안내문구 영역 표시/숨김
+ * 현재 문제 인덱스에 맞게 initial 모드 UI를 갱신
+ * - 안내문구 표시
+ * - 해당 인덱스 스크립트 공개 여부에 따라 카드 표시/숨김
  * - 스크립트 보기 버튼 표시/숨김
- * - 스크립트/해석 카드 표시/숨김
  */
-function _setupRepeatInitialUI() {
-    const rightCol = document.querySelector('.repeat-result-right-col');
+function _applyRepeatInitialUI(index) {
+    var rightCol = document.querySelector('.repeat-result-right-col');
     if (!rightCol) return;
 
-    // 기존 안내문구 / 스크립트보기 버튼 제거 (재진입 대비)
-    const oldGuide = document.getElementById('repeatRetryGuide');
-    if (oldGuide) oldGuide.remove();
-    const oldRevealBtn = document.getElementById('repeatRevealScriptBtn');
-    if (oldRevealBtn) oldRevealBtn.remove();
+    var contentStack = rightCol.querySelector('.repeat-result-content-stack');
+    var oldGuide = document.getElementById('repeatRetryGuide');
+    var oldRevealBtn = document.getElementById('repeatRevealScriptBtn');
 
-    const contentStack = rightCol.querySelector('.repeat-result-content-stack');
+    if (_repeatResultMode !== 'initial') {
+        // current 모드: 동적 요소 제거, 카드 표시
+        if (oldGuide) oldGuide.remove();
+        if (oldRevealBtn) oldRevealBtn.remove();
+        if (contentStack) contentStack.style.display = '';
+        return;
+    }
 
-    if (_repeatResultMode === 'initial') {
-        // 안내문구 삽입 (Listen 버튼 바로 아래)
-        const actionsDiv = rightCol.querySelector('.repeat-result-actions');
+    // 안내문구가 없으면 삽입
+    if (!oldGuide) {
+        var actionsDiv = rightCol.querySelector('.repeat-result-actions');
         if (actionsDiv) {
-            const guide = document.createElement('div');
+            var guide = document.createElement('div');
             guide.id = 'repeatRetryGuide';
             guide.className = 'repeat-retry-guide';
-            guide.innerHTML = '<i class="fas fa-headphones"></i> 오디오를 듣고 따라 말해보세요';
+            guide.innerHTML = '<i class="fas fa-headphones"></i> 스크립트를 보기전에 한 번 더 따라 말해보세요';
             actionsDiv.after(guide);
         }
+    }
 
-        // 스크립트/해석 카드 숨김
+    var revealed = !!_repeatScriptRevealedMap[index];
+
+    if (revealed) {
+        // 이미 공개된 문제: 카드 표시, 버튼 제거
+        if (contentStack) contentStack.style.display = '';
+        if (oldRevealBtn) oldRevealBtn.remove();
+    } else {
+        // 미공개 문제: 카드 숨김, 버튼 표시
         if (contentStack) contentStack.style.display = 'none';
-
-        // "스크립트 보기" 버튼 삽입 (카드 영역 바로 위)
-        const revealBtn = document.createElement('button');
-        revealBtn.id = 'repeatRevealScriptBtn';
-        revealBtn.className = 'repeat-reveal-script-btn';
-        revealBtn.innerHTML = '<i class="fas fa-eye"></i> 스크립트 보기';
-        revealBtn.onclick = function() {
-            _repeatScriptRevealed = true;
-            if (contentStack) contentStack.style.display = '';
-            revealBtn.remove();
-        };
-        if (contentStack) {
+        if (!oldRevealBtn && contentStack) {
+            var revealBtn = document.createElement('button');
+            revealBtn.id = 'repeatRevealScriptBtn';
+            revealBtn.className = 'repeat-reveal-script-btn';
+            revealBtn.innerHTML = '<i class="fas fa-eye"></i> 스크립트 보기';
+            revealBtn.onclick = function() {
+                _repeatScriptRevealedMap[_repeatResultCurrentIndex] = true;
+                if (contentStack) contentStack.style.display = '';
+                revealBtn.remove();
+            };
             contentStack.before(revealBtn);
         }
-    } else {
-        // current 모드: 카드 전부 표시
-        if (contentStack) contentStack.style.display = '';
     }
 }
 
@@ -153,24 +157,8 @@ function showRepeatResultNarration(set, index) {
         translationEl.textContent = audio.translation;
     }
     
-    // 문제 전환 시 initial 모드 스크립트 상태 복원
-    if (_repeatResultMode === 'initial' && !_repeatScriptRevealed) {
-        const contentStack = document.querySelector('.repeat-result-content-stack');
-        if (contentStack) contentStack.style.display = 'none';
-        // 스크립트 보기 버튼이 이미 있으면 유지, 없으면 다시 삽입
-        if (!document.getElementById('repeatRevealScriptBtn') && contentStack) {
-            const revealBtn = document.createElement('button');
-            revealBtn.id = 'repeatRevealScriptBtn';
-            revealBtn.className = 'repeat-reveal-script-btn';
-            revealBtn.innerHTML = '<i class="fas fa-eye"></i> 스크립트 보기';
-            revealBtn.onclick = function() {
-                _repeatScriptRevealed = true;
-                if (contentStack) contentStack.style.display = '';
-                revealBtn.remove();
-            };
-            contentStack.before(revealBtn);
-        }
-    }
+    // initial 모드 UI 갱신 (문제별 스크립트 공개 상태 반영)
+    _applyRepeatInitialUI(index);
     
     // 다시 듣기 버튼 설정
     const listenBtn = document.getElementById('repeatResultListenBtn');
@@ -265,7 +253,7 @@ function cleanupRepeatResult() {
     }
     _repeatResultCurrentIndex = 0;
     _repeatResultMode = null;
-    _repeatScriptRevealed = false;
+    _repeatScriptRevealedMap = {};
     _resetListenBtnUI(document.getElementById('repeatResultListenBtn'));
 
     // 동적 요소 정리

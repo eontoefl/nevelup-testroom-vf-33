@@ -463,6 +463,29 @@
     font-size: 14px;
 }
 
+#interviewExplainScreen .interview-timer-reset-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: 4px;
+    background: transparent;
+    color: #94a3b8;
+    border: 1.5px solid #d1d5db;
+    border-radius: 50%;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+#interviewExplainScreen .interview-timer-reset-btn:hover {
+    color: #9480c5;
+    border-color: #9480c5;
+    background: #f5f3fa;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
     #interviewExplainScreen .test-content {
