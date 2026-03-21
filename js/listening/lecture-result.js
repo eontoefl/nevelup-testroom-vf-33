@@ -5,12 +5,17 @@
 
 console.log('[lecture-result] 로드 시작');
 
+var _lectureExplainMode = null;
+
 /**
  * 렉처 결과 화면 표시
  * @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
+ * @param {string} mode - 'initial' | 'current' (explain-viewer.js에서 전달)
  */
-function showLectureResults(data) {
+function showLectureResults(data, mode) {
     console.log('🎯 [결과 화면] showLectureResults() 시작');
+    
+    _lectureExplainMode = mode || null;
     
     if (!data) {
         console.error('❌ [결과 화면] 결과 데이터가 없습니다');
@@ -71,7 +76,7 @@ function showLectureResults(data) {
                 ...setData,
                 results: setData.answers || setData.results || []
             };
-            allHtml += renderLectureSetResult(normalizedSet, setIdx);
+            allHtml += renderLectureSetResult(normalizedSet, setIdx, mode);
         });
         detailsContainer.innerHTML = allHtml;
     }
@@ -86,7 +91,7 @@ function showLectureResults(data) {
 /**
  * 세트 결과 렌더링 (Announcement와 동일한 구조)
  */
-function renderLectureSetResult(resultData, setIdx = 0) {
+function renderLectureSetResult(resultData, setIdx, mode) {
     console.log(`🖼️ [세트 결과] renderLectureSetResult 시작 - 세트 ${setIdx + 1}`);
     
     const audioUrl = resultData.audioUrl || '';
@@ -160,7 +165,7 @@ function renderLectureSetResult(resultData, setIdx = 0) {
     
     // 각 문제 렌더링
     results.forEach((result, index) => {
-        html += renderLectureAnswer(result, index, setIdx);
+        html += renderLectureAnswer(result, index, setIdx, mode);
     });
     
     html += `
@@ -241,7 +246,7 @@ function highlightLectureScript(scriptText, highlights) {
 /**
  * 문제별 답안 렌더링 (Announcement와 유사한 구조)
  */
-function renderLectureAnswer(result, index, setIdx) {
+function renderLectureAnswer(result, index, setIdx, mode) {
     
     const questionNum = index + 1;
     const questionText = result.questionText || '';
@@ -249,6 +254,7 @@ function renderLectureAnswer(result, index, setIdx) {
     const userAnswer = result.userAnswer;
     const correctAnswer = result.correctAnswer;
     const isCorrect = result.isCorrect;
+    const isRetryTarget = (mode === 'initial' && !isCorrect);
     const options = result.options || [];
     const optionTranslations = result.optionTranslations || [];
     const optionExplanations = result.optionExplanations || [];
@@ -261,8 +267,9 @@ function renderLectureAnswer(result, index, setIdx) {
     const correctAnswerText = options[(correctAnswer || 1) - 1] || '';
     
     const toggleId = `lecture-fixed-toggle-q${setIdx || 0}-${index}`;
+    const retryId = 'retry-lec-' + (setIdx || 0) + '-' + index;
     
-    // 보기 해설
+    // 보기 해설 HTML
     let optionsHtml = '';
     options.forEach((option, optIdx) => {
         const optionLetter = String.fromCharCode(65 + optIdx);
@@ -282,6 +289,38 @@ function renderLectureAnswer(result, index, setIdx) {
             </div>
         `;
     });
+    
+    var explanationBlock = `
+            <button class="lecture-toggle-btn" onclick="toggleLectureExplanation('${toggleId}')">
+                <span class="toggle-text">보기 상세 해설 펼치기</span>
+                <i class="fas fa-chevron-down" id="${toggleId}-icon"></i>
+            </button>
+            <div id="${toggleId}" class="lecture-options-details" style="display: none;">
+                ${optionsHtml}
+            </div>
+    `;
+    
+    if (isRetryTarget) {
+        return `
+        <div class="lecture-question" id="${retryId}-container">
+            <div class="lecture-question-header">
+                <span class="lecture-q-number">Question ${questionNum}</span>
+                <span class="lecture-q-status">${correctIcon}</span>
+            </div>
+            <div class="lecture-q-text">${questionText}</div>
+            ${questionTrans ? `<div class="lecture-q-translation">${questionTrans}</div>` : ''}
+            
+            <div class="lecture-answer-summary">
+                <div class="lecture-answer-row">
+                    <span class="lecture-answer-label">✗ 1차 답변:</span>
+                    <span class="lecture-answer-value incorrect">${userAnswerText}</span>
+                </div>
+            </div>
+            
+            ${renderListeningRetryQuestion(result, retryId, function() { return explanationBlock; }, index, setIdx)}
+        </div>
+        `;
+    }
     
     return `
         <div class="lecture-question">
@@ -303,13 +342,7 @@ function renderLectureAnswer(result, index, setIdx) {
                 </div>
             </div>
             
-            <button class="lecture-toggle-btn" onclick="toggleLectureExplanation('${toggleId}')">
-                <span class="toggle-text">보기 상세 해설 펼치기</span>
-                <i class="fas fa-chevron-down" id="${toggleId}-icon"></i>
-            </button>
-            <div id="${toggleId}" class="lecture-options-details" style="display: none;">
-                ${optionsHtml}
-            </div>
+            ${explanationBlock}
         </div>
     `;
 }

@@ -32,9 +32,13 @@ function splitToMatchTranslations_d2(cleanContent, translationCount) {
     return diffs[0].s;
 }
 
+// 현재 해설 모드 저장 (재풀이 판정용)
+var _daily2ExplainMode = null;
+
 // 결과 화면 표시
 // @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
-function showDaily2Results(data) {
+// @param {string} mode - 'initial' | 'current' (explain-viewer.js에서 전달)
+function showDaily2Results(data, mode) {
     console.log('📊 [일상리딩2] 결과 화면 표시');
     
     if (!data) {
@@ -42,6 +46,7 @@ function showDaily2Results(data) {
         return;
     }
     
+    _daily2ExplainMode = mode || null;
     const daily2Results = data;
     
     let totalCorrect = 0;
@@ -66,7 +71,7 @@ function showDaily2Results(data) {
     let detailsHTML = '';
     
     daily2Results.forEach((setResult, setIdx) => {
-        detailsHTML += renderDaily2SetResult(setResult, setIdx);
+        detailsHTML += renderDaily2SetResult(setResult, setIdx, mode);
     });
     
     detailsContainer.innerHTML = detailsHTML;
@@ -74,7 +79,7 @@ function showDaily2Results(data) {
 }
 
 // 세트별 결과 렌더링
-function renderDaily2SetResult(setResult, setIdx) {
+function renderDaily2SetResult(setResult, setIdx, mode) {
     const cleanContent = setResult.passage.content.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
     const translations = setResult.passage.translations || [];
     const sentences = splitToMatchTranslations_d2(cleanContent, translations.length);
@@ -103,7 +108,7 @@ function renderDaily2SetResult(setResult, setIdx) {
     
     let answersHTML = '';
     setResult.answers.forEach((answer, qIdx) => {
-        answersHTML += renderDaily2Answers(answer, qIdx, setResult.setId || setIdx);
+        answersHTML += renderDaily2Answers(answer, qIdx, setResult.setId || setIdx, mode);
     });
     
     return `
@@ -125,8 +130,16 @@ function renderDaily2SetResult(setResult, setIdx) {
 }
 
 // 문제별 결과 렌더링
-function renderDaily2Answers(answer, qIdx, setId) {
+function renderDaily2Answers(answer, qIdx, setId, mode) {
     const isCorrect = answer.isCorrect;
+    const isRetryTarget = (mode === 'initial' && !isCorrect);
+    
+    // ── 재풀이 대상: 정답/해설 잠금 + 보기 선택 UI ──
+    if (isRetryTarget) {
+        return _renderDaily2RetryQuestion(answer, qIdx, setId);
+    }
+    
+    // ── 기존 로직 (맞은 문제 or current 모드) ──
     const correctIcon = isCorrect 
         ? '<i class="fas fa-check-circle"></i>' 
         : '<i class="fas fa-times-circle"></i>';
@@ -167,6 +180,57 @@ function renderDaily2Answers(answer, qIdx, setId) {
             </div>
         </div>
     `;
+}
+
+// ── 재풀이 UI 렌더링 (틀린 문제 전용) ──
+function _renderDaily2RetryQuestion(answer, qIdx, setId) {
+    var retryId = 'retry-d2-' + setId + '-' + qIdx;
+    var userAnswerIndex = answer.userAnswer;
+    var userOpt = answer.options && answer.options[userAnswerIndex - 1];
+    var userAnswerText = userOpt ? userOpt.label + ') ' + userOpt.text : '미응답';
+    
+    var optionBtnsHTML = '';
+    if (Array.isArray(answer.options)) {
+        answer.options.forEach(function(option, idx) {
+            var label = option.label || getLabelFromIndex(idx + 1);
+            var text = option.text || option;
+            optionBtnsHTML += '<button class="retry-option-btn" ' +
+                'data-retry-id="' + retryId + '" ' +
+                'data-selected-index="' + (idx + 1) + '" ' +
+                'data-correct-answer="' + answer.correctAnswer + '" ' +
+                'onclick="handleRetrySelect(this)">' +
+                '<span class="retry-option-label">' + label + ')</span>' +
+                '<span class="retry-option-text">' + escapeHtml(typeof text === 'string' ? text : text) + '</span>' +
+                '</button>';
+        });
+    }
+    
+    var toggleId = 'rd-toggle-' + setId + '-' + qIdx;
+    var hiddenExplanation = renderDaily2OptionsExplanation(answer, toggleId);
+    
+    return '<div class="rd-result-item incorrect" id="' + retryId + '-container">' +
+        '<div class="rd-result-icon"><i class="fas fa-times-circle"></i></div>' +
+        '<div class="rd-result-content">' +
+            '<div class="rd-question-text"><strong>' + answer.questionNum + '.</strong> ' + escapeHtml(answer.question) + '</div>' +
+            (answer.questionTranslation ? '<div class="question-translation"><i class="fas fa-comment-dots"></i> 문제 해석: ' + escapeHtml(answer.questionTranslation) + '</div>' : '') +
+            '<div class="rd-answer-row">' +
+                '<span class="rd-answer-label">✗ 1차 답변:</span>' +
+                '<span class="rd-answer-value incorrect">' + escapeHtml(userAnswerText) + '</span>' +
+            '</div>' +
+            '<div class="retry-section" id="' + retryId + '">' +
+                '<div class="retry-header"><i class="fas fa-redo"></i> 다시 풀어보기</div>' +
+                '<div class="retry-feedback" id="' + retryId + '-feedback"></div>' +
+                '<div class="retry-options">' + optionBtnsHTML + '</div>' +
+            '</div>' +
+            '<div class="retry-locked-area" id="' + retryId + '-locked">' +
+                '<div class="rd-answer-row" id="' + retryId + '-correct-row" style="display:none;">' +
+                    '<span class="rd-answer-label">✓ 정답:</span>' +
+                    '<span class="rd-answer-value correct" id="' + retryId + '-correct-text"></span>' +
+                '</div>' +
+                '<div id="' + retryId + '-explanation" style="display:none;">' + hiddenExplanation + '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
 }
 
 // 보기 상세 해설 렌더링

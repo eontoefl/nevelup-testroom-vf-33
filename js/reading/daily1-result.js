@@ -222,7 +222,7 @@ function _renderDaily1RetryQuestion(answer, qIdx, setId) {
                         data-retry-id="${retryId}" 
                         data-selected-index="${idx + 1}"
                         data-correct-answer="${answer.correctAnswer}"
-                        onclick="handleDaily1RetrySelect(this)">
+                        onclick="handleRetrySelect(this)">
                     <span class="retry-option-label">${label})</span>
                     <span class="retry-option-text">${escapeHtml(typeof text === 'string' ? text : text)}</span>
                 </button>
@@ -277,100 +277,7 @@ function _renderDaily1RetryQuestion(answer, qIdx, setId) {
     `;
 }
 
-// ============================================
-// 재풀이 보기 클릭 핸들러
-// ============================================
-
-function handleDaily1RetrySelect(btn) {
-    var retryId = btn.getAttribute('data-retry-id');
-    var selectedIndex = parseInt(btn.getAttribute('data-selected-index'));
-    var correctAnswer = parseInt(btn.getAttribute('data-correct-answer'));
-    var feedbackEl = document.getElementById(retryId + '-feedback');
-    
-    if (selectedIndex === correctAnswer) {
-        // ── 정답! ──
-        console.log('✅ [Daily1 재풀이] 정답! retryId:', retryId);
-        
-        // 피드백
-        if (feedbackEl) {
-            feedbackEl.innerHTML = '<span class="retry-feedback-correct"><i class="fas fa-check-circle"></i> 정답입니다!</span>';
-        }
-        
-        // 모든 버튼 비활성
-        var allBtns = document.querySelectorAll('[data-retry-id="' + retryId + '"]');
-        allBtns.forEach(function(b) {
-            b.disabled = true;
-            b.classList.add('retry-disabled');
-            if (parseInt(b.getAttribute('data-selected-index')) === correctAnswer) {
-                b.classList.add('retry-correct-selected');
-            }
-        });
-        
-        // 컨테이너 스타일 변경 (오답 → 정답)
-        var container = document.getElementById(retryId + '-container');
-        if (container) {
-            container.classList.remove('incorrect');
-            container.classList.add('correct');
-            // 아이콘 변경
-            var iconEl = container.querySelector('.rd-result-icon');
-            if (iconEl) iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
-        }
-        
-        // 2차 답변 표시
-        var selectedBtn = btn;
-        var selectedLabel = selectedBtn.querySelector('.retry-option-label').textContent;
-        var selectedText = selectedBtn.querySelector('.retry-option-text').textContent;
-        var retrySection = document.getElementById(retryId);
-        if (retrySection) {
-            // 재풀이 헤더 앞에 2차 답변 추가
-            var answerRow = document.createElement('div');
-            answerRow.className = 'rd-answer-row';
-            answerRow.innerHTML = '<span class="rd-answer-label">✓ 2차 답변:</span>' +
-                '<span class="rd-answer-value correct">' + escapeHtml(selectedLabel + ' ' + selectedText) + '</span>';
-            retrySection.parentNode.insertBefore(answerRow, retrySection);
-        }
-        
-        // 정답 행 + 해설 공개
-        var correctRow = document.getElementById(retryId + '-correct-row');
-        var correctText = document.getElementById(retryId + '-correct-text');
-        var explanationArea = document.getElementById(retryId + '-explanation');
-        
-        if (correctRow && correctText) {
-            // 정답 텍스트 찾기
-            var correctBtn = null;
-            allBtns.forEach(function(b) {
-                if (parseInt(b.getAttribute('data-selected-index')) === correctAnswer) correctBtn = b;
-            });
-            if (correctBtn) {
-                correctText.textContent = correctBtn.querySelector('.retry-option-label').textContent + ' ' + correctBtn.querySelector('.retry-option-text').textContent;
-            }
-            correctRow.style.display = '';
-        }
-        if (explanationArea) {
-            explanationArea.style.display = '';
-        }
-        
-        // 재풀이 섹션 숨기기 (부드럽게)
-        var retrySec = document.getElementById(retryId);
-        if (retrySec) {
-            retrySec.style.opacity = '0.5';
-            retrySec.style.pointerEvents = 'none';
-        }
-        
-    } else {
-        // ── 오답 ──
-        console.log('❌ [Daily1 재풀이] 오답:', selectedIndex, '정답:', correctAnswer);
-        
-        // 피드백
-        if (feedbackEl) {
-            feedbackEl.innerHTML = '<span class="retry-feedback-wrong"><i class="fas fa-times-circle"></i> 다시 생각해보세요</span>';
-        }
-        
-        // 선택한 버튼 비활성
-        btn.disabled = true;
-        btn.classList.add('retry-disabled', 'retry-wrong-selected');
-    }
-}
+// handleDaily1RetrySelect → 공용 handleRetrySelect (utils.js) 로 이동
 
 // 보기 상세 해설 렌더링
 function renderDaily1OptionsExplanation(answer, toggleId) {
@@ -428,6 +335,6 @@ window.showDaily1Results = showDaily1Results;
 window.renderDaily1SetResult = renderDaily1SetResult;
 window.renderDaily1Answers = renderDaily1Answers;
 window.renderDaily1OptionsExplanation = renderDaily1OptionsExplanation;
-window.handleDaily1RetrySelect = handleDaily1RetrySelect;
+
 
 console.log('✅ [Reading] daily1-result.js 로드 완료');

@@ -1,8 +1,11 @@
 // Listening - 컨버 결과/해설 화면
 
+var _converExplainMode = null;
+
 // 결과 화면 표시
 // @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
-function showConverResults(data) {
+// @param {string} mode - 'initial' | 'current' (explain-viewer.js에서 전달)
+function showConverResults(data, mode) {
     console.log('📊 [컨버] 결과 화면 표시');
     
     if (!data) {
@@ -10,6 +13,7 @@ function showConverResults(data) {
         return;
     }
     
+    _converExplainMode = mode || null;
     const converResults = data;
     
     // 전체 정답/오답 계산
@@ -123,7 +127,7 @@ function renderConverSetResult(setResult, setIdx) {
     
     // 각 문제 렌더링
     setResult.answers.forEach((answer, qIdx) => {
-        html += renderConverAnswer(answer, qIdx, setIdx);
+        html += renderConverAnswer(answer, qIdx, setIdx, mode);
     });
     
     // 대화 요약
@@ -222,14 +226,18 @@ function highlightConverScript(scriptText, highlights) {
 
 
 // 문제별 결과 렌더링
-function renderConverAnswer(answer, qIdx, setIdx) {
+function renderConverAnswer(answer, qIdx, setIdx, mode) {
     const isCorrect = answer.isCorrect;
+    const isRetryTarget = (mode === 'initial' && !isCorrect);
     const correctIcon = isCorrect 
         ? '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>' 
         : '<i class="fas fa-times-circle" style="color: var(--danger-color);"></i>';
     
+    const retryId = 'retry-conv-' + setIdx + '-' + qIdx;
+    var userAnswerText = answer.userAnswer ? answer.options[answer.userAnswer - 1] : '미응답';
+    
     let html = `
-        <div class="conver-question">
+        <div class="conver-question" ${isRetryTarget ? 'id="' + retryId + '-container"' : ''}>
             <div class="conver-question-header">
                 <span class="conver-q-number">Question ${answer.questionNum}</span>
                 <span class="conver-q-status">${correctIcon}</span>
@@ -239,20 +247,29 @@ function renderConverAnswer(answer, qIdx, setIdx) {
             
             <div class="conver-answer-summary">
                 <div class="conver-answer-row">
-                    <span class="conver-answer-label">내 답변:</span>
+                    <span class="conver-answer-label">${isRetryTarget ? '✗ 1차 답변:' : '내 답변:'}</span>
                     <span class="conver-answer-value ${isCorrect ? 'correct' : 'incorrect'}">
-                        ${answer.userAnswer ? `${answer.options[answer.userAnswer - 1]}` : '미응답'}
+                        ${userAnswerText}
                     </span>
                 </div>
+                ${(!isCorrect && !isRetryTarget) ? `
                 <div class="conver-answer-row">
                     <span class="conver-answer-label">정답:</span>
                     <span class="conver-answer-value correct">
                         ${answer.options[answer.correctAnswer - 1]}
                     </span>
                 </div>
+                ` : ''}
             </div>
-            
-            ${renderConverOptionsExplanation(answer, qIdx, setIdx)}
+    `;
+    
+    if (isRetryTarget) {
+        html += renderListeningRetryQuestion(answer, retryId, renderConverOptionsExplanation, qIdx, setIdx);
+    } else {
+        html += renderConverOptionsExplanation(answer, qIdx, setIdx);
+    }
+    
+    html += `
         </div>
     `;
     
