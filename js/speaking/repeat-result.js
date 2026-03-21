@@ -5,6 +5,10 @@
  * 완전 독립형: 컴포넌트 없이 데이터만으로 복습 화면을 표시합니다.
  * 오디오 재생을 자체적으로 처리합니다.
  * 
+ * 모드:
+ *   - initial: 스크립트/해석 숨김, 안내문구 + 재생버튼 + "스크립트 보기" 버튼
+ *   - current (또는 미지정): 기존 방식 — 전부 표시
+ * 
  * 네비게이션:
  *   - 이전/다음 문제 전환은 explain-viewer.js의 하단 플로팅 네비가 담당
  *   - explain-viewer가 showRepeatResultNarration(set, index)를 직접 호출
@@ -14,13 +18,16 @@
 // 내부 상태
 let _repeatResultAudio = null;
 let _repeatResultCurrentIndex = 0;
+let _repeatResultMode = null;       // 'initial' | 'current'
+let _repeatScriptRevealed = false;  // initial 모드에서 스크립트 공개 여부
 
 /**
  * 복습 화면 표시 (초기 렌더링)
  * @param {Object} data - { set: { contextText, audios: [{audio, image, script, translation}] } }
+ * @param {string} mode - 'initial' | 'current'
  */
-function showRepeatResult(data) {
-    console.log('🎯 [repeat-result] showRepeatResult 호출', data);
+function showRepeatResult(data, mode) {
+    console.log('🎯 [repeat-result] showRepeatResult 호출, mode=' + mode, data);
     
     if (!data || !data.set) {
         console.error('❌ [repeat-result] 복습 데이터 없음');
@@ -29,6 +36,8 @@ function showRepeatResult(data) {
     
     const set = data.set;
     _repeatResultCurrentIndex = 0;
+    _repeatResultMode = mode || 'current';
+    _repeatScriptRevealed = false;
     
     // Context 표시
     const contextEl = document.getElementById('repeatResultContext');
@@ -36,8 +45,62 @@ function showRepeatResult(data) {
         contextEl.textContent = set.contextText;
     }
     
+    // initial 모드: 안내문구 + 스크립트 보기 버튼 삽입
+    _setupRepeatInitialUI();
+    
     // 첫 번째 오디오 표시
     showRepeatResultNarration(set, 0);
+}
+
+/**
+ * initial 모드용 UI 세팅
+ * - 안내문구 영역 표시/숨김
+ * - 스크립트 보기 버튼 표시/숨김
+ * - 스크립트/해석 카드 표시/숨김
+ */
+function _setupRepeatInitialUI() {
+    const rightCol = document.querySelector('.repeat-result-right-col');
+    if (!rightCol) return;
+
+    // 기존 안내문구 / 스크립트보기 버튼 제거 (재진입 대비)
+    const oldGuide = document.getElementById('repeatRetryGuide');
+    if (oldGuide) oldGuide.remove();
+    const oldRevealBtn = document.getElementById('repeatRevealScriptBtn');
+    if (oldRevealBtn) oldRevealBtn.remove();
+
+    const contentStack = rightCol.querySelector('.repeat-result-content-stack');
+
+    if (_repeatResultMode === 'initial') {
+        // 안내문구 삽입 (Listen 버튼 바로 아래)
+        const actionsDiv = rightCol.querySelector('.repeat-result-actions');
+        if (actionsDiv) {
+            const guide = document.createElement('div');
+            guide.id = 'repeatRetryGuide';
+            guide.className = 'repeat-retry-guide';
+            guide.innerHTML = '<i class="fas fa-headphones"></i> 오디오를 듣고 따라 말해보세요';
+            actionsDiv.after(guide);
+        }
+
+        // 스크립트/해석 카드 숨김
+        if (contentStack) contentStack.style.display = 'none';
+
+        // "스크립트 보기" 버튼 삽입 (카드 영역 바로 위)
+        const revealBtn = document.createElement('button');
+        revealBtn.id = 'repeatRevealScriptBtn';
+        revealBtn.className = 'repeat-reveal-script-btn';
+        revealBtn.innerHTML = '<i class="fas fa-eye"></i> 스크립트 보기';
+        revealBtn.onclick = function() {
+            _repeatScriptRevealed = true;
+            if (contentStack) contentStack.style.display = '';
+            revealBtn.remove();
+        };
+        if (contentStack) {
+            contentStack.before(revealBtn);
+        }
+    } else {
+        // current 모드: 카드 전부 표시
+        if (contentStack) contentStack.style.display = '';
+    }
 }
 
 /**
@@ -47,7 +110,7 @@ function showRepeatResult(data) {
  * @param {number} index - 오디오 인덱스
  */
 function showRepeatResultNarration(set, index) {
-    console.log(`🎯 [repeat-result] 오디오 ${index + 1}/${set.audios.length} 표시`);
+    console.log('🎯 [repeat-result] 오디오 ' + (index + 1) + '/' + set.audios.length + ' 표시');
     
     // 기존 오디오 정지
     if (_repeatResultAudio) {
@@ -90,11 +153,30 @@ function showRepeatResultNarration(set, index) {
         translationEl.textContent = audio.translation;
     }
     
+    // 문제 전환 시 initial 모드 스크립트 상태 복원
+    if (_repeatResultMode === 'initial' && !_repeatScriptRevealed) {
+        const contentStack = document.querySelector('.repeat-result-content-stack');
+        if (contentStack) contentStack.style.display = 'none';
+        // 스크립트 보기 버튼이 이미 있으면 유지, 없으면 다시 삽입
+        if (!document.getElementById('repeatRevealScriptBtn') && contentStack) {
+            const revealBtn = document.createElement('button');
+            revealBtn.id = 'repeatRevealScriptBtn';
+            revealBtn.className = 'repeat-reveal-script-btn';
+            revealBtn.innerHTML = '<i class="fas fa-eye"></i> 스크립트 보기';
+            revealBtn.onclick = function() {
+                _repeatScriptRevealed = true;
+                if (contentStack) contentStack.style.display = '';
+                revealBtn.remove();
+            };
+            contentStack.before(revealBtn);
+        }
+    }
+    
     // 다시 듣기 버튼 설정
     const listenBtn = document.getElementById('repeatResultListenBtn');
     if (listenBtn) {
         _resetListenBtnUI(listenBtn);
-        listenBtn.onclick = () => _toggleRepeatResultAudio(audio.audio, listenBtn);
+        listenBtn.onclick = function() { _toggleRepeatResultAudio(audio.audio, listenBtn); };
     }
 }
 
@@ -122,7 +204,7 @@ function _toggleRepeatResultAudio(audioUrl, btn) {
     
     // 일시정지 상태에서 같은 오디오면 이어서 재생
     if (_repeatResultAudio && _repeatResultAudio.paused && _repeatResultAudio._srcUrl === audioUrl) {
-        _repeatResultAudio.play().catch(e => console.error('❌ [repeat-result] 재생 실패:', e));
+        _repeatResultAudio.play().catch(function(e) { console.error('❌ [repeat-result] 재생 실패:', e); });
         _setListenBtnPause(btn);
         return;
     }
@@ -133,7 +215,7 @@ function _toggleRepeatResultAudio(audioUrl, btn) {
     
     // 재생 완료 시 버튼 복원
     if (_repeatResultAudio) {
-        _repeatResultAudio.onended = () => _resetListenBtnUI(btn);
+        _repeatResultAudio.onended = function() { _resetListenBtnUI(btn); };
     }
 }
 
@@ -167,7 +249,7 @@ function playRepeatResultAudio(audioUrl) {
     // 새 오디오 재생
     _repeatResultAudio = new Audio(audioUrl);
     _repeatResultAudio._srcUrl = audioUrl;
-    _repeatResultAudio.play().catch(error => {
+    _repeatResultAudio.play().catch(function(error) {
         console.error('❌ [repeat-result] 오디오 재생 실패:', error);
     });
 }
@@ -182,7 +264,19 @@ function cleanupRepeatResult() {
         _repeatResultAudio = null;
     }
     _repeatResultCurrentIndex = 0;
+    _repeatResultMode = null;
+    _repeatScriptRevealed = false;
     _resetListenBtnUI(document.getElementById('repeatResultListenBtn'));
+
+    // 동적 요소 정리
+    var oldGuide = document.getElementById('repeatRetryGuide');
+    if (oldGuide) oldGuide.remove();
+    var oldRevealBtn = document.getElementById('repeatRevealScriptBtn');
+    if (oldRevealBtn) oldRevealBtn.remove();
+
+    // 스크립트 카드 다시 표시 (숨김 해제)
+    var contentStack = document.querySelector('.repeat-result-content-stack');
+    if (contentStack) contentStack.style.display = '';
 }
 
 // 전역 노출

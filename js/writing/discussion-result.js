@@ -100,9 +100,10 @@ function showDiscussionResult(data, mode) {
                 hintsHTML = '<div class="rewrite-hints">' +
                     '<div class="rewrite-hints-title"><i class="fas fa-lightbulb"></i> 만점 포인트를 참고하여 다시 작성해보세요</div>';
                 bullets.forEach(function(bullet) {
+                    var hintText = replaceStudentNamesInResult(bullet.ets || bullet.must || bullet.key || '', profiles);
                     hintsHTML += '<div class="rewrite-hint-item">' +
                         '<span class="rewrite-hint-badge">Bullet ' + bullet.bulletNum + '</span>' +
-                        '<span class="rewrite-hint-text">' + (bullet.ets || bullet.must || bullet.key || '') + '</span>' +
+                        '<span class="rewrite-hint-text">' + hintText + '</span>' +
                     '</div>';
                 });
                 hintsHTML += '</div>';

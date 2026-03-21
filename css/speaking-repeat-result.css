@@ -208,6 +208,54 @@
     color: #334155;
 }
 
+/* ── initial 모드: 안내문구 ── */
+.repeat-retry-guide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1.25rem;
+    background: #f5f3fa;
+    border-radius: 0.75rem;
+    color: #7c6bb0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.repeat-retry-guide i {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* ── initial 모드: 스크립트 보기 버튼 ── */
+.repeat-reveal-script-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    color: var(--primary-color, #9480c5);
+    border: 1.5px solid var(--primary-color, #9480c5);
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.repeat-reveal-script-btn:hover {
+    background: var(--primary-color, #9480c5);
+    color: #fff;
+}
+
+.repeat-reveal-script-btn i {
+    font-size: 0.875rem;
+}
+
 /* ── 반응형: 세로 스택 복귀 ── */
 @media (max-width: 768px) {
     .repeat-result-main {
@@ -246,5 +294,15 @@
 
     .repeat-result-card-body {
         font-size: 0.875rem;
+    }
+
+    .repeat-retry-guide {
+        font-size: 0.8125rem;
+        padding: 0.625rem 1rem;
+    }
+
+    .repeat-reveal-script-btn {
+        font-size: 0.8125rem;
+        padding: 0.625rem 1.25rem;
     }
 }
