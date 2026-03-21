@@ -2,7 +2,7 @@
  * tutorial.js — 온보딩 튜토리얼 모달
  * 
  * 첫 로그인 시 8페이지 가이드를 표시합니다.
- * localStorage에 완료 여부를 저장하여 두 번째 로그인부터는 표시하지 않습니다.
+ * "다시 보지 않기" 체크 시 localStorage에 저장하여 이후 표시하지 않습니다.
  */
 
 const TutorialSystem = (() => {
@@ -254,19 +254,24 @@ const TutorialSystem = (() => {
     }
 
     function close() {
-        if (overlayEl) {
-            overlayEl.classList.remove('active');
-            setTimeout(() => {
-                overlayEl.remove();
-                overlayEl = null;
-            }, 350);
+        if (!overlayEl) return;
+
+        // "다시 보지 않기" 체크 여부 확인
+        const checkbox = overlayEl.querySelector('#tutorialDontShowAgain');
+        if (checkbox && checkbox.checked) {
+            try {
+                localStorage.setItem(STORAGE_KEY, 'true');
+                console.log('📘 [튜토리얼] "다시 보지 않기" 저장됨');
+            } catch (e) {
+                console.warn('튜토리얼 완료 저장 실패:', e);
+            }
         }
-        // 완료 표시 저장
-        try {
-            localStorage.setItem(STORAGE_KEY, 'true');
-        } catch (e) {
-            console.warn('튜토리얼 완료 저장 실패:', e);
-        }
+
+        overlayEl.classList.remove('active');
+        setTimeout(() => {
+            overlayEl.remove();
+            overlayEl = null;
+        }, 350);
     }
 
     // ── 모달 DOM 생성 ──
@@ -281,11 +286,17 @@ const TutorialSystem = (() => {
                 </div>
                 <div class="tutorial-modal-body"></div>
                 <div class="tutorial-modal-footer">
-                    <div class="tutorial-page-indicators"></div>
-                    <div class="tutorial-nav-buttons">
-                        <button class="tutorial-btn tutorial-btn-prev">← 이전</button>
-                        <button class="tutorial-btn tutorial-btn-next">다음 →</button>
+                    <div class="tutorial-footer-top">
+                        <div class="tutorial-page-indicators"></div>
+                        <div class="tutorial-nav-buttons">
+                            <button class="tutorial-btn tutorial-btn-prev">← 이전</button>
+                            <button class="tutorial-btn tutorial-btn-next">다음 →</button>
+                        </div>
                     </div>
+                    <label class="tutorial-dont-show">
+                        <input type="checkbox" id="tutorialDontShowAgain">
+                        <span>다시 보지 않기</span>
+                    </label>
                 </div>
             </div>
         `;

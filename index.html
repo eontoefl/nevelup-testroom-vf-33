@@ -13,6 +13,26 @@
       src="https://js.sentry-cdn.com/9808cf61ad1ab17e40cf6249d4030b9b.min.js"
       crossorigin="anonymous"
     ></script>
+    <!-- Sentry: console.error/warn 자동 보고 -->
+    <script>
+    (function() {
+      var origError = console.error;
+      var origWarn = console.warn;
+      console.error = function() {
+        origError.apply(console, arguments);
+        if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+          var err = Array.prototype.find.call(arguments, function(a) { return a instanceof Error; });
+          Sentry.captureException(err || new Error('[console.error] ' + Array.prototype.join.call(arguments, ' ')));
+        }
+      };
+      console.warn = function() {
+        origWarn.apply(console, arguments);
+        if (typeof Sentry !== 'undefined' && Sentry.captureMessage) {
+          Sentry.captureMessage('[console.warn] ' + Array.prototype.join.call(arguments, ' '), 'warning');
+        }
+      };
+    })();
+    </script>
     <!-- Pretendard Font -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
     <!-- CACHE BUSTER: 20250125-1355 -->
@@ -211,8 +231,6 @@
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <!-- 오류 전송 시스템 (콘솔 로그 수집 — 가장 먼저 로드) -->
-    <script src="js/error-reporter.js?v=002"></script>
 </head>
 <body>
     <script>

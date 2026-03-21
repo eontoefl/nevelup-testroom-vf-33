@@ -248,9 +248,44 @@
 .tutorial-modal-footer {
     padding: 16px 28px 20px;
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-top: 1px solid #f0eef5;
+}
+
+.tutorial-footer-top {
+    display: flex;
     align-items: center;
     justify-content: space-between;
-    border-top: 1px solid #f0eef5;
+    width: 100%;
+}
+
+/* Don't show again checkbox */
+.tutorial-dont-show {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    align-self: center;
+    user-select: none;
+}
+
+.tutorial-dont-show input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #9480c5;
+    cursor: pointer;
+    margin: 0;
+}
+
+.tutorial-dont-show span {
+    font-size: 0.82rem;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.tutorial-dont-show:hover span {
+    color: #777;
 }
 
 /* Page indicators */
@@ -352,6 +387,9 @@
 
     .tutorial-modal-footer {
         padding: 12px 20px 16px;
+    }
+
+    .tutorial-footer-top {
         flex-direction: column;
         gap: 12px;
     }
