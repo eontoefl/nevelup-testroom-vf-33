@@ -2,227 +2,345 @@
 // 이메일 작성 채점 화면 로직
 // ================================================
 
+var _emailRewriteMode = null;
+var _emailDbContext = null;
+
 /**
  * 이메일 채점 화면 표시
  * @param {Object} data - 채점 데이터
+ * @param {string} mode - 'initial' | 'current'
  */
-function showEmailResult(data) {
-    console.log('📧 [이메일 채점] 결과 화면 표시:', data);
-    
-    // 필수 데이터 확인
+function showEmailResult(data, mode) {
+    console.log('📧 [이메일 채점] 결과 화면 표시');
+
     if (!data) {
         console.error('❌ 채점 데이터가 없습니다.');
         return;
     }
-    
+
+    _emailRewriteMode = mode || null;
+    _emailDbContext = data._dbContext || null;
+    var existingRewrite = data._rewrite || null;
+    var isRewriteTarget = (mode === 'initial' && !existingRewrite);
+
     // 단어 수 표시
-    const wordCountElement = document.getElementById('emailResultWordCount');
-    const wordCountFeedbackElement = document.getElementById('emailWordCountFeedback');
-    
+    var wordCountElement = document.getElementById('emailResultWordCount');
     if (wordCountElement) {
         wordCountElement.textContent = data.wordCount || 0;
     }
-    
-    // 단어 수 피드백
+
+    var wordCountFeedbackElement = document.getElementById('emailWordCountFeedback');
     if (wordCountFeedbackElement && data.wordCount) {
-        const wordCount = data.wordCount;
-        let feedbackText = '';
-        let feedbackClass = '';
-        
+        var wordCount = data.wordCount;
+        var feedbackText = '';
+        var feedbackClass = '';
+
         if (wordCount >= 100 && wordCount <= 120) {
-            // 완벽한 범위
             feedbackText = '✨ Perfect! 최적의 단어 수입니다!';
             feedbackClass = 'perfect';
         } else if (wordCount < 100) {
-            // 너무 적음
             feedbackText = '💡 100~120단어가 만점 비율이 가장 높습니다. 조금 더 작성해보세요!';
             feedbackClass = 'too-short';
         } else {
-            // 너무 많음
             feedbackText = '⚠️ 너무 많은 글은 퀄리티를 낮춥니다. 100~120단어가 충분합니다!';
             feedbackClass = 'too-long';
         }
-        
+
         wordCountFeedbackElement.textContent = feedbackText;
-        wordCountFeedbackElement.className = `word-count-feedback ${feedbackClass}`;
+        wordCountFeedbackElement.className = 'word-count-feedback ' + feedbackClass;
     }
-    
+
     // 문제 정보 표시
     if (data.question) {
-        // Scenario
-        const situationElement = document.getElementById('emailResultSituation');
+        var situationElement = document.getElementById('emailResultSituation');
         if (situationElement && (data.question.scenario || data.question.situation)) {
             situationElement.textContent = data.question.scenario || data.question.situation;
         }
-        
-        // Task
-        const taskElement = document.getElementById('emailResultTask');
+
+        var taskElement = document.getElementById('emailResultTask');
         if (taskElement && data.question.task) {
             taskElement.textContent = data.question.task;
         }
-        
-        // Instructions
+
         if (data.question.instructions && Array.isArray(data.question.instructions)) {
-            data.question.instructions.forEach((instruction, index) => {
-                const instructionElement = document.getElementById(`emailResultInstruction${index + 1}`);
+            data.question.instructions.forEach(function(instruction, index) {
+                var instructionElement = document.getElementById('emailResultInstruction' + (index + 1));
                 if (instructionElement) {
                     instructionElement.textContent = instruction;
                 }
             });
         }
-        
-        // To
-        const toElement = document.getElementById('emailResultTo');
+
+        var toElement = document.getElementById('emailResultTo');
         if (toElement && data.question.to) {
             toElement.textContent = data.question.to;
         }
-        
-        // Subject
-        const subjectElement = document.getElementById('emailResultSubject');
+
+        var subjectElement = document.getElementById('emailResultSubject');
         if (subjectElement && data.question.subject) {
             subjectElement.textContent = data.question.subject;
         }
     }
-    
-    // 내 답안 표시
-    const userAnswerElement = document.getElementById('emailResultUserAnswer');
-    if (userAnswerElement) {
-        userAnswerElement.textContent = data.userAnswer || '(답안이 없습니다)';
+
+    // ── Your Draft 영역 ──
+    var userAnswerContainer = document.getElementById('emailResultUserAnswer');
+    if (userAnswerContainer) {
+        if (isRewriteTarget) {
+            // 재작성 모드: bullet 힌트 + textarea
+            var bullets = (data.question && data.question.bullets) || [];
+            var hintsHTML = '';
+            if (bullets.length > 0) {
+                hintsHTML = '<div class="rewrite-hints">' +
+                    '<div class="rewrite-hints-title"><i class="fas fa-lightbulb"></i> 만점 포인트를 참고하여 다시 작성해보세요</div>';
+                bullets.forEach(function(bullet) {
+                    hintsHTML += '<div class="rewrite-hint-item">' +
+                        '<span class="rewrite-hint-badge">Bullet ' + bullet.bulletNum + '</span>' +
+                        '<span class="rewrite-hint-text">' + (bullet.must || bullet.key || '') + '</span>' +
+                    '</div>';
+                });
+                hintsHTML += '</div>';
+            }
+
+            userAnswerContainer.outerHTML =
+                '<div id="emailResultUserAnswer" class="rewrite-area">' +
+                    hintsHTML +
+                    '<textarea class="rewrite-textarea" id="emailRewriteTextarea" placeholder="여기에 다시 작성해보세요...">' +
+                    '</textarea>' +
+                    '<div class="rewrite-actions">' +
+                        '<span class="rewrite-wordcount" id="emailRewriteWordCount">0 words</span>' +
+                        '<button class="rewrite-save-btn" onclick="handleEmailRewriteSave()">' +
+                            '<i class="fas fa-save"></i> 저장하기' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="rewrite-feedback" id="emailRewriteFeedback"></div>' +
+                '</div>';
+
+            // textarea 단어 수 카운트
+            var textarea = document.getElementById('emailRewriteTextarea');
+            if (textarea) {
+                textarea.addEventListener('input', function() {
+                    var words = this.value.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+                    var countEl = document.getElementById('emailRewriteWordCount');
+                    if (countEl) countEl.textContent = words.length + ' words';
+                });
+            }
+        } else if (existingRewrite) {
+            // 이미 재작성 완료: 재작성본 표시
+            userAnswerContainer.textContent = existingRewrite.text || data.userAnswer || '(답안이 없습니다)';
+        } else {
+            // current 모드 또는 기본: 원본 답안 표시
+            userAnswerContainer.textContent = data.userAnswer || '(답안이 없습니다)';
+        }
     }
-    
+
     // 내 답안 메타 정보 (To, Subject)
-    const userToElement = document.getElementById('emailResultUserTo');
-    const userSubjectElement = document.getElementById('emailResultUserSubject');
+    var userToElement = document.getElementById('emailResultUserTo');
+    var userSubjectElement = document.getElementById('emailResultUserSubject');
     if (userToElement && data.question && data.question.to) {
         userToElement.textContent = data.question.to;
     }
     if (userSubjectElement && data.question && data.question.subject) {
         userSubjectElement.textContent = data.question.subject;
     }
-    
+
+    // ── Model Answer + Bullets 영역 (재작성 대상이면 잠금) ──
+    var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
+    var modelSection = answersRow ? answersRow.querySelector('.email-result-section:last-child') : null;
+    var bulletsSection = document.getElementById('emailResultBullets');
+
+    if (isRewriteTarget) {
+        // Model Answer 잠금
+        if (modelSection) modelSection.style.display = 'none';
+        if (bulletsSection) bulletsSection.parentElement.style.display = 'none';
+    } else {
+        if (modelSection) modelSection.style.display = '';
+        if (bulletsSection) bulletsSection.parentElement.style.display = '';
+    }
+
     // 모범 답안 표시 (Bullet 하이라이트 추가)
-    const sampleAnswerElement = document.getElementById('emailResultSampleAnswer');
-    if (sampleAnswerElement && data.question && data.question.sampleAnswer) {
-        // <br> 태그를 실제 줄바꿈으로 변환
-        let formattedAnswer = data.question.sampleAnswer.replace(/<br\s*\/?>/gi, '\n');
-        
-        // Bullet 하이라이트 추가
-        if (data.question.bullets && Array.isArray(data.question.bullets)) {
-            // bullets를 역순으로 처리 (긴 텍스트 먼저 처리해야 짧은 텍스트에 포함되는 문제 방지)
-            const sortedBullets = [...data.question.bullets].sort((a, b) => {
-                return (b.sample?.length || 0) - (a.sample?.length || 0);
-            });
-            
-            sortedBullets.forEach(bullet => {
-                if (bullet.sample) {
-                    // <br> 태그를 줄바꿈으로 변환한 sample 텍스트
-                    const sampleText = bullet.sample.replace(/<br\s*\/?>/gi, '\n');
-                    
-                    // 모범 답안에서 해당 부분을 찾아 하이라이트 마커 추가
-                    if (formattedAnswer.includes(sampleText)) {
-                        formattedAnswer = formattedAnswer.replace(
-                            sampleText,
-                            `{{HIGHLIGHT_START_${bullet.bulletNum}}}${sampleText}{{HIGHLIGHT_END_${bullet.bulletNum}}}`
-                        );
-                    }
-                }
-            });
-        }
-        
-        // 텍스트로 설정 후 하이라이트를 HTML로 변환
-        sampleAnswerElement.textContent = formattedAnswer;
-        let htmlContent = sampleAnswerElement.innerHTML;
-        
-        // 하이라이트 마커를 실제 HTML 요소로 변환
-        const bulletCount = data.question.bullets.length;
-        for (let i = 1; i <= bulletCount; i++) {
-            const regex = new RegExp(`\\{\\{HIGHLIGHT_START_${i}\\}\\}([\\s\\S]*?)\\{\\{HIGHLIGHT_END_${i}\\}\\}`, 'g');
-            htmlContent = htmlContent.replace(
-                regex,
-                `<span class="bullet-highlight" data-bullet="${i}" onclick="showBulletFeedback(${i}, event)">$1</span>`
-            );
-        }
-        
-        sampleAnswerElement.innerHTML = htmlContent;
-    }
-    
-    // 모범 답안 메타 정보 (To, Subject)
-    const sampleToElement = document.getElementById('emailResultSampleTo');
-    const sampleSubjectElement = document.getElementById('emailResultSampleSubject');
-    if (sampleToElement && data.question && data.question.to) {
-        sampleToElement.textContent = data.question.to;
-    }
-    if (sampleSubjectElement && data.question && data.question.subject) {
-        sampleSubjectElement.textContent = data.question.subject;
-    }
-    
-    // Bullet 피드백 데이터 저장 (전역 변수로)
+    _renderEmailSampleAnswer(data);
+
+    // Bullet 피드백 데이터 저장
     window.emailBulletsData = data.question && data.question.bullets ? data.question.bullets : [];
-    
-    // 피드백 박스는 처음에 숨김
-    const bulletsElement = document.getElementById('emailResultBullets');
-    if (bulletsElement) {
-        bulletsElement.classList.remove('show');
-        bulletsElement.innerHTML = '';
+
+    // 피드백 박스 초기화
+    if (bulletsSection) {
+        bulletsSection.classList.remove('show');
+        bulletsSection.innerHTML = '';
+    }
+
+    // Your Draft 라벨 업데이트
+    var draftLabel = answersRow ? answersRow.querySelector('.email-result-section:first-child .email-result-label') : null;
+    if (draftLabel) {
+        if (isRewriteTarget) {
+            draftLabel.textContent = 'Rewrite';
+        } else if (existingRewrite) {
+            draftLabel.textContent = 'Your Rewrite';
+        } else {
+            draftLabel.textContent = 'Your Draft';
+        }
+    }
+}
+
+/**
+ * 모범 답안 렌더링 (내부 함수)
+ */
+function _renderEmailSampleAnswer(data) {
+    var sampleAnswerElement = document.getElementById('emailResultSampleAnswer');
+    if (!sampleAnswerElement || !data.question || !data.question.sampleAnswer) return;
+
+    var formattedAnswer = data.question.sampleAnswer.replace(/<br\s*\/?>/gi, '\n');
+
+    if (data.question.bullets && Array.isArray(data.question.bullets)) {
+        var sortedBullets = data.question.bullets.slice().sort(function(a, b) {
+            return (b.sample ? b.sample.length : 0) - (a.sample ? a.sample.length : 0);
+        });
+
+        sortedBullets.forEach(function(bullet) {
+            if (bullet.sample) {
+                var sampleText = bullet.sample.replace(/<br\s*\/?>/gi, '\n');
+                if (formattedAnswer.indexOf(sampleText) !== -1) {
+                    formattedAnswer = formattedAnswer.replace(
+                        sampleText,
+                        '{{HL_S_' + bullet.bulletNum + '}}' + sampleText + '{{HL_E_' + bullet.bulletNum + '}}'
+                    );
+                }
+            }
+        });
+    }
+
+    sampleAnswerElement.textContent = formattedAnswer;
+    var htmlContent = sampleAnswerElement.innerHTML;
+
+    var bulletCount = (data.question.bullets || []).length;
+    for (var i = 1; i <= bulletCount; i++) {
+        var regex = new RegExp('\\{\\{HL_S_' + i + '\\}\\}([\\s\\S]*?)\\{\\{HL_E_' + i + '\\}\\}', 'g');
+        htmlContent = htmlContent.replace(
+            regex,
+            '<span class="bullet-highlight" data-bullet="' + i + '" onclick="showBulletFeedback(' + i + ', event)">$1</span>'
+        );
+    }
+
+    sampleAnswerElement.innerHTML = htmlContent;
+
+    // 모범 답안 메타 정보
+    var sampleToElement = document.getElementById('emailResultSampleTo');
+    var sampleSubjectElement = document.getElementById('emailResultSampleSubject');
+    if (sampleToElement && data.question.to) sampleToElement.textContent = data.question.to;
+    if (sampleSubjectElement && data.question.subject) sampleSubjectElement.textContent = data.question.subject;
+}
+
+/**
+ * 재작성 저장
+ */
+async function handleEmailRewriteSave() {
+    var textarea = document.getElementById('emailRewriteTextarea');
+    var feedbackEl = document.getElementById('emailRewriteFeedback');
+    if (!textarea) return;
+
+    var text = textarea.value.trim();
+    if (!text) {
+        if (feedbackEl) {
+            feedbackEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> 내용을 입력해주세요';
+            feedbackEl.className = 'rewrite-feedback rewrite-feedback-warn';
+        }
+        return;
+    }
+
+    var words = text.split(/\s+/).filter(function(w) { return w.length > 0; });
+    var ctx = _emailDbContext;
+    if (!ctx) {
+        if (feedbackEl) {
+            feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 저장 정보를 찾을 수 없습니다';
+            feedbackEl.className = 'rewrite-feedback rewrite-feedback-warn';
+        }
+        return;
+    }
+
+    // 저장 버튼 비활성
+    var saveBtn = document.querySelector('#emailExplainScreen .rewrite-save-btn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+
+    try {
+        // 기존 rewrite_record 가져오기 (다른 유형의 rewrite 보존)
+        var existing = await getStudyResultV3(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day);
+        var rewriteRecord = (existing && existing.rewrite_record) ? existing.rewrite_record : {};
+        rewriteRecord.email = {
+            text: text,
+            wordCount: words.length,
+            savedAt: new Date().toISOString()
+        };
+
+        await upsertRewriteRecord(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day, rewriteRecord);
+
+        if (feedbackEl) {
+            feedbackEl.innerHTML = '<i class="fas fa-check-circle"></i> 저장되었습니다!';
+            feedbackEl.className = 'rewrite-feedback rewrite-feedback-correct';
+        }
+
+        // textarea 비활성
+        textarea.disabled = true;
+
+        // 잠금 해제: Model Answer + Bullets 표시
+        var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
+        var modelSection = answersRow ? answersRow.querySelector('.email-result-section:last-child') : null;
+        var bulletsParent = document.getElementById('emailResultBullets');
+
+        setTimeout(function() {
+            if (modelSection) modelSection.style.display = '';
+            if (bulletsParent) bulletsParent.parentElement.style.display = '';
+        }, 500);
+
+    } catch (err) {
+        console.error('❌ [이메일] rewrite 저장 실패:', err);
+        if (feedbackEl) {
+            feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 저장에 실패했습니다';
+            feedbackEl.className = 'rewrite-feedback rewrite-feedback-warn';
+        }
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save"></i> 저장하기'; }
     }
 }
 
 /**
  * Bullet 피드백 표시 (하이라이트 클릭 시)
- * @param {number} bulletNum - Bullet 번호 (1, 2, 3)
  */
 function showBulletFeedback(bulletNum, event) {
-    console.log(`🎯 Bullet ${bulletNum} 클릭됨`);
-    
-    const bulletsElement = document.getElementById('emailResultBullets');
+    var bulletsElement = document.getElementById('emailResultBullets');
     if (!bulletsElement || !window.emailBulletsData) return;
-    
-    // 해당 Bullet 찾기
-    const bullet = window.emailBulletsData.find(b => b.bulletNum === bulletNum);
+
+    var bullet = window.emailBulletsData.find(function(b) { return b.bulletNum === bulletNum; });
     if (!bullet) return;
-    
-    // 모든 하이라이트의 active 클래스 제거
-    document.querySelectorAll('.bullet-highlight').forEach(highlight => {
-        highlight.classList.remove('active');
-    });
-    
-    // 클릭한 하이라이트에 active 클래스 추가
+
+    document.querySelectorAll('.bullet-highlight').forEach(function(h) { h.classList.remove('active'); });
     event.target.classList.add('active');
-    
-    // Bullet 피드백 HTML 생성 (모범답안 해당 부분 제외)
-    const bulletHtml = `
-        <span class="bullet-badge">Bullet ${bullet.bulletNum}</span>
-        <div class="bullet-section">
-            <div class="bullet-label"><i class="fas fa-thumbtack"></i> 꼭 말해야하는 부분</div>
-            ${bullet.must}
-        </div>
-        <div class="bullet-section">
-            <div class="bullet-label"><i class="fas fa-award"></i> 만점 포인트들</div>
-            ${bullet.points}
-        </div>
-        <div class="bullet-section">
-            <div class="bullet-label"><i class="fas fa-key"></i> 핵심</div>
-            <span class="key-text">${bullet.key}</span>
-        </div>
-    `;
-    
-    bulletsElement.innerHTML = bulletHtml;
+
+    bulletsElement.innerHTML =
+        '<span class="bullet-badge">Bullet ' + bullet.bulletNum + '</span>' +
+        '<div class="bullet-section">' +
+            '<div class="bullet-label"><i class="fas fa-thumbtack"></i> 꼭 말해야하는 부분</div>' +
+            bullet.must +
+        '</div>' +
+        '<div class="bullet-section">' +
+            '<div class="bullet-label"><i class="fas fa-award"></i> 만점 포인트들</div>' +
+            bullet.points +
+        '</div>' +
+        '<div class="bullet-section">' +
+            '<div class="bullet-label"><i class="fas fa-key"></i> 핵심</div>' +
+            '<span class="key-text">' + bullet.key + '</span>' +
+        '</div>';
+
     bulletsElement.classList.add('show');
-    
-    // 피드백 박스로 부드럽게 스크롤
-    setTimeout(() => {
-        bulletsElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
+    setTimeout(function() { bulletsElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
 }
 
 /**
  * 문제 보기 토글
  */
 function toggleEmailProblem() {
-    const problemDiv = document.getElementById('emailResultProblem');
-    const toggleIcon = document.getElementById('emailProblemToggleIcon');
-    const toggleButton = document.querySelector('.email-result-toggle');
-    
+    var problemDiv = document.getElementById('emailResultProblem');
+    var toggleIcon = document.getElementById('emailProblemToggleIcon');
+    var toggleButton = document.querySelector('.email-result-toggle');
+
     if (problemDiv && toggleIcon) {
         if (problemDiv.style.display === 'none') {
             problemDiv.style.display = 'block';
@@ -240,4 +358,6 @@ function toggleEmailProblem() {
 
 // 전역 노출
 window.showEmailResult = showEmailResult;
+window.handleEmailRewriteSave = handleEmailRewriteSave;
+
 console.log('✅ [Writing] email-result.js 로드 완료');
