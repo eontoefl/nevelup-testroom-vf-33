@@ -48,7 +48,7 @@ function showAnnouncementResults(data, mode) {
     let detailsHTML = '';
     
     announcementResults.forEach((setResult, setIdx) => {
-        detailsHTML += renderAnnouncementSetResult(setResult, setIdx);
+        detailsHTML += renderAnnouncementSetResult(setResult, setIdx, mode);
     });
     
     detailsContainer.innerHTML = detailsHTML;
@@ -61,7 +61,7 @@ function showAnnouncementResults(data, mode) {
 }
 
 // 세트별 결과 렌더링
-function renderAnnouncementSetResult(setResult, setIdx) {
+function renderAnnouncementSetResult(setResult, setIdx, mode) {
     const audioId = `announcement-main-audio-${setIdx}`;
     
     // audioUrl: 세트 레벨 또는 answer[0] 레벨 모두 확인
