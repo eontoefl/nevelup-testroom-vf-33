@@ -1,8 +1,9 @@
 /* ============================= */
 /* 공지사항 패널 — Ethereal 디자인  */
+/* (배너형: container 내부 normal flow) */
 /* ============================= */
 
-/* 컨테이너 */
+/* 컨테이너 — container 너비에 맞춤, 하단 여백 */
 #noticeContainer {
     display: flex;
     flex-direction: column;
@@ -12,12 +13,13 @@
                 0 4px 12px -2px rgba(0, 0, 0, 0.04);
     overflow: hidden;
     border: none;
+    margin-bottom: 2rem;
 }
 
 /* 헤더 */
 .notice-header {
     background: #9480c5;
-    padding: 18px 20px;
+    padding: 14px 20px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -34,11 +36,11 @@
     letter-spacing: -0.02em;
 }
 
-/* 리스트 */
+/* 리스트 — 가로 배치 (여러 공지를 한 줄에 나열) */
 #noticeList {
     padding: 16px;
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
@@ -53,6 +55,8 @@
     flex-direction: column;
     gap: 6px;
     border: none;
+    flex: 1 1 250px;
+    min-width: 200px;
 }
 
 .notice-item:hover {
@@ -83,7 +87,13 @@
     font-size: 13px;
 }
 
-/* 1400px 이하에서 숨김 */
-@media (max-width: 1400px) {
-    #noticeContainer { display: none !important; }
+/* 모바일 — 공지 아이템 세로 배치 */
+@media (max-width: 640px) {
+    #noticeList {
+        flex-direction: column;
+    }
+
+    .notice-item {
+        flex: 1 1 100%;
+    }
 }
