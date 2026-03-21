@@ -4,19 +4,29 @@
  * 
  * 완전 독립형: 컴포넌트 없이 데이터만으로 채점 화면을 표시합니다.
  * 오디오 재생을 자체적으로 처리합니다.
+ * 
+ * 모드:
+ *   - initial: 문제보기만 열람 가능, Model Answer 잠금,
+ *              "답변 구성하기" 45초 타이머 제공,
+ *              "모범답안 보기" 버튼으로 전체 공개
+ *   - current (또는 미지정): 기존 방식 — 전부 표시
  */
 
 // 내부 상태
 let _interviewResultData = null;
 let _interviewPlayingAudio = null;
 let _interviewPlayingIndex = null;
+let _interviewMode = null;           // 'initial' | 'current'
+let _interviewAnswersRevealed = false;
+let _interviewTimerInterval = null;
 
 /**
  * 채점 화면 표시
  * @param {Object} data - { set: { contextText, contextTranslation, videos: [...] } }
+ * @param {string} mode - 'initial' | 'current'
  */
-function showInterviewResult(data) {
-    console.log('📊 [interview-result] 채점화면 표시');
+function showInterviewResult(data, mode) {
+    console.log('📊 [interview-result] 채점화면 표시, mode=' + mode);
     
     if (!data || !data.set) {
         console.error('❌ [interview-result] 채점 데이터 없음');
@@ -24,9 +34,11 @@ function showInterviewResult(data) {
     }
     
     _interviewResultData = data;
-    const set = data.set;
+    _interviewMode = mode || 'current';
+    _interviewAnswersRevealed = false;
+    _clearInterviewTimer();
     
-    // 데이터 렌더링
+    const set = data.set;
     renderInterviewResult(set);
 }
 
@@ -41,8 +53,13 @@ function renderInterviewResult(set) {
     
     let html = '';
     
-    // 문제보기 섹션
+    // 문제보기 섹션 (항상 표시)
     html += _renderQuestionsSection(set);
+    
+    if (_interviewMode === 'initial') {
+        // initial 모드: 안내문구 + 타이머 버튼 + 모범답안 보기 버튼
+        html += _renderInitialRetrySection(set);
+    }
     
     // 모범답안 섹션 (1~4)
     for (let i = 0; i < set.videos.length; i++) {
@@ -51,7 +68,37 @@ function renderInterviewResult(set) {
     
     container.innerHTML = html;
     
-    console.log('🔗 [interview-result] 이벤트 리스너 등록 완료');
+    // initial 모드: 모범답안 섹션 숨김
+    if (_interviewMode === 'initial') {
+        _hideModelAnswerSections();
+    }
+    
+    console.log('🔗 [interview-result] 렌더링 완료');
+}
+
+/**
+ * initial 모드 — 안내문구 + 타이머 + 모범답안 보기 영역
+ * @private
+ */
+function _renderInitialRetrySection(set) {
+    return '<div class="interview-result-section interview-retry-section" id="interviewRetrySection">' +
+        '<div class="interview-retry-guide">' +
+            '<i class="fas fa-comments"></i>' +
+            '<span>문제를 보고 45초 안에 답변을 구성해보세요</span>' +
+        '</div>' +
+        '<div class="interview-retry-actions">' +
+            '<button class="interview-timer-btn" id="interviewTimerBtn" onclick="startInterviewTimer()">' +
+                '<i class="fas fa-stopwatch"></i> 답변 구성하기 (45초)' +
+            '</button>' +
+            '<div class="interview-timer-display" id="interviewTimerDisplay" style="display:none;">' +
+                '<span class="interview-timer-count" id="interviewTimerCount">45</span>' +
+                '<span class="interview-timer-label">초 남음</span>' +
+            '</div>' +
+        '</div>' +
+        '<button class="interview-reveal-btn" id="interviewRevealBtn" onclick="revealInterviewAnswers()">' +
+            '<i class="fas fa-eye"></i> 모범답안 보기' +
+        '</button>' +
+    '</div>';
 }
 
 /**
@@ -59,39 +106,30 @@ function renderInterviewResult(set) {
  * @private
  */
 function _renderQuestionsSection(set) {
-    let html = `
-        <div class="interview-result-section">
-            <div class="interview-result-toggle active" onclick="toggleInterviewQuestions()">
-                <i class="fas fa-chevron-down" id="questionsToggleIcon"></i>
-                <span>문제 보기</span>
-            </div>
-            <div id="questionsContent" class="interview-result-content" style="display: block;">
-                <div class="interview-question-block">
-                    <div class="interview-scenario">
-                        <strong>Scenario</strong>
-                        <div class="interview-scenario-text">${set.contextText}</div>
-                        <span class="interview-translation">${set.contextTranslation || ''}</span>
-                    </div>
-                </div>
-    `;
+    let html = '<div class="interview-result-section">' +
+        '<div class="interview-result-toggle active" onclick="toggleInterviewQuestions()">' +
+            '<i class="fas fa-chevron-down" id="questionsToggleIcon"></i>' +
+            '<span>문제 보기</span>' +
+        '</div>' +
+        '<div id="questionsContent" class="interview-result-content" style="display: block;">' +
+            '<div class="interview-question-block">' +
+                '<div class="interview-scenario">' +
+                    '<strong>Scenario</strong>' +
+                    '<div class="interview-scenario-text">' + set.contextText + '</div>' +
+                    '<span class="interview-translation">' + (set.contextTranslation || '') + '</span>' +
+                '</div>' +
+            '</div>';
     
-    // 문제 1~4
     for (let i = 0; i < set.videos.length; i++) {
-        const video = set.videos[i];
-        html += `
-                <div class="interview-question-block">
-                    <strong>Question ${i + 1}</strong>
-                    <span class="interview-question-text">${video.script}</span>
-                    <span class="interview-translation">${video.translation}</span>
-                </div>
-        `;
+        var video = set.videos[i];
+        html += '<div class="interview-question-block">' +
+                    '<strong>Question ' + (i + 1) + '</strong>' +
+                    '<span class="interview-question-text">' + video.script + '</span>' +
+                    '<span class="interview-translation">' + video.translation + '</span>' +
+                '</div>';
     }
     
-    html += `
-            </div>
-        </div>
-    `;
-    
+    html += '</div></div>';
     return html;
 }
 
@@ -100,67 +138,128 @@ function _renderQuestionsSection(set) {
  * @private
  */
 function _renderModelAnswerSection(set, index) {
-    const video = set.videos[index];
-    const answerId = `answer${index}`;
+    var video = set.videos[index];
+    var answerId = 'answer' + index;
     
-    let html = `
-        <div class="interview-result-section">
-            <div class="interview-result-toggle" onclick="toggleInterviewModelAnswer(${index})">
-                <i class="fas fa-chevron-down" id="${answerId}ToggleIcon"></i>
-                <span>Model Answer ${index + 1}</span>
-            </div>
-            <div id="${answerId}Content" class="interview-result-content" style="display: none;">
-                <div class="interview-audio-button">
-                    <button onclick="playInterviewModelAnswerAudio(${index})" class="interview-play-button">
-                        <i class="fas fa-volume-up"></i> 모범답안 듣기
-                    </button>
-                </div>
-                <div class="interview-model-answer">
-    `;
+    var html = '<div class="interview-result-section interview-model-section" data-answer-index="' + index + '">' +
+        '<div class="interview-result-toggle" onclick="toggleInterviewModelAnswer(' + index + ')">' +
+            '<i class="fas fa-chevron-down" id="' + answerId + 'ToggleIcon"></i>' +
+            '<span>Model Answer ' + (index + 1) + '</span>' +
+        '</div>' +
+        '<div id="' + answerId + 'Content" class="interview-result-content" style="display: none;">' +
+            '<div class="interview-audio-button">' +
+                '<button onclick="playInterviewModelAnswerAudio(' + index + ')" class="interview-play-button">' +
+                    '<i class="fas fa-volume-up"></i> 모범답안 듣기' +
+                '</button>' +
+            '</div>' +
+            '<div class="interview-model-answer">';
     
-    // 모범답안 전체 텍스트 (줄바꿈 제거, 한 문단으로)
-    const fullAnswer = video.modelAnswer.replace(/\n/g, ' ').trim();
-    const fullTranslation = video.modelAnswerTranslation.replace(/\n/g, ' ').trim();
+    // 모범답안 전체 텍스트
+    var fullAnswer = video.modelAnswer.replace(/\n/g, ' ').trim();
+    var fullTranslation = video.modelAnswerTranslation.replace(/\n/g, ' ').trim();
     
-    // 전체 텍스트에서 하이라이트 부분 찾기
-    const segments = _parseLineWithHighlights(fullAnswer, video.highlights);
+    // 하이라이트 파싱
+    var segments = _parseLineWithHighlights(fullAnswer, video.highlights);
     
-    // 모범답안 전체 (하이라이트 포함)
-    let answerHtml = '';
-    for (const segment of segments) {
+    var answerHtml = '';
+    for (var s = 0; s < segments.length; s++) {
+        var segment = segments[s];
         if (segment.isHighlight) {
-            const safeKey = segment.key.replace(/'/g, '&#39;');
-            answerHtml += `<span class="interview-highlight" data-highlight="${safeKey}" onclick="showInterviewFeedback(${index}, '${safeKey}')">${segment.text}</span>`;
+            var safeKey = segment.key.replace(/'/g, '&#39;');
+            answerHtml += '<span class="interview-highlight" data-highlight="' + safeKey + '" onclick="showInterviewFeedback(' + index + ', \'' + safeKey + '\')">' + segment.text + '</span>';
         } else {
             answerHtml += segment.text;
         }
     }
     
-    html += `
-                    <div class="interview-answer-full">
-                        <p class="interview-script">${answerHtml}</p>
-                        
-                        <!-- 해석 펼치기/접기 -->
-                        <div class="interview-translation-toggle" onclick="toggleInterviewTranslation(${index})">
-                            <i class="fas fa-chevron-down" id="translation${index}ToggleIcon"></i>
-                            <span>해석 보기</span>
-                        </div>
-                        <div id="translation${index}Content" class="interview-script-translation" style="display: none;">
-                            ${fullTranslation}
-                        </div>
-                    </div>
-    `;
+    html += '<div class="interview-answer-full">' +
+                '<p class="interview-script">' + answerHtml + '</p>' +
+                '<div class="interview-translation-toggle" onclick="toggleInterviewTranslation(' + index + ')">' +
+                    '<i class="fas fa-chevron-down" id="translation' + index + 'ToggleIcon"></i>' +
+                    '<span>해석 보기</span>' +
+                '</div>' +
+                '<div id="translation' + index + 'Content" class="interview-script-translation" style="display: none;">' +
+                    fullTranslation +
+                '</div>' +
+            '</div>';
     
-    html += `
-                </div>
-                <div id="${answerId}Feedback" class="interview-feedback" style="display: none;">
-                    <!-- 피드백이 여기 표시됨 -->
-                </div>
-            </div>
-        </div>
-    `;
+    html += '</div>' +
+            '<div id="' + answerId + 'Feedback" class="interview-feedback" style="display: none;"></div>' +
+        '</div>' +
+    '</div>';
     
     return html;
+}
+
+/**
+ * initial 모드: 모범답안 섹션 숨김
+ * @private
+ */
+function _hideModelAnswerSections() {
+    var sections = document.querySelectorAll('.interview-model-section');
+    for (var i = 0; i < sections.length; i++) {
+        sections[i].style.display = 'none';
+    }
+}
+
+/**
+ * 모범답안 전체 공개
+ */
+function revealInterviewAnswers() {
+    _interviewAnswersRevealed = true;
+    _clearInterviewTimer();
+
+    // retry 섹션 제거
+    var retrySection = document.getElementById('interviewRetrySection');
+    if (retrySection) retrySection.remove();
+
+    // 모범답안 섹션 표시
+    var sections = document.querySelectorAll('.interview-model-section');
+    for (var i = 0; i < sections.length; i++) {
+        sections[i].style.display = '';
+    }
+
+    console.log('📖 [interview-result] 모범답안 전체 공개');
+}
+
+/**
+ * 45초 타이머 시작
+ */
+function startInterviewTimer() {
+    var btn = document.getElementById('interviewTimerBtn');
+    var display = document.getElementById('interviewTimerDisplay');
+    var countEl = document.getElementById('interviewTimerCount');
+    if (!btn || !display || !countEl) return;
+
+    // 이미 진행 중이면 무시
+    if (_interviewTimerInterval) return;
+
+    btn.style.display = 'none';
+    display.style.display = 'flex';
+
+    var remaining = 45;
+    countEl.textContent = remaining;
+
+    _interviewTimerInterval = setInterval(function() {
+        remaining--;
+        countEl.textContent = remaining;
+
+        if (remaining <= 0) {
+            _clearInterviewTimer();
+            display.innerHTML = '<i class="fas fa-check-circle"></i> <span class="interview-timer-label">시간 종료! 모범답안을 확인해보세요</span>';
+        }
+    }, 1000);
+}
+
+/**
+ * 타이머 정리
+ * @private
+ */
+function _clearInterviewTimer() {
+    if (_interviewTimerInterval) {
+        clearInterval(_interviewTimerInterval);
+        _interviewTimerInterval = null;
+    }
 }
 
 /**
@@ -172,64 +271,43 @@ function _parseLineWithHighlights(line, highlights) {
         return [{ text: line, isHighlight: false }];
     }
     
-    // 긴 키부터 먼저 매칭
-    const keys = Object.keys(highlights).sort((a, b) => b.length - a.length);
+    var keys = Object.keys(highlights).sort(function(a, b) { return b.length - a.length; });
     
-    const segments = [];
-    let remainingText = line;
-    
-    // 각 하이라이트 키의 위치 찾기
-    const matches = [];
-    for (const key of keys) {
-        const index = remainingText.indexOf(key);
-        if (index !== -1) {
-            matches.push({ key, index, length: key.length });
+    var matches = [];
+    for (var k = 0; k < keys.length; k++) {
+        var key = keys[k];
+        var idx = line.indexOf(key);
+        if (idx !== -1) {
+            matches.push({ key: key, index: idx, length: key.length });
         }
     }
     
-    // 위치 순서로 정렬
-    matches.sort((a, b) => a.index - b.index);
+    matches.sort(function(a, b) { return a.index - b.index; });
     
-    // 겹치는 매칭 제거
-    const validMatches = [];
-    let lastEnd = 0;
-    for (const match of matches) {
-        if (match.index >= lastEnd) {
-            validMatches.push(match);
-            lastEnd = match.index + match.length;
+    var validMatches = [];
+    var lastEnd = 0;
+    for (var m = 0; m < matches.length; m++) {
+        if (matches[m].index >= lastEnd) {
+            validMatches.push(matches[m]);
+            lastEnd = matches[m].index + matches[m].length;
         }
     }
     
-    // 세그먼트 생성
-    let lastIndex = 0;
-    for (const match of validMatches) {
-        // 하이라이트 이전 텍스트
+    var segments = [];
+    var lastIndex = 0;
+    for (var v = 0; v < validMatches.length; v++) {
+        var match = validMatches[v];
         if (match.index > lastIndex) {
-            segments.push({
-                text: remainingText.substring(lastIndex, match.index),
-                isHighlight: false
-            });
+            segments.push({ text: line.substring(lastIndex, match.index), isHighlight: false });
         }
-        
-        // 하이라이트 텍스트
-        segments.push({
-            text: match.key,
-            key: match.key,
-            isHighlight: true
-        });
-        
+        segments.push({ text: match.key, key: match.key, isHighlight: true });
         lastIndex = match.index + match.length;
     }
     
-    // 남은 텍스트
-    if (lastIndex < remainingText.length) {
-        segments.push({
-            text: remainingText.substring(lastIndex),
-            isHighlight: false
-        });
+    if (lastIndex < line.length) {
+        segments.push({ text: line.substring(lastIndex), isHighlight: false });
     }
     
-    // 매칭이 없으면 전체를 일반 텍스트로
     if (segments.length === 0) {
         segments.push({ text: line, isHighlight: false });
     }
@@ -241,151 +319,118 @@ function _parseLineWithHighlights(line, highlights) {
 // UI 토글 함수들
 // ============================================
 
-/**
- * 문제보기 토글
- */
 function toggleInterviewQuestions() {
-    const content = document.getElementById('questionsContent');
-    const icon = document.getElementById('questionsToggleIcon');
-    const toggle = icon.closest('.interview-result-toggle');
+    var content = document.getElementById('questionsContent');
+    var icon = document.getElementById('questionsToggleIcon');
+    var toggle = icon ? icon.closest('.interview-result-toggle') : null;
     
     if (content.style.display === 'none') {
         content.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
+        if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); }
         if (toggle) toggle.classList.add('active');
     } else {
         content.style.display = 'none';
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
+        if (icon) { icon.classList.remove('fa-chevron-up'); icon.classList.add('fa-chevron-down'); }
         if (toggle) toggle.classList.remove('active');
     }
 }
 
-/**
- * 모범답안 토글
- */
 function toggleInterviewModelAnswer(index) {
-    const answerId = `answer${index}`;
-    const content = document.getElementById(`${answerId}Content`);
-    const icon = document.getElementById(`${answerId}ToggleIcon`);
-    const toggle = icon.closest('.interview-result-toggle');
+    var answerId = 'answer' + index;
+    var content = document.getElementById(answerId + 'Content');
+    var icon = document.getElementById(answerId + 'ToggleIcon');
+    var toggle = icon ? icon.closest('.interview-result-toggle') : null;
     
     if (content.style.display === 'none') {
         content.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
+        if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); }
         if (toggle) toggle.classList.add('active');
     } else {
         content.style.display = 'none';
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
+        if (icon) { icon.classList.remove('fa-chevron-up'); icon.classList.add('fa-chevron-down'); }
         if (toggle) toggle.classList.remove('active');
     }
 }
 
-/**
- * 해석 토글
- */
 function toggleInterviewTranslation(index) {
-    const content = document.getElementById(`translation${index}Content`);
-    const icon = document.getElementById(`translation${index}ToggleIcon`);
-    const toggle = icon.closest('.interview-translation-toggle');
+    var content = document.getElementById('translation' + index + 'Content');
+    var icon = document.getElementById('translation' + index + 'ToggleIcon');
+    var toggle = icon ? icon.closest('.interview-translation-toggle') : null;
     
     if (content.style.display === 'none') {
         content.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
+        if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); }
         if (toggle) toggle.classList.add('active');
     } else {
         content.style.display = 'none';
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
+        if (icon) { icon.classList.remove('fa-chevron-up'); icon.classList.add('fa-chevron-down'); }
         if (toggle) toggle.classList.remove('active');
     }
 }
 
 // ============================================
-// 오디오 재생 (독립)
+// 오디오 재생
 // ============================================
 
-/**
- * 모범답안 오디오 재생/일시정지
- */
 function playInterviewModelAnswerAudio(index) {
     if (!_interviewResultData) return;
     
-    const set = _interviewResultData.set;
-    const video = set.videos[index];
-    const button = document.querySelector(`#answer${index}Content .interview-play-button`);
+    var set = _interviewResultData.set;
+    var video = set.videos[index];
+    var button = document.querySelector('#answer' + index + 'Content .interview-play-button');
     if (!button) return;
-    const icon = button.querySelector('i');
-    const text = button.childNodes[button.childNodes.length - 1];
+    var icon = button.querySelector('i');
+    var text = button.childNodes[button.childNodes.length - 1];
     
-    // 현재 재생 중인 오디오가 같은 것이면 일시정지/재생 토글
     if (_interviewPlayingIndex === index && _interviewPlayingAudio) {
         if (_interviewPlayingAudio.paused) {
             _interviewPlayingAudio.play();
             icon.className = 'fas fa-pause';
             text.textContent = ' 일시정지';
-            console.log(`▶️ [interview-result] 모범답안 ${index + 1} 재생 재개`);
         } else {
             _interviewPlayingAudio.pause();
             icon.className = 'fas fa-volume-up';
             text.textContent = ' 모범답안 듣기';
-            console.log(`⏸️ [interview-result] 모범답안 ${index + 1} 일시정지`);
         }
         return;
     }
     
-    // 다른 오디오가 재생 중이면 중지
     if (_interviewPlayingAudio) {
         _interviewPlayingAudio.pause();
         _interviewPlayingAudio.currentTime = 0;
-        
-        // 이전 버튼 아이콘 복원
         if (_interviewPlayingIndex !== null) {
-            const prevButton = document.querySelector(`#answer${_interviewPlayingIndex}Content .interview-play-button`);
+            var prevButton = document.querySelector('#answer' + _interviewPlayingIndex + 'Content .interview-play-button');
             if (prevButton) {
-                const prevIcon = prevButton.querySelector('i');
-                const prevText = prevButton.childNodes[prevButton.childNodes.length - 1];
+                var prevIcon = prevButton.querySelector('i');
+                var prevText = prevButton.childNodes[prevButton.childNodes.length - 1];
                 prevIcon.className = 'fas fa-volume-up';
                 prevText.textContent = ' 모범답안 듣기';
             }
         }
     }
     
-    // 새 오디오 재생
     if (video.modelAnswerAudio && video.modelAnswerAudio !== 'PLACEHOLDER') {
-        console.log(`🔊 [interview-result] 모범답안 ${index + 1} 오디오 재생`);
-        
         _interviewPlayingAudio = new Audio(video.modelAnswerAudio);
         _interviewPlayingIndex = index;
         
-        // 재생 시작
         _interviewPlayingAudio.play();
         icon.className = 'fas fa-pause';
         text.textContent = ' 일시정지';
         
-        // 재생 종료 시
-        _interviewPlayingAudio.onended = () => {
+        _interviewPlayingAudio.onended = function() {
             icon.className = 'fas fa-volume-up';
             text.textContent = ' 모범답안 듣기';
             _interviewPlayingAudio = null;
             _interviewPlayingIndex = null;
-            console.log(`✅ [interview-result] 모범답안 ${index + 1} 재생 완료`);
         };
         
-        // 에러 처리
-        _interviewPlayingAudio.onerror = () => {
-            console.error(`❌ [interview-result] 모범답안 ${index + 1} 재생 실패`);
+        _interviewPlayingAudio.onerror = function() {
+            console.error('❌ [interview-result] 모범답안 재생 실패');
             icon.className = 'fas fa-volume-up';
             text.textContent = ' 모범답안 듣기';
             _interviewPlayingAudio = null;
             _interviewPlayingIndex = null;
         };
-    } else {
-        console.log('⚠️ [interview-result] 모범답안 오디오 없음');
     }
 }
 
@@ -393,39 +438,32 @@ function playInterviewModelAnswerAudio(index) {
  * 피드백 표시 (하이라이트 클릭 시)
  */
 function showInterviewFeedback(answerIndex, highlightKey) {
-    if (!highlightKey) return;
-    if (!_interviewResultData) return;
+    if (!highlightKey || !_interviewResultData) return;
     
-    const set = _interviewResultData.set;
-    const video = set.videos[answerIndex];
-    const highlights = video.highlights;
+    var set = _interviewResultData.set;
+    var video = set.videos[answerIndex];
+    var highlights = video.highlights;
     
-    // ʼ(U+02BC)와 '(일반 아포스트로피) 양쪽 다 대응
-    let feedback = highlights[highlightKey];
+    var feedback = highlights[highlightKey];
     if (!feedback) {
-        const altKey = highlightKey.replace(/'/g, 'ʼ');
+        var altKey = highlightKey.replace(/'/g, '\u02BC');
         feedback = highlights[altKey];
     }
     if (!feedback) {
-        const altKey2 = highlightKey.replace(/ʼ/g, "'");
+        var altKey2 = highlightKey.replace(/\u02BC/g, "'");
         feedback = highlights[altKey2];
     }
     if (!highlights || !feedback) return;
     
-    const feedbackDiv = document.getElementById(`answer${answerIndex}Feedback`);
+    var feedbackDiv = document.getElementById('answer' + answerIndex + 'Feedback');
     if (!feedbackDiv) return;
     
-    // 피드백 HTML 생성
-    feedbackDiv.innerHTML = `
-        <span class="interview-feedback-badge">${feedback.title}</span>
-        <div class="interview-feedback-content">
-            <p class="interview-feedback-description">${feedback.description}</p>
-        </div>
-    `;
+    feedbackDiv.innerHTML = '<span class="interview-feedback-badge">' + feedback.title + '</span>' +
+        '<div class="interview-feedback-content">' +
+            '<p class="interview-feedback-description">' + feedback.description + '</p>' +
+        '</div>';
     
     feedbackDiv.style.display = 'block';
-    
-    console.log(`💡 [interview-result] 피드백 표시: ${feedback.title}`);
 }
 
 /**
@@ -437,8 +475,11 @@ function cleanupInterviewResult() {
         _interviewPlayingAudio.pause();
         _interviewPlayingAudio = null;
     }
+    _clearInterviewTimer();
     _interviewResultData = null;
     _interviewPlayingIndex = null;
+    _interviewMode = null;
+    _interviewAnswersRevealed = false;
 }
 
 // 전역 노출
@@ -448,6 +489,7 @@ window.toggleInterviewModelAnswer = toggleInterviewModelAnswer;
 window.toggleInterviewTranslation = toggleInterviewTranslation;
 window.playInterviewModelAnswerAudio = playInterviewModelAnswerAudio;
 window.showInterviewFeedback = showInterviewFeedback;
-
+window.startInterviewTimer = startInterviewTimer;
+window.revealInterviewAnswers = revealInterviewAnswers;
 
 console.log('✅ [Speaking] interview-result.js 로드 완료');

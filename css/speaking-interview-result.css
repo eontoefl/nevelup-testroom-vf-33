@@ -345,6 +345,124 @@
     display: none;
 }
 
+/* ── initial 모드: 재풀이 안내 섹션 ── */
+#interviewExplainScreen .interview-retry-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+}
+
+#interviewExplainScreen .interview-retry-guide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: #f5f3fa;
+    border-radius: 12px;
+    color: #7c6bb0;
+    font-size: 15px;
+    font-weight: 600;
+    width: 100%;
+    text-align: center;
+}
+
+#interviewExplainScreen .interview-retry-guide i {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+#interviewExplainScreen .interview-retry-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+#interviewExplainScreen .interview-timer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: #9480c5;
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.25);
+    transition: all 0.25s ease;
+}
+
+#interviewExplainScreen .interview-timer-btn:hover {
+    background: #8570b8;
+    box-shadow: 0 6px 16px rgba(148, 128, 197, 0.35);
+    transform: translateY(-1px);
+}
+
+#interviewExplainScreen .interview-timer-btn i {
+    font-size: 14px;
+}
+
+#interviewExplainScreen .interview-timer-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 24px;
+    background: #f5f3fa;
+    border-radius: 24px;
+    font-family: inherit;
+}
+
+#interviewExplainScreen .interview-timer-display i {
+    color: #77bf7e;
+    font-size: 16px;
+}
+
+#interviewExplainScreen .interview-timer-count {
+    font-size: 24px;
+    font-weight: 800;
+    color: #9480c5;
+    font-variant-numeric: tabular-nums;
+    min-width: 28px;
+    text-align: center;
+}
+
+#interviewExplainScreen .interview-timer-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+#interviewExplainScreen .interview-reveal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 28px;
+    background: transparent;
+    color: #9480c5;
+    border: 1.5px solid #9480c5;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+#interviewExplainScreen .interview-reveal-btn:hover {
+    background: #9480c5;
+    color: #fff;
+}
+
+#interviewExplainScreen .interview-reveal-btn i {
+    font-size: 14px;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
     #interviewExplainScreen .test-content {
@@ -366,6 +484,25 @@
 
     #interviewExplainScreen .interview-play-button {
         padding: 8px 16px;
+        font-size: 13px;
+    }
+
+    #interviewExplainScreen .interview-retry-guide {
+        font-size: 13px;
+        padding: 12px 14px;
+    }
+
+    #interviewExplainScreen .interview-timer-btn {
+        padding: 8px 18px;
+        font-size: 13px;
+    }
+
+    #interviewExplainScreen .interview-timer-count {
+        font-size: 20px;
+    }
+
+    #interviewExplainScreen .interview-reveal-btn {
+        padding: 8px 20px;
         font-size: 13px;
     }
 }
