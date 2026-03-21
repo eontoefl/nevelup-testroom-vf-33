@@ -137,11 +137,12 @@ function renderSchedule(program) {
             }
             
             // 진도율 dot (ProgressTracker가 로드됐으면)
+            // done=전부완료(초록), completed>0=진행중(노란), 0=미시작(회색)
             let dotClass = 'dot-none';
             if (tasks.length > 0 && typeof ProgressTracker !== 'undefined' && ProgressTracker._loaded) {
                 const progress = ProgressTracker.getDayProgress(programType, week, dayEn);
                 if (progress.total > 0) {
-                    if (progress.completed === progress.total) {
+                    if (progress.done === progress.total) {
                         dotClass = 'dot-done';
                     } else if (progress.completed > 0) {
                         dotClass = 'dot-partial';

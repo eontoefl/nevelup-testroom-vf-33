@@ -9,7 +9,9 @@
  * 2. 과제 목록 화면: 완료 과제에 CSS 체크 아이콘 표시
  * 3. 요일별 진도 계산 (main.js에서 getDayProgress() 호출)
  * 
- * ★ 인증률(auth rate)과 독립 — 여기서는 "기록이 존재하면 완료"만 판단
+ * ★ 잔디·과제버튼과 동일 기준
+ *   - vocab/intro-book: initial_record → done
+ *   - 4대영역: initial_record → pending, +error_note → done
  */
 
 var ProgressTracker = {
@@ -135,15 +137,17 @@ var ProgressTracker = {
 
     // ========================================
     // 특정 날짜의 진도율 계산
+    // done: 완전 완료 (vocab/intro=initial, 4대영역=initial+오답노트)
+    // completed: 실전 풀이 완료 (initial_record 존재)
     // ========================================
     getDayProgress(programType, week, dayEn) {
-        if (typeof getDayTasks !== 'function') return { completed: 0, total: 0 };
+        if (typeof getDayTasks !== 'function') return { done: 0, completed: 0, total: 0 };
 
         var tasks = getDayTasks(programType, week, dayEn);
         var total = 0;
         var completed = 0;
+        var done = 0;
 
-        // 요일 영문 → 한글 매핑 (study_records의 day는 한글)
         var dayEnToKr = {
             sunday: '일', monday: '월', tuesday: '화',
             wednesday: '수', thursday: '목', friday: '금', saturday: '토'
@@ -152,27 +156,33 @@ var ProgressTracker = {
 
         tasks.forEach(function(taskName) {
             var parsed = (typeof parseTaskName === 'function') ? parseTaskName(taskName) : null;
-            if (!parsed) return;
-
-            // unknown 타입만 제외
-            if (parsed.type === 'unknown') {
-                return;
-            }
+            if (!parsed || parsed.type === 'unknown') return;
 
             total++;
 
-            // vocab, intro-book은 week_day 키로 날짜별 완료 확인
-            if (parsed.type === 'vocab' || parsed.type === 'intro-book') {
-                var wdKey = parsed.type + '_w' + week + '_' + dayKr;
-                if (ProgressTracker._completedTasks[wdKey]) {
-                    completed++;
+            var type = parsed.type;
+            var task = null;
+
+            if (type === 'vocab' || type === 'intro-book') {
+                var wdKey = type + '_w' + week + '_' + dayKr;
+                task = ProgressTracker._completedTasks[wdKey];
+                if (task) { completed++; done++; } // 오답노트 없으므로 바로 done
+            } else {
+                var key = null;
+                if (type === 'reading' || type === 'listening') {
+                    key = type + '_' + parsed.params.module;
+                } else if (type === 'writing' || type === 'speaking') {
+                    key = type + '_' + parsed.params.number;
                 }
-            } else if (ProgressTracker.isTaskNameCompleted(taskName)) {
-                completed++;
+                task = key ? ProgressTracker._completedTasks[key] : null;
+                if (task) {
+                    completed++;
+                    if (task.errorNoteSubmitted) done++;
+                }
             }
         });
 
-        return { completed: completed, total: total };
+        return { done: done, completed: completed, total: total };
     },
 
     // ========================================
