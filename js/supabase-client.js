@@ -42,6 +42,9 @@ async function supabaseRequest(endpoint, options = {}) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`❌ [Supabase] ${options.method || 'GET'} ${endpoint} 실패:`, response.status, errorText);
+            if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+                Sentry.captureException(new Error(`Supabase ${options.method || 'GET'} ${endpoint} failed: ${response.status} ${errorText}`));
+            }
             return null;
         }
 
@@ -54,6 +57,9 @@ async function supabaseRequest(endpoint, options = {}) {
 
     } catch (error) {
         console.error(`❌ [Supabase] 요청 실패:`, error);
+        if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+            Sentry.captureException(error);
+        }
         return null;
     }
 }
