@@ -1,0 +1,377 @@
+/* ====================================
+   Tutorial Modal — Onboarding Guide
+   ==================================== */
+
+/* Overlay */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tutorial-overlay.active {
+    opacity: 1;
+}
+
+/* Modal Container */
+.tutorial-modal {
+    background: #ffffff;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 720px;
+    max-height: 88vh;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(30px) scale(0.95);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tutorial-overlay.active .tutorial-modal {
+    transform: translateY(0) scale(1);
+}
+
+/* Header */
+.tutorial-modal-header {
+    padding: 24px 28px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f0eef5;
+}
+
+.tutorial-modal-header .tutorial-step-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #9480c5;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.tutorial-close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #f5f3fa;
+    color: #9480c5;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.tutorial-close-btn:hover {
+    background: #ebe7f5;
+    transform: scale(1.1);
+}
+
+/* Body */
+.tutorial-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 28px 16px;
+}
+
+/* Page Title */
+.tutorial-page-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #2d2d2d;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tutorial-page-title .tutorial-emoji {
+    font-size: 1.6rem;
+}
+
+.tutorial-page-subtitle {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* Screenshot container */
+.tutorial-screenshot-wrap {
+    margin: 16px 0;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid #f0eef5;
+    background: #fafafe;
+    position: relative;
+}
+
+.tutorial-screenshot-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Highlight badge on screenshot */
+.tutorial-highlight-badge {
+    position: absolute;
+    background: rgba(148, 128, 197, 0.85);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: tutorialPulse 2s ease-in-out infinite;
+}
+
+@keyframes tutorialPulse {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    50% { transform: scale(1.05); opacity: 1; }
+}
+
+/* Content text */
+.tutorial-content-text {
+    font-size: 0.92rem;
+    color: #444;
+    line-height: 1.7;
+    word-break: keep-all;
+}
+
+.tutorial-content-text strong {
+    color: #2d2d2d;
+    font-weight: 700;
+}
+
+.tutorial-content-text .highlight {
+    background: linear-gradient(120deg, rgba(148, 128, 197, 0.15) 0%, rgba(148, 128, 197, 0.05) 100%);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    color: #7c68b0;
+}
+
+/* Bullet list */
+.tutorial-bullet-list {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+}
+
+.tutorial-bullet-list li {
+    position: relative;
+    padding: 8px 0 8px 28px;
+    font-size: 0.9rem;
+    color: #444;
+    line-height: 1.6;
+}
+
+.tutorial-bullet-list li::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 15px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9480c5;
+}
+
+/* Dot legend */
+.tutorial-dot-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+    padding: 14px 18px;
+    background: #fafafe;
+    border-radius: 12px;
+    border: 1px solid #f0eef5;
+}
+
+.tutorial-dot-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.tutorial-dot-legend-item .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.tutorial-dot-legend-item .dot.green { background: #4caf50; }
+.tutorial-dot-legend-item .dot.orange { background: #ff9800; }
+.tutorial-dot-legend-item .dot.gray { background: #ccc; }
+.tutorial-dot-legend-item .dot.red { background: #e57373; }
+
+/* Info box */
+.tutorial-info-box {
+    background: #faf8ff;
+    border-left: 4px solid #9480c5;
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 0.87rem;
+    color: #555;
+    line-height: 1.6;
+}
+
+.tutorial-info-box.warning {
+    border-left-color: #ff9800;
+    background: #fffbf5;
+}
+
+.tutorial-info-box.danger {
+    border-left-color: #e57373;
+    background: #fff8f8;
+}
+
+/* Footer */
+.tutorial-modal-footer {
+    padding: 16px 28px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #f0eef5;
+}
+
+/* Page indicators */
+.tutorial-page-indicators {
+    display: flex;
+    gap: 6px;
+}
+
+.tutorial-page-indicators .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e0dce8;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tutorial-page-indicators .dot.active {
+    background: #9480c5;
+    width: 24px;
+    border-radius: 4px;
+}
+
+/* Navigation buttons */
+.tutorial-nav-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.tutorial-btn {
+    padding: 10px 22px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tutorial-btn-prev {
+    background: #f5f3fa;
+    color: #9480c5;
+}
+
+.tutorial-btn-prev:hover {
+    background: #ebe7f5;
+}
+
+.tutorial-btn-next {
+    background: #9480c5;
+    color: #fff;
+}
+
+.tutorial-btn-next:hover {
+    background: #7c68b0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.3);
+}
+
+.tutorial-btn-next.finish {
+    background: linear-gradient(135deg, #9480c5, #7c68b0);
+}
+
+/* Skip link */
+.tutorial-skip-link {
+    font-size: 0.8rem;
+    color: #aaa;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.tutorial-skip-link:hover {
+    color: #888;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .tutorial-modal {
+        width: 95%;
+        max-height: 92vh;
+        border-radius: 20px;
+    }
+
+    .tutorial-modal-header {
+        padding: 18px 20px 12px;
+    }
+
+    .tutorial-modal-body {
+        padding: 16px 20px 12px;
+    }
+
+    .tutorial-page-title {
+        font-size: 1.25rem;
+    }
+
+    .tutorial-modal-footer {
+        padding: 12px 20px 16px;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .tutorial-page-indicators {
+        order: 2;
+    }
+
+    .tutorial-nav-buttons {
+        order: 1;
+        width: 100%;
+    }
+
+    .tutorial-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .tutorial-dot-legend {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

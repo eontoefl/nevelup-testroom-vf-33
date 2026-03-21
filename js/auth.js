@@ -132,6 +132,10 @@ async function handleLogin(event) {
         
         setTimeout(() => {
             showScreen('scheduleScreen');
+            // 첫 로그인 시 온보딩 튜토리얼 표시
+            setTimeout(() => {
+                if (typeof TutorialSystem !== 'undefined') TutorialSystem.show();
+            }, 800);
         }, 1200);
         
     } catch (error) {
