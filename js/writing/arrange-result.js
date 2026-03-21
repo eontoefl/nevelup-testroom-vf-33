@@ -189,8 +189,8 @@ function _renderArrangeRetry(result, index, retryId, profilePair) {
             '</button>';
     });
 
-    // 정답 배열을 data 속성에 저장
-    var correctJSON = escapeHtml_writing(JSON.stringify(result.correctAnswerArray || []));
+    // 정답 배열을 data 속성에 저장 (큰따옴표를 &quot;로 치환해야 HTML 속성 충돌 방지)
+    var correctJSON = JSON.stringify(result.correctAnswerArray || []).replace(/"/g, '&quot;');
 
     return '<div class="ar-retry-area" id="' + retryId + '" data-correct="' + correctJSON + '" data-blank-count="' + blankCount + '">' +
             '<div class="ar-retry-first-answer">' +
