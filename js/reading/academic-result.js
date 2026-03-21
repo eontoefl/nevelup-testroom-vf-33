@@ -52,9 +52,13 @@ function splitToMatchTranslations_ac(cleanContent, translationCount) {
     return diffs[0].s;
 }
 
+// 현재 해설 모드 저장 (재풀이 판정용)
+var _academicExplainMode = null;
+
 // 결과 화면 표시
 // @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
-function showAcademicResults(data) {
+// @param {string} mode - 'initial' | 'current' (explain-viewer.js에서 전달)
+function showAcademicResults(data, mode) {
     console.log('📊 [아카데믹리딩] 결과 화면 표시');
     
     if (!data) {
@@ -62,6 +66,7 @@ function showAcademicResults(data) {
         return;
     }
     
+    _academicExplainMode = mode || null;
     const academicResults = data;
     
     let totalCorrect = 0;
@@ -86,7 +91,7 @@ function showAcademicResults(data) {
     let detailsHTML = '';
     
     academicResults.forEach((setResult, setIdx) => {
-        detailsHTML += renderAcademicSetResult(setResult, setIdx);
+        detailsHTML += renderAcademicSetResult(setResult, setIdx, mode);
     });
     
     detailsContainer.innerHTML = detailsHTML;
@@ -94,7 +99,7 @@ function showAcademicResults(data) {
 }
 
 // 세트별 결과 렌더링
-function renderAcademicSetResult(setResult, setIdx) {
+function renderAcademicSetResult(setResult, setIdx, mode) {
     const rawContent = setResult.passage.contentRaw || setResult.passage.content;
     const cleanContent = rawContent.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
     const translations = setResult.passage.translations || [];
@@ -124,7 +129,7 @@ function renderAcademicSetResult(setResult, setIdx) {
     
     let answersHTML = '';
     setResult.answers.forEach((answer, qIdx) => {
-        answersHTML += renderAcademicAnswers(answer, qIdx, setResult.setId || setIdx);
+        answersHTML += renderAcademicAnswers(answer, qIdx, setResult.setId || setIdx, mode);
     });
     
     return `
@@ -146,8 +151,14 @@ function renderAcademicSetResult(setResult, setIdx) {
 }
 
 // 문제별 결과 렌더링
-function renderAcademicAnswers(answer, qIdx, setId) {
+function renderAcademicAnswers(answer, qIdx, setId, mode) {
     const isCorrect = answer.isCorrect;
+    const isRetryTarget = (mode === 'initial' && !isCorrect);
+    
+    if (isRetryTarget) {
+        return _renderAcademicRetryQuestion(answer, qIdx, setId);
+    }
+    
     const correctIcon = isCorrect 
         ? '<i class="fas fa-check-circle"></i>' 
         : '<i class="fas fa-times-circle"></i>';
@@ -189,6 +200,57 @@ function renderAcademicAnswers(answer, qIdx, setId) {
             </div>
         </div>
     `;
+}
+
+// ── 재풀이 UI 렌더링 (틀린 문제 전용) ──
+function _renderAcademicRetryQuestion(answer, qIdx, setId) {
+    var retryId = 'retry-ac-' + setId + '-' + qIdx;
+    var questionNum = answer.questionNum || 'Q' + (qIdx + 1);
+    var userOpt = answer.options && answer.options[(answer.userAnswer || 0) - 1];
+    var userAnswerText = userOpt ? userOpt.label + ') ' + userOpt.text : '미응답';
+    
+    var optionBtnsHTML = '';
+    if (Array.isArray(answer.options)) {
+        answer.options.forEach(function(option, idx) {
+            var label = option.label || getLabelFromIndex(idx + 1);
+            var text = option.text || option;
+            optionBtnsHTML += '<button class="retry-option-btn" ' +
+                'data-retry-id="' + retryId + '" ' +
+                'data-selected-index="' + (idx + 1) + '" ' +
+                'data-correct-answer="' + answer.correctAnswer + '" ' +
+                'onclick="handleRetrySelect(this)">' +
+                '<span class="retry-option-label">' + label + ')</span>' +
+                '<span class="retry-option-text">' + escapeHtml(typeof text === 'string' ? text : text) + '</span>' +
+                '</button>';
+        });
+    }
+    
+    var toggleId = 'rd-toggle-' + setId + '-' + qIdx;
+    var hiddenExplanation = renderAcademicOptionsExplanation(answer, toggleId);
+    
+    return '<div class="rd-result-item incorrect" id="' + retryId + '-container">' +
+        '<div class="rd-result-icon"><i class="fas fa-times-circle"></i></div>' +
+        '<div class="rd-result-content">' +
+            '<div class="rd-question-text"><strong>' + questionNum + '.</strong> ' + escapeHtml(answer.question) + '</div>' +
+            (answer.questionTranslation ? '<div class="question-translation"><i class="fas fa-comment-dots"></i> 문제 해석: ' + escapeHtml(answer.questionTranslation) + '</div>' : '') +
+            '<div class="rd-answer-row">' +
+                '<span class="rd-answer-label">✗ 1차 답변:</span>' +
+                '<span class="rd-answer-value incorrect">' + escapeHtml(userAnswerText) + '</span>' +
+            '</div>' +
+            '<div class="retry-section" id="' + retryId + '">' +
+                '<div class="retry-header"><i class="fas fa-redo"></i> 다시 풀어보기</div>' +
+                '<div class="retry-feedback" id="' + retryId + '-feedback"></div>' +
+                '<div class="retry-options">' + optionBtnsHTML + '</div>' +
+            '</div>' +
+            '<div class="retry-locked-area" id="' + retryId + '-locked">' +
+                '<div class="rd-answer-row" id="' + retryId + '-correct-row" style="display:none;">' +
+                    '<span class="rd-answer-label">✓ 정답:</span>' +
+                    '<span class="rd-answer-value correct" id="' + retryId + '-correct-text"></span>' +
+                '</div>' +
+                '<div id="' + retryId + '-explanation" style="display:none;">' + hiddenExplanation + '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
 }
 
 // 보기 상세 해설 렌더링

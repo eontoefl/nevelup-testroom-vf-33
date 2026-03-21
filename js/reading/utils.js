@@ -91,9 +91,103 @@ function bindRdWordEvents() {
     });
 }
 
+// ============================================
+// 재풀이 (Retry) 공용 클릭 핸들러
+// 모든 객관식 result 화면에서 공유
+// ============================================
+
+/**
+ * 재풀이 보기 클릭 핸들러 (공용)
+ * data-retry-id, data-selected-index, data-correct-answer 속성 기반 동작
+ * @param {HTMLElement} btn - 클릭된 보기 버튼
+ */
+function handleRetrySelect(btn) {
+    var retryId = btn.getAttribute('data-retry-id');
+    var selectedIndex = parseInt(btn.getAttribute('data-selected-index'));
+    var correctAnswer = parseInt(btn.getAttribute('data-correct-answer'));
+    var feedbackEl = document.getElementById(retryId + '-feedback');
+
+    if (selectedIndex === correctAnswer) {
+        // ── 정답 ──
+        console.log('✅ [재풀이] 정답! retryId:', retryId);
+
+        if (feedbackEl) {
+            feedbackEl.innerHTML = '<span class="retry-feedback-correct"><i class="fas fa-check-circle"></i> 정답입니다!</span>';
+        }
+
+        // 모든 버튼 비활성
+        var allBtns = document.querySelectorAll('[data-retry-id="' + retryId + '"]');
+        allBtns.forEach(function(b) {
+            b.disabled = true;
+            b.classList.add('retry-disabled');
+            if (parseInt(b.getAttribute('data-selected-index')) === correctAnswer) {
+                b.classList.add('retry-correct-selected');
+            }
+        });
+
+        // 컨테이너 스타일 변경
+        var container = document.getElementById(retryId + '-container');
+        if (container) {
+            container.classList.remove('incorrect');
+            container.classList.add('correct');
+            var iconEl = container.querySelector('.retry-result-icon, .rd-result-icon');
+            if (iconEl) iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
+        }
+
+        // 2차 답변 표시
+        var selectedLabel = btn.querySelector('.retry-option-label').textContent;
+        var selectedText = btn.querySelector('.retry-option-text').textContent;
+        var retrySection = document.getElementById(retryId);
+        if (retrySection) {
+            var answerRow = document.createElement('div');
+            answerRow.className = 'rd-answer-row';
+            answerRow.innerHTML = '<span class="rd-answer-label">✓ 2차 답변:</span>' +
+                '<span class="rd-answer-value correct">' + escapeHtml(selectedLabel + ' ' + selectedText) + '</span>';
+            retrySection.parentNode.insertBefore(answerRow, retrySection);
+        }
+
+        // 정답 행 + 해설 공개
+        var correctRow = document.getElementById(retryId + '-correct-row');
+        var correctText = document.getElementById(retryId + '-correct-text');
+        var explanationArea = document.getElementById(retryId + '-explanation');
+
+        if (correctRow && correctText) {
+            var correctBtn = null;
+            allBtns.forEach(function(b) {
+                if (parseInt(b.getAttribute('data-selected-index')) === correctAnswer) correctBtn = b;
+            });
+            if (correctBtn) {
+                correctText.textContent = correctBtn.querySelector('.retry-option-label').textContent + ' ' + correctBtn.querySelector('.retry-option-text').textContent;
+            }
+            correctRow.style.display = '';
+        }
+        if (explanationArea) {
+            explanationArea.style.display = '';
+        }
+
+        // 재풀이 섹션 비활성
+        if (retrySection) {
+            retrySection.style.opacity = '0.5';
+            retrySection.style.pointerEvents = 'none';
+        }
+
+    } else {
+        // ── 오답 ──
+        console.log('❌ [재풀이] 오답:', selectedIndex, '정답:', correctAnswer);
+
+        if (feedbackEl) {
+            feedbackEl.innerHTML = '<span class="retry-feedback-wrong"><i class="fas fa-times-circle"></i> 다시 생각해보세요</span>';
+        }
+
+        btn.disabled = true;
+        btn.classList.add('retry-disabled', 'retry-wrong-selected');
+    }
+}
+
 // 전역 노출 — 기본
 window.escapeHtml = escapeHtml;
 window.getLabelFromIndex = getLabelFromIndex;
+window.handleRetrySelect = handleRetrySelect;
 window.toggleRdOptions = toggleRdOptions;
 window.showRdTooltip = showRdTooltip;
 window.hideRdTooltip = hideRdTooltip;

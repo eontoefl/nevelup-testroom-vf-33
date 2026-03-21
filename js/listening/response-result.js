@@ -1,8 +1,12 @@
 // Listening - 응답고르기 결과/해설 화면
 
+// 현재 해설 모드 저장
+var _responseExplainMode = null;
+
 // 결과 화면 표시
 // @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
-function showResponseResults(data) {
+// @param {string} mode - 'initial' | 'current' (explain-viewer.js에서 전달)
+function showResponseResults(data, mode) {
     console.log('📊 [응답고르기] 결과 화면 표시');
     
     if (!data) {
@@ -10,6 +14,7 @@ function showResponseResults(data) {
         return;
     }
     
+    _responseExplainMode = mode || null;
     const responseResults = data;
     
     // 전체 정답/오답 계산
@@ -79,7 +84,7 @@ function renderResponseSetResult(setResult, setIdx) {
     
     // 각 문제 렌더링
     setResult.answers.forEach((answer, qIdx) => {
-        html += renderResponseAnswer(answer, qIdx);
+        html += renderResponseAnswer(answer, qIdx, mode);
     });
     
     html += `
@@ -90,16 +95,21 @@ function renderResponseSetResult(setResult, setIdx) {
 }
 
 // 문제별 결과 렌더링
-function renderResponseAnswer(answer, qIdx) {
+function renderResponseAnswer(answer, qIdx, mode) {
     const isCorrect = answer.isCorrect;
+    const isRetryTarget = (mode === 'initial' && !isCorrect);
     const correctIcon = isCorrect 
         ? '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>' 
         : '<i class="fas fa-times-circle" style="color: var(--danger-color);"></i>';
     
     const audioId = `result-audio-${qIdx}`;
+    const retryId = 'retry-resp-' + qIdx;
+    
+    // 1차 답변 텍스트
+    var userAnswerText = answer.userAnswer ? answer.options[answer.userAnswer - 1] : '미응답';
     
     let html = `
-        <div class="response-result-item ${isCorrect ? 'correct' : 'incorrect'}">
+        <div class="response-result-item ${isCorrect ? 'correct' : 'incorrect'}" ${isRetryTarget ? 'id="' + retryId + '-container"' : ''}>
             <div class="question-header">
                 <span class="question-number">Question ${answer.questionNum}</span>
                 <span class="result-status">${correctIcon}</span>
@@ -137,12 +147,12 @@ function renderResponseAnswer(answer, qIdx) {
             
             <div class="answer-summary">
                 <div class="response-answer-row">
-                    <span class="response-answer-label">내 답변:</span>
+                    <span class="response-answer-label">${isRetryTarget ? '✗ 1차 답변:' : '내 답변:'}</span>
                     <span class="response-answer-value ${isCorrect ? 'correct' : 'incorrect'}">
-                        ${answer.userAnswer ? answer.options[answer.userAnswer - 1] : '미응답'}
+                        ${userAnswerText}
                     </span>
                 </div>
-                ${!isCorrect ? `
+                ${(!isCorrect && !isRetryTarget) ? `
                 <div class="response-answer-row">
                     <span class="response-answer-label">정답:</span>
                     <span class="response-answer-value correct">
@@ -151,8 +161,15 @@ function renderResponseAnswer(answer, qIdx) {
                 </div>
                 ` : ''}
             </div>
-            
-            ${renderResponseOptionsExplanation(answer)}
+    `;
+    
+    if (isRetryTarget) {
+        html += renderListeningRetryQuestion(answer, retryId, renderResponseOptionsExplanation, qIdx, 0);
+    } else {
+        html += renderResponseOptionsExplanation(answer);
+    }
+    
+    html += `
         </div>
     `;
     

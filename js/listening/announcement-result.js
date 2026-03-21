@@ -1,8 +1,11 @@
 // Listening - 공지사항 채점 화면 로직 (컨버와 동일)
 
+var _announcementExplainMode = null;
+
 // 결과 화면 표시
 // @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
-function showAnnouncementResults(data) {
+// @param {string} mode - 'initial' | 'current' (explain-viewer.js에서 전달)
+function showAnnouncementResults(data, mode) {
     console.log('📊 [공지사항] 결과 화면 표시');
     
     if (!data) {
@@ -10,6 +13,7 @@ function showAnnouncementResults(data) {
         return;
     }
     
+    _announcementExplainMode = mode || null;
     const announcementResults = data;
     
     // 전체 정답/오답 계산
@@ -129,7 +133,7 @@ function renderAnnouncementSetResult(setResult, setIdx) {
     
     // 각 문제 렌더링
     setResult.answers.forEach((answer, qIdx) => {
-        html += renderAnnouncementAnswer(answer, qIdx, setIdx);
+        html += renderAnnouncementAnswer(answer, qIdx, setIdx, mode);
     });
     
     // 안내문 요약 (데이터에 summaryText가 있는 경우)
@@ -245,21 +249,19 @@ function highlightAnnouncementScript(scriptText, highlights) {
 }
 
 // 문제별 답안 렌더링
-function renderAnnouncementAnswer(answer, qIdx, setIdx) {
+function renderAnnouncementAnswer(answer, qIdx, setIdx, mode) {
     const isCorrect = answer.isCorrect;
-    const statusClass = isCorrect ? 'correct' : 'incorrect';
-    const statusIcon = isCorrect ? 'fa-check-circle' : 'fa-times-circle';
-    const statusText = isCorrect ? '정답' : '오답';
-    
-    // 옵션 A, B, C, D 레이블
-    const optionLabels = ['A', 'B', 'C', 'D'];
+    const isRetryTarget = (mode === 'initial' && !isCorrect);
     
     const correctIcon = isCorrect 
         ? '<i class="fas fa-check-circle" style="color: #77bf7e;"></i>' 
         : '<i class="fas fa-times-circle" style="color: #e74c5e;"></i>';
     
-    return `
-        <div class="announce-question">
+    const retryId = 'retry-ann-' + (setIdx || 0) + '-' + qIdx;
+    var userAnswerText = answer.userAnswer ? answer.options[answer.userAnswer - 1] : '미선택';
+    
+    let html = `
+        <div class="announce-question" ${isRetryTarget ? 'id="' + retryId + '-container"' : ''}>
             <div class="announce-question-header">
                 <span class="announce-q-number">Question ${answer.questionNum || (qIdx + 1)}</span>
                 <span class="announce-q-status">${correctIcon}</span>
@@ -269,18 +271,29 @@ function renderAnnouncementAnswer(answer, qIdx, setIdx) {
             
             <div class="announce-answer-summary">
                 <div class="announce-answer-row">
-                    <span class="announce-answer-label">내 답변:</span>
-                    <span class="announce-answer-value ${isCorrect ? 'correct' : 'incorrect'}">${answer.userAnswer ? answer.options[answer.userAnswer - 1] : '미선택'}</span>
+                    <span class="announce-answer-label">${isRetryTarget ? '✗ 1차 답변:' : '내 답변:'}</span>
+                    <span class="announce-answer-value ${isCorrect ? 'correct' : 'incorrect'}">${userAnswerText}</span>
                 </div>
+                ${(!isCorrect && !isRetryTarget) ? `
                 <div class="announce-answer-row">
                     <span class="announce-answer-label">정답:</span>
                     <span class="announce-answer-value correct">${answer.options[(answer.correctAnswer || 1) - 1]}</span>
                 </div>
+                ` : ''}
             </div>
-            
-            ${renderAnnouncementOptionsExplanation(answer, qIdx, setIdx)}
+    `;
+    
+    if (isRetryTarget) {
+        html += renderListeningRetryQuestion(answer, retryId, renderAnnouncementOptionsExplanation, qIdx, setIdx);
+    } else {
+        html += renderAnnouncementOptionsExplanation(answer, qIdx, setIdx);
+    }
+    
+    html += `
         </div>
     `;
+    
+    return html;
 }
 
 // 선택지 설명 렌더링
