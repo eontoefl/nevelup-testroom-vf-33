@@ -1386,15 +1386,11 @@ body {
 #scheduleScreen > .container {
     max-width: 1152px;
     padding: 0 3rem 4rem;
-    margin-top: 3.75rem;
+    margin-top: 0;
 }
 
 #scheduleScreen > .top-nav-bar {
     padding: 1.5rem 3rem;
-}
-
-#scheduleScreen > .container {
-    padding-top: 0;
 }
 
 .schedule-header {
