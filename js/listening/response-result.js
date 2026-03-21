@@ -164,13 +164,11 @@ function renderResponseOptionsExplanation(answer) {
     const toggleId = `response-toggle-q${answer.questionNum}`;
     
     let html = `
-        <div class="options-explanation-section">
-            <button class="toggle-explanation-btn" onclick="toggleResponseOptions('${toggleId}')">
+            <button class="response-toggle-btn" onclick="toggleResponseOptions('${toggleId}')">
                 <span class="toggle-text">보기 상세 해설 펼치기</span>
-                <i class="fas fa-chevron-down"></i>
+                <i class="fas fa-chevron-down" id="${toggleId}-icon"></i>
             </button>
-            
-            <div id="${toggleId}" class="options-details" style="display: none;">
+            <div id="${toggleId}" class="response-options-details" style="display: none;">
     `;
     
     answer.options.forEach((option, idx) => {
@@ -180,12 +178,12 @@ function renderResponseOptionsExplanation(answer) {
         
         const optionLabel = String.fromCharCode(65 + idx); // A, B, C, D
         html += `
-            <div class="option-detail ${isCorrect ? 'correct' : 'incorrect'}">
-                <div class="option-text"><span class="option-marker">${optionLabel}</span>${option}</div>
-                ${translation ? `<div class="option-translation">${translation}</div>` : ''}
+            <div class="response-option ${isCorrect ? 'correct' : ''}">
+                <div class="response-option-text"><span class="response-option-marker">${optionLabel}</span>${option}</div>
+                ${translation ? `<div class="response-option-translation">${translation}</div>` : ''}
                 ${explanation ? `
-                <div class="option-explanation ${isCorrect ? 'correct' : 'incorrect'}">
-                    <strong>${isCorrect ? '정답 이유:' : '오답 이유:'}</strong>${explanation}
+                <div class="response-option-explanation ${isCorrect ? 'correct' : 'incorrect'}">
+                    <strong>${isCorrect ? '정답 이유:' : '오답 이유:'}</strong> ${explanation}
                 </div>
                 ` : ''}
             </div>
@@ -194,7 +192,6 @@ function renderResponseOptionsExplanation(answer) {
     
     html += `
             </div>
-        </div>
     `;
     
     return html;
@@ -229,8 +226,8 @@ function highlightResponseScript(scriptText, highlights) {
 // 보기 해설 토글
 function toggleResponseOptions(toggleId) {
     const content = document.getElementById(toggleId);
+    const icon = document.getElementById(toggleId + '-icon');
     const btn = content.previousElementSibling;
-    const icon = btn.querySelector('i');
     const text = btn.querySelector('.toggle-text');
     
     if (content.style.display === 'none') {
