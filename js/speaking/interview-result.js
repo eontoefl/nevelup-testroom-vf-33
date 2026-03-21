@@ -7,7 +7,7 @@
  * 
  * 모드:
  *   - initial: 문제보기만 열람 가능, Model Answer 잠금,
- *              "답변 구성하기" 45초 타이머 제공,
+ *              "45초 타이머 시작하기" + 리셋 버튼 제공,
  *              "모범답안 보기" 버튼으로 전체 공개
  *   - current (또는 미지정): 기존 방식 — 전부 표시
  */
@@ -84,15 +84,18 @@ function _renderInitialRetrySection(set) {
     return '<div class="interview-result-section interview-retry-section" id="interviewRetrySection">' +
         '<div class="interview-retry-guide">' +
             '<i class="fas fa-comments"></i>' +
-            '<span>문제를 보고 45초 안에 답변을 구성해보세요</span>' +
+            '<span>문제를 보고 45초 동안 재답변을 해보세요</span>' +
         '</div>' +
         '<div class="interview-retry-actions">' +
             '<button class="interview-timer-btn" id="interviewTimerBtn" onclick="startInterviewTimer()">' +
-                '<i class="fas fa-stopwatch"></i> 답변 구성하기 (45초)' +
+                '<i class="fas fa-stopwatch"></i> 45초 타이머 시작하기' +
             '</button>' +
             '<div class="interview-timer-display" id="interviewTimerDisplay" style="display:none;">' +
                 '<span class="interview-timer-count" id="interviewTimerCount">45</span>' +
                 '<span class="interview-timer-label">초 남음</span>' +
+                '<button class="interview-timer-reset-btn" id="interviewTimerResetBtn" onclick="resetInterviewTimer()">' +
+                    '<i class="fas fa-redo-alt"></i>' +
+                '</button>' +
             '</div>' +
         '</div>' +
         '<button class="interview-reveal-btn" id="interviewRevealBtn" onclick="revealInterviewAnswers()">' +
@@ -246,9 +249,34 @@ function startInterviewTimer() {
 
         if (remaining <= 0) {
             _clearInterviewTimer();
-            display.innerHTML = '<i class="fas fa-check-circle"></i> <span class="interview-timer-label">시간 종료! 모범답안을 확인해보세요</span>';
+            display.innerHTML = '<i class="fas fa-check-circle"></i> <span class="interview-timer-label">시간 종료! 모범답안을 확인해보세요</span>' +
+                '<button class="interview-timer-reset-btn" id="interviewTimerResetBtn" onclick="resetInterviewTimer()">' +
+                    '<i class="fas fa-redo-alt"></i>' +
+                '</button>';
         }
     }, 1000);
+}
+
+/**
+ * 타이머 리셋
+ */
+function resetInterviewTimer() {
+    _clearInterviewTimer();
+
+    var btn = document.getElementById('interviewTimerBtn');
+    var display = document.getElementById('interviewTimerDisplay');
+
+    // display가 종료 상태로 innerHTML이 바뀌었을 수 있으므로 복원
+    if (display) {
+        display.innerHTML = '<span class="interview-timer-count" id="interviewTimerCount">45</span>' +
+            '<span class="interview-timer-label">초 남음</span>' +
+            '<button class="interview-timer-reset-btn" id="interviewTimerResetBtn" onclick="resetInterviewTimer()">' +
+                '<i class="fas fa-redo-alt"></i>' +
+            '</button>';
+        display.style.display = 'none';
+    }
+
+    if (btn) btn.style.display = '';
 }
 
 /**
@@ -490,6 +518,7 @@ window.toggleInterviewTranslation = toggleInterviewTranslation;
 window.playInterviewModelAnswerAudio = playInterviewModelAnswerAudio;
 window.showInterviewFeedback = showInterviewFeedback;
 window.startInterviewTimer = startInterviewTimer;
+window.resetInterviewTimer = resetInterviewTimer;
 window.revealInterviewAnswers = revealInterviewAnswers;
 
 console.log('✅ [Speaking] interview-result.js 로드 완료');
