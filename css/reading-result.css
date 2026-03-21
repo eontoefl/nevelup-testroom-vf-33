@@ -682,6 +682,15 @@
     opacity: 1;
 }
 
+/* 잠금 영역 (정답행 + 해설) */
+.retry-locked-area {
+    margin-top: 12px;
+}
+
+.retry-locked-area .rd-answer-row {
+    font-size: 0.92rem;
+}
+
 /* 피드백 메시지 */
 .retry-feedback {
     min-height: 0;
