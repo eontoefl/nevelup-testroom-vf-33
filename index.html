@@ -382,36 +382,7 @@
             </div>
         </div>
         
-        <!-- 📢 공지사항 (top-nav-bar 왼쪽 면에 정렬, Supabase에서 동적 로드) -->
-        <div id="noticeContainer" style="
-            position: absolute;
-            left: 30px;
-            top: 80px;
-            width: 240px;
-            z-index: 10;
-        ">
-            <div class="notice-header">
-                <i class="fas fa-bullhorn"></i>
-                <span>공지사항</span>
-            </div>
-            <div id="noticeList">
-                <!-- Supabase에서 동적으로 로드됩니다 -->
-                <div class="notice-empty-msg">불러오는 중...</div>
-            </div>
-        </div>
         <script>
-        // 공지사항 너비를 user-info에 맞춤
-        function alignNoticeToUserInfo() {
-            const userInfo = document.querySelector('#scheduleScreen .top-nav-bar .user-card');
-            const notice = document.getElementById('noticeContainer');
-            if (userInfo && notice) {
-                notice.style.width = userInfo.offsetWidth + 'px';
-                notice.style.left = userInfo.getBoundingClientRect().left + 'px';
-            }
-        }
-        // alignNoticeToUserInfo는 main.js의 showScreen에서 호출됨
-        window.addEventListener('resize', alignNoticeToUserInfo);
-
         // 공지 타입 → 스타일 매핑
         const NOTICE_STYLES = {
             urgent:   { emoji: '🚨', bg: '#fef2f2', titleColor: '#dc2626', textColor: '#991b1b', glow: true },
@@ -439,16 +410,19 @@
                 }
                 if (typeof supabaseSelect !== 'function') {
                     console.warn('⚠️ supabaseSelect 미정의 (5초 대기 후) — 공지사항 로드 생략');
-                    listEl.innerHTML = '';
+                    document.getElementById('noticeContainer').style.display = 'none';
                     return;
                 }
 
                 const notices = await supabaseSelect('tr_notices', 'is_active=eq.true&order=sort_order.asc');
 
                 if (!notices || notices.length === 0) {
-                    listEl.innerHTML = '<div class="notice-empty-msg">등록된 공지가 없습니다.</div>';
+                    document.getElementById('noticeContainer').style.display = 'none';
                     return;
                 }
+
+                // 공지가 있으면 컨테이너 표시 (이전에 숨겨졌을 수 있으므로)
+                document.getElementById('noticeContainer').style.display = '';
 
                 listEl.innerHTML = notices.map(n => {
                     const s = NOTICE_STYLES[n.type] || NOTICE_STYLES.notice;
@@ -464,7 +438,7 @@
                 console.log(`📢 공지사항 ${notices.length}개 로드 완료`);
             } catch (e) {
                 console.warn('⚠️ 공지사항 로드 실패:', e.message);
-                listEl.innerHTML = '';
+                document.getElementById('noticeContainer').style.display = 'none';
             }
         }
 
@@ -474,6 +448,15 @@
         <!-- 🔔 알림 JS는 notification.js에서 로드됨 -->
 
         <div class="container" style="position: relative;">
+            <!-- 📢 공지사항 (normal flow, container 내부 배치) -->
+            <div id="noticeContainer" style="display: none;">
+                <div class="notice-header">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>공지사항</span>
+                </div>
+                <div id="noticeList"></div>
+            </div>
+
             <header class="schedule-header">
                 <div class="calendar-icon-box">
                     <i class="fas fa-calendar-days"></i>

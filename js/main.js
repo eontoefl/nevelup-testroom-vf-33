@@ -13,9 +13,8 @@ function showScreen(screenId) {
     // scheduleScreen으로 전환 시 학습 일정 초기화
     if (screenId === 'scheduleScreen' && currentUser) {
         initScheduleScreen();
-        // 공지사항 로드 + 너비 정렬
+        // 공지사항 로드
         if (typeof loadNotices === 'function') loadNotices();
-        if (typeof alignNoticeToUserInfo === 'function') setTimeout(alignNoticeToUserInfo, 100);
         // 🔔 알림 로드
         if (window.NotificationSystem) NotificationSystem.load();
     }
