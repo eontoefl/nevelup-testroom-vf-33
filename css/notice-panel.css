@@ -1,39 +1,16 @@
 /* ============================= */
 /* 공지사항 패널 — Ethereal 디자인  */
-/* (배너형: container 내부 normal flow) */
+/* (헤더 없이 흰 컨테이너 + 아이템) */
 /* ============================= */
 
-/* 컨테이너 — container 너비에 맞춤, 하단 여백 */
+/* 컨테이너 */
 #noticeContainer {
-    display: flex;
-    flex-direction: column;
     background-color: #ffffff;
     border-radius: 20px;
     box-shadow: 0 10px 30px -5px rgba(148, 128, 197, 0.12),
                 0 4px 12px -2px rgba(0, 0, 0, 0.04);
     overflow: hidden;
-    border: none;
     margin-bottom: 2rem;
-}
-
-/* 헤더 */
-.notice-header {
-    background: #9480c5;
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #ffffff;
-}
-
-.notice-header i {
-    font-size: 1.1rem;
-}
-
-.notice-header span {
-    font-weight: 700;
-    font-size: 1.1rem;
-    letter-spacing: -0.02em;
 }
 
 /* 리스트 — 가로 배치 (여러 공지를 한 줄에 나열) */
@@ -77,14 +54,6 @@
     font-weight: 600;
     color: #1a1a1a;
     word-break: keep-all;
-}
-
-/* 로딩/빈 상태 메시지 */
-.notice-empty-msg {
-    text-align: center;
-    padding: 20px 0;
-    color: #999;
-    font-size: 13px;
 }
 
 /* 모바일 — 공지 아이템 세로 배치 */
