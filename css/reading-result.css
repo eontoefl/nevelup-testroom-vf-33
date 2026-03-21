@@ -262,8 +262,8 @@
 .rd-tooltip {
     position: absolute;
     z-index: 1000;
-    background: var(--rd-white);
-    color: var(--rd-text);
+    background: #ffffff;
+    color: #2d3436;
     padding: 10px 14px;
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -277,12 +277,12 @@
 .tooltip-translation {
     font-weight: 600;
     margin-bottom: 4px;
-    color: var(--rd-text);
+    color: #2d3436;
 }
 
 .tooltip-explanation {
     font-size: 12px;
-    color: var(--rd-gray);
+    color: #636e72;
     margin-top: 4px;
     padding-top: 4px;
     border-top: 1px solid #e5e7eb;
