@@ -309,108 +309,103 @@
     color: #d94452;
 }
 
-/* ── 토글 ── */
-#responseExplainScreen .options-explanation-section {
-    padding: 0;
-}
-
-#responseExplainScreen .toggle-explanation-btn {
-    width: 100%;
+/* ── 보기 해설 토글 ── */
+#responseExplainScreen .response-toggle-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 12px 20px;
-    background: #faf9fd;
-    border: none;
-    border-top: 1px solid #f0edf5;
+    gap: 8px;
+    background: #f5f3fa;
+    border: 1px solid rgba(148,128,197,0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    width: 100%;
     cursor: pointer;
-    color: #9480c5;
+    font-family: 'Pretendard Variable', sans-serif;
     font-size: 13px;
     font-weight: 600;
-    font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
-    transition: background 0.15s;
+    color: #9480c5;
+    transition: background 0.2s;
 }
-#responseExplainScreen .toggle-explanation-btn:hover {
-    background: #f3f0fa;
+#responseExplainScreen .response-toggle-btn:hover {
+    background: #eee9f7;
 }
-#responseExplainScreen .toggle-explanation-btn i {
-    font-size: 11px;
-    transition: transform 0.25s;
+#responseExplainScreen .response-toggle-btn .toggle-text {
+    flex: 1;
+    text-align: left;
 }
 
-/* ── 보기 해설 ── */
-#responseExplainScreen .options-details {
-    padding: 4px 20px 16px;
-    display: flex;
+/* 보기 상세 */
+#responseExplainScreen .response-options-details {
+    display: none;
     flex-direction: column;
-    gap: 0;
+    gap: 10px;
+    margin-top: 10px;
 }
 
-#responseExplainScreen .option-detail {
-    padding: 12px 0;
-    border-bottom: 1px solid #f5f3fa;
-    position: relative;
-}
-#responseExplainScreen .option-detail:last-child {
-    border-bottom: none;
+#responseExplainScreen .response-option {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #f9f7ff;
+    border: 1px solid rgba(148,128,197,0.10);
 }
 
-#responseExplainScreen .option-text {
+#responseExplainScreen .response-option.correct {
+    background: #f0faf1;
+    border-color: rgba(119,191,126,0.25);
+}
+
+#responseExplainScreen .response-option-text {
     font-size: 14px;
     font-weight: 600;
     color: #1e1e2f;
-    line-height: 1.6;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
 }
 
-#responseExplainScreen .option-detail.correct .option-text {
-    color: #4a9e52;
+#responseExplainScreen .response-option-marker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #e8e4f0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9480c5;
+    flex-shrink: 0;
 }
 
-#responseExplainScreen .option-translation {
-    font-size: 13px;
-    color: #999;
-    line-height: 1.5;
+#responseExplainScreen .response-option.correct .response-option-marker {
+    background: #d4f5d6;
+    color: #3a9142;
+}
+
+#responseExplainScreen .response-option-translation {
+    font-size: 12px;
+    color: #8890a4;
     margin-bottom: 6px;
+    padding-left: 30px;
 }
 
-#responseExplainScreen .option-explanation {
-    font-size: 13px;
-    line-height: 1.7;
-    color: #666;
-    padding: 0;
-    border: none;
-    background: none;
+#responseExplainScreen .response-option-explanation {
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-left: 30px;
 }
 
-#responseExplainScreen .option-explanation strong {
-    font-weight: 700;
+#responseExplainScreen .response-option-explanation.correct {
+    background: rgba(119,191,126,0.08);
+    color: #3a9142;
 }
 
-#responseExplainScreen .option-explanation.correct {
-    color: #4a9e52;
-}
-
-#responseExplainScreen .option-explanation.incorrect {
-    color: #888;
-}
-#responseExplainScreen .option-explanation.incorrect strong {
-    color: #d94452;
-}
-
-/* 정답 뱃지 */
-#responseExplainScreen .option-detail.correct::after {
-    content: '✓ 정답';
-    position: absolute;
-    top: 12px;
-    right: 0;
-    font-size: 11px;
-    font-weight: 700;
-    color: #fff;
-    background: #77bf7e;
-    padding: 2px 10px;
-    border-radius: 20px;
+#responseExplainScreen .response-option-explanation.incorrect {
+    background: rgba(231,76,94,0.06);
+    color: #c0392b;
 }
 
 /* ── 세트 헤더 ── */
