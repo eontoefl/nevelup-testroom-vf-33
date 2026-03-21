@@ -52,9 +52,8 @@ function showConverResults(data) {
     // 오디오 리스너 초기화 (DOM 렌더링 직후)
     console.log('🔧 오디오 리스너 초기화 시작...');
     initConverResultAudioListeners();
-    console.log('✅ 오디오 리스너 초기화 완료');
-    
-    // 초기화 후 결과 데이터 정리 완료
+    if (typeof bindRdWordEvents === 'function') bindRdWordEvents();
+    console.log('✅ 컨버 결과 초기화 완료');
 }
 
 // 세트별 결과 렌더링
@@ -214,7 +213,7 @@ function highlightConverScript(scriptText, highlights) {
         
         const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
         highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="conver-keyword" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
+            return `<span class="interactive-word" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
         });
     });
     

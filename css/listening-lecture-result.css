@@ -297,36 +297,7 @@
     padding-top: 4px;
 }
 
-/* 키워드 하이라이트 */
-#lectureExplainScreen .lecture-keyword {
-    color: #9480c5;
-    font-weight: 600;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-underline-offset: 3px;
-    cursor: help;
-    position: relative;
-}
-
-#lectureExplainScreen .lecture-keyword:hover::after {
-    content: attr(data-translation) " — " attr(data-explanation);
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e1e2f;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 400;
-    white-space: nowrap;
-    max-width: 280px;
-    white-space: normal;
-    z-index: 50;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-    pointer-events: none;
-}
+/* 키워드 하이라이트 → interactive-word + rd-tooltip (reading/utils.js) 공용 */
 
 /* ── 문제 영역 구분선 ── */
 #lectureExplainScreen .lecture-questions-divider {
