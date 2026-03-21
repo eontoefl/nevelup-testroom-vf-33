@@ -678,8 +678,8 @@ function buildCompletedMap() {
         // 인증률 레벨 계산
         let level = 0;
         if (sectionType === 'vocab' || sectionType === 'intro-book') {
-            // 보카/입문서: 0 또는 3 (100%)
-            level = record.initial_record ? 3 : 0;
+            // 보카/입문서: 0 또는 2 (100%)
+            level = record.initial_record ? 2 : 0;
         } else {
             // 리딩/리스닝/라이팅/스피킹: 2단계 (디자인스펙 §4-1)
             // level 1 = 실전풀이 완료 (50%)
