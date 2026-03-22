@@ -38,7 +38,14 @@ var ProgressTracker = {
         console.log('📊 [ProgressTracker] 학습 기록 조회 시작...');
 
         try {
-            var records = await getCompletedTasksV3(user.id);
+            var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+            var records;
+            
+            if (inPractice && typeof getCompletedTasksPractice === 'function') {
+                records = await getCompletedTasksPractice(user.id);
+            } else {
+                records = await getCompletedTasksV3(user.id);
+            }
             
             // ★ markCompleted()로 캐시에 넣은 로컬 데이터 보존
             var localCache = {};
@@ -72,6 +79,19 @@ var ProgressTracker = {
                                 week: rec.week,
                                 day: rec.day,
                                 completedAt: rec.completed_at
+                            };
+                        }
+                        // 연습코스: practice_number 기반 키도 추가
+                        if (rec.practice_number) {
+                            var pKey = 'practice_' + rec.practice_number;
+                            if (!ProgressTracker._completedTasks[pKey]) {
+                                ProgressTracker._completedTasks[pKey] = { completedAt: rec.completed_at };
+                            }
+                            // 개별 과제 키 (practice_reading_13_1 등)
+                            var ptKey = 'p_' + rec.section_type + '_' + rec.module_number + '_p' + rec.practice_number;
+                            ProgressTracker._completedTasks[ptKey] = {
+                                completedAt: rec.completed_at,
+                                errorNoteSubmitted: !!rec.error_note_submitted
                             };
                         }
                     }

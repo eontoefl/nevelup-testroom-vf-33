@@ -82,17 +82,25 @@ async function startListeningModule(moduleNumber) {
     // 기준: initial_record 존재 OR 마감 지남 → current_record에 저장
     var state = window._taskDashboardState;
     var deadlinePassed = window._deadlinePassedMode || false;
-    if (deadlinePassed) {
+    var inPractice = state && state.isPractice;
+    if (deadlinePassed && !inPractice) {
         window.currentListeningModule.isRetake = true;
         console.log('🔄 다시풀기 모드 (마감 지남)');
     } else if (state) {
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
         if (user && user.id && user.id !== 'dev-user-001') {
             try {
-                var existing = await getStudyResultV3(
-                    user.id, 'listening', moduleNumber,
-                    state.week, state.day
-                );
+                var existing;
+                if (inPractice && typeof getStudyResultPractice === 'function') {
+                    existing = await getStudyResultPractice(
+                        user.id, 'listening', moduleNumber, state.practiceNumber
+                    );
+                } else {
+                    existing = await getStudyResultV3(
+                        user.id, 'listening', moduleNumber,
+                        state.week, state.day
+                    );
+                }
                 if (existing && existing.initial_record != null) {
                     window.currentListeningModule.isRetake = true;
                     console.log('🔄 다시풀기 모드 (initial_record 존재)');
@@ -564,13 +572,24 @@ async function _finishListeningModule() {
     // DB 저장
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
     var ct = window.currentTest;
+    var state2 = window._taskDashboardState || {};
+    var inPractice2 = state2.isPractice;
 
-    if (user && user.id && user.id !== 'dev-user-001' && ct) {
-        var week = ct.currentWeek;
-        var day = ct.currentDay;
+    if (user && user.id && user.id !== 'dev-user-001' && (ct || inPractice2)) {
+        var week = inPractice2 ? null : ct.currentWeek;
+        var day = inPractice2 ? null : ct.currentDay;
 
         try {
-            if (mod.isRetake) {
+            if (inPractice2) {
+                var pNum = state2.practiceNumber;
+                if (mod.isRetake) {
+                    await upsertCurrentRecordPractice(user.id, 'listening', mod.moduleNum, pNum, recordJson);
+                } else {
+                    await upsertInitialRecordPractice(user.id, 'listening', mod.moduleNum, pNum, recordJson, {
+                        initial_level: level
+                    });
+                }
+            } else if (mod.isRetake) {
                 await upsertCurrentRecord(user.id, 'listening', mod.moduleNum, week, day, recordJson);
                 console.log('💾 current_record 저장 완료');
             } else {

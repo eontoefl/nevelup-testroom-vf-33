@@ -57,10 +57,14 @@ async function openTaskDashboard(sectionType, params, taskName) {
     // 모듈 번호 추출 (reading/listening은 module, writing/speaking은 number)
     const moduleNumber = params.module || params.number || 1;
     
+    // 연습코스 여부 확인
+    var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+    var practiceNum = inPractice && window.currentPractice ? window.currentPractice.practiceNumber : null;
+    
     // 현재 스케줄 정보
     const ct = window.currentTest || {};
-    const week = ct.currentWeek || '1';
-    const day = ct.currentDay || '월';
+    const week = inPractice ? null : (ct.currentWeek || '1');
+    const day = inPractice ? null : (ct.currentDay || '월');
     
     // 대시보드 상태 저장 (다른 함수에서 참조)
     window._taskDashboardState = {
@@ -68,14 +72,18 @@ async function openTaskDashboard(sectionType, params, taskName) {
         moduleNumber: moduleNumber,
         taskName: taskName,
         week: week,
-        day: day
+        day: day,
+        isPractice: inPractice,
+        practiceNumber: practiceNum
     };
     
     // ── 헤더 업데이트 ──
     const icon = SECTION_ICONS[sectionType] || '📋';
     const label = SECTION_LABELS[sectionType] || sectionType;
     const title = `${label} 모듈 ${moduleNumber}`;
-    const subtitle = `Week ${week} - ${day}요일`;
+    const subtitle = inPractice 
+        ? `Practice ${practiceNum}`
+        : `Week ${week} - ${day}요일`;
     
     const elIcon = document.getElementById('taskDashboardIcon');
     const elTitle = document.getElementById('taskDashboardTitle');
@@ -107,16 +115,22 @@ async function openTaskDashboard(sectionType, params, taskName) {
  */
 async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day) {
     let record = null;
+    var state = window._taskDashboardState || {};
+    var inPractice = state.isPractice;
+    var practiceNum = state.practiceNumber;
     
     try {
-        // V3 DB 조회 — supabase-client.js의 getStudyResultV3() 호출
-        if (typeof getStudyResultV3 === 'function') {
-            const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-            if (user && user.id) {
+        const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+        if (user && user.id) {
+            if (inPractice && typeof getStudyResultPractice === 'function') {
+                // 연습코스 DB 조회
+                record = await getStudyResultPractice(user.id, sectionType, moduleNumber, practiceNum);
+            } else if (typeof getStudyResultV3 === 'function') {
+                // 정규코스 DB 조회
                 record = await getStudyResultV3(user.id, sectionType, moduleNumber, week, day);
+            } else {
+                console.log('📋 [대시보드] DB 함수 미구현 — 빈 상태로 표시');
             }
-        } else {
-            console.log('📋 [대시보드] getStudyResultV3 미구현 — 빈 상태로 표시');
         }
     } catch (e) {
         console.warn('📋 [대시보드] DB 조회 실패:', e);
@@ -125,12 +139,12 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
     // record에서 initial/current 존재 여부 판단
     const hasInitial = record && record.initial_record != null;
     const hasCurrent = record && record.current_record != null;
-    const deadlinePassed = window._deadlinePassedMode || false;
+    const deadlinePassed = (!inPractice) && (window._deadlinePassedMode || false);
     
     console.log('📋 [대시보드] 상태:', { hasInitial, hasCurrent, deadlinePassed });
     
-    // ── 고정인증률 확정 저장 (마감 지남 + 아직 미확정) ──
-    if (deadlinePassed && record && record.locked_auth_rate == null) {
+    // ── 고정인증률 확정 저장 (마감 지남 + 아직 미확정) — 정규코스만
+    if (!inPractice && deadlinePassed && record && record.locked_auth_rate == null) {
         await _lockAuthRate(record, hasInitial);
     }
     

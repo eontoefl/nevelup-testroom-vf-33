@@ -76,7 +76,7 @@ async function handleLogin(event) {
             return;
         }
         
-        // 2. 프로그램 정보 조회 (4주/8주) + 입금 확인 체크
+        // 2. 프로그램 정보 조회 (4주/8주) + 입금 확인 체크 + practice_enabled
         const programInfo = await getStudentProgram(email);
         
         // 수강신청 없음
@@ -104,7 +104,8 @@ async function handleLogin(event) {
             program: programInfo.program,
             programType: programType,  // 'fast' = 4주, 'standard' = 8주
             applicationId: programInfo.applicationId,
-            startDate: programInfo.startDate
+            startDate: programInfo.startDate,
+            practiceEnabled: !!programInfo.practiceEnabled  // 연습코스 활성화 여부
         };
         
         // 세션에 저장 (새로고침 시에도 유지)
@@ -209,11 +210,19 @@ function logout() {
     if (confirm('로그아웃 하시겠습니까?')) {
         currentUser = null;
         sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('courseMode');
         
         // 과제 상태 초기화
         if (typeof currentTest !== 'undefined') {
             currentTest.currentWeek = null;
             currentTest.currentDay = null;
+        }
+        // 연습코스 상태 초기화
+        if (typeof currentPractice !== 'undefined') {
+            currentPractice.practiceNumber = null;
+        }
+        if (typeof setCourseMode === 'function') {
+            setCourseMode('regular');
         }
         
         // 2차 풀이 플로팅 UI 제거

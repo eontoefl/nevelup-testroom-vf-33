@@ -530,13 +530,26 @@ async function _finishWritingModule() {
     // DB 저장
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
     var ct = window.currentTest;
+    var state2 = window._taskDashboardState || {};
+    var inPractice2 = state2.isPractice;
 
-    if (user && user.id && user.id !== 'dev-user-001' && ct) {
-        var week = ct.currentWeek;
-        var day = ct.currentDay;
+    if (user && user.id && user.id !== 'dev-user-001' && (ct || inPractice2)) {
+        var week = inPractice2 ? null : ct.currentWeek;
+        var day = inPractice2 ? null : ct.currentDay;
 
         try {
-            if (mod.isRetake) {
+            if (inPractice2) {
+                var pNum = state2.practiceNumber;
+                if (mod.isRetake) {
+                    await upsertCurrentRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
+                } else {
+                    var pExtras = {
+                        writing_email_text: mod.results.email ? mod.results.email.userAnswer : '',
+                        writing_discussion_text: mod.results.discussion ? mod.results.discussion.userAnswer : ''
+                    };
+                    await upsertInitialRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson, pExtras);
+                }
+            } else if (mod.isRetake) {
                 await upsertCurrentRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson);
                 console.log('💾 current_record 저장 완료');
             } else {

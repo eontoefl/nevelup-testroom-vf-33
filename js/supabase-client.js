@@ -186,7 +186,7 @@ async function getStudentProgram(userEmail) {
     // applications 테이블에서 가장 최근 신청서 조회 (입금확인 포함)
     const apps = await supabaseSelect(
         'applications',
-        `email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1&select=id,preferred_program,assigned_program,preferred_start_date,schedule_start,current_step,status,deposit_confirmed_by_admin`
+        `email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1&select=id,preferred_program,assigned_program,preferred_start_date,schedule_start,current_step,status,deposit_confirmed_by_admin,practice_enabled`
     );
 
     if (!apps || apps.length === 0) {
@@ -209,7 +209,8 @@ async function getStudentProgram(userEmail) {
         startDate: app.schedule_start || app.preferred_start_date,
         applicationId: app.id,
         currentStep: app.current_step,
-        status: app.status
+        status: app.status,
+        practiceEnabled: !!app.practice_enabled
     };
 }
 
@@ -381,6 +382,112 @@ async function getCompletedTasksV3(userId) {
     
     var rows = await supabaseSelect('study_results_v3', query);
     console.log('📊 [V3] 완료 과제:', (rows ? rows.length : 0) + '건');
+    return rows || [];
+}
+
+// ================================================
+// Practice 학습 결과 함수들 (study_results_practice)
+// ================================================
+// 유니크 키: (user_id, section_type, module_number, practice_number)
+
+/**
+ * Practice 학습 결과 단일 레코드 조회
+ */
+async function getStudyResultPractice(userId, sectionType, moduleNumber, practiceNumber) {
+    console.log('📖 [Practice] 학습 결과 조회:', sectionType, 'M' + moduleNumber, 'P' + practiceNumber);
+    
+    var query = 'user_id=eq.' + userId
+        + '&section_type=eq.' + encodeURIComponent(sectionType)
+        + '&module_number=eq.' + moduleNumber
+        + '&practice_number=eq.' + practiceNumber
+        + '&limit=1';
+    
+    var rows = await supabaseSelect('study_results_practice', query);
+    
+    if (!rows || rows.length === 0) {
+        console.log('📖 [Practice] 결과 없음 (첫 풀이)');
+        return null;
+    }
+    
+    console.log('📖 [Practice] 결과 발견:', rows[0].id);
+    return rows[0];
+}
+
+/**
+ * Practice 실전풀이(initial_record) 저장
+ */
+async function upsertInitialRecordPractice(userId, sectionType, moduleNumber, practiceNumber, recordJson, extras) {
+    console.log('💾 [Practice] initial_record 저장:', sectionType, 'M' + moduleNumber, 'P' + practiceNumber);
+    
+    var existing = await getStudyResultPractice(userId, sectionType, moduleNumber, practiceNumber);
+    if (existing && existing.initial_record != null) {
+        console.log('⚠️ [Practice] initial_record 이미 존재 — 덮어쓰기 방지');
+        return existing;
+    }
+    
+    var data = {
+        user_id: userId,
+        section_type: sectionType,
+        module_number: moduleNumber,
+        practice_number: practiceNumber,
+        initial_record: recordJson,
+        completed_at: new Date().toISOString()
+    };
+    
+    if (extras && typeof extras === 'object') {
+        Object.assign(data, extras);
+    }
+    
+    var result = await supabaseUpsert(
+        'study_results_practice',
+        data,
+        'user_id,section_type,module_number,practice_number'
+    );
+    
+    if (result) {
+        console.log('✅ [Practice] initial_record 저장 완료:', result.id);
+    }
+    return result;
+}
+
+/**
+ * Practice 다시풀기(current_record) 저장
+ */
+async function upsertCurrentRecordPractice(userId, sectionType, moduleNumber, practiceNumber, recordJson) {
+    console.log('💾 [Practice] current_record 저장:', sectionType, 'M' + moduleNumber, 'P' + practiceNumber);
+    
+    var data = {
+        user_id: userId,
+        section_type: sectionType,
+        module_number: moduleNumber,
+        practice_number: practiceNumber,
+        current_record: recordJson
+    };
+    
+    var result = await supabaseUpsert(
+        'study_results_practice',
+        data,
+        'user_id,section_type,module_number,practice_number'
+    );
+    
+    if (result) {
+        console.log('✅ [Practice] current_record 저장 완료:', result.id);
+    }
+    return result;
+}
+
+/**
+ * Practice 완료 과제 목록 조회 (progress-tracker용)
+ */
+async function getCompletedTasksPractice(userId) {
+    console.log('📊 [Practice] 완료 과제 목록 조회:', userId);
+    
+    var query = 'user_id=eq.' + userId
+        + '&initial_record=not.is.null'
+        + '&select=id,section_type,module_number,practice_number,error_note_submitted';
+    
+    var rows = await supabaseSelect('study_results_practice', query);
+    console.log('📊 [Practice] 완료 과제:', (rows ? rows.length : 0) + '건');
     return rows || [];
 }
 

@@ -445,7 +445,10 @@ var ErrorNote = {
 
             if (submitBtn) submitBtn.textContent = '저장 중...';
 
-            await supabaseUpdate('study_results_v3', 'id=eq.' + row.id, updateData);
+            // 연습코스 여부에 따라 테이블 분기
+            var dashState = window._taskDashboardState || {};
+            var tableName = dashState.isPractice ? 'study_results_practice' : 'study_results_v3';
+            await supabaseUpdate(tableName, 'id=eq.' + row.id, updateData);
 
             // 로컬 상태 업데이트
             if (this._activeTab === 'initial') {

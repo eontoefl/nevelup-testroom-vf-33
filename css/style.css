@@ -3533,3 +3533,106 @@ body {
     max-width: 880px;
     margin: 0 auto 16px;
 }
+
+/* ================================================
+   SEGMENT CONTROL (정규과정 / 연습코스 전환)
+   ================================================ */
+
+.course-segment-control {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 0 auto 20px;
+    max-width: 320px;
+    background: #f0edf5;
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.seg-btn {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: #888;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.seg-btn.seg-active {
+    background: #fff;
+    color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.15);
+}
+
+.seg-btn:hover:not(.seg-active) {
+    color: #666;
+}
+
+/* ================================================
+   PRACTICE SCHEDULE GRID (Practice 1~60)
+   ================================================ */
+
+.practice-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.practice-btn {
+    aspect-ratio: 1;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+}
+
+.practice-btn:hover {
+    border-color: var(--primary-color);
+    background: #f8f5ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.15);
+}
+
+.practice-btn:active {
+    transform: translateY(0);
+}
+
+.practice-btn.practice-done {
+    background: #f0fdf4;
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.practice-btn.practice-done::after {
+    content: '';
+    display: none;
+}
+
+/* 모바일 대응: 6열 */
+@media (max-width: 640px) {
+    .practice-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+    }
+    
+    .practice-btn {
+        font-size: 14px;
+        border-radius: 10px;
+    }
+}

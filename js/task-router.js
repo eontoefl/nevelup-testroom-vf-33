@@ -37,10 +37,17 @@ async function loadDeadlineExtensions() {
  * N일 과제 → N+1일 04:00 KST 마감
  * 미리 하는 건 OK, 지난 과제만 차단
  * ★ tr_deadline_extensions에 연장 기록이 있으면 extra_days만큼 마감 연장
+ * ★ 연습코스는 마감 체크 없음 (항상 false 반환)
  * 
  * @returns {boolean} true면 마감 지남 (과제 시작 불가)
  */
 function isTaskDeadlinePassed() {
+    // 연습코스는 마감 없음
+    if (typeof isPracticeMode === 'function' && isPracticeMode()) {
+        console.log('⏰ [마감] 연습코스 — 마감 체크 생략');
+        return false;
+    }
+    
     var ct = (typeof currentTest !== 'undefined') ? currentTest : window.currentTest;
     if (!ct || !ct.currentWeek || !ct.currentDay) {
         console.log('⏰ [마감] 스케줄 정보 없음 — 체크 생략');
@@ -255,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 /**
  * 과제 시작 확인 팝업 (자체 UI)
+ * 연습코스에서는 마감 관련 문구 숨김
  */
 function confirmTaskStart(taskName, onConfirm) {
     // 기존 팝업 제거
@@ -268,6 +276,14 @@ function confirmTaskStart(taskName, onConfirm) {
     overlay.id = 'taskStartOverlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;';
 
+    // 연습코스 여부
+    var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+    var bodyText = inPractice
+        ? '제한시간 20분이 바로 시작됩니다.'
+        : '제한시간 20분이 바로 시작됩니다.<br>' +
+          '첫 풀이 결과는 차트 및 포트폴리오에<br>' +
+          '<strong style="color:#ef4444;">영구 반영</strong>되며, 재시도할 수 없습니다.';
+
     // 팝업
     var popup = document.createElement('div');
     popup.id = 'taskStartPopup';
@@ -275,11 +291,7 @@ function confirmTaskStart(taskName, onConfirm) {
     popup.innerHTML = 
         '<div style="font-size:40px;margin-bottom:12px;">⚠️</div>' +
         '<h3 style="margin:0 0 16px;font-size:17px;color:#1a1a1a;line-height:1.5;">과제를 시작하시겠습니까?</h3>' +
-        '<p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.7;">' +
-            '제한시간 20분이 바로 시작됩니다.<br>' +
-            '첫 풀이 결과는 차트 및 포트폴리오에<br>' +
-            '<strong style="color:#ef4444;">영구 반영</strong>되며, 재시도할 수 없습니다.' +
-        '</p>' +
+        '<p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.7;">' + bodyText + '</p>' +
         '<div style="display:flex;gap:10px;">' +
             '<button id="taskStartBack" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:14px;font-weight:600;color:#666;cursor:pointer;">돌아가기</button>' +
             '<button id="taskStartGo" style="flex:1;padding:12px;border-radius:10px;border:none;background:#5B4A9E;font-size:14px;font-weight:600;color:#fff;cursor:pointer;">시작하기</button>' +
@@ -399,10 +411,17 @@ function _launchVocabModule(pages) {
     
     // vocab-test-logic-v2.js의 initVocabTest 함수 호출
     if (typeof initVocabTest === 'function') {
-        var ct = window.currentTest;
-        var weekId = ct ? ct.currentWeek : null;
-        var dayId = ct ? ct.currentDay : null;
-        initVocabTest(pageRange, weekId, dayId);
+        var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+        if (inPractice) {
+            // 연습코스: practiceNumber 전달
+            var pNum = window.currentPractice ? window.currentPractice.practiceNumber : null;
+            initVocabTest(pageRange, null, null, pNum);
+        } else {
+            var ct = window.currentTest;
+            var weekId = ct ? ct.currentWeek : null;
+            var dayId = ct ? ct.currentDay : null;
+            initVocabTest(pageRange, weekId, dayId);
+        }
     } else {
         console.error('❌ initVocabTest 함수를 찾을 수 없습니다.');
     }

@@ -100,7 +100,13 @@ async function openExplainViewer(sectionType, moduleNumber, week, day) {
             return;
         }
 
-        var row = await getStudyResultV3(user.id, sectionType, moduleNumber, week, day);
+        var row;
+        var dashState = window._taskDashboardState || {};
+        if (dashState.isPractice && typeof getStudyResultPractice === 'function') {
+            row = await getStudyResultPractice(user.id, sectionType, moduleNumber, dashState.practiceNumber);
+        } else {
+            row = await getStudyResultV3(user.id, sectionType, moduleNumber, week, day);
+        }
         if (!row) {
             console.log('📖 [해설] 결과 없음 (아직 풀이하지 않음)');
             _showSelectMessage('아직 풀이한 기록이 없습니다.');

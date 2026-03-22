@@ -178,12 +178,14 @@ async function loadVocabData(pageRange) {
 }
 
 // 내벨업보카 섹션 초기화
-async function initVocabTest(pageRange, weekId, dayId) {
+async function initVocabTest(pageRange, weekId, dayId, practiceNum) {
     console.log(`📚 내벨업보카 섹션 초기화 - 페이지: ${pageRange}`);
     
     // 주차/요일 정보 저장
     currentWeekId = weekId || null;
     currentDayId = dayId || null;
+    // 연습코스 practice number 저장
+    window._vocabPracticeNumber = practiceNum || null;
     
     // 데이터 로드
     await loadVocabData(pageRange);
@@ -620,7 +622,21 @@ async function saveVocabRecord(correctCount, totalCount, percentage) {
     };
 
     try {
-        if (window._deadlinePassedMode) {
+        var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+        var vocabPNum = window._vocabPracticeNumber;
+        
+        if (inPractice && vocabPNum) {
+            // 연습코스: study_results_practice에 저장
+            if (window._deadlinePassedMode) {
+                await upsertCurrentRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson);
+                console.log('📝 [Vocab] 연습코스 마감 후 → current_record 저장');
+            } else {
+                await upsertInitialRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson, {
+                    locked_auth_rate: authRate
+                });
+                console.log('📝 [Vocab] 연습코스 기록 저장 완료, 인증률:', authRate + '%');
+            }
+        } else if (window._deadlinePassedMode) {
             // 마감 후 제출 → current_record에 저장 (연습 기록, 인증률 무관)
             await upsertCurrentRecord(user.id, 'vocab', 1, scheduleInfo.week, scheduleInfo.day, recordJson);
             console.log('📝 [Vocab] 마감 후 제출 — current_record 저장 완료');

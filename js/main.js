@@ -17,6 +17,8 @@ function showScreen(screenId) {
         if (typeof loadNotices === 'function') loadNotices();
         // 🔔 알림 로드
         if (window.NotificationSystem) NotificationSystem.load();
+        // 세그먼트 컨트롤 초기화
+        _initSegmentControl();
     }
     
     // taskListScreen으로 전환 시 사용자 이름 표시
@@ -44,11 +46,31 @@ function initScheduleScreen() {
         programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 - ', '');
     }
     
-    // Supabase 스케줄 로드 → 완료 후 렌더링
+    // 코스 모드에 따라 적절한 렌더링
+    var mode = window.courseMode || 'regular';
+    if (mode === 'practice') {
+        _renderPracticeMode();
+    } else {
+        _renderRegularMode();
+    }
+}
+
+/** 정규코스 렌더링 */
+function _renderRegularMode() {
+    // 정규코스 컨테이너 표시 / 연습코스 컨테이너 숨김
+    var regularContainer = document.getElementById('scheduleContainer');
+    var practiceContainer = document.getElementById('practiceScheduleContainer');
+    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
+    if (regularContainer) regularContainer.style.display = '';
+    if (practiceContainer) practiceContainer.style.display = 'none';
+    if (scheduleHeader) {
+        scheduleHeader.querySelector('h1').textContent = 'NEVEL-UP TESTROOM';
+        scheduleHeader.querySelector('p').textContent = 'Select the desired week and day.';
+    }
+    
     const doRender = () => {
         renderSchedule(currentUser.program);
         
-        // 요일별 진도 표시용 데이터 로드 (상단 진도율 바는 제거)
         if (typeof ProgressTracker !== 'undefined') {
             ProgressTracker._loaded = false;
             ProgressTracker._loading = false;
@@ -64,6 +86,22 @@ function initScheduleScreen() {
     } else {
         doRender();
     }
+}
+
+/** 연습코스 렌더링 */
+function _renderPracticeMode() {
+    // 정규코스 컨테이너 숨김 / 연습코스 컨테이너 표시
+    var regularContainer = document.getElementById('scheduleContainer');
+    var practiceContainer = document.getElementById('practiceScheduleContainer');
+    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
+    if (regularContainer) regularContainer.style.display = 'none';
+    if (practiceContainer) practiceContainer.style.display = '';
+    if (scheduleHeader) {
+        scheduleHeader.querySelector('h1').textContent = '연습 일정';
+        scheduleHeader.querySelector('p').textContent = '원하는 Practice를 선택하세요.';
+    }
+    
+    renderPracticeSchedule();
 }
 
 function renderSchedule(program) {
@@ -193,6 +231,193 @@ function selectDay(week, dayKr, dayEn) {
     showTaskListScreen(week, dayKr, tasks);
 }
 
+// ===== PRACTICE SCHEDULE =====
+
+/**
+ * 연습코스 스케줄 그리드 렌더링 (Practice 1~60)
+ */
+function renderPracticeSchedule() {
+    var container = document.getElementById('practiceScheduleContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    console.log('📋 [연습코스] 스케줄 렌더링 시작');
+    
+    // 6줄 x 10열 그리드
+    var grid = document.createElement('div');
+    grid.className = 'practice-grid';
+    
+    for (var i = 1; i <= 60; i++) {
+        var btn = document.createElement('button');
+        btn.className = 'practice-btn';
+        btn.setAttribute('data-practice', i);
+        btn.textContent = i;
+        
+        (function(num) {
+            btn.onclick = function() {
+                selectPractice(num);
+            };
+        })(i);
+        
+        grid.appendChild(btn);
+    }
+    
+    container.appendChild(grid);
+    
+    // 진도 표시 로드
+    if (typeof ProgressTracker !== 'undefined') {
+        ProgressTracker._loaded = false;
+        ProgressTracker._loading = false;
+        ProgressTracker.loadCompletedTasks().then(function() {
+            _updatePracticeProgress();
+        });
+    }
+}
+
+/** 연습코스 버튼 진도 표시 업데이트 */
+function _updatePracticeProgress() {
+    // ProgressTracker의 practice 캠시 사용
+    var btns = document.querySelectorAll('.practice-btn');
+    btns.forEach(function(btn) {
+        var pNum = parseInt(btn.getAttribute('data-practice'));
+        var key = 'practice_' + pNum;
+        if (ProgressTracker._completedTasks && ProgressTracker._completedTasks[key]) {
+            btn.classList.add('practice-done');
+        }
+    });
+}
+
+/**
+ * 연습코스 Practice 선택
+ */
+function selectPractice(practiceNumber) {
+    if (!currentUser) return;
+    
+    console.log('🎯 [연습코스] Practice ' + practiceNumber + ' 선택');
+    
+    // currentPractice 업데이트
+    window.currentPractice.practiceNumber = practiceNumber;
+    
+    // Supabase에서 해당 practice의 과제 목록 가져오기
+    _loadPracticeTasks(practiceNumber);
+}
+
+/** Supabase에서 practice schedule 로드 */
+async function _loadPracticeTasks(practiceNumber) {
+    var tasks = [];
+    
+    try {
+        if (typeof supabaseSelect === 'function') {
+            var rows = await supabaseSelect(
+                'tr_practice_schedule',
+                'practice_number=eq.' + practiceNumber + '&limit=1'
+            );
+            if (rows && rows.length > 0) {
+                var raw = rows[0].tasks;
+                if (Array.isArray(raw)) {
+                    tasks = raw;
+                } else if (typeof raw === 'string') {
+                    try { tasks = JSON.parse(raw); } catch(e) { tasks = []; }
+                }
+            }
+        }
+    } catch (e) {
+        console.error('❌ [연습코스] 스케줄 로드 실패:', e);
+    }
+    
+    if (tasks.length === 0) {
+        alert('Practice ' + practiceNumber + '의 과제 데이터가 없습니다.');
+        return;
+    }
+    
+    // 과제 목록 화면 표시 (연습코스 전용)
+    showPracticeTaskListScreen(practiceNumber, tasks);
+}
+
+/**
+ * 연습코스 과제 목록 화면 표시
+ */
+function showPracticeTaskListScreen(practiceNumber, tasks) {
+    console.log('📋 [연습코스 과제] Practice ' + practiceNumber + ' - 과제:', tasks);
+    
+    // 모든 화면 숨기기
+    document.querySelectorAll('.screen').forEach(function(screen) {
+        screen.classList.remove('active');
+        screen.style.display = 'none';
+    });
+    
+    // taskListScreen 표시 (정규코스와 공유)
+    var taskListScreenEl = document.getElementById('taskListScreen');
+    taskListScreenEl.classList.add('active');
+    taskListScreenEl.style.display = 'block';
+    
+    // 사용자 정보 표시
+    if (currentUser) {
+        var userNameElement = document.getElementById('currentUserName');
+        var programBadgeElement = document.getElementById('currentUserProgramBadge');
+        if (userNameElement) userNameElement.textContent = currentUser.name;
+        if (programBadgeElement) programBadgeElement.textContent = 'Practice';
+    }
+    
+    // 헤더 변경
+    var welcomeHeader = document.querySelector('#taskListScreen .welcome-header h1');
+    var subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
+    
+    if (welcomeHeader) {
+        welcomeHeader.textContent = 'Practice ' + practiceNumber;
+    }
+    if (subtitle) {
+        subtitle.textContent = tasks.length + '개의 과제가 있습니다';
+    }
+    
+    // 연습코스는 마감 배너 숨김
+    var existingBanner = document.getElementById('taskListDeadlineBanner');
+    if (existingBanner) existingBanner.remove();
+    
+    // 과제 목록 표시
+    var sectionsGrid = document.querySelector('#taskListScreen .sections-grid');
+    if (sectionsGrid) {
+        sectionsGrid.innerHTML = '';
+        
+        tasks.forEach(function(taskName, index) {
+            var card = document.createElement('div');
+            card.className = 'section-card';
+            card.style.cursor = 'pointer';
+            
+            var icon = 'fas fa-book';
+            var description = taskName;
+            
+            if (taskName.includes('내벨업보카')) {
+                icon = 'fas fa-spell-check';
+                description = '단어 시험';
+            } else if (taskName.includes('리딩')) {
+                icon = 'fas fa-book-open';
+                description = '독해 연습';
+            } else if (taskName.includes('리스닝')) {
+                icon = 'fas fa-headphones';
+                description = '듣기 연습';
+            } else if (taskName.includes('라이팅')) {
+                icon = 'fas fa-pen';
+                description = '쓰기 연습';
+            } else if (taskName.includes('스피킹')) {
+                icon = 'fas fa-microphone';
+                description = '말하기 연습';
+            }
+            
+            card.onclick = function() {
+                console.log('🎯 [연습코스 과제 실행] ' + taskName);
+                executeTask(taskName);
+            };
+            
+            card.innerHTML = '<div class="card-icon"><i class="' + icon + '"></i></div>' +
+                '<h3>' + taskName + '</h3>' +
+                '<p>' + description + '</p>';
+            
+            sectionsGrid.appendChild(card);
+        });
+    }
+}
+
 /**
  * 과제 목록 화면 표시 (V3 스케줄 시스템)
  */
@@ -291,6 +516,59 @@ function showTaskListScreen(week, dayKr, tasks) {
             sectionsGrid.appendChild(card);
         });
     }
+}
+
+// ===== SEGMENT CONTROL =====
+
+/** 세그먼트 컨트롤 초기화 (정규코스 / 연습코스 토글) */
+function _initSegmentControl() {
+    var segmentWrap = document.getElementById('courseSegmentControl');
+    if (!segmentWrap) return;
+    
+    // practice_enabled이 아니면 세그먼트 컨트롤 숨김
+    if (!currentUser || !currentUser.practiceEnabled) {
+        segmentWrap.style.display = 'none';
+        // 정규코스로 강제
+        if (window.courseMode === 'practice') {
+            setCourseMode('regular');
+            _renderRegularMode();
+        }
+        return;
+    }
+    
+    segmentWrap.style.display = '';
+    
+    var btnRegular = document.getElementById('segBtnRegular');
+    var btnPractice = document.getElementById('segBtnPractice');
+    
+    // 현재 모드에 따라 active 클래스 설정
+    var mode = window.courseMode || 'regular';
+    if (btnRegular) btnRegular.classList.toggle('seg-active', mode === 'regular');
+    if (btnPractice) btnPractice.classList.toggle('seg-active', mode === 'practice');
+    
+    if (btnRegular) {
+        btnRegular.onclick = function() {
+            if (window.courseMode === 'regular') return;
+            setCourseMode('regular');
+            btnRegular.classList.add('seg-active');
+            btnPractice.classList.remove('seg-active');
+            _renderRegularMode();
+        };
+    }
+    if (btnPractice) {
+        btnPractice.onclick = function() {
+            if (window.courseMode === 'practice') return;
+            setCourseMode('practice');
+            btnPractice.classList.add('seg-active');
+            btnRegular.classList.remove('seg-active');
+            _renderPracticeMode();
+        };
+    }
+}
+
+// backToSchedule: 스케줄 화면 복귀 (공통)
+function backToSchedule() {
+    showScreen('scheduleScreen');
 }
 
 // [V3] 삭제됨: showTaskSelectionScreen, getSectionInfo, startFullTest, startSection,
