@@ -1143,13 +1143,13 @@ body {
 .login-message.success {
     background: #e8f5e9;
     color: #2e7d32;
-    border-left: 4px solid var(--success-color);
+
 }
 
 .login-message.error {
     background: #fee2e2;
     color: #991b1b;
-    border-left: 4px solid var(--danger-color);
+
 }
 
 .login-message i {
