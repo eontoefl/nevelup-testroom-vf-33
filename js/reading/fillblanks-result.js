@@ -43,7 +43,8 @@ function showFillBlanksExplainScreen(data, mode) {
         var answerMap = {};
         setResult.answers.forEach(function(answer) {
             answerMap[answer.blankId] = answer;
-            _fbAnswerMap[setResult.setId + '_' + answer.blankId] = answer;
+            var entry = { answer: answer, retryCount: 0 };
+            _fbAnswerMap[setResult.setId + '_' + answer.blankId] = entry;
         });
 
         detailsHTML +=
@@ -262,8 +263,8 @@ function handleFbRetrySubmit(setId, blankId) {
     }
 
     // 원본 record 데이터에서 정답 가져오기
-    var answerData = _fbAnswerMap[setId + '_' + blankId];
-    var correctAnswer = answerData ? answerData.correctAnswer : '';
+    var entry = _fbAnswerMap[setId + '_' + blankId];
+    var correctAnswer = entry ? entry.answer.correctAnswer : '';
 
     var isCorrect = userValue.toLowerCase() === correctAnswer.toLowerCase();
 
@@ -297,15 +298,81 @@ function handleFbRetrySubmit(setId, blankId) {
             }
         }
     } else {
-        // 오답 → 다시 시도
+        // 오답 → 시도 횟수 증가
+        if (entry) entry.retryCount++;
+        var count = entry ? entry.retryCount : 0;
+
         if (feedbackEl) {
-            feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 다시 생각해보세요';
+            feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 다시 생각해보세요 (' + count + '/3)';
             feedbackEl.className = 'fb-retry-feedback fb-retry-feedback-wrong';
         }
+
+        // 3회 실패 → 정답 보기 버튼 표시
+        if (count >= 3) {
+            var revealBtnId = 'fb_reveal_' + setId + '_' + blankId;
+            if (!document.getElementById(revealBtnId) && retryArea) {
+                var revealBtn = document.createElement('button');
+                revealBtn.id = revealBtnId;
+                revealBtn.className = 'fb-retry-reveal';
+                revealBtn.innerHTML = '<i class="fas fa-eye"></i> 정답 보기';
+                revealBtn.onclick = function() {
+                    handleFbRevealAnswer(setId, blankId);
+                };
+                // feedback 아래에 삽입
+                feedbackEl.parentNode.insertBefore(revealBtn, feedbackEl.nextSibling);
+            }
+        }
+
         // 입력 초기화
         inputs.forEach(function(inp) { inp.value = ''; });
         if (inputs[0]) inputs[0].focus();
     }
+}
+
+// ── 정답 보기 핸들러 ──
+
+function handleFbRevealAnswer(setId, blankId) {
+    var entry = _fbAnswerMap[setId + '_' + blankId];
+    if (!entry) return;
+
+    var retryArea = document.getElementById('fb_retry_' + setId + '_' + blankId);
+    var explainContent = document.getElementById('fb_explain_' + setId + '_' + blankId);
+
+    // 입력칸에 정답 채우기
+    var container = document.querySelector('.fb-retry-inputs[data-set-id="' + setId + '"][data-blank-id="' + blankId + '"]');
+    if (container) {
+        var inputs = container.querySelectorAll('.fb-retry-char');
+        var correctAnswer = entry.answer.correctAnswer;
+        inputs.forEach(function(inp, i) {
+            inp.value = correctAnswer[i] || '';
+            inp.disabled = true;
+        });
+    }
+
+    // 확인 버튼 비활성화
+    var submitBtn = retryArea ? retryArea.querySelector('.fb-retry-submit') : null;
+    if (submitBtn) submitBtn.disabled = true;
+
+    // 정답 보기 버튼 비활성화
+    var revealBtn = document.getElementById('fb_reveal_' + setId + '_' + blankId);
+    if (revealBtn) {
+        revealBtn.disabled = true;
+        revealBtn.innerHTML = '<i class="fas fa-eye"></i> 정답이 입력되었습니다';
+    }
+
+    // 피드백 메시지
+    var feedbackEl = document.getElementById('fb_feedback_' + setId + '_' + blankId);
+    if (feedbackEl) {
+        feedbackEl.innerHTML = '<i class="fas fa-info-circle"></i> 정답을 확인하세요';
+        feedbackEl.className = 'fb-retry-feedback fb-retry-feedback-reveal';
+    }
+
+    // 잠금 메시지 숨김
+    var lockedEl = retryArea ? retryArea.querySelector('.fb-retry-locked') : null;
+    if (lockedEl) lockedEl.style.display = 'none';
+
+    // 해설 표시
+    if (explainContent) explainContent.style.display = '';
 }
 
 // ── 빈칸 해설 토글 ──
@@ -348,6 +415,7 @@ window.showFillBlanksExplainScreen = showFillBlanksExplainScreen;
 window.toggleBlankExplanation = toggleBlankExplanation;
 window.closeBlankExplanation = closeBlankExplanation;
 window.handleFbRetrySubmit = handleFbRetrySubmit;
+window.handleFbRevealAnswer = handleFbRevealAnswer;
 window.handleFbRetryInput = handleFbRetryInput;
 window.handleFbRetryKeydown = handleFbRetryKeydown;
 
