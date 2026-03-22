@@ -4,6 +4,7 @@
 
 // 모듈 스코프 변수
 var _fbRetryMode = null; // 'initial' | 'current' | null
+var _fbAnswerMap = {};   // 정답 데이터 저장 { 'setId_blankId': answer }
 
 // 정답채점 결과 화면 표시
 // @param {Array} data - 세트별 결과 배열 (explain-viewer.js에서 전달)
@@ -36,10 +37,13 @@ function showFillBlanksExplainScreen(data, mode) {
     var detailsContainer = document.getElementById('resultDetails');
     var detailsHTML = '';
 
+    _fbAnswerMap = {}; // 초기화
+
     fillBlanksResults.forEach(function(setResult, setIndex) {
         var answerMap = {};
         setResult.answers.forEach(function(answer) {
             answerMap[answer.blankId] = answer;
+            _fbAnswerMap[setResult.setId + '_' + answer.blankId] = answer;
         });
 
         detailsHTML +=
@@ -257,24 +261,9 @@ function handleFbRetrySubmit(setId, blankId) {
         return;
     }
 
-    // 정답 가져오기: DOM의 해설 영역에서 추출
-    var correctWord = '';
-    if (explainContent) {
-        var wordEl = explainContent.querySelector('.correct-word');
-        if (wordEl) correctWord = wordEl.textContent.trim();
-    }
-
-    // prefix 제거하여 정답 부분만 비교
-    var blankSpan = document.querySelector('.result-blank[data-blank-id="' + blankId + '"]');
-    var prefix = '';
-    if (blankSpan) {
-        var givenEl = blankSpan.querySelector('.blank-given');
-        if (givenEl) prefix = givenEl.textContent;
-    }
-    var correctAnswer = correctWord;
-    if (prefix && correctWord.indexOf(prefix) === 0) {
-        correctAnswer = correctWord.substring(prefix.length);
-    }
+    // 원본 record 데이터에서 정답 가져오기
+    var answerData = _fbAnswerMap[setId + '_' + blankId];
+    var correctAnswer = answerData ? answerData.correctAnswer : '';
 
     var isCorrect = userValue.toLowerCase() === correctAnswer.toLowerCase();
 
@@ -299,6 +288,7 @@ function handleFbRetrySubmit(setId, blankId) {
         }, 500);
 
         // 지문 내 빈칸 아이콘 업데이트
+        var blankSpan = document.querySelector('.result-blank[data-blank-id="' + blankId + '"]');
         if (blankSpan) {
             blankSpan.classList.add('retried');
             var iconEl = blankSpan.querySelector('i');
