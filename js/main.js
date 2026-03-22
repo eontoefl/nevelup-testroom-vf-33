@@ -97,8 +97,8 @@ function _renderPracticeMode() {
     if (regularContainer) regularContainer.style.display = 'none';
     if (practiceContainer) practiceContainer.style.display = '';
     if (scheduleHeader) {
-        scheduleHeader.querySelector('h1').textContent = '연습 일정';
-        scheduleHeader.querySelector('p').textContent = '원하는 Practice를 선택하세요.';
+        scheduleHeader.querySelector('h1').textContent = 'PRACTICE MODE';
+        scheduleHeader.querySelector('p').textContent = 'Select the desired practice.';
     }
     
     renderPracticeSchedule();
