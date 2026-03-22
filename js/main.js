@@ -235,6 +235,7 @@ function selectDay(week, dayKr, dayEn) {
 
 /**
  * 연습코스 스케줄 그리드 렌더링 (Practice 1~60)
+ * 정규과정의 week-block / days-grid / day-button 구조를 그대로 사용
  */
 function renderPracticeSchedule() {
     var container = document.getElementById('practiceScheduleContainer');
@@ -243,26 +244,64 @@ function renderPracticeSchedule() {
     
     console.log('📋 [연습코스] 스케줄 렌더링 시작');
     
-    // 6줄 x 10열 그리드
-    var grid = document.createElement('div');
-    grid.className = 'practice-grid';
-    
-    for (var i = 1; i <= 60; i++) {
-        var btn = document.createElement('button');
-        btn.className = 'practice-btn';
-        btn.setAttribute('data-practice', i);
-        btn.textContent = i;
+    // 10개씩 6줄로 그룹핑 (Practice 1~10, 11~20, ...)
+    for (var row = 0; row < 6; row++) {
+        var startNum = row * 10 + 1;
+        var endNum = startNum + 9;
         
-        (function(num) {
-            btn.onclick = function() {
-                selectPractice(num);
-            };
-        })(i);
+        var weekBlock = document.createElement('div');
+        weekBlock.className = 'week-block';
         
-        grid.appendChild(btn);
+        // week-header: "Practice 01-10" 스타일
+        var weekHeader = document.createElement('div');
+        weekHeader.className = 'week-header';
+        
+        var weekTitle = document.createElement('h2');
+        weekTitle.className = 'week-title';
+        weekTitle.textContent = 'Practice ' + String(startNum).padStart(2, '0') + ' - ' + String(endNum).padStart(2, '0');
+        
+        var weekDivider = document.createElement('div');
+        weekDivider.className = 'week-divider';
+        
+        weekHeader.appendChild(weekTitle);
+        weekHeader.appendChild(weekDivider);
+        
+        // days-grid: 10개 버튼
+        var daysGrid = document.createElement('div');
+        daysGrid.className = 'days-grid practice-days-grid';
+        
+        for (var i = startNum; i <= endNum; i++) {
+            var dayButton = document.createElement('button');
+            dayButton.className = 'day-button';
+            dayButton.setAttribute('data-practice', i);
+            
+            // 진도 dot
+            var dotClass = 'dot-none';
+            if (typeof ProgressTracker !== 'undefined' && ProgressTracker._loaded) {
+                var pKey = 'practice_' + i;
+                if (ProgressTracker._completedTasks && ProgressTracker._completedTasks[pKey]) {
+                    dotClass = 'dot-done';
+                }
+            }
+            
+            dayButton.innerHTML = 
+                '<span class="day-name">P' + String(i).padStart(2, '0') + '</span>' +
+                '<div class="progress-dot ' + dotClass + '"></div>' +
+                '<span class="day-tasks">Practice ' + i + '</span>';
+            
+            (function(num) {
+                dayButton.onclick = function() {
+                    selectPractice(num);
+                };
+            })(i);
+            
+            daysGrid.appendChild(dayButton);
+        }
+        
+        weekBlock.appendChild(weekHeader);
+        weekBlock.appendChild(daysGrid);
+        container.appendChild(weekBlock);
     }
-    
-    container.appendChild(grid);
     
     // 진도 표시 로드
     if (typeof ProgressTracker !== 'undefined') {
@@ -276,13 +315,15 @@ function renderPracticeSchedule() {
 
 /** 연습코스 버튼 진도 표시 업데이트 */
 function _updatePracticeProgress() {
-    // ProgressTracker의 practice 캠시 사용
-    var btns = document.querySelectorAll('.practice-btn');
+    var btns = document.querySelectorAll('#practiceScheduleContainer .day-button');
     btns.forEach(function(btn) {
         var pNum = parseInt(btn.getAttribute('data-practice'));
-        var key = 'practice_' + pNum;
-        if (ProgressTracker._completedTasks && ProgressTracker._completedTasks[key]) {
-            btn.classList.add('practice-done');
+        var pKey = 'practice_' + pNum;
+        if (ProgressTracker._completedTasks && ProgressTracker._completedTasks[pKey]) {
+            var dot = btn.querySelector('.progress-dot');
+            if (dot) {
+                dot.className = 'progress-dot dot-done';
+            }
         }
     });
 }

@@ -3574,65 +3574,19 @@ body {
 }
 
 /* ================================================
-   PRACTICE SCHEDULE GRID (Practice 1~60)
+   PRACTICE SCHEDULE — days-grid 10열 오버라이드
+   (버튼 디자인은 정규과정 .day-button과 100% 동일)
    ================================================ */
 
-.practice-grid {
-    display: grid;
+.practice-days-grid {
     grid-template-columns: repeat(10, 1fr);
-    gap: 8px;
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 0 16px;
+    gap: 0.75rem;
 }
 
-.practice-btn {
-    aspect-ratio: 1;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    background: #fff;
-    color: var(--text-primary);
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: inherit;
-}
-
-.practice-btn:hover {
-    border-color: var(--primary-color);
-    background: #f8f5ff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.15);
-}
-
-.practice-btn:active {
-    transform: translateY(0);
-}
-
-.practice-btn.practice-done {
-    background: #f0fdf4;
-    border-color: var(--success-color);
-    color: var(--success-color);
-}
-
-.practice-btn.practice-done::after {
-    content: '';
-    display: none;
-}
-
-/* 모바일 대응: 6열 */
+/* 모바일 대응: 5열 */
 @media (max-width: 640px) {
-    .practice-grid {
-        grid-template-columns: repeat(6, 1fr);
-        gap: 6px;
-    }
-    
-    .practice-btn {
-        font-size: 14px;
-        border-radius: 10px;
+    .practice-days-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.5rem;
     }
 }
