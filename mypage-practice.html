@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>마이페이지 – 연습코스 현황</title>
+  <!-- Sentry Error Monitoring & Session Replay -->
+  <script
+    src="https://js.sentry-cdn.com/9808cf61ad1ab17e40cf6249d4030b9b.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/mypage-style.css?v=009_practice" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/notification.css" />
+  <style>
+    /* ── Practice Progress Grid (mypage-practice 전용) ── */
+    .practice-progress-wrap {
+      margin-top: 8px;
+    }
+    .practice-group-header {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--on-surface-variant);
+      margin-top: 20px;
+      margin-bottom: 8px;
+      padding-left: 2px;
+    }
+    .practice-group-header:first-child {
+      margin-top: 8px;
+    }
+    .practice-progress-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+    }
+    .pp-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 10px 4px;
+      border-radius: 10px;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      transition: all 0.15s;
+      cursor: default;
+    }
+    .pp-cell:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(148, 128, 197, 0.12);
+    }
+    .pp-num {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--on-surface-variant);
+    }
+    .pp-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #e2e8f0;
+    }
+
+    /* States */
+    .pp-cell.pp-empty .pp-dot { background: #e2e8f0; }
+    .pp-cell.pp-level-1 {
+      border-color: #c6f6d5;
+      background: #f0fff4;
+    }
+    .pp-cell.pp-level-1 .pp-dot { background: #c6f6d5; }
+    .pp-cell.pp-level-1 .pp-num { color: #38a169; }
+
+    .pp-cell.pp-level-2 {
+      border-color: #48bb78;
+      background: #f0fff4;
+    }
+    .pp-cell.pp-level-2 .pp-dot { background: #48bb78; }
+    .pp-cell.pp-level-2 .pp-num { color: #276749; }
+
+    /* Mobile 5열 */
+    @media (max-width: 640px) {
+      .practice-progress-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+      }
+      .pp-cell { padding: 8px 2px; border-radius: 8px; }
+      .pp-num { font-size: 0.65rem; }
+      .pp-dot { width: 8px; height: 8px; }
+    }
+    @media (max-width: 420px) {
+      .practice-progress-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <nav class="mp-topbar">
+    <button class="btn-back" onclick="goBackToTestroom()" title="뒤로가기">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <span class="mp-topbar-title">마이페이지 · 연습코스</span>
+  </nav>
+
+  <!-- LOADING -->
+  <div class="mp-loading" id="loadingScreen">
+    <div class="mp-spinner"></div>
+    <p>연습코스 데이터를 불러오는 중...</p>
+  </div>
+
+  <!-- NOT LOGGED IN -->
+  <div class="mp-not-logged" id="notLoggedScreen" style="display:none;">
+    <i class="fa-solid fa-lock" style="font-size:3rem; color:var(--signature); margin-bottom:16px;"></i>
+    <h2>로그인이 필요합니다</h2>
+    <p>테스트룸에서 먼저 로그인해주세요.</p>
+    <button class="mp-cta-btn" onclick="goBackToTestroom()">
+      <i class="fa-solid fa-arrow-right"></i> 테스트룸으로 이동
+    </button>
+  </div>
+
+  <!-- MAIN -->
+  <main class="page-wrap" id="mainContent" style="display:none;">
+
+    <!-- 사용자 정보 -->
+    <div class="user-info-card">
+      <i class="fas fa-user-circle"></i>
+      <div class="user-info-text">
+        <span class="user-greeting"><strong id="userName">-</strong>님, 반갑습니다</span>
+        <span class="program-badge" style="background-color:rgba(148,128,197,0.1); color:var(--primary);">연습코스</span>
+      </div>
+    </div>
+
+    <!-- 1. 연습 현황 요약 카드 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-chart-line"></i> 연습 현황 요약
+      </h2>
+
+      <div class="summary-grid" style="grid-template-columns: repeat(3, 1fr);">
+
+        <!-- 완료한 Practice 수 -->
+        <div class="summary-card card-green">
+          <div class="sc-icon"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">완료한 Practice</p>
+            <p class="sc-value"><span id="completedCount">0</span><span class="sc-total"> / 60</span></p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="completedBar" style="width: 0%;"></div>
+            </div>
+            <p class="sc-sub" id="completedSub">로딩 중...</p>
+          </div>
+        </div>
+
+        <!-- 총 풀이 횟수 -->
+        <div class="summary-card card-blue">
+          <div class="sc-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">총 풀이 기록</p>
+            <p class="sc-value"><span id="totalRecords">0</span><span class="sc-total">건</span></p>
+            <p class="sc-sub" id="totalRecordsSub">로딩 중...</p>
+          </div>
+        </div>
+
+        <!-- 오답노트 제출률 -->
+        <div class="summary-card card-purple">
+          <div class="sc-icon"><i class="fa-solid fa-note-sticky"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">오답노트 제출률</p>
+            <p class="sc-value"><span id="errorNoteRate">0</span><span class="sc-total">%</span></p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="errorNoteBar" style="width: 0%;"></div>
+            </div>
+            <p class="sc-sub" id="errorNoteSub">로딩 중...</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. Practice 진도 그리드 (10열 x 6줄) -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-seedling"></i> Practice 진도 현황
+      </h2>
+      <div class="practice-progress-wrap" id="practiceProgressGrid">
+        <!-- JS에서 동적 생성 -->
+      </div>
+      <div class="grass-legend" style="position:static; margin-top:16px; margin-left:0;">
+        <span class="legend-item"><span class="legend-dot level-2"></span>완료 (실전풀이+오답노트)</span>
+        <span class="legend-item"><span class="legend-dot level-1"></span>진행 중 (실전풀이만)</span>
+        <span class="legend-item"><span class="legend-dot empty"></span>미시작</span>
+      </div>
+    </section>
+
+    <!-- 3. 성적 추이 차트 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-chart-line"></i> 나의 성적 추이
+      </h2>
+      <p class="section-desc">Practice별 1차 레벨 점수 변화를 확인합니다</p>
+
+      <!-- 탭 -->
+      <div class="score-tabs">
+        <button class="score-tab active" data-tab="reading">
+          <i class="fa-solid fa-book-open"></i> Reading
+        </button>
+        <button class="score-tab" data-tab="listening">
+          <i class="fa-solid fa-headphones"></i> Listening
+        </button>
+      </div>
+
+      <!-- 차트 영역 -->
+      <div class="score-chart-wrap" id="scoreChartWrap">
+        <canvas id="scoreChart" height="300"></canvas>
+        <div class="score-chart-empty" id="scoreChartEmpty" style="display:none;">
+          <i class="fa-solid fa-chart-line"></i>
+          <p>아직 완료한 과제가 없습니다</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 최근 학습 기록 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-clock-rotate-left"></i> 최근 학습 기록
+      </h2>
+
+      <div class="record-table-wrap" id="recentRecordsWrap">
+        <table class="record-table">
+          <thead>
+            <tr>
+              <th>Practice</th>
+              <th>영역</th>
+              <th>Module</th>
+              <th>점수</th>
+              <th>오답노트</th>
+              <th>완료일</th>
+            </tr>
+          </thead>
+          <tbody id="recentRecordsBody">
+            <!-- JS에서 동적 생성 -->
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="recentRecordsEmpty" style="display:none;">
+        <i class="fa-solid fa-inbox"></i>
+        <p>아직 학습 기록이 없습니다</p>
+      </div>
+    </section>
+
+    <!-- 정규코스 마이페이지 이동 -->
+    <div class="v2-records-link-wrap">
+      <button class="v2-records-link-btn" onclick="window.location.href='mypage.html'">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>정규코스 마이페이지 보기</span>
+        <i class="fa-solid fa-arrow-right v2-records-arrow"></i>
+      </button>
+    </div>
+
+  </main>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/mypage-practice.js?v=001"></script>
+</body>
+</html>

@@ -612,6 +612,18 @@ function backToSchedule() {
     showScreen('scheduleScreen');
 }
 
+/**
+ * 마이페이지 이동 — 연습코스 모드면 mypage-practice.html, 그 외 mypage.html
+ */
+function goToMyPage() {
+    if (typeof isPracticeMode === 'function' && isPracticeMode()) {
+        window.location.href = 'mypage-practice.html';
+    } else {
+        window.location.href = 'mypage.html';
+    }
+}
+window.goToMyPage = goToMyPage;
+
 // [V3] 삭제됨: showTaskSelectionScreen, getSectionInfo, startFullTest, startSection,
 //   및 모든 V1 프로토타입 함수들 (initReadingSection, loadReadingPassage, etc.)
 // — toeflData 하드코딩 데이터 기반 V1 전용 코드였으며,
