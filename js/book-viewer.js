@@ -724,7 +724,9 @@ async function saveMemo() {
             user_id: BookViewer.userId,
             book_id: BookViewer.bookId,
             page_number: page,
-            content: content
+            content: content,
+            week: BookViewer.taskParams?.week ? parseInt(BookViewer.taskParams.week) : null,
+            day: BookViewer.taskParams?.day || null
         });
     }
 
