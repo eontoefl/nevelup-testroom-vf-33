@@ -881,6 +881,13 @@ function showV2RecordsLink() {
     // 모든 학생에게 표시 (데이터 없으면 v2-records.html에서 안내)
     linkEl.style.display = 'flex';
     console.log('📦 [MyPage] V2 이전 학습 기록 버튼 표시');
+
+    // 연습코스 마이페이지 링크 (practiceEnabled인 경우만)
+    const practiceLink = document.getElementById('practiceMyPageLink');
+    if (practiceLink && mpUser && mpUser.practiceEnabled) {
+        practiceLink.style.display = 'flex';
+        console.log('🏋️ [MyPage] 연습코스 마이페이지 링크 표시');
+    }
 }
 
 // ================================================

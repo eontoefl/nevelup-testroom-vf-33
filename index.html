@@ -357,7 +357,13 @@
                     </div>
                 </header>
             </div>
+            <!-- 세그먼트 컨트롤 (정규과정 / 연습코스 전환) — 알림 좌측 -->
             <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="course-segment-control" id="courseSegmentControl" style="display:none;">
+                    <button class="seg-btn seg-active" id="segBtnRegular">TESTROOM</button>
+                    <button class="seg-btn" id="segBtnPractice">PRACTICE</button>
+                </div>
+
                 <!-- 🔔 알림 버튼 -->
                 <div class="notif-wrapper" id="notifWrapper">
                     <button class="nav-icon-btn notif-bell-btn" id="notifBellBtn" onclick="toggleNotifDropdown()" title="알림">
@@ -377,7 +383,7 @@
                     </div>
                 </div>
                 
-                <button class="nav-icon-btn" onclick="window.location.href='mypage.html'" title="마이페이지">
+                <button class="nav-icon-btn" onclick="goToMyPage()" title="마이페이지">
                     <i class="fas fa-chart-line"></i>
                 </button>
                 <button class="nav-icon-btn nav-icon-logout" onclick="logout()" title="로그아웃">
@@ -472,11 +478,6 @@
                 <div id="noticeList"></div>
             </div>
 
-            <!-- 세그먼트 컨트롤 (정규코스 / 연습코스 전환) -->
-            <div class="course-segment-control" id="courseSegmentControl" style="display:none;">
-                <button class="seg-btn seg-active" id="segBtnRegular">정규과정</button>
-                <button class="seg-btn" id="segBtnPractice">연습코스</button>
-            </div>
 
             <header class="schedule-header">
                 <div class="calendar-icon-box">
