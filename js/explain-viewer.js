@@ -428,17 +428,21 @@ function _extractData(def, recordJson, st) {
 
         case 'repeat':
             if (!recordJson.repeat || !recordJson.repeat.data) return null;
-            // DB: { sets: [세트], type } → show 함수: { set: 세트 }
+            // DB: { sets: [전체 세트], type } → 모듈 번호에 해당하는 세트만 추출
             var repeatSets = recordJson.repeat.data.sets;
             if (!repeatSets || repeatSets.length === 0) return null;
-            return { set: repeatSets[0] };
+            var repeatIdx = (st.moduleNumber || 1) - 1;
+            if (repeatIdx < 0 || repeatIdx >= repeatSets.length) repeatIdx = 0;
+            return { set: repeatSets[repeatIdx] };
 
         case 'interview':
             if (!recordJson.interview || !recordJson.interview.data) return null;
-            // DB: { sets: [세트], type } → show 함수: { set: 세트 }
+            // DB: { sets: [전체 세트], type } → 모듈 번호에 해당하는 세트만 추출
             var interviewSets = recordJson.interview.data.sets;
             if (!interviewSets || interviewSets.length === 0) return null;
-            return { set: interviewSets[0] };
+            var interviewIdx = (st.moduleNumber || 1) - 1;
+            if (interviewIdx < 0 || interviewIdx >= interviewSets.length) interviewIdx = 0;
+            return { set: interviewSets[interviewIdx] };
 
         default:
             var sets = recordJson.sets;
