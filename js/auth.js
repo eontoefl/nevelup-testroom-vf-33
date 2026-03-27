@@ -128,6 +128,11 @@ async function handleLogin(event) {
         
         console.log('✅ 로그인 성공:', currentUser.name, '(' + programType + ')');
         
+        // Sentry에 사용자 정보 연동 (에러 발생 시 누구인지 식별)
+        if (typeof Sentry !== 'undefined' && Sentry.setUser) {
+            Sentry.setUser({ id: user.id, email: user.email, username: user.name });
+        }
+        
         const programLabel = programType === 'fast' ? '4주 Fast' : '8주 Standard';
         showLoginSuccess(`환영합니다, ${currentUser.name}님! (${programLabel})`);
         
@@ -187,6 +192,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // 이미 로그인되어 있으면 학습 일정 화면으로
         currentUser = JSON.parse(savedUser);
         console.log('📋 세션 복원:', currentUser.name);
+        // Sentry 사용자 정보 복원
+        if (typeof Sentry !== 'undefined' && Sentry.setUser) {
+            Sentry.setUser({ id: currentUser.id, email: currentUser.email, username: currentUser.name });
+        }
         // startDate 최신값 동기화 (DB 변경 반영)
         if (currentUser.applicationId) {
             supabaseSelect('applications', `id=eq.${currentUser.applicationId}&select=schedule_start`)
@@ -211,6 +220,11 @@ function logout() {
         currentUser = null;
         sessionStorage.removeItem('currentUser');
         sessionStorage.removeItem('courseMode');
+        
+        // Sentry 사용자 정보 초기화
+        if (typeof Sentry !== 'undefined' && Sentry.setUser) {
+            Sentry.setUser(null);
+        }
         
         // 과제 상태 초기화
         if (typeof currentTest !== 'undefined') {
