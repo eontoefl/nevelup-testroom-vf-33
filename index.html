@@ -14,7 +14,7 @@
       crossorigin="anonymous"
     ></script>
     <script>
-    // Sentry Replay 마스킹 해제 — 디버깅 시 실제 화면 내용 확인용
+    // Sentry Replay 마스킹 해제 + 사용자 복원
     window.sentryOnLoad = function() {
       Sentry.init({
         integrations: [
@@ -25,6 +25,11 @@
           }),
         ],
       });
+      // init() 후 세션에 저장된 사용자 정보 복원
+      try {
+        var u = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (u && u.id) Sentry.setUser({ id: u.id, email: u.email, username: u.name });
+      } catch(e) {}
     };
     </script>
     <!-- Sentry: console.error/warn 자동 보고 -->
