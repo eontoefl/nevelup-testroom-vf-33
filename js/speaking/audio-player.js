@@ -107,6 +107,8 @@ class AudioPlayer {
             source.connect(this.audioCtx.destination);
 
             source.onended = function() {
+                // stop()에서 onended를 null로 지워놨으면 여기 진입 안 함
+                // 자연 종료(끝까지 재생)일 때만 콜백 호출
                 this.currentSource = null;
                 if (onEnded) onEnded();
             }.bind(this);
@@ -199,6 +201,8 @@ class AudioPlayer {
 
         if (this.currentSource) {
             try {
+                // onended를 먼저 제거 → stop()이 발생시키는 ended 이벤트에서 콜백 호출 방지
+                this.currentSource.onended = null;
                 this.currentSource.stop();
             } catch (e) {
                 // 이미 종료된 소스에 stop() 호출 시 오류 무시
