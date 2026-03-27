@@ -13,6 +13,20 @@
       src="https://js.sentry-cdn.com/9808cf61ad1ab17e40cf6249d4030b9b.min.js"
       crossorigin="anonymous"
     ></script>
+    <script>
+    // Sentry Replay 마스킹 해제 — 디버깅 시 실제 화면 내용 확인용
+    window.sentryOnLoad = function() {
+      Sentry.init({
+        integrations: [
+          Sentry.replayIntegration({
+            maskAllText: false,
+            maskAllInputs: false,
+            blockAllMedia: false,
+          }),
+        ],
+      });
+    };
+    </script>
     <!-- Sentry: console.error/warn 자동 보고 -->
     <script>
     (function() {
