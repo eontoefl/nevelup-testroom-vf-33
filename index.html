@@ -13,6 +13,25 @@
       src="https://js.sentry-cdn.com/9808cf61ad1ab17e40cf6249d4030b9b.min.js"
       crossorigin="anonymous"
     ></script>
+    <script>
+    // Sentry Replay 마스킹 해제 + 사용자 복원
+    window.sentryOnLoad = function() {
+      Sentry.init({
+        integrations: [
+          Sentry.replayIntegration({
+            maskAllText: false,
+            maskAllInputs: false,
+            blockAllMedia: false,
+          }),
+        ],
+      });
+      // init() 후 세션에 저장된 사용자 정보 복원
+      try {
+        var u = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (u && u.id) Sentry.setUser({ id: u.id, email: u.email, username: u.name });
+      } catch(e) {}
+    };
+    </script>
     <!-- Sentry: console.error/warn 자동 보고 -->
     <script>
     (function() {
