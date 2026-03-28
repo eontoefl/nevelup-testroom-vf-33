@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes" />
+  <title>입문서 – 학습자 뷰어 데모</title>
+
+  <!-- Pretendard -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <!-- Quill (렌더링용 CSS만) -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #9480c5;
+      --primary-light: #ede9f8;
+      --primary-dark: #7b68ae;
+      --bg: #f1f4f8;
+      --surface: #ffffff;
+      --text: #2d3436;
+      --muted: #9ca3ab;
+      --success: #77bf7e;
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --shadow-soft: 0 10px 30px rgba(148,128,197,0.08);
+      --shadow-deep: 0 20px 50px rgba(0,0,0,0.05);
+      --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    html, body {
+      height: 100%;
+      font-family: 'Pretendard', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+    .page {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── 상단바 ── */
+    .topbar {
+      height: 64px;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+    .topbar-btn {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+      background: transparent;
+      border: none; cursor: pointer;
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+    .topbar-btn:hover { background: var(--primary-light); color: var(--primary); }
+    .topbar-title {
+      font-weight: 700; font-size: 0.95rem;
+      position: absolute; left: 50%; transform: translateX(-50%);
+    }
+    .topbar-actions { display: flex; gap: 8px; }
+    .bookmarked { background: var(--primary-light) !important; }
+    .bookmarked i { color: var(--primary) !important; }
+
+    /* ── 진행률 바 ── */
+    .progress-bar {
+      height: 3px;
+      background: rgba(148,128,197,0.07);
+      flex-shrink: 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      transition: width 0.4s ease;
+    }
+
+    /* ── 과제 상태 바 (데모용) ── */
+    .task-bar {
+      height: 32px;
+      background: #f8f7fb;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(148,128,197,0.08);
+      flex-shrink: 0;
+    }
+
+    /* ── 메인 뷰어 ── */
+    .viewer {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+      padding: 40px 60px;
+    }
+
+    /* 페이지 카드 */
+    .page-card {
+      max-width: 680px;
+      margin: 0 auto;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-deep);
+      padding: 48px 52px;
+      min-height: 400px;
+      animation: fadeSlide 0.3s ease;
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Quill 렌더링 스타일 */
+    .page-card h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 16px; line-height: 1.4; color: #1e293b; }
+    .page-card h2 { font-size: 1.25rem; font-weight: 700; margin: 24px 0 12px; color: #1e293b; }
+    .page-card h3 { font-size: 1.05rem; font-weight: 700; margin: 18px 0 8px; color: #1e293b; }
+    .page-card p  { margin-bottom: 12px; line-height: 1.85; font-size: 0.95rem; }
+    .page-card ul, .page-card ol { padding-left: 22px; margin-bottom: 14px; }
+    .page-card li { margin-bottom: 6px; line-height: 1.7; font-size: 0.95rem; }
+    .page-card img { max-width: 100%; border-radius: 12px; margin: 12px 0; display: block; }
+    .page-card strong { font-weight: 700; }
+    .page-card em { font-style: italic; }
+    .page-card u { text-decoration: underline; }
+    .page-card blockquote {
+      border-left: 4px solid var(--primary);
+      padding: 12px 20px;
+      background: var(--primary-light);
+      border-radius: 0 12px 12px 0;
+      margin: 16px 0;
+      color: var(--primary-dark);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    /* ── 페이지 이동 버튼 ── */
+    .page-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--muted);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-soft);
+      transition: var(--transition);
+      font-size: 1rem;
+      z-index: 5;
+    }
+    .page-nav-btn:hover { background: var(--primary); color: #fff; transform: translateY(-50%) scale(1.1); box-shadow: 0 15px 35px rgba(148,128,197,0.3); }
+    .page-nav-btn.disabled { opacity: 0.25; pointer-events: none; }
+    .prev-btn { left: 20px; }
+    .next-btn { right: 20px; }
+
+    /* ── 하단 툴바 ── */
+    .toolbar {
+      height: 72px;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .toolbar-btn {
+      padding: 10px 14px;
+      border-radius: 12px;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted);
+      background: transparent; border: none; cursor: pointer;
+      font-size: 0.85rem; font-weight: 500;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+    .toolbar-btn:hover { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-soft); }
+    .toolbar-center {
+      display: flex; align-items: center; gap: 8px;
+      background: #f8f7fb;
+      padding: 8px 16px;
+      border-radius: 100px;
+    }
+    .page-indicator { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
+
+    /* ── 사이드바 (목차) ── */
+    .sidebar-overlay {
+      position: fixed; inset: 0;
+      background: rgba(45,52,54,0.15);
+      backdrop-filter: blur(4px);
+      z-index: 100; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+    .sidebar {
+      position: fixed;
+      top: 16px; right: -340px; bottom: 16px; width: 320px;
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: var(--radius-lg);
+      z-index: 101;
+      transition: right 0.5s cubic-bezier(0.165,0.84,0.44,1);
+      box-shadow: var(--shadow-deep);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar.active { right: 16px; }
+    .sidebar-header {
+      padding: 24px 20px 16px;
+      font-size: 0.9rem; font-weight: 700; color: var(--primary);
+      border-bottom: 1px solid rgba(148,128,197,0.1);
+    }
+    .sidebar-list { flex: 1; overflow-y: auto; padding: 12px; }
+    .sidebar-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-radius: var(--radius-md);
+      cursor: pointer; font-size: 0.9rem; color: var(--muted);
+      transition: var(--transition); margin-bottom: 6px;
+      background: rgba(255,255,255,0.4);
+    }
+    .sidebar-item:hover { background: var(--surface); color: var(--text); transform: translateX(-4px); }
+    .sidebar-item.active { background: var(--surface); color: var(--primary); font-weight: 700; box-shadow: var(--shadow-soft); }
+    .sidebar-item .pg-badge {
+      font-size: 0.78rem; color: var(--primary); font-weight: 700;
+      background: var(--primary-light); padding: 2px 10px; border-radius: 8px;
+    }
+
+    /* ── 메모 사이드바 ── */
+    .memo-sidebar-overlay {
+      position: fixed; inset: 0;
+      background: transparent;
+      z-index: 100; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .memo-sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+    .memo-sidebar {
+      position: fixed;
+      top: 16px; left: -420px; bottom: 16px; width: 400px;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: var(--radius-lg);
+      z-index: 101;
+      transition: left 0.5s cubic-bezier(0.165,0.84,0.44,1);
+      box-shadow: 8px 0 30px rgba(0,0,0,0.12);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .memo-sidebar.active { left: 16px; }
+    .memo-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 24px 20px 0;
+    }
+    .memo-title { font-weight: 700; font-size: 1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .memo-close {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 1.2rem; transition: var(--transition);
+    }
+    .memo-close:hover { background: var(--primary-light); color: var(--primary); }
+    .memo-body { flex: 1; display: flex; flex-direction: column; padding: 16px; overflow: hidden; }
+    .memo-textarea {
+      width: 100%; flex: 1; min-height: 0;
+      border: none; background: rgba(255,255,255,0.5);
+      border-radius: 16px; padding: 20px; resize: none;
+      font-family: inherit; color: var(--text);
+      font-size: 0.95rem; line-height: 1.6;
+      transition: var(--transition);
+    }
+    .memo-textarea:focus { outline: none; background: #fff; box-shadow: var(--shadow-soft); }
+    .memo-char { text-align: right; font-size: 0.75rem; font-weight: 700; color: var(--muted); padding: 8px 4px 0; }
+    .memo-char span { color: var(--primary); }
+    .memo-footer {
+      display: flex; justify-content: flex-end; gap: 10px;
+      padding: 16px 20px;
+    }
+    .memo-save-btn {
+      background: var(--primary); color: white;
+      padding: 12px 24px; border-radius: 16px;
+      font-size: 0.9rem; font-weight: 700; border: none; cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 12px 30px rgba(148,128,197,0.3);
+      transition: var(--transition);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .memo-save-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(148,128,197,0.4); }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed;
+      bottom: 96px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface);
+      color: var(--text);
+      padding: 14px 28px; border-radius: 100px;
+      font-size: 0.9rem; font-weight: 600;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+      z-index: 300; opacity: 0;
+      transition: all 0.4s cubic-bezier(0.165,0.84,0.44,1);
+      display: flex; align-items: center; gap: 10px;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast i { color: var(--success); }
+
+    /* ── 완독 모달 ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(45,52,54,0.2);
+      backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal {
+      background: var(--surface);
+      border-radius: 32px;
+      padding: 48px 40px;
+      width: 90%; max-width: 440px;
+      text-align: center;
+      box-shadow: var(--shadow-deep);
+      transform: scale(0.9);
+      transition: transform 0.4s cubic-bezier(0.165,0.84,0.44,1);
+    }
+    .modal-overlay.active .modal { transform: scale(1); }
+    .modal-icon { font-size: 4rem; color: var(--success); margin-bottom: 24px; }
+    .modal-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .modal-desc { color: var(--muted); font-weight: 600; margin-bottom: 32px; font-size: 0.95rem; }
+    .modal-btn {
+      background: var(--primary); color: white;
+      padding: 18px 40px; border-radius: 20px;
+      font-size: 1rem; font-weight: 700; border: none; cursor: pointer;
+      font-family: inherit; width: 100%;
+      box-shadow: 0 12px 30px rgba(148,128,197,0.3);
+    }
+
+    /* 메모 닷 */
+    .memo-dot {
+      width: 6px; height: 6px;
+      background: var(--primary); border-radius: 50%;
+      position: absolute; top: 8px; right: 14px;
+      display: none;
+    }
+    .has-memo .memo-dot { display: block; }
+    .toolbar-btn { position: relative; }
+
+    /* 스크롤바 */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    /* 모바일 */
+    @media (max-width: 768px) {
+      .topbar { padding: 0 16px; }
+      .viewer { padding: 16px; }
+      .page-card { padding: 28px 24px; }
+      .toolbar { padding: 0 16px; height: 58px; }
+      .prev-btn { left: 6px; }
+      .next-btn { right: 6px; }
+      .sidebar { width: 280px; top: 0; bottom: 0; border-radius: 0; }
+      .sidebar.active { right: 0; }
+      .memo-sidebar { width: 100%; left: -100%; top: 0; bottom: 0; border-radius: 0; }
+      .memo-sidebar.active { left: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 상단바 -->
+  <header class="topbar">
+    <button class="topbar-btn" onclick="history.back()" title="뒤로가기">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <h1 class="topbar-title" id="bookTitle">입문서</h1>
+    <div class="topbar-actions">
+      <button class="topbar-btn" id="btnBookmark" onclick="toggleBookmark()" title="북마크">
+        <i class="fa-regular fa-bookmark"></i>
+      </button>
+      <button class="topbar-btn" onclick="openSidebar()" title="목차">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 진행률 바 -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+
+  <!-- 과제 상태 바 -->
+  <div class="task-bar" id="taskBar">
+    📝 오늘 메모 <span id="memoCountDisplay" style="color:var(--primary); margin:0 4px;">0</span>/2
+    &nbsp;—&nbsp; <span style="font-size:0.75rem; color:#bbb;">데모 모드</span>
+  </div>
+
+  <!-- 목차 사이드바 -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header"><i class="fa-solid fa-list-ul"></i> 목차</div>
+    <div class="sidebar-list" id="sidebarList"></div>
+  </aside>
+
+  <!-- 메모 사이드바 -->
+  <div class="memo-sidebar-overlay" id="memoOverlay" onclick="closeMemo()"></div>
+  <aside class="memo-sidebar" id="memoSidebar">
+    <div class="memo-header">
+      <div class="memo-title"><i class="fa-regular fa-comment-dots"></i> <span id="memoPageLabel">1페이지 메모</span></div>
+      <button class="memo-close" onclick="closeMemo()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="memo-body">
+      <textarea class="memo-textarea" id="memoTextarea" placeholder="이 페이지에 대한 메모를 작성하세요..." maxlength="1000"></textarea>
+      <div class="memo-char"><span id="memoCharCount">0</span> / 1000</div>
+    </div>
+    <div class="memo-footer">
+      <button class="memo-save-btn" onclick="saveMemo()">
+        <i class="fa-regular fa-floppy-disk"></i> 저장하기
+      </button>
+    </div>
+  </aside>
+
+  <!-- 뷰어 메인 -->
+  <main class="viewer" id="viewer">
+    <div class="page-card" id="pageCard">
+      <p style="text-align:center; color:#94a3b8; padding: 60px 0;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; display:block; margin-bottom:16px;"></i>
+        불러오는 중...
+      </p>
+    </div>
+    <button class="page-nav-btn prev-btn" id="btnPrev" onclick="prevPage()"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="page-nav-btn next-btn" id="btnNext" onclick="nextPage()"><i class="fa-solid fa-chevron-right"></i></button>
+  </main>
+
+  <!-- 하단 툴바 -->
+  <footer class="toolbar">
+    <div>
+      <button class="toolbar-btn" onclick="openPageJump()" title="페이지 이동">
+        <i class="fa-regular fa-file-lines"></i>
+        <span class="page-indicator"><span id="curPage">1</span> / <span id="totPage">1</span></span>
+      </button>
+    </div>
+    <div class="toolbar-center">
+      <span style="font-size:0.8rem; color:var(--muted); font-weight:600;">에디터 콘텐츠 렌더링</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="toolbar-btn" id="btnMemo" onclick="toggleMemo()" title="메모">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span class="memo-dot" id="memoDot"></span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- 완독 모달 -->
+  <div class="modal-overlay" id="completeModal">
+    <div class="modal">
+      <div class="modal-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <h3 class="modal-title">입문서 읽기 완료!</h3>
+      <p class="modal-desc">모든 페이지를 다 읽었습니다. 수고하셨습니다! 🎉</p>
+      <button class="modal-btn" onclick="closeComplete()">확인</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
+
+<script>
+// ============================================================
+// 상태
+// ============================================================
+let pages = [];
+let currentPage = 0;
+let bookTitle = '입문서';
+let bookmarks = new Set();
+let memos = {};       // { pageIdx: string }
+let completedShown = false;
+
+// ============================================================
+// 초기화
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  loadData();
+});
+
+function loadData() {
+  const saved = localStorage.getItem('demo_intro_book');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      pages = data.pages || [];
+      bookTitle = data.title || '입문서';
+    } catch(e) {}
+  }
+
+  // 데이터 없으면 기본 샘플
+  if (!pages.length) {
+    pages = [
+      {
+        id: 1,
+        html: `<h1>🌟 내벨업 토플 프로그램에 오신 것을 환영합니다!</h1>
+<p>이 입문서는 앞으로 진행될 내벨업 챌린지의 전반적인 내용을 안내합니다.</p>
+<p>시작하기 전에 이 입문서를 <strong>꼼꼼하게 읽어주세요.</strong> 프로그램의 구조, 과제 방식, 인증 방법 등 중요한 정보가 담겨 있습니다.</p>
+<blockquote>💡 입문서는 언제든지 다시 꺼내볼 수 있으니 걱정하지 마세요!</blockquote>`
+      },
+      {
+        id: 2,
+        html: `<h2>📚 프로그램 구성</h2>
+<p>내벨업 챌린지는 크게 <strong>5개 영역</strong>으로 구성됩니다.</p>
+<ul>
+  <li><strong>리딩(Reading)</strong> — 매일 3개 지문, 총 9문제</li>
+  <li><strong>리스닝(Listening)</strong> — 강의/대화 지문 기반 문제풀이</li>
+  <li><strong>라이팅(Writing)</strong> — 통합형 + 토론형 에세이</li>
+  <li><strong>스피킹(Speaking)</strong> — 인터뷰 + 반복 훈련</li>
+  <li><strong>보카(Vocabulary)</strong> — 매일 필수 단어 암기</li>
+</ul>
+<p>각 과제는 <span style="color: rgb(148, 128, 197);">매일 자정까지</span> 제출해야 인증이 완료됩니다.</p>`
+      },
+      {
+        id: 3,
+        html: `<h2>✅ 인증 방법</h2>
+<p>과제 인증은 자동으로 처리됩니다. 과제를 제출하면 시스템이 자동으로 인증 여부를 판단합니다.</p>
+<h3>인증 조건</h3>
+<ul>
+  <li>리딩: 문제 풀기 + 오답노트 작성</li>
+  <li>리스닝: 문제 풀기 완료</li>
+  <li>라이팅: 에세이 제출 완료</li>
+  <li>스피킹: 녹음 제출 완료</li>
+  <li>입문서: 메모 <strong>2개 이상</strong> 작성</li>
+</ul>
+<blockquote>⚠️ 마감 시간(자정)을 넘기면 인증이 불가하므로 꼭 제때 완료하세요!</blockquote>`
+      }
+    ];
+    bookTitle = '내벨업 입문서 v3';
+  }
+
+  document.getElementById('bookTitle').textContent = bookTitle;
+  renderToc();
+  goToPage(0);
+}
+
+// ============================================================
+// 페이지 렌더링
+// ============================================================
+function goToPage(idx) {
+  idx = Math.max(0, Math.min(idx, pages.length - 1));
+  currentPage = idx;
+  renderPage();
+  updateUI();
+
+  // 마지막 페이지 도달 시 완독 모달
+  if (idx === pages.length - 1 && !completedShown && pages.length > 1) {
+    completedShown = true;
+    setTimeout(() => {
+      document.getElementById('completeModal').classList.add('active');
+    }, 600);
+  }
+}
+
+function renderPage() {
+  const card = document.getElementById('pageCard');
+  const html = pages[currentPage]?.html || '';
+  card.innerHTML = html || '<p style="color:#94a3b8; text-align:center; padding:60px 0;">내용이 없습니다.</p>';
+}
+
+function updateUI() {
+  // 진행률
+  const pct = pages.length > 0 ? Math.round(((currentPage + 1) / pages.length) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('curPage').textContent = currentPage + 1;
+  document.getElementById('totPage').textContent = pages.length;
+
+  // 버튼 비활성
+  document.getElementById('btnPrev').classList.toggle('disabled', currentPage <= 0);
+  document.getElementById('btnNext').classList.toggle('disabled', currentPage >= pages.length - 1);
+
+  // 북마크
+  updateBookmarkIcon();
+  // 메모 닷
+  updateMemoDot();
+  // 목차 활성
+  updateTocActive();
+  // 메모 카운트 업데이트
+  updateMemoCount();
+}
+
+function prevPage() { goToPage(currentPage - 1); }
+function nextPage() { goToPage(currentPage + 1); }
+
+// ============================================================
+// 북마크
+// ============================================================
+function toggleBookmark() {
+  if (bookmarks.has(currentPage)) {
+    bookmarks.delete(currentPage);
+    showToast('북마크 해제됨');
+  } else {
+    bookmarks.add(currentPage);
+    showToast('북마크 추가됨');
+  }
+  updateBookmarkIcon();
+}
+function updateBookmarkIcon() {
+  const btn = document.getElementById('btnBookmark');
+  if (bookmarks.has(currentPage)) {
+    btn.classList.add('bookmarked');
+    btn.querySelector('i').className = 'fa-solid fa-bookmark';
+  } else {
+    btn.classList.remove('bookmarked');
+    btn.querySelector('i').className = 'fa-regular fa-bookmark';
+  }
+}
+
+// ============================================================
+// 목차 (TOC)
+// ============================================================
+function renderToc() {
+  const list = document.getElementById('sidebarList');
+  list.innerHTML = pages.map((p, i) => `
+    <div class="sidebar-item ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i}); closeSidebar();">
+      <span>${i + 1}페이지</span>
+      <span class="pg-badge">${i + 1}p</span>
+    </div>
+  `).join('');
+}
+function updateTocActive() {
+  document.querySelectorAll('.sidebar-item').forEach((el, i) => {
+    el.classList.toggle('active', i === currentPage);
+  });
+}
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('active');
+  document.getElementById('sidebarOverlay').classList.add('active');
+  updateTocActive();
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('active');
+  document.getElementById('sidebarOverlay').classList.remove('active');
+}
+
+// ============================================================
+// 메모
+// ============================================================
+function toggleMemo() {
+  const sidebar = document.getElementById('memoSidebar');
+  if (sidebar.classList.contains('active')) {
+    closeMemo();
+  } else {
+    openMemo();
+  }
+}
+function openMemo() {
+  document.getElementById('memoPageLabel').textContent = (currentPage + 1) + '페이지 메모';
+  const ta = document.getElementById('memoTextarea');
+  ta.value = memos[currentPage] || '';
+  document.getElementById('memoCharCount').textContent = ta.value.length;
+  document.getElementById('memoSidebar').classList.add('active');
+  document.getElementById('memoOverlay').classList.add('active');
+  setTimeout(() => ta.focus(), 400);
+}
+function closeMemo() {
+  document.getElementById('memoSidebar').classList.remove('active');
+  document.getElementById('memoOverlay').classList.remove('active');
+}
+function saveMemo() {
+  const content = document.getElementById('memoTextarea').value.trim();
+  if (!content) { showToast('메모 내용을 입력해주세요.'); return; }
+  memos[currentPage] = content;
+  updateMemoDot();
+  updateMemoCount();
+  closeMemo();
+  showToast('메모가 저장되었습니다. ✅');
+}
+function updateMemoDot() {
+  const dot = document.getElementById('memoDot');
+  dot.style.display = memos[currentPage] ? 'block' : 'none';
+}
+function updateMemoCount() {
+  const count = Object.keys(memos).length;
+  document.getElementById('memoCountDisplay').textContent = count;
+  if (count >= 2) {
+    document.getElementById('taskBar').style.background = '#f0fdf4';
+    document.getElementById('taskBar').style.color = '#16a34a';
+    document.getElementById('taskBar').innerHTML = '✅ 오늘 과제 인증 완료! &nbsp;—&nbsp; <span style="font-size:0.75rem; color:#86efac;">데모 모드</span>';
+  }
+}
+
+// 메모 글자수
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('memoTextarea').addEventListener('input', function() {
+    document.getElementById('memoCharCount').textContent = this.value.length;
+  });
+});
+
+// ============================================================
+// 페이지 이동 (클릭)
+// ============================================================
+function openPageJump() {
+  const p = prompt(`이동할 페이지를 입력하세요 (1 ~ ${pages.length})`);
+  const n = parseInt(p);
+  if (!isNaN(n) && n >= 1 && n <= pages.length) {
+    goToPage(n - 1);
+  }
+}
+
+// ============================================================
+// 완독 모달
+// ============================================================
+function closeComplete() {
+  document.getElementById('completeModal').classList.remove('active');
+}
+
+// ============================================================
+// 키보드
+// ============================================================
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('memoSidebar').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft') prevPage();
+  if (e.key === 'ArrowRight') nextPage();
+});
+
+// 스와이프
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 60) {
+    if (dx < 0) nextPage();
+    else prevPage();
+  }
+}, { passive: true });
+
+// ============================================================
+// 토스트
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
