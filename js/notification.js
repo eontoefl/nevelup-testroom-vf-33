@@ -161,7 +161,9 @@
 
         if (titleEl) titleEl.textContent = n.title;
         if (metaEl) metaEl.textContent = (n.created_by || '') + ' · ' + timeAgo(n.created_at);
-        if (bodyEl) bodyEl.innerHTML = escapeHtml(n.message).replace(/\n/g, '<br>');
+        if (bodyEl) bodyEl.innerHTML = escapeHtml(n.message)
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\n/g, '<br>');
 
         // 팝업 표시
         const overlay = document.getElementById('notifPopupOverlay');
