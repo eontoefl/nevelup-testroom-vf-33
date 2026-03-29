@@ -106,6 +106,18 @@ async function supabaseUpdate(table, query, data) {
 }
 
 /**
+ * 테이블 데이터 삭제
+ * @param {string} table - 테이블 이름
+ * @param {string} query - 조건 쿼리 (예: 'id=eq.xxx')
+ * @returns {Promise<boolean>} 성공 여부
+ */
+async function supabaseDelete(table, query) {
+    const endpoint = `/rest/v1/${table}?${query}`;
+    const result = await supabaseRequest(endpoint, { method: 'DELETE' });
+    return result !== null;
+}
+
+/**
  * 테이블 데이터 UPSERT (INSERT or UPDATE)
  * @param {string} table - 테이블 이름
  * @param {object} data - 저장할 데이터
