@@ -23,50 +23,15 @@
  */
 
 // ================================================
-// 0. 인증 확인 — 미로그인 시 리다이렉트
+// 0. 인증 확인 — auth.js가 처리하므로 여기서는 기본 세션 체크만
 // ================================================
-(function checkAuth() {
-    const saved = sessionStorage.getItem('currentUser');
-    if (!saved) {
-        // auth_token이 URL에 있으면 auth.js가 처리하므로 대기
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('auth_token')) {
-            console.log('📖 [BookViewer] auth_token 감지 — auth.js 인증 대기');
-            return;
-        }
-        alert('로그인이 필요합니다.');
-        window.location.href = 'index.html';
-        return;
-    }
-})();
+// auth_token이 있으면 auth.js가 인증 후 authReady 이벤트를 발행함.
+// 세션이 이미 있으면 auth.js가 authReady를 발행함.
+// 둘 다 없으면 auth.js가 공홈으로 리다이렉트함.
 
 // ================================================
 // 1. 전역 상태
 // ================================================
-
-/**
- * sessionStorage에 currentUser가 저장될 때까지 대기
- * auth.js의 토큰 인증이 async로 처리되므로 polling으로 대기
- */
-function waitForSession(timeoutMs) {
-    return new Promise((resolve) => {
-        const interval = 100;
-        let elapsed = 0;
-        const timer = setInterval(() => {
-            const saved = sessionStorage.getItem('currentUser');
-            if (saved) {
-                clearInterval(timer);
-                resolve(JSON.parse(saved));
-                return;
-            }
-            elapsed += interval;
-            if (elapsed >= timeoutMs) {
-                clearInterval(timer);
-                resolve(null);
-            }
-        }, interval);
-    });
-}
 
 const BookViewer = {
     // PDF.js
@@ -192,16 +157,11 @@ async function init() {
     bindEvents();
     preventDownload();
 
-    // 유저 정보 — auth_token 인증 대기 (auth.js가 async로 처리)
-    let user = JSON.parse(sessionStorage.getItem('currentUser'));
+    // 유저 정보 — auth.js가 authReady 발행 시점에는 반드시 sessionStorage에 저장되어 있음
+    const user = JSON.parse(sessionStorage.getItem('currentUser'));
     if (!user) {
-        // auth.js의 토큰 인증이 아직 완료되지 않은 경우 대기 (최대 5초)
-        console.log('📖 [BookViewer] 세션 대기 중...');
-        user = await waitForSession(5000);
-        if (!user) {
-            console.log('❌ [BookViewer] 세션 없음 — 종료');
-            return;
-        }
+        console.log('❌ [BookViewer] 세션 없음 — 종료');
+        return;
     }
     BookViewer.userId = user.id;
     BookViewer.isBookOnly = user.programType === 'book_only';
@@ -1506,6 +1466,6 @@ function showBookOnlyCompletePopup() {
 }
 
 // ================================================
-// 23. 시작
+// 23. 시작 — auth.js의 authReady 이벤트를 받은 후 초기화
 // ================================================
-document.addEventListener('DOMContentLoaded', init);
+window.addEventListener('authReady', init);
