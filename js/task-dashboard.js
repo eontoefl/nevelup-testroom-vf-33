@@ -215,7 +215,7 @@ function _applyButtonStates(hasInitial, hasCurrent, deadlinePassed) {
 /**
  * 실전풀이 / 다시풀기 버튼 클릭 핸들러
  */
-function _onPracticeClick() {
+async function _onPracticeClick() {
     const state = window._taskDashboardState;
     if (!state) {
         console.error('❌ [대시보드] 상태 없음');
@@ -223,6 +223,14 @@ function _onPracticeClick() {
     }
     
     console.log(`▶️ [대시보드] 풀이 시작 — ${state.sectionType} Module ${state.moduleNumber}`);
+    
+    // ── 문제 데이터 존재 여부 사전 체크 ──
+    var hasData = await _checkProblemDataExists(state.sectionType, state.moduleNumber);
+    if (!hasData) {
+        console.log('⚠️ [대시보드] 문제 데이터 없음 — 준비 중 팝업 표시');
+        _showProblemNotReadyPopup();
+        return;
+    }
     
     // 섹션별 모듈 컨트롤러 호출
     // 모듈 컨트롤러가 아직 없으면 콘솔 로그만 출력
@@ -258,6 +266,126 @@ function _onPracticeClick() {
         default:
             console.error('❌ [대시보드] 알 수 없는 섹션:', state.sectionType);
     }
+}
+
+/**
+ * 문제 데이터 존재 여부 사전 체크
+ * 영역별 대표 테이블 1개를 가볍게 조회하여 해당 모듈의 세트가 존재하는지 확인
+ * 
+ * @param {string} sectionType - 'reading' | 'listening' | 'writing' | 'speaking'
+ * @param {number} moduleNumber - 모듈 번호
+ * @returns {Promise<boolean>} 데이터 존재 여부
+ */
+async function _checkProblemDataExists(sectionType, moduleNumber) {
+    if (typeof supabaseSelect !== 'function') {
+        console.warn('⚠️ [대시보드] supabaseSelect 없음 — 체크 생략');
+        return true; // DB 함수 없으면 체크 생략 (진행 허용)
+    }
+    
+    try {
+        // 영역별 대표 테이블 + 세트 ID 패턴
+        var table, setIdPrefix, setNum;
+        
+        switch (sectionType) {
+            case 'reading':
+                // fillblanks: Module N → set (2N-1), (2N)
+                table = 'tr_reading_fillblanks';
+                setNum = moduleNumber * 2 - 1; // 첫 번째 세트만 확인
+                setIdPrefix = 'fillblank_set_' + String(setNum).padStart(4, '0');
+                break;
+            case 'listening':
+                // response: Module N → set N
+                table = 'tr_listening_response';
+                setIdPrefix = 'response_set_' + String(moduleNumber).padStart(4, '0');
+                break;
+            case 'writing':
+                // arrange: Module N → set N
+                table = 'tr_writing_arrange';
+                setIdPrefix = 'arrange_set_' + String(moduleNumber).padStart(4, '0');
+                break;
+            case 'speaking':
+                // repeat: Module N → set N
+                table = 'tr_speaking_repeat';
+                setIdPrefix = 'repeat_set_' + String(moduleNumber).padStart(4, '0');
+                break;
+            default:
+                return true; // 알 수 없는 타입은 체크 생략
+        }
+        
+        console.log(`🔍 [대시보드] 문제 데이터 확인: ${table}, setId=${setIdPrefix}`);
+        
+        // set_id 또는 id 기준으로 1건만 조회 (가벼운 쿼리)
+        var query;
+        if (sectionType === 'reading' || sectionType === 'speaking') {
+            // fillblanks, repeat: id 컬럼이 세트 ID
+            query = 'select=id&id=eq.' + setIdPrefix + '&limit=1';
+        } else {
+            // response, arrange: set_id 컬럼
+            query = 'select=set_id&set_id=eq.' + setIdPrefix + '&limit=1';
+        }
+        
+        var rows = await supabaseSelect(table, query);
+        var exists = rows && rows.length > 0;
+        
+        console.log(`🔍 [대시보드] 결과: ${exists ? '✅ 존재' : '❌ 없음'}`);
+        return exists;
+        
+    } catch (e) {
+        console.warn('⚠️ [대시보드] 문제 데이터 체크 실패 (진행 허용):', e);
+        return true; // 체크 실패 시 진행 허용 (기존 동작 유지)
+    }
+}
+
+/**
+ * "문제 준비 중" 팝업 표시
+ * 문제 데이터가 아직 등록되지 않았을 때 학생에게 친절하게 안내
+ */
+function _showProblemNotReadyPopup() {
+    // 기존 팝업이 있으면 제거
+    var existingOverlay = document.getElementById('problemNotReadyOverlay');
+    var existingPopup = document.getElementById('problemNotReadyPopup');
+    if (existingOverlay) existingOverlay.remove();
+    if (existingPopup) existingPopup.remove();
+    
+    // 오버레이
+    var overlay = document.createElement('div');
+    overlay.id = 'problemNotReadyOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;';
+    
+    // 팝업
+    var popup = document.createElement('div');
+    popup.id = 'problemNotReadyPopup';
+    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:32px 28px 24px;max-width:360px;width:90%;z-index:99999;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);';
+    
+    popup.innerHTML = 
+        '<div style="font-size:36px;margin-bottom:16px;">🔧</div>' +
+        '<h3 style="margin:0 0 12px;font-size:18px;font-weight:700;color:#1a1a2e;">문제 준비 중이에요!</h3>' +
+        '<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#555;">' +
+            '이 영역의 문제는 현재 꼼꼼하게 검토하고 다듬는 중이에요.<br>' +
+            '더 정확하고 퀄리티 높은 문제를 드리기 위해<br>하나하나 세심하게 확인하고 있으니 조금만 기다려 주세요!' +
+        '</p>' +
+        '<p style="margin:0 0 24px;font-size:13px;color:#888;">' +
+            '잠시 후 또는 내일 다시 들어오시면<br>준비된 문제로 만나실 수 있어요 😊' +
+        '</p>' +
+        '<button id="problemNotReadyCloseBtn" style="' +
+            'background:#9480c5;color:#fff;border:none;border-radius:10px;' +
+            'padding:12px 32px;font-size:15px;font-weight:600;cursor:pointer;' +
+            'transition:background 0.2s;' +
+        '">확인</button>';
+    
+    // 닫기 함수
+    function closePopup() {
+        overlay.remove();
+        popup.remove();
+    }
+    
+    // DOM에 추가
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+    
+    // 이벤트 바인딩
+    document.getElementById('problemNotReadyCloseBtn').onclick = closePopup;
+    overlay.onclick = closePopup;
 }
 
 /**
