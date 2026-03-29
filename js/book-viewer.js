@@ -1244,16 +1244,23 @@ function setupBookOnlyUI() {
         el.style.display = 'none';
     });
 
-    // 3-a: 상단에 "내 대시보드" 버튼 추가
-    const btnDashboard = document.createElement('button');
-    btnDashboard.className = 'book-topbar-btn book-btn-dashboard';
-    btnDashboard.title = '내 대시보드';
-    btnDashboard.innerHTML = '<i class="fa-solid fa-house"></i> <span class="book-only-btn-label">내 대시보드</span>';
-    btnDashboard.addEventListener('click', () => {
-        saveProgress().then(() => {
-            window.location.href = 'https://eonfl.com/my-dashboard.html';
+    // 3-a: 뒤로가기 버튼 숨기고 그 자리(상단 좌측)에 "대시보드" 버튼 배치
+    const btnBack = document.getElementById('btnBack');
+    if (btnBack) {
+        btnBack.style.display = 'none';
+
+        const btnDashboard = document.createElement('button');
+        btnDashboard.className = 'book-topbar-btn book-btn-dashboard';
+        btnDashboard.title = '대시보드';
+        btnDashboard.innerHTML = '<i class="fa-solid fa-th-large"></i> <span class="book-only-btn-label">대시보드</span>';
+        btnDashboard.addEventListener('click', () => {
+            saveProgress().then(() => {
+                window.location.href = 'https://eonfl.com/my-dashboard.html';
+            });
         });
-    });
+
+        btnBack.parentNode.insertBefore(btnDashboard, btnBack);
+    }
 
     // 3-b: 로그아웃 아이콘 추가
     const btnLogout = document.createElement('button');
@@ -1272,25 +1279,6 @@ function setupBookOnlyUI() {
         topbarActions.insertBefore(btnLogout, topbarActions.firstChild);
     }
 
-    // 뒤로가기 버튼 옆에 대시보드 버튼 삽입
-    const btnBack = document.getElementById('btnBack');
-    if (btnBack && btnBack.parentNode) {
-        btnBack.parentNode.insertBefore(btnDashboard, btnBack.nextSibling);
-    }
-
-    // 3-f: 뒤로가기 버튼 → 내 대시보드로 이동 (기존 이벤트 제거 위해 교체)
-    if (btnBack) {
-        const newBtnBack = btnBack.cloneNode(true);
-        btnBack.parentNode.replaceChild(newBtnBack, btnBack);
-        newBtnBack.addEventListener('click', () => {
-            saveProgress().then(() => {
-                window.location.href = 'https://eonfl.com/my-dashboard.html';
-            });
-        });
-        // DOM 참조 갱신
-        DOM.btnBack = newBtnBack;
-    }
-
     // book_only 전용 스타일 주입
     injectBookOnlyStyles();
 }
@@ -1301,25 +1289,26 @@ function setupBookOnlyUI() {
 function injectBookOnlyStyles() {
     const style = document.createElement('style');
     style.textContent = `
-        /* 내 대시보드 버튼 */
+        /* 대시보드 버튼 (상단 좌측) */
         .book-btn-dashboard {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            font-size: 13px;
+            gap: 6px;
+            font-size: 14px;
             color: var(--bv-text, #333);
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 8px;
+            white-space: nowrap;
             transition: background 0.2s;
         }
         .book-btn-dashboard:hover {
             background: rgba(0,0,0,0.06);
         }
         .book-btn-dashboard i {
-            font-size: 14px;
+            font-size: 15px;
         }
         .book-only-btn-label {
-            font-weight: 500;
+            font-weight: 600;
         }
 
         /* 로그아웃 버튼 */
@@ -1407,9 +1396,8 @@ function injectBookOnlyStyles() {
             background: #e2e8f0;
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 360px) {
             .book-only-btn-label { display: none; }
-            .book-btn-dashboard { padding: 6px 8px; }
         }
     `;
     document.head.appendChild(style);
