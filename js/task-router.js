@@ -332,7 +332,14 @@ function executeTask(taskName) {
         return;
     }
     
-    // ── 그 외 과제: 시작 확인 팝업 → "시작하기" 누르면 실제 실행 ──
+    // ── 연습코스: 확인 팝업 없이 바로 실행 (부담 없는 연습 UX) ──
+    var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+    if (inPractice) {
+        _executeTaskCore(taskName);
+        return;
+    }
+    
+    // ── 정규코스: 시작 확인 팝업 → "시작하기" 누르면 실제 실행 ──
     confirmTaskStart(taskName, function() {
         _executeTaskCore(taskName);
     });
