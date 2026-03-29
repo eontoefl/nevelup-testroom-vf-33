@@ -23,20 +23,16 @@
  */
 
 // ================================================
-// 0. 인증 확인 — 미로그인 시 리다이렉트
+// 0. 인증 확인 — auth.js가 처리하므로 여기서는 기본 세션 체크만
 // ================================================
-(function checkAuth() {
-    const saved = sessionStorage.getItem('currentUser');
-    if (!saved) {
-        alert('로그인이 필요합니다.');
-        window.location.href = 'index.html';
-        return;
-    }
-})();
+// auth_token이 있으면 auth.js가 인증 후 authReady 이벤트를 발행함.
+// 세션이 이미 있으면 auth.js가 authReady를 발행함.
+// 둘 다 없으면 auth.js가 공홈으로 리다이렉트함.
 
 // ================================================
 // 1. 전역 상태
 // ================================================
+
 const BookViewer = {
     // PDF.js
     pdfDoc: null,
@@ -161,9 +157,19 @@ async function init() {
     bindEvents();
     preventDownload();
 
-    // 유저 정보
+    // 유저 정보 — auth.js가 authReady 발행 시점에는 반드시 sessionStorage에 저장되어 있음
     const user = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (!user) {
+        console.log('❌ [BookViewer] 세션 없음 — 종료');
+        return;
+    }
     BookViewer.userId = user.id;
+    BookViewer.isBookOnly = user.programType === 'book_only';
+
+    // book_only 사용자 UI 조정
+    if (BookViewer.isBookOnly) {
+        setupBookOnlyUI();
+    }
 
     // URL 파라미터 파싱 (과제 모드 여부 판단)
     parseTaskParams();
@@ -184,8 +190,10 @@ async function init() {
     // 메모 전체 로드
     await loadAllMemos();
 
-    // 과제 상태 바 초기화 (메모 로드 후)
-    await initTaskBar();
+    // 과제 상태 바 초기화 (메모 로드 후) — book_only 사용자는 과제 바 숨김
+    if (!BookViewer.isBookOnly) {
+        await initTaskBar();
+    }
 
     // 로딩 숨기기
     DOM.bookLoading.classList.add('hidden');
@@ -825,6 +833,11 @@ function confirmPageJump() {
 // 15. 완독 모달
 // ================================================
 function showCompleteModal() {
+    // book_only 사용자 → 유도 팝업 표시
+    if (BookViewer.isBookOnly) {
+        showBookOnlyCompletePopup();
+        return;
+    }
     DOM.completeOverlay.classList.remove('hidden');
 }
 
@@ -1210,6 +1223,249 @@ async function checkAndCertify() {
 }
 
 // ================================================
-// 22. 시작
+// 22. book_only 사용자 전용 UI 설정
 // ================================================
-document.addEventListener('DOMContentLoaded', init);
+
+/**
+ * book_only 사용자 UI 초기 설정
+ * 3-a: "내 대시보드" 버튼 추가
+ * 3-b: 로그아웃 아이콘 추가
+ * 3-c: task-bar 숨김
+ * 3-f: 뒤로가기 버튼 동작 변경
+ */
+function setupBookOnlyUI() {
+    console.log('📖 [BookOnly] UI 초기화');
+
+    // 3-c: task-bar 숨김 (hidden 유지, initTaskBar 호출도 안 함)
+    const taskBar = document.getElementById('taskBar');
+    if (taskBar) taskBar.classList.add('hidden');
+    // 마감 배너, 인증률 등 과제 관련 요소 숨김
+    document.querySelectorAll('.book-task-bar, .deadline-banner, .cert-rate').forEach(el => {
+        el.style.display = 'none';
+    });
+
+    // 3-a: 상단에 "내 대시보드" 버튼 추가
+    const btnDashboard = document.createElement('button');
+    btnDashboard.className = 'book-topbar-btn book-btn-dashboard';
+    btnDashboard.title = '내 대시보드';
+    btnDashboard.innerHTML = '<i class="fa-solid fa-house"></i> <span class="book-only-btn-label">내 대시보드</span>';
+    btnDashboard.addEventListener('click', () => {
+        saveProgress().then(() => {
+            window.location.href = 'https://eonfl.com/my-dashboard.html';
+        });
+    });
+
+    // 3-b: 로그아웃 아이콘 추가
+    const btnLogout = document.createElement('button');
+    btnLogout.className = 'book-topbar-btn book-btn-logout';
+    btnLogout.title = '로그아웃';
+    btnLogout.innerHTML = '<i class="fa-solid fa-sign-out-alt"></i>';
+    btnLogout.addEventListener('click', () => {
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('courseMode');
+        window.location.href = 'https://eonfl.com';
+    });
+
+    // topbar-actions 영역에 추가
+    const topbarActions = document.querySelector('.book-topbar-actions');
+    if (topbarActions) {
+        topbarActions.insertBefore(btnLogout, topbarActions.firstChild);
+    }
+
+    // 뒤로가기 버튼 옆에 대시보드 버튼 삽입
+    const btnBack = document.getElementById('btnBack');
+    if (btnBack && btnBack.parentNode) {
+        btnBack.parentNode.insertBefore(btnDashboard, btnBack.nextSibling);
+    }
+
+    // 3-f: 뒤로가기 버튼 → 내 대시보드로 이동 (기존 이벤트 제거 위해 교체)
+    if (btnBack) {
+        const newBtnBack = btnBack.cloneNode(true);
+        btnBack.parentNode.replaceChild(newBtnBack, btnBack);
+        newBtnBack.addEventListener('click', () => {
+            saveProgress().then(() => {
+                window.location.href = 'https://eonfl.com/my-dashboard.html';
+            });
+        });
+        // DOM 참조 갱신
+        DOM.btnBack = newBtnBack;
+    }
+
+    // book_only 전용 스타일 주입
+    injectBookOnlyStyles();
+}
+
+/**
+ * book_only 전용 CSS 주입
+ */
+function injectBookOnlyStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* 내 대시보드 버튼 */
+        .book-btn-dashboard {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: var(--bv-text, #333);
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .book-btn-dashboard:hover {
+            background: rgba(0,0,0,0.06);
+        }
+        .book-btn-dashboard i {
+            font-size: 14px;
+        }
+        .book-only-btn-label {
+            font-weight: 500;
+        }
+
+        /* 로그아웃 버튼 */
+        .book-btn-logout {
+            color: var(--bv-text-muted, #999);
+            font-size: 15px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .book-btn-logout:hover {
+            background: rgba(0,0,0,0.06);
+            color: #e74c3c;
+        }
+
+        /* book_only 완독 유도 팝업 */
+        .book-only-popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .book-only-popup {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 28px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .book-only-popup-icon {
+            font-size: 48px;
+            color: #9480c5;
+            margin-bottom: 16px;
+        }
+        .book-only-popup-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .book-only-popup-desc {
+            font-size: 15px;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 28px;
+            word-break: keep-all;
+        }
+        .book-only-popup-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .book-only-popup-btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .book-only-popup-btn:active {
+            transform: scale(0.97);
+        }
+        .book-only-popup-btn-primary {
+            background: #9480c5;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(148,128,197,0.35);
+        }
+        .book-only-popup-btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(148,128,197,0.45);
+        }
+        .book-only-popup-btn-secondary {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .book-only-popup-btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        @media (max-width: 480px) {
+            .book-only-btn-label { display: none; }
+            .book-btn-dashboard { padding: 6px 8px; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+/**
+ * 3-e: 완독 시 유도 팝업 (book_only 전용)
+ * 마지막 페이지 도달 → is_completed true + 팝업 표시
+ */
+function showBookOnlyCompletePopup() {
+    // 이미 팝업이 있으면 무시
+    if (document.querySelector('.book-only-popup-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'book-only-popup-overlay';
+    overlay.innerHTML = `
+        <div class="book-only-popup">
+            <div class="book-only-popup-icon">
+                <i class="fa-solid fa-book-open-reader"></i>
+            </div>
+            <div class="book-only-popup-title">입문서 읽기 완료!</div>
+            <div class="book-only-popup-desc">
+                입문서는 레시피, 내벨업챌린지는 요리 실습입니다.<br>
+                레시피를 백날 째려봐도 요리 실력은 늘지 않습니다.<br>
+                이제 직접 문제를 풀어볼 차례입니다.
+            </div>
+            <div class="book-only-popup-actions">
+                <button class="book-only-popup-btn book-only-popup-btn-primary" id="btnBookOnlyCTA">
+                    내벨업챌린지 알아보기
+                </button>
+                <button class="book-only-popup-btn book-only-popup-btn-secondary" id="btnBookOnlyContinue">
+                    계속 읽기
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // CTA 버튼 → 프로그램 소개 페이지
+    document.getElementById('btnBookOnlyCTA').addEventListener('click', () => {
+        window.location.href = 'https://eonfl.com/programs.html#basic';
+    });
+
+    // 계속 읽기 → 팝업 닫기
+    document.getElementById('btnBookOnlyContinue').addEventListener('click', () => {
+        overlay.remove();
+    });
+
+    // 오버레이 클릭으로 닫기
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+}
+
+// ================================================
+// 23. 시작 — auth.js의 authReady 이벤트를 받은 후 초기화
+// ================================================
+window.addEventListener('authReady', init);

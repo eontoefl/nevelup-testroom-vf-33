@@ -185,13 +185,111 @@ function hideLoginMessage() {
 }
 
 // 페이지 로드 시 세션 확인
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    const isBookPage = window.location.pathname.includes('book.html');
+
+    // ── 수정 1: book.html + auth_token 파라미터 → 토큰 기반 자동 인증 ──
+    if (isBookPage) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const authToken = urlParams.get('auth_token');
+
+        if (authToken) {
+            console.log('🔑 [TokenAuth] 토큰 기반 인증 시도');
+            try {
+                // 1) tr_auth_tokens에서 토큰 조회 (만료 전인 것만)
+                const now = new Date().toISOString();
+                const tokens = await supabaseSelect(
+                    'tr_auth_tokens',
+                    'token=eq.' + encodeURIComponent(authToken)
+                    + '&expires_at=gt.' + encodeURIComponent(now)
+                    + '&limit=1'
+                );
+
+                if (!tokens || tokens.length === 0) {
+                    console.log('❌ [TokenAuth] 토큰 무효 또는 만료');
+                    window.location.href = 'https://eonfl.com';
+                    return;
+                }
+
+                const tokenRow = tokens[0];
+
+                // 2) users 테이블에서 사용자 정보 조회
+                const users = await supabaseSelect(
+                    'users',
+                    'id=eq.' + tokenRow.user_id + '&select=id,name,email,phone&limit=1'
+                );
+
+                if (!users || users.length === 0) {
+                    console.log('❌ [TokenAuth] 사용자를 찾을 수 없음');
+                    window.location.href = 'https://eonfl.com';
+                    return;
+                }
+
+                const user = users[0];
+
+                // 3) sessionStorage에 사용자 정보 저장
+                currentUser = {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone || '',
+                    program: '입문서 무료 신청',
+                    programType: 'book_only',
+                    applicationId: null
+                };
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                console.log('✅ [TokenAuth] 인증 성공:', currentUser.name);
+
+                // 4) 사용한 토큰 삭제 (일회용)
+                await supabaseDelete('tr_auth_tokens', 'id=eq.' + tokenRow.id);
+                console.log('🗑️ [TokenAuth] 토큰 삭제 완료');
+
+                // 5) URL에서 auth_token 파라미터 제거
+                urlParams.delete('auth_token');
+                const cleanSearch = urlParams.toString();
+                const cleanUrl = window.location.pathname + (cleanSearch ? '?' + cleanSearch : '');
+                window.history.replaceState({}, document.title, cleanUrl);
+
+                // Sentry 사용자 연동
+                if (typeof Sentry !== 'undefined' && Sentry.setUser) {
+                    Sentry.setUser({ id: user.id, email: user.email, username: user.name });
+                }
+
+                // book-viewer.js에 인증 완료를 알림
+                window.dispatchEvent(new Event('authReady'));
+                return;
+
+            } catch (err) {
+                console.error('❌ [TokenAuth] 인증 처리 오류:', err);
+                window.location.href = 'https://eonfl.com';
+                return;
+            }
+        }
+    }
+
     const savedUser = sessionStorage.getItem('currentUser');
     
     if (savedUser) {
-        // 이미 로그인되어 있으면 학습 일정 화면으로
+        // 이미 로그인되어 있으면
         currentUser = JSON.parse(savedUser);
         console.log('📋 세션 복원:', currentUser.name);
+
+        // ── 수정 2: book_only 사용자 페이지 접근 제어 ──
+        if (currentUser.programType === 'book_only') {
+            if (!isBookPage) {
+                // book.html이 아닌 페이지 → book.html로 강제 이동
+                console.log('🚫 [BookOnly] book.html 외 접근 차단 → 리다이렉트');
+                window.location.href = 'book.html';
+                return;
+            }
+            // book.html이면 Sentry 연동만 하고 뷰어 초기화에 맡김 (showScreen 호출 안 함)
+            if (typeof Sentry !== 'undefined' && Sentry.setUser) {
+                Sentry.setUser({ id: currentUser.id, email: currentUser.email, username: currentUser.name });
+            }
+            window.dispatchEvent(new Event('authReady'));
+            return;
+        }
+
         // Sentry 사용자 정보 복원
         if (typeof Sentry !== 'undefined' && Sentry.setUser) {
             Sentry.setUser({ id: currentUser.id, email: currentUser.email, username: currentUser.name });
@@ -207,10 +305,24 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 });
         }
-        showScreen('scheduleScreen');
+        // book.html에서 일반 사용자 → authReady 발행 (뷰어 초기화용)
+        if (isBookPage) {
+            window.dispatchEvent(new Event('authReady'));
+        }
+        // book.html에서 일반 사용자는 showScreen이 없으므로 안전하게 처리
+        if (typeof showScreen === 'function') {
+            showScreen('scheduleScreen');
+        }
     } else {
+        // book.html인데 세션도 없고 토큰도 없으면 → 공홈으로
+        if (isBookPage) {
+            window.location.href = 'https://eonfl.com';
+            return;
+        }
         // 로그인 화면 표시
-        showScreen('loginScreen');
+        if (typeof showScreen === 'function') {
+            showScreen('loginScreen');
+        }
     }
 });
 
