@@ -255,7 +255,8 @@ window.addEventListener('DOMContentLoaded', async () => {
                     Sentry.setUser({ id: user.id, email: user.email, username: user.name });
                 }
 
-                // book.html이므로 뷰어 초기화가 book-viewer.js에서 진행됨 — 여기서 끝
+                // book-viewer.js에 인증 완료를 알림
+                window.dispatchEvent(new Event('authReady'));
                 return;
 
             } catch (err) {
@@ -285,6 +286,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             if (typeof Sentry !== 'undefined' && Sentry.setUser) {
                 Sentry.setUser({ id: currentUser.id, email: currentUser.email, username: currentUser.name });
             }
+            window.dispatchEvent(new Event('authReady'));
             return;
         }
 
@@ -302,6 +304,10 @@ window.addEventListener('DOMContentLoaded', async () => {
                         console.log('📋 startDate 동기화 완료:', currentUser.startDate);
                     }
                 });
+        }
+        // book.html에서 일반 사용자 → authReady 발행 (뷰어 초기화용)
+        if (isBookPage) {
+            window.dispatchEvent(new Event('authReady'));
         }
         // book.html에서 일반 사용자는 showScreen이 없으므로 안전하게 처리
         if (typeof showScreen === 'function') {
