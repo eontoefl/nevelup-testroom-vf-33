@@ -1291,12 +1291,14 @@ function injectBookOnlyStyles() {
     style.textContent = `
         /* 대시보드 버튼 (상단 좌측) */
         .book-btn-dashboard {
+            width: auto;
+            height: auto;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-size: 14px;
+            gap: 5px;
+            font-size: 13px;
             color: var(--bv-text, #333);
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
             white-space: nowrap;
             transition: background 0.2s;
@@ -1313,9 +1315,11 @@ function injectBookOnlyStyles() {
 
         /* 로그아웃 버튼 */
         .book-btn-logout {
+            width: 36px;
+            height: 36px;
             color: var(--bv-text-muted, #999);
-            font-size: 15px;
-            padding: 6px 8px;
+            font-size: 14px;
+            padding: 0;
             border-radius: 8px;
             transition: background 0.2s, color 0.2s;
         }
@@ -1396,8 +1400,9 @@ function injectBookOnlyStyles() {
             background: #e2e8f0;
         }
 
-        @media (max-width: 360px) {
+        @media (max-width: 420px) {
             .book-only-btn-label { display: none; }
+            .book-btn-dashboard { padding: 6px 8px; }
         }
     `;
     document.head.appendChild(style);
