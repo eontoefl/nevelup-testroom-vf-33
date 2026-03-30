@@ -417,7 +417,8 @@ var ErrorNote = {
                     throw new Error('사용자 정보 없음');
                 }
 
-                var ext = this._selectedFile.name.split('.').pop() || 'bin';
+                var rawExt = this._selectedFile.name.includes('.') ? this._selectedFile.name.split('.').pop().toLowerCase() : '';
+                var ext = (/^[a-z0-9]+$/.test(rawExt)) ? rawExt : ({ 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/aac': 'aac', 'video/mp4': 'mp4' }[this._selectedFile.type] || 'bin');
                 var timestamp = Date.now();
                 var storagePath = user.id + '/speaking_' + this._sectionType + '_m' + this._moduleNumber + '_' + timestamp + '.' + ext;
 
