@@ -62,6 +62,10 @@
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .book-topbar-btn {
@@ -821,7 +825,22 @@
  * ================================================ */
 @media (max-width: 768px) {
   .book-topbar {
-    padding: 0 16px;
+    padding: 0 12px;
+  }
+
+  .book-topbar-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  .book-topbar-actions {
+    gap: 4px;
+  }
+
+  .book-topbar-title {
+    max-width: 40%;
+    font-size: 0.875rem;
   }
 
   .book-viewer {
