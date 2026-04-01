@@ -58,14 +58,14 @@ function stopAllMedia() {
     document.querySelectorAll('audio').forEach(audio => {
         audio.pause();
         audio.currentTime = 0;
-        audio.src = '';
+        audio.removeAttribute('src');
     });
     
     // 모든 Video 요소 중지
     document.querySelectorAll('video').forEach(video => {
         video.pause();
         video.currentTime = 0;
-        video.src = '';
+        video.removeAttribute('src');
     });
     
     console.log('✅ 모든 미디어 중지 완료');
