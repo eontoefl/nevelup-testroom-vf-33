@@ -136,6 +136,9 @@ async function handleLogin(event) {
         const programLabel = programType === 'fast' ? '4주 Fast' : '8주 Standard';
         showLoginSuccess(`환영합니다, ${currentUser.name}님! (${programLabel})`);
         
+        // 밀린 인증률 일괄 확정 (로그인 대기 시간 동안 백그라운드 처리)
+        _fillMissingAuthRates(user.id);
+        
         setTimeout(() => {
             showScreen('scheduleScreen');
             // 첫 로그인 시 온보딩 튜토리얼 표시 (임시 비활성화)
@@ -305,6 +308,8 @@ window.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
         }
+        // 밀린 인증률 일괄 확정 (백그라운드 처리)
+        _fillMissingAuthRates(currentUser.id);
         // book.html에서 일반 사용자 → authReady 발행 (뷰어 초기화용)
         if (isBookPage) {
             window.dispatchEvent(new Event('authReady'));
@@ -372,6 +377,51 @@ function getCurrentUser() {
 // 현재 사용자 ID 가져오기 (Supabase 연동용)
 function getCurrentUserId() {
     return currentUser ? currentUser.id : null;
+}
+
+/**
+ * 밀린 인증률(locked_auth_rate) 일괄 확정
+ * 
+ * locked_auth_rate가 null인 행 = 마감이 지났는데 대시보드 미방문으로 기록 안 된 것
+ * - initial_record 없음 → 0%
+ * - initial_record 있음 + error_note_submitted false → 50%
+ * - initial_record 있음 + error_note_submitted true → 100%
+ * 
+ * 로그인/세션복원 시 백그라운드로 실행 (화면 전환에 영향 없음)
+ */
+async function _fillMissingAuthRates(userId) {
+    try {
+        var rows = await supabaseSelect(
+            'study_results_v3',
+            'user_id=eq.' + userId
+            + '&locked_auth_rate=is.null'
+            + '&completed_at=not.is.null'
+            + '&select=id,initial_record,error_note_submitted'
+        );
+
+        if (!rows || rows.length === 0) return;
+
+        console.log('🔒 [인증률] 미확정 ' + rows.length + '건 발견 → 일괄 확정 시작');
+
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var hasInitial = row.initial_record != null;
+            var rate = 0;
+            if (hasInitial && row.error_note_submitted) {
+                rate = 100;
+            } else if (hasInitial) {
+                rate = 50;
+            }
+
+            await supabaseUpdate('study_results_v3', 'id=eq.' + row.id, {
+                locked_auth_rate: rate
+            });
+        }
+
+        console.log('🔒 [인증률] 일괄 확정 완료 (' + rows.length + '건)');
+    } catch (e) {
+        console.warn('⚠️ [인증률] 일괄 확정 실패 (무시):', e);
+    }
 }
 
 console.log('✅ auth.js v2 (Supabase) 로드 완료');
