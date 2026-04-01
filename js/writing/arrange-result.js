@@ -394,7 +394,7 @@ function renderArrangeAnswerStructure(result, isCorrectAnswer) {
                 html += '<span class="arrange-result-blank correct-blank">' + escapeHtml_writing(correctWords[correctIndex] || '') + '</span> ';
             } else {
                 var userWord = userFilledWords[index] || '___';
-                var isWrong = userWord !== correctWords[correctIndex];
+                var isWrong = userWord.toLowerCase() !== (correctWords[correctIndex] || '').toLowerCase();
                 html += '<span class="arrange-result-blank user-blank ' + (isWrong ? 'wrong-blank' : 'correct-blank') + '">' + escapeHtml_writing(userWord) + '</span> ';
             }
             correctIndex++;

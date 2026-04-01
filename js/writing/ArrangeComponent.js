@@ -378,7 +378,7 @@ class ArrangeComponent {
                 isCorrect = false;
             } else {
                 for (let i = 0; i < question.correctAnswer.length; i++) {
-                    if (userBlankAnswers[i] !== question.correctAnswer[i]) {
+                    if (userBlankAnswers[i].toLowerCase() !== question.correctAnswer[i].toLowerCase()) {
                         isCorrect = false;
                         break;
                     }
