@@ -91,12 +91,12 @@
 }
 
 .professor-image {
-    width: 500px;
-    height: 500px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    margin-bottom: 20px;
+    margin-bottom: 8px;
 }
 
 .discussion-topic {
