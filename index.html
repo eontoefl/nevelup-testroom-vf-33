@@ -164,13 +164,13 @@
         }
         
         .professor-image {
-            width: 150px !important;
-            height: 150px !important;
+            width: 80px !important;
+            height: 80px !important;
             margin-bottom: 8px !important;
             flex-shrink: 0 !important;
         }
         
-        /* Topic - 남은 공간 자동 조절, 스크롤 제거, 학생 의견과 동일한 크기 */
+        /* Topic - 남은 공간 자동 조절, 긴 텍스트는 스크롤 허용 */
         .discussion-topic {
             width: 100% !important;
             font-size: 17px !important;
@@ -184,7 +184,7 @@
             word-wrap: break-word !important;
             overflow-wrap: break-word !important;
             white-space: normal !important;
-            overflow-y: hidden !important;
+            overflow-y: auto !important;
             flex: 1 !important;
             min-height: 0 !important;
         }
