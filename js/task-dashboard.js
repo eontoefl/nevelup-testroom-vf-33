@@ -638,7 +638,7 @@ function _renderScoreFromRecord(recordJson, sectionType, dbRow, mode) {
             case 'listening':
                 return _renderListeningScore(data);
             case 'writing':
-                return _renderWritingScore(data, dbRow);
+                return _renderWritingScore(data, dbRow, mode);
             case 'speaking':
                 return _renderSpeakingScore(data, dbRow, mode);
             default:
@@ -768,8 +768,16 @@ function _renderListeningScore(data) {
 }
 
 /** 라이팅 세부 점수 */
-function _renderWritingScore(data, dbRow) {
+function _renderWritingScore(data, dbRow, mode) {
     var html = '<div class="sd-score-list">';
+    var completedAt = dbRow ? (dbRow.completed_at || '') : '';
+    var docIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9480c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        + '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>'
+        + '<polyline points="14 2 14 8 20 8"></polyline>'
+        + '<line x1="16" y1="13" x2="8" y2="13"></line>'
+        + '<line x1="16" y1="17" x2="8" y2="17"></line>'
+        + '<line x1="10" y1="9" x2="8" y2="9"></line>'
+        + '</svg>';
     
     // Arrange — 점수 프로그레스 바
     if (data.arrange) {
@@ -784,14 +792,12 @@ function _renderWritingScore(data, dbRow) {
         html += '<div class="sd-score-row-header">';
         html += '<span class="sd-score-row-label">Email';
         if (data.email.userAnswer) {
-            html += ' <button class="sd-writing-view-btn" data-type="email">'
-                  + '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9480c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                  + '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>'
-                  + '<polyline points="14 2 14 8 20 8"></polyline>'
-                  + '<line x1="16" y1="13" x2="8" y2="13"></line>'
-                  + '<line x1="16" y1="17" x2="8" y2="17"></line>'
-                  + '<line x1="10" y1="9" x2="8" y2="9"></line>'
-                  + '</svg></button>';
+            html += ' <button class="sd-writing-view-btn"'
+                  + ' data-type="email"'
+                  + ' data-answer="' + _escapeAttr(data.email.userAnswer) + '"'
+                  + ' data-wordcount="' + (data.email.wordCount || 0) + '"'
+                  + ' data-completed-at="' + _escapeAttr(completedAt) + '"'
+                  + '>' + docIcon + '</button>';
         }
         html += '</span>';
         html += '<span class="sd-score-row-stat sd-stat-done"><svg width="14" height="14" viewBox="0 0 24 24" fill="#77bf7e"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> 완료</span>';
@@ -805,14 +811,12 @@ function _renderWritingScore(data, dbRow) {
         html += '<div class="sd-score-row-header">';
         html += '<span class="sd-score-row-label">Discussion';
         if (data.discussion.userAnswer) {
-            html += ' <button class="sd-writing-view-btn" data-type="discussion">'
-                  + '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9480c5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-                  + '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>'
-                  + '<polyline points="14 2 14 8 20 8"></polyline>'
-                  + '<line x1="16" y1="13" x2="8" y2="13"></line>'
-                  + '<line x1="16" y1="17" x2="8" y2="17"></line>'
-                  + '<line x1="10" y1="9" x2="8" y2="9"></line>'
-                  + '</svg></button>';
+            html += ' <button class="sd-writing-view-btn"'
+                  + ' data-type="discussion"'
+                  + ' data-answer="' + _escapeAttr(data.discussion.userAnswer) + '"'
+                  + ' data-wordcount="' + (data.discussion.wordCount || 0) + '"'
+                  + ' data-completed-at="' + _escapeAttr(completedAt) + '"'
+                  + '>' + docIcon + '</button>';
         }
         html += '</span>';
         html += '<span class="sd-score-row-stat sd-stat-done"><svg width="14" height="14" viewBox="0 0 24 24" fill="#77bf7e"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> 완료</span>';
@@ -821,14 +825,6 @@ function _renderWritingScore(data, dbRow) {
     }
     
     html += '</div>';
-    
-    // 모달용 데이터를 전역에 저장 (모달 열 때 참조)
-    window._writingModalData = {
-        email: data.email || null,
-        discussion: data.discussion || null,
-        completedAt: dbRow ? dbRow.completed_at : null
-    };
-    
     return html;
 }
 
@@ -933,6 +929,17 @@ function _escapeHtml(text) {
     return div.innerHTML;
 }
 
+/** HTML 속성값 이스케이프 (data-* 속성에 안전하게 문자열 저장용) */
+function _escapeAttr(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 // ─── 라이팅 작성 내용 모달 ───
 
 /** 라이팅 모달 보기 버튼 이벤트 바인딩 */
@@ -942,23 +949,22 @@ function _bindWritingViewButtons() {
         btns[i].addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            var type = this.getAttribute('data-type');
-            _openWritingModal(type);
+            _openWritingModal(this);
         });
     }
 }
 
-/** 라이팅 모달 열기 */
-function _openWritingModal(type) {
-    var modalData = window._writingModalData;
-    if (!modalData) return;
+/** 라이팅 모달 열기 — 버튼의 data-* 속성에서 데이터를 직접 읽음 */
+function _openWritingModal(btn) {
+    var type = btn.getAttribute('data-type');
+    var userAnswer = btn.getAttribute('data-answer');
+    var wordCount = parseInt(btn.getAttribute('data-wordcount')) || 0;
+    var rawCompletedAt = btn.getAttribute('data-completed-at');
     
-    var item = modalData[type];
-    if (!item || !item.userAnswer) return;
+    if (!userAnswer) return;
     
     var title = type === 'email' ? 'Email' : 'Discussion';
-    var wordCount = item.wordCount || 0;
-    var completedAt = modalData.completedAt ? _formatDate(modalData.completedAt) : null;
+    var completedAt = rawCompletedAt ? _formatDate(rawCompletedAt) : null;
     
     // 메타 정보 구성
     var metaParts = [];
@@ -997,7 +1003,7 @@ function _openWritingModal(type) {
     // 본문
     html += '<div class="sd-modal-body">';
     html += '<div class="sd-modal-text-box">';
-    html += _escapeHtml(item.userAnswer);
+    html += _escapeHtml(userAnswer);
     html += '</div>';
     html += '</div>';
     
