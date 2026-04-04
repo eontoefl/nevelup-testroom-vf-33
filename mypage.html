@@ -12,11 +12,13 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
   <link rel="stylesheet" href="css/mypage-style.css?v=008_score_chart" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/notification.css" />
   <link rel="stylesheet" href="css/mypage-grass-fast.css" />
   <link rel="stylesheet" href="css/mypage-grass-standard.css" />
+  <link rel="stylesheet" href="css/toefl-score.css?v=002_table" />
 </head>
 <body>
 
@@ -294,7 +296,160 @@
       </div>
     </section>
 
-    <!-- ④ 이전 학습 기록 (V2) 바로가기 -->
+    <!-- ④ 실제 TOEFL 성적 -->
+    <section class="section-block" id="toeflSection">
+
+      <!-- 섹션 헤더: 타이틀 + 등록 버튼 -->
+      <div class="toefl-section-header">
+        <div>
+          <h2 class="section-title">실제 TOEFL 성적</h2>
+          <p class="section-desc">공식 TOEFL iBT 시험 성적을 등록하고 추이를 확인합니다</p>
+        </div>
+        <button class="toefl-register-btn" onclick="openToeflScoreModal()">
+          <i class="fa-solid fa-plus"></i> 성적 등록
+        </button>
+      </div>
+
+      <!-- 필수 응시 현황 -->
+      <div id="toeflStatusBadge"></div>
+
+      <!-- 성적 카드 목록 -->
+      <div id="toeflScoreList"></div>
+
+      <!-- 성적 추이 차트 -->
+      <div class="toefl-chart-section">
+        <h3 class="toefl-chart-title">성적 추이</h3>
+        <div class="toefl-chart-wrap" id="toeflChartWrap">
+          <canvas id="toeflChart" height="320"></canvas>
+          <div class="toefl-chart-empty" id="toeflChartEmpty" style="display:none;">
+            <i class="fa-solid fa-chart-line"></i>
+            <p>성적을 등록하면 추이 그래프가 표시됩니다</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── 성적 등록 모달 ── -->
+    <div class="toefl-modal-overlay" id="toeflScoreModalOverlay">
+      <div class="toefl-modal">
+        <div class="toefl-modal-header">
+          <h3><i class="fa-solid fa-file-circle-plus"></i> TOEFL 성적 등록</h3>
+          <button class="toefl-modal-close" onclick="closeToeflScoreModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="toefl-modal-body">
+          <p class="toefl-modal-notice">
+            2026년 개편 TOEFL iBT 기준 (1.0~6.0, 0.5 단위)
+          </p>
+          <form id="toeflScoreForm" onsubmit="event.preventDefault(); submitToeflScore();">
+
+            <!-- 시험 날짜 -->
+            <div class="toefl-field">
+              <label for="toeflTestDate">시험 날짜</label>
+              <input type="date" id="toeflTestDate" required />
+            </div>
+
+            <!-- 4개 영역 점수 -->
+            <div class="toefl-scores-grid">
+              <div class="toefl-field">
+                <label for="toeflReading">Reading</label>
+                <select id="toeflReading" required onchange="calculateToeflOverall()">
+                  <option value="">선택</option>
+                  <option value="1.0">1.0</option><option value="1.5">1.5</option>
+                  <option value="2.0">2.0</option><option value="2.5">2.5</option>
+                  <option value="3.0">3.0</option><option value="3.5">3.5</option>
+                  <option value="4.0">4.0</option><option value="4.5">4.5</option>
+                  <option value="5.0">5.0</option><option value="5.5">5.5</option>
+                  <option value="6.0">6.0</option>
+                </select>
+              </div>
+              <div class="toefl-field">
+                <label for="toeflListening">Listening</label>
+                <select id="toeflListening" required onchange="calculateToeflOverall()">
+                  <option value="">선택</option>
+                  <option value="1.0">1.0</option><option value="1.5">1.5</option>
+                  <option value="2.0">2.0</option><option value="2.5">2.5</option>
+                  <option value="3.0">3.0</option><option value="3.5">3.5</option>
+                  <option value="4.0">4.0</option><option value="4.5">4.5</option>
+                  <option value="5.0">5.0</option><option value="5.5">5.5</option>
+                  <option value="6.0">6.0</option>
+                </select>
+              </div>
+              <div class="toefl-field">
+                <label for="toeflSpeaking">Speaking</label>
+                <select id="toeflSpeaking" required onchange="calculateToeflOverall()">
+                  <option value="">선택</option>
+                  <option value="1.0">1.0</option><option value="1.5">1.5</option>
+                  <option value="2.0">2.0</option><option value="2.5">2.5</option>
+                  <option value="3.0">3.0</option><option value="3.5">3.5</option>
+                  <option value="4.0">4.0</option><option value="4.5">4.5</option>
+                  <option value="5.0">5.0</option><option value="5.5">5.5</option>
+                  <option value="6.0">6.0</option>
+                </select>
+              </div>
+              <div class="toefl-field">
+                <label for="toeflWriting">Writing</label>
+                <select id="toeflWriting" required onchange="calculateToeflOverall()">
+                  <option value="">선택</option>
+                  <option value="1.0">1.0</option><option value="1.5">1.5</option>
+                  <option value="2.0">2.0</option><option value="2.5">2.5</option>
+                  <option value="3.0">3.0</option><option value="3.5">3.5</option>
+                  <option value="4.0">4.0</option><option value="4.5">4.5</option>
+                  <option value="5.0">5.0</option><option value="5.5">5.5</option>
+                  <option value="6.0">6.0</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Overall 자동 계산 표시 -->
+            <div class="toefl-overall-display">
+              <span class="toefl-overall-label">Overall</span>
+              <span class="toefl-overall-value" id="toeflOverallDisplay">-</span>
+              <span class="toefl-overall-hint">4개 영역 평균 (0.5 단위 반올림)</span>
+            </div>
+
+            <!-- 0-120 환산 점수 (선택) -->
+            <div class="toefl-field">
+              <label for="toeflLegacyTotal">0-120 환산 점수 <span class="toefl-optional">선택</span></label>
+              <input type="number" id="toeflLegacyTotal" min="0" max="120" placeholder="성적표에 표기된 경우 입력" />
+            </div>
+
+            <!-- 성적표 이미지 -->
+            <div class="toefl-field">
+              <label>성적표 캡쳐 이미지</label>
+              <div class="toefl-upload-area" onclick="document.getElementById('toeflScoreImage').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <p>클릭하여 이미지를 선택하세요</p>
+                <p class="toefl-upload-hint">JPG, PNG, WebP · 최대 5MB</p>
+              </div>
+              <input type="file" id="toeflScoreImage" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewToeflImage(this)" required />
+              <img id="toeflImagePreview" class="toefl-image-preview" style="display:none" alt="미리보기" />
+            </div>
+
+            <!-- 메모 -->
+            <div class="toefl-field">
+              <label for="toeflMemo">메모 <span class="toefl-optional">선택</span></label>
+              <textarea id="toeflMemo" rows="2" placeholder="예: 첫 시험, 리스닝 집중 준비 후 재도전 등"></textarea>
+            </div>
+
+            <!-- 제출 버튼 -->
+            <button type="submit" class="toefl-submit-btn" id="toeflSubmitBtn">
+              <i class="fa-solid fa-check"></i> 등록하기
+            </button>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 이미지 뷰어 오버레이 ── -->
+    <div class="toefl-image-viewer-overlay" id="toeflImageViewerOverlay" onclick="closeToeflImageViewer()">
+      <img id="toeflImageViewerImg" src="" alt="성적표" />
+    </div>
+
+    <!-- ⑤ 이전 학습 기록 (V2) 바로가기 -->
     <div class="v2-records-link-wrap" id="v2RecordsLink" style="display:none;">
       <button class="v2-records-link-btn" onclick="goToV2Records()">
         <i class="fa-solid fa-box-archive"></i>
@@ -303,7 +458,7 @@
       </button>
     </div>
 
-    <!-- ⑤ 연습코스 마이페이지 바로가기 (practice_enabled인 경우만) -->
+    <!-- ⑥ 연습코스 마이페이지 바로가기 (practice_enabled인 경우만) -->
     <div class="v2-records-link-wrap" id="practiceMyPageLink" style="display:none;">
       <button class="v2-records-link-btn" onclick="window.location.href='mypage-practice.html'" style="background-color:rgba(148,128,197,0.08); border-color:rgba(148,128,197,0.2); color:#7a68aa;">
         <i class="fa-solid fa-dumbbell"></i>
@@ -319,5 +474,6 @@
   <script src="js/schedule-data.js?v=001"></script>
   <!-- 마이페이지 전용 로직 -->
   <script src="js/mypage.js?v=015_score_chart_label"></script>
+  <script src="js/toefl-score.js?v=002_table"></script>
 </body>
 </html>
