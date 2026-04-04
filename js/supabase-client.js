@@ -554,4 +554,35 @@ function supabaseStorageUrl(bucket, path) {
     return SUPABASE_CONFIG.url + '/storage/v1/object/public/' + bucket + '/' + path;
 }
 
+/**
+ * Supabase Storage 파일 삭제
+ * 공식 API: DELETE /storage/v1/object/{bucket} + body { prefixes: [path] }
+ * @param {string} bucket - 버킷 이름
+ * @param {string} path - 파일 경로 (예: 'user123/1712345678.png')
+ * @returns {Promise<boolean>} 성공 여부
+ */
+async function supabaseStorageDelete(bucket, path) {
+    const url = `${SUPABASE_CONFIG.url}/storage/v1/object/${bucket}`;
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prefixes: [path] })
+        });
+        if (!response.ok) {
+            console.warn(`⚠️ Storage 삭제 실패 (${response.status}):`, path);
+            return false;
+        }
+        console.log('✅ Storage 파일 삭제 완료:', path);
+        return true;
+    } catch (err) {
+        console.warn('⚠️ Storage 삭제 중 에러:', err);
+        return false;
+    }
+}
+
 console.log('✅ supabase-client.js 로드 완료');
