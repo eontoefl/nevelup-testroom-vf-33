@@ -504,6 +504,83 @@
     color: #ef5350;
 }
 
+/* ── 원본 보기 (①단계) ── */
+#emailExplainScreen .email-original-text {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #374151;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+#emailExplainScreen .empty-answer {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+#emailExplainScreen .rewrite-start-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    padding: 10px 22px;
+    background: #9480c5;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#emailExplainScreen .rewrite-start-btn:hover {
+    background: #7c6bb0;
+}
+
+/* ── 비교 화면 (③단계) ── */
+#emailExplainScreen .compare-block {
+    padding: 18px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 14px;
+}
+
+#emailExplainScreen .compare-block-rewrite {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+#emailExplainScreen .compare-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+#emailExplainScreen .compare-block-rewrite .compare-label {
+    color: #16a34a;
+}
+
+#emailExplainScreen .compare-text {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #374151;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
     #emailExplainScreen .test-content {
