@@ -103,8 +103,8 @@ function renderToeflScoreList() {
                 '<span class="toefl-th toefl-th-date">날짜</span>' +
                 '<span class="toefl-th toefl-th-score">R</span>' +
                 '<span class="toefl-th toefl-th-score">L</span>' +
-                '<span class="toefl-th toefl-th-score">S</span>' +
                 '<span class="toefl-th toefl-th-score">W</span>' +
+                '<span class="toefl-th toefl-th-score">S</span>' +
                 '<span class="toefl-th toefl-th-overall">Overall</span>' +
                 '<span class="toefl-th toefl-th-actions"></span>' +
             '</div>';
@@ -127,8 +127,8 @@ function renderToeflScoreList() {
                 '<span class="toefl-td toefl-td-date">' + dateStr + '</span>' +
                 '<span class="toefl-td toefl-td-score">' + Number(s.reading).toFixed(1) + buildDelta(prev ? s.reading - prev.reading : null) + '</span>' +
                 '<span class="toefl-td toefl-td-score">' + Number(s.listening).toFixed(1) + buildDelta(prev ? s.listening - prev.listening : null) + '</span>' +
-                '<span class="toefl-td toefl-td-score">' + Number(s.speaking).toFixed(1) + buildDelta(prev ? s.speaking - prev.speaking : null) + '</span>' +
                 '<span class="toefl-td toefl-td-score">' + Number(s.writing).toFixed(1) + buildDelta(prev ? s.writing - prev.writing : null) + '</span>' +
+                '<span class="toefl-td toefl-td-score">' + Number(s.speaking).toFixed(1) + buildDelta(prev ? s.speaking - prev.speaking : null) + '</span>' +
                 '<span class="toefl-td toefl-td-overall"><strong>' + Number(s.overall).toFixed(1) + '</strong>' + legacyStr + buildDelta(prev ? s.overall - prev.overall : null) + '</span>' +
                 '<span class="toefl-td toefl-td-actions">' +
                     (s.memo ? '<button class="toefl-btn-icon toefl-btn-memo" onclick="toggleToeflMemo(this)" title="메모"><i class="fa-solid fa-message"></i></button>' : '') +
@@ -269,6 +269,7 @@ function renderToeflChart() {
                     label: 'Overall',
                     data: overallData,
                     borderColor: '#1e1b2e',
+                    _origColor: '#1e1b2e',
                     backgroundColor: 'rgba(30, 27, 46, 0.04)',
                     borderWidth: 3,
                     pointRadius: 6,
@@ -285,6 +286,7 @@ function renderToeflChart() {
                     label: 'Reading',
                     data: readingData,
                     borderColor: '#9480c5',
+                    _origColor: '#9480c5',
                     borderWidth: 2,
                     pointRadius: 4,
                     pointBackgroundColor: '#9480c5',
@@ -299,6 +301,7 @@ function renderToeflChart() {
                     label: 'Listening',
                     data: listeningData,
                     borderColor: '#77bf7e',
+                    _origColor: '#77bf7e',
                     borderWidth: 2,
                     pointRadius: 4,
                     pointBackgroundColor: '#77bf7e',
@@ -310,12 +313,13 @@ function renderToeflChart() {
                     spanGaps: true
                 },
                 {
-                    label: 'Speaking',
-                    data: speakingData,
-                    borderColor: '#f59e0b',
+                    label: 'Writing',
+                    data: writingData,
+                    borderColor: '#e8875a',
+                    _origColor: '#e8875a',
                     borderWidth: 2,
                     pointRadius: 4,
-                    pointBackgroundColor: '#f59e0b',
+                    pointBackgroundColor: '#e8875a',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1.5,
                     tension: 0.3,
@@ -324,12 +328,13 @@ function renderToeflChart() {
                     spanGaps: true
                 },
                 {
-                    label: 'Writing',
-                    data: writingData,
-                    borderColor: '#e8875a',
+                    label: 'Speaking',
+                    data: speakingData,
+                    borderColor: '#f59e0b',
+                    _origColor: '#f59e0b',
                     borderWidth: 2,
                     pointRadius: 4,
-                    pointBackgroundColor: '#e8875a',
+                    pointBackgroundColor: '#f59e0b',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1.5,
                     tension: 0.3,
@@ -342,6 +347,7 @@ function renderToeflChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: { duration: 0 },
             plugins: {
                 legend: {
                     display: true,
@@ -369,10 +375,37 @@ function renderToeflChart() {
                         }
                     },
                     onHover: function(e, legendItem, legend) {
-                        legend.chart.canvas.style.cursor = 'pointer';
+                        var chart = legend.chart;
+                        chart.canvas.style.cursor = 'pointer';
+                        // 호버된 dataset 강조, 나머지 희미하게
+                        var idx = legendItem.datasetIndex;
+                        chart.data.datasets.forEach(function(ds, i) {
+                            var meta = chart.getDatasetMeta(i);
+                            if (meta.hidden) return; // 이미 숨겨진 건 무시
+                            if (i === idx) {
+                                ds._savedAlpha = null;
+                                ds.borderColor = ds._origColor || ds.borderColor;
+                                ds.borderWidth = ds.label === 'Overall' ? 3.5 : 2.5;
+                            } else {
+                                if (!ds._savedAlpha) ds._savedAlpha = true;
+                                ds.borderColor = hexToRgba(ds._origColor || ds.borderColor, 0.15);
+                                ds.borderWidth = 1;
+                            }
+                        });
+                        chart.update('none');
                     },
                     onLeave: function(e, legendItem, legend) {
-                        legend.chart.canvas.style.cursor = 'default';
+                        var chart = legend.chart;
+                        chart.canvas.style.cursor = 'default';
+                        // 원래 색상 복원
+                        chart.data.datasets.forEach(function(ds) {
+                            if (ds._origColor) {
+                                ds.borderColor = ds._origColor;
+                            }
+                            ds.borderWidth = ds.label === 'Overall' ? 3 : 2;
+                            ds._savedAlpha = null;
+                        });
+                        chart.update('none');
                     }
                 },
                 tooltip: {
@@ -653,6 +686,17 @@ function closeToeflImageViewer() {
 // ================================================
 // 유틸
 // ================================================
+/**
+ * hex 색상을 rgba 문자열로 변환 (범례 hover 디밍용)
+ */
+function hexToRgba(hex, alpha) {
+    if (!hex || hex.charAt(0) !== '#') return hex;
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
 function escapeHtmlToefl(text) {
     if (!text) return '';
     var div = document.createElement('div');
