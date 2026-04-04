@@ -269,7 +269,6 @@ function renderToeflChart() {
                     label: 'Overall',
                     data: overallData,
                     borderColor: '#1e1b2e',
-                    _origColor: '#1e1b2e',
                     backgroundColor: 'rgba(30, 27, 46, 0.04)',
                     borderWidth: 3,
                     pointRadius: 6,
@@ -286,7 +285,6 @@ function renderToeflChart() {
                     label: 'Reading',
                     data: readingData,
                     borderColor: '#9480c5',
-                    _origColor: '#9480c5',
                     borderWidth: 2,
                     pointRadius: 4,
                     pointBackgroundColor: '#9480c5',
@@ -301,7 +299,6 @@ function renderToeflChart() {
                     label: 'Listening',
                     data: listeningData,
                     borderColor: '#77bf7e',
-                    _origColor: '#77bf7e',
                     borderWidth: 2,
                     pointRadius: 4,
                     pointBackgroundColor: '#77bf7e',
@@ -316,7 +313,6 @@ function renderToeflChart() {
                     label: 'Writing',
                     data: writingData,
                     borderColor: '#e8875a',
-                    _origColor: '#e8875a',
                     borderWidth: 2,
                     pointRadius: 4,
                     pointBackgroundColor: '#e8875a',
@@ -331,7 +327,6 @@ function renderToeflChart() {
                     label: 'Speaking',
                     data: speakingData,
                     borderColor: '#f59e0b',
-                    _origColor: '#f59e0b',
                     borderWidth: 2,
                     pointRadius: 4,
                     pointBackgroundColor: '#f59e0b',
@@ -375,37 +370,10 @@ function renderToeflChart() {
                         }
                     },
                     onHover: function(e, legendItem, legend) {
-                        var chart = legend.chart;
-                        chart.canvas.style.cursor = 'pointer';
-                        // 호버된 dataset 강조, 나머지 희미하게
-                        var idx = legendItem.datasetIndex;
-                        chart.data.datasets.forEach(function(ds, i) {
-                            var meta = chart.getDatasetMeta(i);
-                            if (meta.hidden) return; // 이미 숨겨진 건 무시
-                            if (i === idx) {
-                                ds._savedAlpha = null;
-                                ds.borderColor = ds._origColor || ds.borderColor;
-                                ds.borderWidth = ds.label === 'Overall' ? 3.5 : 2.5;
-                            } else {
-                                if (!ds._savedAlpha) ds._savedAlpha = true;
-                                ds.borderColor = hexToRgba(ds._origColor || ds.borderColor, 0.15);
-                                ds.borderWidth = 1;
-                            }
-                        });
-                        chart.update('none');
+                        legend.chart.canvas.style.cursor = 'pointer';
                     },
                     onLeave: function(e, legendItem, legend) {
-                        var chart = legend.chart;
-                        chart.canvas.style.cursor = 'default';
-                        // 원래 색상 복원
-                        chart.data.datasets.forEach(function(ds) {
-                            if (ds._origColor) {
-                                ds.borderColor = ds._origColor;
-                            }
-                            ds.borderWidth = ds.label === 'Overall' ? 3 : 2;
-                            ds._savedAlpha = null;
-                        });
-                        chart.update('none');
+                        legend.chart.canvas.style.cursor = 'default';
                     }
                 },
                 tooltip: {
@@ -686,17 +654,6 @@ function closeToeflImageViewer() {
 // ================================================
 // 유틸
 // ================================================
-/**
- * hex 색상을 rgba 문자열로 변환 (범례 hover 디밍용)
- */
-function hexToRgba(hex, alpha) {
-    if (!hex || hex.charAt(0) !== '#') return hex;
-    var r = parseInt(hex.slice(1, 3), 16);
-    var g = parseInt(hex.slice(3, 5), 16);
-    var b = parseInt(hex.slice(5, 7), 16);
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
-}
-
 function escapeHtmlToefl(text) {
     if (!text) return '';
     var div = document.createElement('div');
