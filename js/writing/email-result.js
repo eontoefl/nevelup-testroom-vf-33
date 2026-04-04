@@ -141,6 +141,7 @@ function _showEmailOriginal(userAnswer) {
     // 원본 글 + 다시 작성하기 버튼
     if (container) {
         var hasAnswer = userAnswer && userAnswer.trim();
+        container.classList.remove('rewrite-area');
         container.innerHTML = '';
 
         // 원본 글 표시
@@ -194,6 +195,7 @@ function _showEmailRewrite(prefillText) {
         hintsHTML += '</div>';
     }
 
+    container.classList.add('rewrite-area');
     container.innerHTML = hintsHTML +
         '<textarea class="rewrite-textarea" id="emailRewriteTextarea" placeholder="여기에 다시 작성해보세요..."></textarea>' +
         '<div class="rewrite-actions">' +
@@ -239,6 +241,7 @@ function _showEmailCompare(userAnswer, rewriteText) {
 
     if (container) {
         var hasOriginal = userAnswer && userAnswer.trim();
+        container.classList.remove('rewrite-area');
 
         container.innerHTML =
             '<div class="compare-block">' +
@@ -280,6 +283,7 @@ function _showEmailDraft(userAnswer) {
 
     if (draftLabel) draftLabel.textContent = 'Your Draft';
     if (container) {
+        container.classList.remove('rewrite-area');
         container.innerHTML = '';
         var pre = document.createElement('pre');
         pre.className = 'email-original-text';
