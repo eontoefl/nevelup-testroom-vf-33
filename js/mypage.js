@@ -81,6 +81,9 @@ async function loadAllData() {
         `user_id=eq.${userId}&select=original_date,extra_days`
     ) || [];
 
+    // TOEFL 실제 성적 로드
+    await loadToeflScores();
+
     console.log(`📊 [MyPage] 로드 완료 - V3결과: ${mpV3Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${mpDeadlineExtensions.length}건`);
 }
 
@@ -93,6 +96,7 @@ function renderAll() {
     renderDeadlineExtensionBanner();
     renderGrass();
     renderScoreChart();
+    renderToeflSection();
     showV2RecordsLink();
 }
 
