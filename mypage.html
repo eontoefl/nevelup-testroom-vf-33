@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/notification.css" />
   <link rel="stylesheet" href="css/mypage-grass-fast.css" />
   <link rel="stylesheet" href="css/mypage-grass-standard.css" />
-  <link rel="stylesheet" href="css/toefl-score.css?v=002_table" />
+  <link rel="stylesheet" href="css/toefl-score.css?v=003_bright" />
 </head>
 <body>
 
@@ -378,8 +378,8 @@
                 </select>
               </div>
               <div class="toefl-field">
-                <label for="toeflSpeaking">Speaking</label>
-                <select id="toeflSpeaking" required onchange="calculateToeflOverall()">
+                <label for="toeflWriting">Writing</label>
+                <select id="toeflWriting" required onchange="calculateToeflOverall()">
                   <option value="">선택</option>
                   <option value="1.0">1.0</option><option value="1.5">1.5</option>
                   <option value="2.0">2.0</option><option value="2.5">2.5</option>
@@ -390,8 +390,8 @@
                 </select>
               </div>
               <div class="toefl-field">
-                <label for="toeflWriting">Writing</label>
-                <select id="toeflWriting" required onchange="calculateToeflOverall()">
+                <label for="toeflSpeaking">Speaking</label>
+                <select id="toeflSpeaking" required onchange="calculateToeflOverall()">
                   <option value="">선택</option>
                   <option value="1.0">1.0</option><option value="1.5">1.5</option>
                   <option value="2.0">2.0</option><option value="2.5">2.5</option>
@@ -474,6 +474,6 @@
   <script src="js/schedule-data.js?v=001"></script>
   <!-- 마이페이지 전용 로직 -->
   <script src="js/mypage.js?v=015_score_chart_label"></script>
-  <script src="js/toefl-score.js?v=002_table"></script>
+  <script src="js/toefl-score.js?v=003_rlws"></script>
 </body>
 </html>

@@ -92,18 +92,19 @@
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
-  background: var(--surface-container-low);
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(148, 128, 197, 0.08);
 }
 
 .toefl-table-header {
   display: grid;
   grid-template-columns: 54px 64px repeat(4, 1fr) 1.2fr 80px;
   align-items: center;
-  padding: 10px 16px;
-  background: rgba(148, 128, 197, 0.06);
-  font-size: 0.72rem;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(148, 128, 197, 0.14) 0%, rgba(185, 172, 226, 0.10) 100%);
+  font-size: 0.73rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: #6a5fa0;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -112,17 +113,18 @@
   display: grid;
   grid-template-columns: 54px 64px repeat(4, 1fr) 1.2fr 80px;
   align-items: center;
-  padding: 12px 16px;
+  padding: 13px 16px;
+  background: #fff;
   transition: background 0.15s;
 }
 .toefl-table-row:hover {
-  background: rgba(148, 128, 197, 0.04);
+  background: rgba(148, 128, 197, 0.06);
 }
 .toefl-row-alt {
-  background: rgba(0, 0, 0, 0.015);
+  background: #faf9fe;
 }
 .toefl-row-alt:hover {
-  background: rgba(148, 128, 197, 0.06);
+  background: rgba(148, 128, 197, 0.09);
 }
 
 .toefl-th, .toefl-td {
@@ -134,14 +136,14 @@
   text-align: center;
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--on-surface);
+  color: #2d2b3d;
   letter-spacing: -0.01em;
 }
 .toefl-th-overall, .toefl-td-overall {
   justify-content: center;
   text-align: center;
   font-size: 0.92rem;
-  color: var(--signature-dark);
+  color: #2d2b3d;
 }
 .toefl-th-actions, .toefl-td-actions {
   justify-content: flex-end;
@@ -166,8 +168,8 @@
 
 .toefl-td-date {
   font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--on-surface-variant);
+  font-weight: 600;
+  color: #555;
   white-space: nowrap;
 }
 
