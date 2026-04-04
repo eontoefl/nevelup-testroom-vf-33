@@ -1,27 +1,32 @@
 // ================================================
 // 토론형 글쓰기 채점 화면 로직
 // ================================================
+//
+// 실전풀이 해설 (mode=initial) 3단계:
+//   ① 원본 글 확인 → ② 재작성 → ③ 비교 (원본 vs 재작성) + 모범답안
+//   이미 재작성 있으면 바로 ③
+//
+// 다시풀기 해설 (mode=current):
+//   원본 글 + 모범답안 (재작성 없음, 기존과 동일)
+// ================================================
 
-var _discussionRewriteMode = null;
 var _discussionDbContext = null;
+var _discussionData = null;
 
 /**
  * 토론형 채점 화면 표시
- * @param {Object} data - 채점 데이터
- * @param {string} mode - 'initial' | 'current'
  */
 function showDiscussionResult(data, mode) {
-    console.log('💬 [토론형 채점] 결과 화면 표시');
+    console.log('💬 [토론형 채점] 결과 화면 표시, mode=' + mode);
 
     if (!data) {
         console.error('❌ 채점 데이터가 없습니다.');
         return;
     }
 
-    _discussionRewriteMode = mode || null;
     _discussionDbContext = data._dbContext || null;
+    _discussionData = data;
     var existingRewrite = data._rewrite || null;
-    var isRewriteTarget = (mode === 'initial' && !existingRewrite);
 
     // 프로필 정보 가져오기
     var profiles = _getDiscussionProfiles(data);
@@ -89,101 +94,203 @@ function showDiscussionResult(data, mode) {
         }
     }
 
-    // ── Your Draft 영역 ──
-    var userAnswerContainer = document.getElementById('discussionResultUserAnswer');
-    if (userAnswerContainer) {
-        if (isRewriteTarget) {
-            // 재작성 모드: bullet 힌트 + textarea
-            var bullets = (data.question && data.question.bullets) || [];
-            var hintsHTML = '';
-            if (bullets.length > 0) {
-                hintsHTML = '<div class="rewrite-hints">' +
-                    '<div class="rewrite-hints-title"><i class="fas fa-lightbulb"></i> 만점 포인트를 참고하여 다시 작성해보세요</div>';
-                bullets.forEach(function(bullet) {
-                    var hintText = replaceStudentNamesInResult(bullet.ets || bullet.must || bullet.key || '', profiles);
-                    hintsHTML += '<div class="rewrite-hint-item">' +
-                        '<span class="rewrite-hint-badge">Bullet ' + bullet.bulletNum + '</span>' +
-                        '<span class="rewrite-hint-text">' + hintText + '</span>' +
-                    '</div>';
-                });
-                hintsHTML += '</div>';
-            }
-
-            userAnswerContainer.outerHTML =
-                '<div id="discussionResultUserAnswer" class="rewrite-area">' +
-                    hintsHTML +
-                    '<textarea class="rewrite-textarea" id="discussionRewriteTextarea" placeholder="여기에 다시 작성해보세요...">' +
-                    '</textarea>' +
-                    '<div class="rewrite-actions">' +
-                        '<span class="rewrite-wordcount" id="discussionRewriteWordCount">0 words</span>' +
-                        '<button class="rewrite-save-btn" onclick="handleDiscussionRewriteSave()">' +
-                            '<i class="fas fa-save"></i> 저장하기' +
-                        '</button>' +
-                    '</div>' +
-                    '<div class="rewrite-feedback" id="discussionRewriteFeedback"></div>' +
-                '</div>';
-
-            // textarea 단어 수 카운트
-            var textarea = document.getElementById('discussionRewriteTextarea');
-            if (textarea) {
-                textarea.addEventListener('input', function() {
-                    var words = this.value.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
-                    var countEl = document.getElementById('discussionRewriteWordCount');
-                    if (countEl) countEl.textContent = words.length + ' words';
-                });
-            }
-        } else if (existingRewrite) {
-            // 이미 재작성 완료: 재작성본 표시
-            userAnswerContainer.textContent = existingRewrite.text || data.userAnswer || '(답안이 없습니다)';
-        } else {
-            // current 모드 또는 기본: 원본 답안 표시
-            userAnswerContainer.textContent = data.userAnswer || '(답안이 없습니다)';
-        }
-    }
-
-    // ── Model Answer + Bullets 영역 (재작성 대상이면 잠금) ──
-    var answersRow = document.querySelector('#discussionExplainScreen .discussion-answers-row');
-    var modelSection = answersRow ? answersRow.querySelector('.discussion-result-section:last-child') : null;
-    var bulletsSection = document.getElementById('discussionResultBullets');
-
-    if (isRewriteTarget) {
-        if (modelSection) modelSection.style.display = 'none';
-        if (bulletsSection) bulletsSection.parentElement.style.display = 'none';
-    } else {
-        if (modelSection) modelSection.style.display = '';
-        if (bulletsSection) bulletsSection.parentElement.style.display = '';
-    }
-
-    // 모범 답안 표시 (Bullet 하이라이트 추가)
+    // 모범 답안 렌더링 (어느 단계에서든 준비해둠)
     _renderDiscussionSampleAnswer(data, profiles);
 
     // Bullet 피드백 데이터 저장
     window.discussionBulletsData = data.question && data.question.bullets ? data.question.bullets : [];
 
     // 피드백 박스 초기화
+    var bulletsSection = document.getElementById('discussionResultBullets');
     if (bulletsSection) {
         bulletsSection.classList.remove('show');
         bulletsSection.innerHTML = '';
     }
 
-    // Your Draft 라벨 업데이트
-    var draftLabel = answersRow ? answersRow.querySelector('.discussion-result-section:first-child .discussion-result-label') : null;
-    if (draftLabel) {
-        if (isRewriteTarget) {
-            draftLabel.textContent = 'Rewrite';
-        } else if (existingRewrite) {
-            draftLabel.textContent = 'Your Rewrite';
+    // ── 단계 분기 ──
+    if (mode === 'initial') {
+        if (existingRewrite) {
+            _showDiscussionCompare(data.userAnswer, existingRewrite.text);
         } else {
-            draftLabel.textContent = 'Your Draft';
+            _showDiscussionOriginal(data.userAnswer);
         }
+    } else {
+        _showDiscussionDraft(data.userAnswer);
     }
 }
+
+// ============================================================
+// ① 원본 글 보기 (실전풀이, 재작성 전)
+// ============================================================
+
+function _showDiscussionOriginal(userAnswer) {
+    var container = document.getElementById('discussionResultUserAnswer');
+    var answersRow = document.querySelector('#discussionExplainScreen .discussion-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.discussion-result-section:first-child .discussion-result-label') : null;
+
+    if (draftLabel) draftLabel.textContent = 'Your Draft';
+
+    if (container) {
+        var hasAnswer = userAnswer && userAnswer.trim();
+        container.innerHTML = '';
+
+        var pre = document.createElement('pre');
+        pre.className = 'discussion-original-text';
+        pre.textContent = hasAnswer ? userAnswer : '작성한 답안이 없습니다.';
+        if (!hasAnswer) pre.className += ' empty-answer';
+        container.appendChild(pre);
+
+        var btn = document.createElement('button');
+        btn.className = 'rewrite-start-btn';
+        btn.innerHTML = '<i class="fas fa-pen"></i> ' + (hasAnswer ? '다시 작성하기' : '작성해보기');
+        btn.addEventListener('click', function() {
+            _showDiscussionRewrite(null);
+        });
+        container.appendChild(btn);
+    }
+
+    _toggleDiscussionModelAnswer(false);
+}
+
+// ============================================================
+// ② 재작성 화면
+// ============================================================
+
+function _showDiscussionRewrite(prefillText) {
+    var container = document.getElementById('discussionResultUserAnswer');
+    var answersRow = document.querySelector('#discussionExplainScreen .discussion-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.discussion-result-section:first-child .discussion-result-label') : null;
+
+    if (draftLabel) draftLabel.textContent = 'Rewrite';
+
+    if (!container) return;
+
+    var data = _discussionData;
+    var profiles = _getDiscussionProfiles(data);
+    var bullets = (data && data.question && data.question.bullets) || [];
+
+    var hintsHTML = '';
+    if (bullets.length > 0) {
+        hintsHTML = '<div class="rewrite-hints">' +
+            '<div class="rewrite-hints-title"><i class="fas fa-lightbulb"></i> 만점 포인트를 참고하여 다시 작성해보세요</div>';
+        bullets.forEach(function(bullet) {
+            var hintText = replaceStudentNamesInResult(bullet.ets || bullet.must || bullet.key || '', profiles);
+            hintsHTML += '<div class="rewrite-hint-item">' +
+                '<span class="rewrite-hint-badge">Bullet ' + bullet.bulletNum + '</span>' +
+                '<span class="rewrite-hint-text">' + hintText + '</span>' +
+            '</div>';
+        });
+        hintsHTML += '</div>';
+    }
+
+    container.innerHTML = hintsHTML +
+        '<textarea class="rewrite-textarea" id="discussionRewriteTextarea" placeholder="여기에 다시 작성해보세요..."></textarea>' +
+        '<div class="rewrite-actions">' +
+            '<span class="rewrite-wordcount" id="discussionRewriteWordCount">0 words</span>' +
+            '<button class="rewrite-save-btn" onclick="handleDiscussionRewriteSave()">' +
+                '<i class="fas fa-save"></i> 저장하기' +
+            '</button>' +
+        '</div>' +
+        '<div class="rewrite-feedback" id="discussionRewriteFeedback"></div>';
+
+    var textarea = document.getElementById('discussionRewriteTextarea');
+    if (textarea && prefillText) {
+        textarea.value = prefillText;
+        var words = prefillText.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+        var countEl = document.getElementById('discussionRewriteWordCount');
+        if (countEl) countEl.textContent = words.length + ' words';
+    }
+
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            var words = this.value.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+            var countEl = document.getElementById('discussionRewriteWordCount');
+            if (countEl) countEl.textContent = words.length + ' words';
+        });
+    }
+
+    _toggleDiscussionModelAnswer(false);
+}
+
+// ============================================================
+// ③ 비교 화면 (원본 vs 재작성 + 모범답안)
+// ============================================================
+
+function _showDiscussionCompare(userAnswer, rewriteText) {
+    var container = document.getElementById('discussionResultUserAnswer');
+    var answersRow = document.querySelector('#discussionExplainScreen .discussion-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.discussion-result-section:first-child .discussion-result-label') : null;
+
+    if (draftLabel) draftLabel.textContent = 'Your Writing';
+
+    if (container) {
+        var hasOriginal = userAnswer && userAnswer.trim();
+
+        container.innerHTML =
+            '<div class="compare-block">' +
+                '<div class="compare-label">Your Draft</div>' +
+                '<pre class="compare-text">' + _escapeHtmlDiscussion(hasOriginal ? userAnswer : '(답안이 없습니다)') + '</pre>' +
+            '</div>' +
+            '<div class="compare-block compare-block-rewrite">' +
+                '<div class="compare-label">Your Rewrite</div>' +
+                '<pre class="compare-text">' + _escapeHtmlDiscussion(rewriteText || '(답안이 없습니다)') + '</pre>' +
+            '</div>' +
+            '<button class="rewrite-start-btn" onclick="_discussionRewriteAgain()">' +
+                '<i class="fas fa-pen"></i> 다시 작성하기' +
+            '</button>';
+    }
+
+    _toggleDiscussionModelAnswer(true);
+}
+
+// ============================================================
+// 공통 헬퍼
+// ============================================================
+
+function _toggleDiscussionModelAnswer(show) {
+    var answersRow = document.querySelector('#discussionExplainScreen .discussion-answers-row');
+    var modelSection = answersRow ? answersRow.querySelector('.discussion-result-section:last-child') : null;
+    var bulletsSection = document.getElementById('discussionResultBullets');
+
+    if (modelSection) modelSection.style.display = show ? '' : 'none';
+    if (bulletsSection) bulletsSection.parentElement.style.display = show ? '' : 'none';
+}
+
+function _showDiscussionDraft(userAnswer) {
+    var container = document.getElementById('discussionResultUserAnswer');
+    var answersRow = document.querySelector('#discussionExplainScreen .discussion-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.discussion-result-section:first-child .discussion-result-label') : null;
+
+    if (draftLabel) draftLabel.textContent = 'Your Draft';
+    if (container) {
+        container.innerHTML = '';
+        var pre = document.createElement('pre');
+        pre.className = 'discussion-original-text';
+        pre.textContent = userAnswer || '(답안이 없습니다)';
+        container.appendChild(pre);
+    }
+
+    _toggleDiscussionModelAnswer(true);
+}
+
+function _escapeHtmlDiscussion(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+window._discussionRewriteAgain = function() {
+    var rewriteBlock = document.querySelector('#discussionExplainScreen .compare-block-rewrite .compare-text');
+    var prefill = rewriteBlock ? rewriteBlock.textContent : '';
+    if (prefill === '(답안이 없습니다)') prefill = '';
+    _showDiscussionRewrite(prefill);
+};
 
 /**
  * 프로필 정보 가져오기 (data → sessionStorage → window → 기본값)
  */
 function _getDiscussionProfiles(data) {
-    if (data.profiles && data.profiles.student1 && data.profiles.student2) {
+    if (data && data.profiles && data.profiles.student1 && data.profiles.student2) {
         return data.profiles;
     }
 
@@ -199,9 +306,10 @@ function _getDiscussionProfiles(data) {
     return { student1: { name: 'Student 1' }, student2: { name: 'Student 2' } };
 }
 
-/**
- * 모범 답안 렌더링 (내부 함수)
- */
+// ============================================================
+// 모범 답안 렌더링
+// ============================================================
+
 function _renderDiscussionSampleAnswer(data, profiles) {
     var sampleAnswerElement = document.getElementById('discussionResultSampleAnswer');
     if (!sampleAnswerElement || !data.question || !data.question.sampleAnswer) return;
@@ -244,9 +352,10 @@ function _renderDiscussionSampleAnswer(data, profiles) {
     sampleAnswerElement.innerHTML = htmlContent;
 }
 
-/**
- * 재작성 저장
- */
+// ============================================================
+// 재작성 저장
+// ============================================================
+
 async function handleDiscussionRewriteSave() {
     var textarea = document.getElementById('discussionRewriteTextarea');
     var feedbackEl = document.getElementById('discussionRewriteFeedback');
@@ -271,7 +380,6 @@ async function handleDiscussionRewriteSave() {
         return;
     }
 
-    // 저장 버튼 비활성
     var saveBtn = document.querySelector('#discussionExplainScreen .rewrite-save-btn');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
 
@@ -286,23 +394,9 @@ async function handleDiscussionRewriteSave() {
 
         await upsertRewriteRecord(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day, rewriteRecord);
 
-        if (feedbackEl) {
-            feedbackEl.innerHTML = '<i class="fas fa-check-circle"></i> 저장되었습니다!';
-            feedbackEl.className = 'rewrite-feedback rewrite-feedback-correct';
-        }
-
-        // textarea 비활성
-        textarea.disabled = true;
-
-        // 잠금 해제: Model Answer + Bullets 표시
-        var answersRow = document.querySelector('#discussionExplainScreen .discussion-answers-row');
-        var modelSection = answersRow ? answersRow.querySelector('.discussion-result-section:last-child') : null;
-        var bulletsParent = document.getElementById('discussionResultBullets');
-
-        setTimeout(function() {
-            if (modelSection) modelSection.style.display = '';
-            if (bulletsParent) bulletsParent.parentElement.style.display = '';
-        }, 500);
+        // 저장 성공 → ③ 비교 화면으로 전환
+        var userAnswer = _discussionData ? _discussionData.userAnswer : '';
+        _showDiscussionCompare(userAnswer, text);
 
     } catch (err) {
         console.error('❌ [토론형] rewrite 저장 실패:', err);
@@ -314,9 +408,10 @@ async function handleDiscussionRewriteSave() {
     }
 }
 
-/**
- * Bullet 피드백 표시 (하이라이트 클릭 시)
- */
+// ============================================================
+// Bullet 피드백 / 문제 토글
+// ============================================================
+
 function showDiscussionBulletFeedback(bulletNum, event) {
     var bulletsElement = document.getElementById('discussionResultBullets');
     if (!bulletsElement || !window.discussionBulletsData) return;
@@ -342,9 +437,6 @@ function showDiscussionBulletFeedback(bulletNum, event) {
     setTimeout(function() { bulletsElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
 }
 
-/**
- * 문제 보기 토글
- */
 function toggleDiscussionProblem() {
     var problemDiv = document.getElementById('discussionResultProblem');
     var toggleIcon = document.getElementById('discussionProblemToggleIcon');
