@@ -1,27 +1,32 @@
 // ================================================
 // 이메일 작성 채점 화면 로직
 // ================================================
+//
+// 실전풀이 해설 (mode=initial) 3단계:
+//   ① 원본 글 확인 → ② 재작성 → ③ 비교 (원본 vs 재작성) + 모범답안
+//   이미 재작성 있으면 바로 ③
+//
+// 다시풀기 해설 (mode=current):
+//   원본 글 + 모범답안 (재작성 없음, 기존과 동일)
+// ================================================
 
-var _emailRewriteMode = null;
 var _emailDbContext = null;
+var _emailData = null;
 
 /**
  * 이메일 채점 화면 표시
- * @param {Object} data - 채점 데이터
- * @param {string} mode - 'initial' | 'current'
  */
 function showEmailResult(data, mode) {
-    console.log('📧 [이메일 채점] 결과 화면 표시');
+    console.log('📧 [이메일 채점] 결과 화면 표시, mode=' + mode);
 
     if (!data) {
         console.error('❌ 채점 데이터가 없습니다.');
         return;
     }
 
-    _emailRewriteMode = mode || null;
     _emailDbContext = data._dbContext || null;
+    _emailData = data;
     var existingRewrite = data._rewrite || null;
-    var isRewriteTarget = (mode === 'initial' && !existingRewrite);
 
     // 단어 수 표시
     var wordCountElement = document.getElementById('emailResultWordCount');
@@ -29,6 +34,7 @@ function showEmailResult(data, mode) {
         wordCountElement.textContent = data.wordCount || 0;
     }
 
+    // 단어 수 피드백
     var wordCountFeedbackElement = document.getElementById('emailWordCountFeedback');
     if (wordCountFeedbackElement && data.wordCount) {
         var wordCount = data.wordCount;
@@ -82,55 +88,17 @@ function showEmailResult(data, mode) {
         }
     }
 
-    // ── Your Draft 영역 ──
-    var userAnswerContainer = document.getElementById('emailResultUserAnswer');
-    if (userAnswerContainer) {
-        if (isRewriteTarget) {
-            // 재작성 모드: bullet 힌트 + textarea
-            var bullets = (data.question && data.question.bullets) || [];
-            var hintsHTML = '';
-            if (bullets.length > 0) {
-                hintsHTML = '<div class="rewrite-hints">' +
-                    '<div class="rewrite-hints-title"><i class="fas fa-lightbulb"></i> 만점 포인트를 참고하여 다시 작성해보세요</div>';
-                bullets.forEach(function(bullet) {
-                    hintsHTML += '<div class="rewrite-hint-item">' +
-                        '<span class="rewrite-hint-badge">Bullet ' + bullet.bulletNum + '</span>' +
-                        '<span class="rewrite-hint-text">' + (bullet.must || bullet.key || '') + '</span>' +
-                    '</div>';
-                });
-                hintsHTML += '</div>';
-            }
+    // 모범 답안 렌더링 (어느 단계에서든 준비해둠)
+    _renderEmailSampleAnswer(data);
 
-            userAnswerContainer.outerHTML =
-                '<div id="emailResultUserAnswer" class="rewrite-area">' +
-                    hintsHTML +
-                    '<textarea class="rewrite-textarea" id="emailRewriteTextarea" placeholder="여기에 다시 작성해보세요...">' +
-                    '</textarea>' +
-                    '<div class="rewrite-actions">' +
-                        '<span class="rewrite-wordcount" id="emailRewriteWordCount">0 words</span>' +
-                        '<button class="rewrite-save-btn" onclick="handleEmailRewriteSave()">' +
-                            '<i class="fas fa-save"></i> 저장하기' +
-                        '</button>' +
-                    '</div>' +
-                    '<div class="rewrite-feedback" id="emailRewriteFeedback"></div>' +
-                '</div>';
+    // Bullet 피드백 데이터 저장
+    window.emailBulletsData = data.question && data.question.bullets ? data.question.bullets : [];
 
-            // textarea 단어 수 카운트
-            var textarea = document.getElementById('emailRewriteTextarea');
-            if (textarea) {
-                textarea.addEventListener('input', function() {
-                    var words = this.value.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
-                    var countEl = document.getElementById('emailRewriteWordCount');
-                    if (countEl) countEl.textContent = words.length + ' words';
-                });
-            }
-        } else if (existingRewrite) {
-            // 이미 재작성 완료: 재작성본 표시
-            userAnswerContainer.textContent = existingRewrite.text || data.userAnswer || '(답안이 없습니다)';
-        } else {
-            // current 모드 또는 기본: 원본 답안 표시
-            userAnswerContainer.textContent = data.userAnswer || '(답안이 없습니다)';
-        }
+    // 피드백 박스 초기화
+    var bulletsSection = document.getElementById('emailResultBullets');
+    if (bulletsSection) {
+        bulletsSection.classList.remove('show');
+        bulletsSection.innerHTML = '';
     }
 
     // 내 답안 메타 정보 (To, Subject)
@@ -143,48 +111,210 @@ function showEmailResult(data, mode) {
         userSubjectElement.textContent = data.question.subject;
     }
 
-    // ── Model Answer + Bullets 영역 (재작성 대상이면 잠금) ──
+    // ── 단계 분기 ──
+    if (mode === 'initial') {
+        if (existingRewrite) {
+            // 이미 재작성 있음 → 바로 ③ 비교
+            _showEmailCompare(data.userAnswer, existingRewrite.text);
+        } else {
+            // 재작성 없음 → ① 원본 보기
+            _showEmailOriginal(data.userAnswer);
+        }
+    } else {
+        // current 모드 (다시풀기): 원본 + 모범답안, 재작성 없음
+        _showEmailDraft(data.userAnswer);
+    }
+}
+
+// ============================================================
+// ① 원본 글 보기 (실전풀이, 재작성 전)
+// ============================================================
+
+function _showEmailOriginal(userAnswer) {
+    var container = document.getElementById('emailResultUserAnswer');
+    var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.email-result-section:first-child .email-result-label') : null;
+
+    // 라벨
+    if (draftLabel) draftLabel.textContent = 'Your Draft';
+
+    // 원본 글 + 다시 작성하기 버튼
+    if (container) {
+        var hasAnswer = userAnswer && userAnswer.trim();
+        container.classList.remove('rewrite-area');
+        container.innerHTML = '';
+
+        // 원본 글 표시
+        var pre = document.createElement('pre');
+        pre.className = 'email-original-text';
+        pre.textContent = hasAnswer ? userAnswer : '작성한 답안이 없습니다.';
+        if (!hasAnswer) pre.className += ' empty-answer';
+        container.appendChild(pre);
+
+        // 다시 작성하기 버튼
+        var btn = document.createElement('button');
+        btn.className = 'rewrite-start-btn';
+        btn.innerHTML = '<i class="fas fa-pen"></i> ' + (hasAnswer ? '다시 작성하기' : '작성해보기');
+        btn.addEventListener('click', function() {
+            _showEmailRewrite(null);
+        });
+        container.appendChild(btn);
+    }
+
+    // 모범답안 + Bullet 숨김
+    _toggleEmailModelAnswer(false);
+}
+
+// ============================================================
+// ② 재작성 화면
+// ============================================================
+
+function _showEmailRewrite(prefillText) {
+    var container = document.getElementById('emailResultUserAnswer');
+    var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.email-result-section:first-child .email-result-label') : null;
+
+    if (draftLabel) draftLabel.textContent = 'Rewrite';
+
+    if (!container) return;
+
+    var data = _emailData;
+    var bullets = (data && data.question && data.question.bullets) || [];
+
+    // 힌트 생성
+    var hintsHTML = '';
+    if (bullets.length > 0) {
+        hintsHTML = '<div class="rewrite-hints">' +
+            '<div class="rewrite-hints-title"><i class="fas fa-lightbulb"></i> 만점 포인트를 참고하여 다시 작성해보세요</div>';
+        bullets.forEach(function(bullet) {
+            hintsHTML += '<div class="rewrite-hint-item">' +
+                '<span class="rewrite-hint-badge">Bullet ' + bullet.bulletNum + '</span>' +
+                '<span class="rewrite-hint-text">' + (bullet.must || bullet.key || '') + '</span>' +
+            '</div>';
+        });
+        hintsHTML += '</div>';
+    }
+
+    container.classList.add('rewrite-area');
+    container.innerHTML = hintsHTML +
+        '<textarea class="rewrite-textarea" id="emailRewriteTextarea" placeholder="여기에 다시 작성해보세요..."></textarea>' +
+        '<div class="rewrite-actions">' +
+            '<span class="rewrite-wordcount" id="emailRewriteWordCount">0 words</span>' +
+            '<button class="rewrite-save-btn" onclick="handleEmailRewriteSave()">' +
+                '<i class="fas fa-save"></i> 저장하기' +
+            '</button>' +
+        '</div>' +
+        '<div class="rewrite-feedback" id="emailRewriteFeedback"></div>';
+
+    // 이전 재작성 글 프리필
+    var textarea = document.getElementById('emailRewriteTextarea');
+    if (textarea && prefillText) {
+        textarea.value = prefillText;
+        var words = prefillText.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+        var countEl = document.getElementById('emailRewriteWordCount');
+        if (countEl) countEl.textContent = words.length + ' words';
+    }
+
+    // 단어 수 카운트 이벤트
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            var words = this.value.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+            var countEl = document.getElementById('emailRewriteWordCount');
+            if (countEl) countEl.textContent = words.length + ' words';
+        });
+    }
+
+    // 모범답안 + Bullet 숨김 유지
+    _toggleEmailModelAnswer(false);
+}
+
+// ============================================================
+// ③ 비교 화면 (원본 vs 재작성 + 모범답안)
+// ============================================================
+
+function _showEmailCompare(userAnswer, rewriteText) {
+    var container = document.getElementById('emailResultUserAnswer');
+    var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.email-result-section:first-child .email-result-label') : null;
+
+    if (draftLabel) draftLabel.textContent = 'Your Writing';
+
+    if (container) {
+        var hasOriginal = userAnswer && userAnswer.trim();
+        container.classList.remove('rewrite-area');
+
+        container.innerHTML =
+            '<div class="compare-block">' +
+                '<div class="compare-label">Your Draft</div>' +
+                '<pre class="compare-text">' + _escapeHtmlEmail(hasOriginal ? userAnswer : '(답안이 없습니다)') + '</pre>' +
+            '</div>' +
+            '<div class="compare-block compare-block-rewrite">' +
+                '<div class="compare-label">Your Rewrite</div>' +
+                '<pre class="compare-text">' + _escapeHtmlEmail(rewriteText || '(답안이 없습니다)') + '</pre>' +
+            '</div>' +
+            '<button class="rewrite-start-btn" onclick="_emailRewriteAgain()">' +
+                '<i class="fas fa-pen"></i> 다시 작성하기' +
+            '</button>';
+    }
+
+    // 모범답안 + Bullet 표시
+    _toggleEmailModelAnswer(true);
+}
+
+// ============================================================
+// 공통 헬퍼
+// ============================================================
+
+/** 모범답안 + Bullet 보이기/숨기기 */
+function _toggleEmailModelAnswer(show) {
     var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
     var modelSection = answersRow ? answersRow.querySelector('.email-result-section:last-child') : null;
     var bulletsSection = document.getElementById('emailResultBullets');
 
-    if (isRewriteTarget) {
-        // Model Answer 잠금
-        if (modelSection) modelSection.style.display = 'none';
-        if (bulletsSection) bulletsSection.parentElement.style.display = 'none';
-    } else {
-        if (modelSection) modelSection.style.display = '';
-        if (bulletsSection) bulletsSection.parentElement.style.display = '';
-    }
-
-    // 모범 답안 표시 (Bullet 하이라이트 추가)
-    _renderEmailSampleAnswer(data);
-
-    // Bullet 피드백 데이터 저장
-    window.emailBulletsData = data.question && data.question.bullets ? data.question.bullets : [];
-
-    // 피드백 박스 초기화
-    if (bulletsSection) {
-        bulletsSection.classList.remove('show');
-        bulletsSection.innerHTML = '';
-    }
-
-    // Your Draft 라벨 업데이트
-    var draftLabel = answersRow ? answersRow.querySelector('.email-result-section:first-child .email-result-label') : null;
-    if (draftLabel) {
-        if (isRewriteTarget) {
-            draftLabel.textContent = 'Rewrite';
-        } else if (existingRewrite) {
-            draftLabel.textContent = 'Your Rewrite';
-        } else {
-            draftLabel.textContent = 'Your Draft';
-        }
-    }
+    if (modelSection) modelSection.style.display = show ? '' : 'none';
+    if (bulletsSection) bulletsSection.parentElement.style.display = show ? '' : 'none';
 }
 
-/**
- * 모범 답안 렌더링 (내부 함수)
- */
+/** 다시풀기(current) 모드: 단순 원본 표시 */
+function _showEmailDraft(userAnswer) {
+    var container = document.getElementById('emailResultUserAnswer');
+    var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
+    var draftLabel = answersRow ? answersRow.querySelector('.email-result-section:first-child .email-result-label') : null;
+
+    if (draftLabel) draftLabel.textContent = 'Your Draft';
+    if (container) {
+        container.classList.remove('rewrite-area');
+        container.innerHTML = '';
+        var pre = document.createElement('pre');
+        pre.className = 'email-original-text';
+        pre.textContent = userAnswer || '(답안이 없습니다)';
+        container.appendChild(pre);
+    }
+
+    // 모범답안 + Bullet 표시
+    _toggleEmailModelAnswer(true);
+}
+
+/** HTML 이스케이프 */
+function _escapeHtmlEmail(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/** ③에서 "다시 작성하기" 클릭 → ②로 (기존 재작성 프리필) */
+window._emailRewriteAgain = function() {
+    // 비교 화면의 재작성 글을 가져옴
+    var rewriteBlock = document.querySelector('#emailExplainScreen .compare-block-rewrite .compare-text');
+    var prefill = rewriteBlock ? rewriteBlock.textContent : '';
+    if (prefill === '(답안이 없습니다)') prefill = '';
+    _showEmailRewrite(prefill);
+};
+
+// ============================================================
+// 모범 답안 렌더링
+// ============================================================
+
 function _renderEmailSampleAnswer(data) {
     var sampleAnswerElement = document.getElementById('emailResultSampleAnswer');
     if (!sampleAnswerElement || !data.question || !data.question.sampleAnswer) return;
@@ -230,9 +360,10 @@ function _renderEmailSampleAnswer(data) {
     if (sampleSubjectElement && data.question.subject) sampleSubjectElement.textContent = data.question.subject;
 }
 
-/**
- * 재작성 저장
- */
+// ============================================================
+// 재작성 저장
+// ============================================================
+
 async function handleEmailRewriteSave() {
     var textarea = document.getElementById('emailRewriteTextarea');
     var feedbackEl = document.getElementById('emailRewriteFeedback');
@@ -257,12 +388,10 @@ async function handleEmailRewriteSave() {
         return;
     }
 
-    // 저장 버튼 비활성
     var saveBtn = document.querySelector('#emailExplainScreen .rewrite-save-btn');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
 
     try {
-        // 기존 rewrite_record 가져오기 (다른 유형의 rewrite 보존)
         var existing = await getStudyResultV3(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day);
         var rewriteRecord = (existing && existing.rewrite_record) ? existing.rewrite_record : {};
         rewriteRecord.email = {
@@ -273,23 +402,9 @@ async function handleEmailRewriteSave() {
 
         await upsertRewriteRecord(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day, rewriteRecord);
 
-        if (feedbackEl) {
-            feedbackEl.innerHTML = '<i class="fas fa-check-circle"></i> 저장되었습니다!';
-            feedbackEl.className = 'rewrite-feedback rewrite-feedback-correct';
-        }
-
-        // textarea 비활성
-        textarea.disabled = true;
-
-        // 잠금 해제: Model Answer + Bullets 표시
-        var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
-        var modelSection = answersRow ? answersRow.querySelector('.email-result-section:last-child') : null;
-        var bulletsParent = document.getElementById('emailResultBullets');
-
-        setTimeout(function() {
-            if (modelSection) modelSection.style.display = '';
-            if (bulletsParent) bulletsParent.parentElement.style.display = '';
-        }, 500);
+        // 저장 성공 → ③ 비교 화면으로 전환
+        var userAnswer = _emailData ? _emailData.userAnswer : '';
+        _showEmailCompare(userAnswer, text);
 
     } catch (err) {
         console.error('❌ [이메일] rewrite 저장 실패:', err);
@@ -301,9 +416,10 @@ async function handleEmailRewriteSave() {
     }
 }
 
-/**
- * Bullet 피드백 표시 (하이라이트 클릭 시)
- */
+// ============================================================
+// Bullet 피드백 / 문제 토글
+// ============================================================
+
 function showBulletFeedback(bulletNum, event) {
     var bulletsElement = document.getElementById('emailResultBullets');
     if (!bulletsElement || !window.emailBulletsData) return;
@@ -333,9 +449,6 @@ function showBulletFeedback(bulletNum, event) {
     setTimeout(function() { bulletsElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
 }
 
-/**
- * 문제 보기 토글
- */
 function toggleEmailProblem() {
     var problemDiv = document.getElementById('emailResultProblem');
     var toggleIcon = document.getElementById('emailProblemToggleIcon');
