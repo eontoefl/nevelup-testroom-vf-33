@@ -886,12 +886,7 @@ function showV2RecordsLink() {
     linkEl.style.display = 'flex';
     console.log('📦 [MyPage] V2 이전 학습 기록 버튼 표시');
 
-    // 연습코스 마이페이지 링크 (practiceEnabled인 경우만)
-    const practiceLink = document.getElementById('practiceMyPageLink');
-    if (practiceLink && mpUser && mpUser.practiceEnabled) {
-        practiceLink.style.display = 'flex';
-        console.log('🏋️ [MyPage] 연습코스 마이페이지 링크 표시');
-    }
+
 }
 
 // ================================================

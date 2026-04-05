@@ -256,7 +256,7 @@
   position: relative;
   background: var(--surface-container-lowest);
   border-radius: 16px;
-  padding: 28px 20px;
+  padding: 14px 20px 28px;
   min-height: 320px;
   box-shadow: 0 24px 40px rgba(25, 28, 29, 0.05);
 }

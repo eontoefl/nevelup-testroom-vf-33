@@ -350,7 +350,7 @@ function renderToeflChart() {
                     labels: {
                         usePointStyle: true,
                         pointStyle: 'circle',
-                        padding: 16,
+                        padding: 20,
                         font: { size: 12, weight: '600', family: 'Pretendard' },
                         generateLabels: function(chart) {
                             var datasets = chart.data.datasets;
