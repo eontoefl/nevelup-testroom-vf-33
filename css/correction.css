@@ -616,9 +616,9 @@
 
 .corr-spk-card-text {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 400;
     line-height: 1.6;
-    color: var(--text-color, #1a1a1a);
+    color: #444;
     margin: 0;
     flex: 1;
 }

@@ -347,7 +347,7 @@ function _renderSpeakingGrid(sub, audioPrefix) {
         }
         var url = '';
         if (path) {
-            url = (path.indexOf('http') === 0) ? path : (window.SUPABASE_CONFIG ? window.SUPABASE_CONFIG.url + '/storage/v1/object/public/correction-audio/' + path : path);
+            url = (path.indexOf('http') === 0) ? path : supabaseStorageUrl('correction-audio', path);
         }
 
         html += '<div class="corr-spk-card">';
@@ -375,7 +375,7 @@ function _renderAudioRow(label, path) {
         return '<div class="corr-detail-audio-row"><span class="corr-detail-audio-label">' + label + '</span><span style="color:#aaa;">파일 없음</span></div>';
     }
     // Supabase Storage 공개 URL 구성
-    var url = (path.indexOf('http') === 0) ? path : (window.SUPABASE_CONFIG ? window.SUPABASE_CONFIG.url + '/storage/v1/object/public/correction-audio/' + path : path);
+    var url = (path.indexOf('http') === 0) ? path : supabaseStorageUrl('correction-audio', path);
     return '<div class="corr-detail-audio-row">' +
         '<span class="corr-detail-audio-label">' + label + '</span>' +
         '<audio controls preload="none" style="height:36px; flex:1;"><source src="' + url + '"></audio>' +
