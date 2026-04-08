@@ -121,7 +121,7 @@ function _renderCorrectionMode() {
     if (practiceContainer) practiceContainer.style.display = 'none';
     if (correctionContainer) correctionContainer.style.display = '';
     if (scheduleHeader) {
-        scheduleHeader.querySelector('h1').textContent = 'AI FEEDBACK';
+        scheduleHeader.querySelector('h1').textContent = '1:1 FEEDBACK';
         scheduleHeader.querySelector('p').textContent = 'Select the desired session.';
     }
 
@@ -185,7 +185,7 @@ function renderCorrectionSchedule() {
             var taskLabel = writingLabel + ' + Interview';
 
             dayButton.innerHTML =
-                '<span class="day-name">S' + String(session.session).padStart(2, '0') + '</span>' +
+                '<span class="day-name">SESSION ' + String(session.session).padStart(2, '0') + '</span>' +
                 '<div class="progress-dot dot-none"></div>' +
                 '<span class="day-tasks">' + taskLabel + '</span>';
 
