@@ -526,6 +526,38 @@
         </div>
     </div>
 
+    <!-- ============================= -->
+    <!-- 첨삭 세션 상세 화면 -->
+    <!-- ============================= -->
+    <div id="correctionSessionScreen" class="screen" style="display:none;">
+        <div class="top-nav-bar">
+            <div class="top-nav-left">
+                <button class="btn-back" onclick="backToCorrectionMain()" title="뒤로가기">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="task-dashboard-title">
+                    <span id="corrSessionTitle">SESSION 01</span>
+                    <span class="task-dashboard-subtitle" id="corrSessionSubtitle">Week 1</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- 데드라인 배너 -->
+            <div id="corrSessionDeadlineBanner" class="correction-deadline-banner" style="display:none;"></div>
+
+            <!-- Writing 카드 -->
+            <div class="correction-task-card" id="corrWritingCard">
+                <!-- correction-session.js에서 동적 렌더링 -->
+            </div>
+
+            <!-- Speaking 카드 -->
+            <div class="correction-task-card" id="corrSpeakingCard">
+                <!-- correction-session.js에서 동적 렌더링 -->
+            </div>
+        </div>
+    </div>
+
     <!-- 메인 시작 화면 (기존 시험 개요 화면 - 추후 제거 가능) -->
     <div id="taskListScreen" class="screen" style="display:none;">
         <!-- 상단 네비게이션 바 (container 밖) -->
@@ -2383,6 +2415,7 @@
 
     <!-- ===== Correction (FEEDBACK) ===== -->
     <script src="js/correction/correction-main.js?v=001"></script>
+    <script src="js/correction/correction-session.js?v=001"></script>
 
     <script src="js/main.js?v=20260223_progress_fix"></script>
     <script src="js/navigation.js?v=003_popup_rules"></script>

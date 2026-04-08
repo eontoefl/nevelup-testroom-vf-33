@@ -173,16 +173,6 @@ function _getSessionStatus(writingSub, speakingSub) {
     return { dotClass: 'dot-partial', label: '진행중' };
 }
 
-/**
- * 세션 상세 화면 열기 (Phase 3에서 구현)
- * @param {object} session - CORRECTION_SCHEDULE 항목
- * @param {object} scheduleData - correction_schedules 행
- * @param {object} submissionMap - 제출 상태 맵
- */
-function openCorrectionSession(session, scheduleData, submissionMap) {
-    // Phase 3에서 correctionSessionScreen으로 전환
-    var writingLabel = session.writing.type === 'email' ? 'Email' : 'Discussion';
-    alert('Session ' + session.session + ' (' + writingLabel + ' + Interview)\n\n세션 상세 화면은 Phase 3에서 구현됩니다.');
-}
+// openCorrectionSession()은 js/correction/correction-session.js에서 정의
 
 console.log('✅ correction-main.js 로드 완료');
