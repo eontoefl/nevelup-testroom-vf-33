@@ -332,9 +332,13 @@ function _onCorrSpkCountdownEnd(qIndex) {
     var recordingUI = document.getElementById('corrSpkRecordingUI');
     if (recordingUI) recordingUI.style.display = 'none';
 
-    // 잠시 대기 후 다음 질문
+    // 잠시 대기 후 다음 질문 또는 업로드 전환
     var instructEl = document.getElementById('corrSpkInstruction');
-    if (instructEl) instructEl.textContent = '다음 질문으로 이동합니다...';
+    if (instructEl) {
+        instructEl.textContent = (qIndex + 1 >= state.totalQuestions)
+            ? '모든 질문이 완료되었습니다. 파일 업로드로 이동합니다...'
+            : '다음 질문으로 이동합니다...';
+    }
 
     setTimeout(function() {
         if (state.destroyed) return;
