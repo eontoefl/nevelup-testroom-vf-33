@@ -164,14 +164,9 @@ function _showCorrSpkContext() {
         contextImg.style.display = 'none';
     }
 
-    // 오디오 재생 인디케이터
-    var audioIndicator = document.getElementById('corrSpkAudioPlaying');
-
     // 상황 오디오 재생
     if (state.setData.contextAudio && state.setData.contextAudio !== 'PLACEHOLDER') {
-        if (audioIndicator) audioIndicator.style.display = 'block';
         _corrSpkPlayAudio(state.setData.contextAudio, function() {
-            if (audioIndicator) audioIndicator.style.display = 'none';
             if (state.destroyed) return;
             setTimeout(function() {
                 if (state.destroyed) return;
@@ -179,7 +174,6 @@ function _showCorrSpkContext() {
             }, 1500);
         });
     } else {
-        if (audioIndicator) audioIndicator.style.display = 'none';
         setTimeout(function() {
             if (state.destroyed) return;
             _startCorrSpkQuestion(0);
@@ -321,7 +315,7 @@ function _updateCorrSpkTimerDisplay() {
     var m = Math.floor(sec / 60);
     var s = sec % 60;
     var el = document.getElementById('corrSpkTimer');
-    if (el) el.textContent = '00:' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    if (el) el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 function _onCorrSpkCountdownEnd(qIndex) {
