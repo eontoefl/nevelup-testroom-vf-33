@@ -87,19 +87,26 @@
    세션 상세 화면 (correctionSessionScreen)
    ================================================ */
 
-.correction-session-detail {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 24px 16px;
+.correction-session-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .correction-session-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .correction-task-card {
     background: #fff;
     border-radius: 16px;
     padding: 24px;
-    margin-bottom: 16px;
     box-shadow: 0 2px 8px rgba(148, 128, 197, 0.08);
     transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .correction-task-card:hover {
@@ -143,6 +150,7 @@
     color: #888;
     margin-bottom: 16px;
     line-height: 1.5;
+    flex: 1;
 }
 
 .correction-task-card .task-card-btn {
@@ -155,6 +163,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: inherit;
+    margin-top: auto;
 }
 
 .correction-task-card .task-card-btn.btn-active {
