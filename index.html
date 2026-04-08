@@ -381,6 +381,7 @@
                 <div class="course-segment-control" id="courseSegmentControl" style="display:none;">
                     <button class="seg-btn seg-active" id="segBtnRegular">TESTROOM</button>
                     <button class="seg-btn" id="segBtnPractice">PRACTICE</button>
+                    <button class="seg-btn" id="segBtnFeedback">FEEDBACK</button>
                 </div>
 
                 <!-- 🔔 알림 버튼 -->
@@ -513,6 +514,11 @@
             <!-- 연습코스 스케줄 (Practice 1~60 그리드) -->
             <section class="schedule-section" id="practiceScheduleContainer" style="display:none;">
                 <!-- renderPracticeSchedule()에서 동적 생성 -->
+            </section>
+
+            <!-- 첨삭(FEEDBACK) 스케줄 (Week 1~4, 세션 1~12) -->
+            <section class="schedule-section" id="correctionScheduleContainer" style="display:none;">
+                <!-- _renderCorrectionMode()에서 동적 생성 -->
             </section>
 
             
@@ -2292,6 +2298,8 @@
     <!-- [V3] 삭제됨: "시험 완료!" 트로피 단순 채점 화면 (과제 대시보드로 대체) -->
     <!-- [V2] 중복 navigation.js 제거 — line 3400에서 로드 -->
     <script src="js/app-state.js?v=001"></script>
+    <script src="js/correction-config.js?v=001"></script>
+    <script src="js/correction-schedule-data.js?v=001"></script>
     <script src="js/schedule-data.js?v=001"></script>
     <script src="js/task-router.js?v=010_v3_dashboard"></script>
     <!-- [V3] 과제 대시보드 제어 (V2 stage-selector.js 대체) -->

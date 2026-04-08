@@ -105,7 +105,8 @@ async function handleLogin(event) {
             programType: programType,  // 'fast' = 4주, 'standard' = 8주
             applicationId: programInfo.applicationId,
             startDate: programInfo.startDate,
-            practiceEnabled: !!programInfo.practiceEnabled  // 연습코스 활성화 여부
+            practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부
+            correctionEnabled: !!programInfo.correctionEnabled  // 첨삭(FEEDBACK) 활성화 여부
         };
         
         // 세션에 저장 (새로고침 시에도 유지)
