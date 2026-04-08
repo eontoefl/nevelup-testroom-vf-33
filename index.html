@@ -562,6 +562,25 @@
     </div>
 
     <!-- ============================= -->
+    <!-- 첨삭 과제 상세 화면 (아코디언) -->
+    <!-- ============================= -->
+    <div id="correctionDetailScreen" class="screen" style="display:none;">
+        <div class="top-nav-bar">
+            <div class="top-nav-left">
+                <button class="btn-back" onclick="backFromCorrectionDetail()" title="뒤로가기">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="task-dashboard-title">
+                    <span id="corrDetailHeader">SESSION 01</span>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div id="corrDetailAccordion" class="corr-accordion"></div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
     <!-- 첨삭 Writing - Email 화면 -->
     <!-- ============================= -->
     <div id="correctionWritingEmailScreen" class="screen" style="display:none;">
@@ -2736,6 +2755,8 @@
     <script src="js/correction/correction-session.js?v=001"></script>
     <script src="js/correction/correction-writing.js?v=001"></script>
     <script src="js/correction/correction-speaking.js?v=001"></script>
+    <script src="js/correction/correction-feedback.js?v=001"></script>
+    <script src="js/correction/correction-detail.js?v=001"></script>
 
     <script src="js/main.js?v=20260223_progress_fix"></script>
     <script src="js/navigation.js?v=003_popup_rules"></script>

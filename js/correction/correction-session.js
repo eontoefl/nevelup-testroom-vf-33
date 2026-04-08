@@ -168,8 +168,8 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
         return;
     }
 
-    // Phase 6에서 과제 상세(아코디언) 화면으로 전환
-    alert(taskType + ' 상세 화면은 Phase 6에서 구현됩니다.');
+    // 과제 상세(아코디언) 화면으로 전환
+    openCorrectionDetail(taskType, session, submission);
 }
 
 /**

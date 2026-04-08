@@ -631,6 +631,8 @@ function _returnToCorrectionSessionFromSpeaking() {
             var newMap = {};
             submissions.forEach(function(sub) {
                 newMap[sub.session_number + '_' + sub.task_type] = sub;
+                var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
+                newMap[sub.session_number + '_' + category] = sub;
             });
             sessionState.submissionMap = newMap;
             openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap);

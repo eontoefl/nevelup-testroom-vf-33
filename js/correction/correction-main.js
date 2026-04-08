@@ -55,11 +55,16 @@ async function renderCorrectionSchedule() {
         console.warn('⚠️ [Correction] 제출 내역 조회 실패:', e);
     }
 
-    // 세션별 상태 매핑 (session_number + task_type → submission)
+    // 세션별 상태 매핑
+    // DB task_type: writing_email, writing_discussion, speaking_interview
+    // 카드 조회 키: session_writing, session_speaking
     var submissionMap = {};
     submissions.forEach(function(sub) {
-        var key = sub.session_number + '_' + sub.task_type;
-        submissionMap[key] = sub;
+        // 원본 키 (detail 조회용)
+        submissionMap[sub.session_number + '_' + sub.task_type] = sub;
+        // 카테고리 키 (카드 상태용)
+        var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
+        submissionMap[sub.session_number + '_' + category] = sub;
     });
 
     console.log('📋 [Correction] 렌더링 시작 — start_date:', scheduleData.start_date, ', sessions:', schedule.length);
