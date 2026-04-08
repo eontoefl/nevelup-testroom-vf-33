@@ -774,36 +774,60 @@
                 </div>
             </div>
 
-            <!-- Section 2: 상황 설명 -->
-            <div id="corrSpkContextSection" style="display:none; justify-content:center; align-items:center; flex-direction:column; min-height:60vh; text-align:center; padding:40px;">
-                <p id="corrSpkContextText" style="font-size:18px; line-height:1.8; max-width:700px; color:#333;"></p>
-                <img id="corrSpkContextImage" src="" alt="" style="display:none; max-width:300px; margin-top:20px; border-radius:12px;">
+            <!-- Section 2: 상황 설명 (정규과정 interview-context-screen 클래스 재사용) -->
+            <div id="corrSpkContextSection" class="interview-context-screen" style="display:none;">
+                <p id="corrSpkContextText" class="interview-context-text"></p>
+                <img id="corrSpkContextImage" src="" alt="" class="interview-image" style="display:none;">
+
+                <!-- 나레이션 재생 중 표시 (정규과정과 동일) -->
+                <div id="corrSpkAudioPlaying" style="display: none; margin-top: 30px;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; padding: 20px; background: #f0f9ff; border-radius: 12px; border: 2px solid #3b82f6;">
+                        <svg style="width: 24px; height: 24px; color: #3b82f6; animation: pulse 1.5s infinite;" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
+                        </svg>
+                        <span style="font-size: 18px; font-weight: 600; color: #1e40af;">나레이션이 재생 중입니다...</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Section 3: 질문 + 카운트다운 -->
-            <div id="corrSpkQuestionSection" style="display:none; flex-direction:column; align-items:center; min-height:60vh; padding:20px;">
-                <p id="corrSpkInstruction" style="font-size:16px; color:#666; margin-bottom:20px; text-align:center;"></p>
+            <!-- Section 3: 질문 + 카운트다운 (정규과정 interview-question-screen 클래스 재사용) -->
+            <div id="corrSpkQuestionSection" class="interview-question-screen" style="display:none;">
+                <p id="corrSpkInstruction" class="interview-instruction-text"></p>
 
-                <video id="corrSpkVideo" playsinline webkit-playsinline style="display:none; max-width:700px; width:100%; border-radius:12px; margin-bottom:20px;">
+                <!-- 영상 플레이스홀더 (정규과정과 동일) -->
+                <div id="corrSpkVideoPlaceholder" style="display: none; max-width: 700px; margin: 0 auto 40px; background: #f3f4f6; border-radius: 16px; padding: 60px 40px; border: 3px dashed #9ca3af;">
+                    <div style="text-align: center;">
+                        <svg style="width: 80px; height: 80px; color: #6b7280; margin: 0 auto 20px;" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
+                        </svg>
+                        <p style="font-size: 20px; font-weight: 600; color: #4b5563; margin: 0;">인터뷰 영상이 재생됩니다</p>
+                        <p style="font-size: 16px; color: #6b7280; margin-top: 10px;">질문을 듣고 답변해주세요</p>
+                    </div>
+                </div>
+
+                <video id="corrSpkVideo" class="interview-video" playsinline webkit-playsinline style="display:none;">
                     Your browser does not support the video tag.
                 </video>
 
-                <!-- 카운트다운 UI -->
-                <div id="corrSpkRecordingUI" style="display:none; flex-direction:column; align-items:center; margin-top:20px;">
-                    <div style="font-size:13px; color:#888; margin-bottom:8px;">RESPONSE TIME</div>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="position:relative; width:50px; height:50px;">
-                            <svg width="50" height="50" viewBox="0 0 50 50">
-                                <circle cx="25" cy="25" r="20" fill="none" stroke="#e5e7eb" stroke-width="3"></circle>
-                                <circle id="corrSpkProgressCircle" cx="25" cy="25" r="20" fill="none" stroke="#3b82f6" stroke-width="3"
-                                        stroke-dasharray="125.6" stroke-dashoffset="125.6"
-                                        style="transform:rotate(-90deg); transform-origin:center;"></circle>
-                            </svg>
-                            <svg style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:20px; height:20px; color:#3b82f6;" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"/>
-                            </svg>
+                <!-- 카운트다운 UI (정규과정 repeat-recording-ui 클래스 재사용) -->
+                <div id="corrSpkRecordingUI" class="repeat-recording-ui" style="display:none;">
+                    <div class="repeat-timer-display">
+                        <div class="repeat-response-label">RESPONSE TIME</div>
+                        <div class="repeat-timer-content">
+                            <div class="repeat-timer-wrapper">
+                                <div class="repeat-progress-circle">
+                                    <svg width="50" height="50" viewBox="0 0 50 50">
+                                        <circle class="repeat-progress-circle-bg" cx="25" cy="25" r="20"></circle>
+                                        <circle id="corrSpkProgressCircle" class="repeat-progress-circle-fill" cx="25" cy="25" r="20"
+                                                stroke-dasharray="125.6" stroke-dashoffset="125.6"></circle>
+                                    </svg>
+                                    <svg class="repeat-mic-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"/>
+                                    </svg>
+                                </div>
+                                <span id="corrSpkTimer" class="repeat-timer">00:00:45</span>
+                            </div>
                         </div>
-                        <span id="corrSpkTimer" style="font-size:28px; font-weight:bold; font-family:monospace; color:#333;">00:45</span>
                     </div>
                 </div>
             </div>

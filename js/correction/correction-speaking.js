@@ -164,9 +164,14 @@ function _showCorrSpkContext() {
         contextImg.style.display = 'none';
     }
 
+    // 오디오 재생 인디케이터
+    var audioIndicator = document.getElementById('corrSpkAudioPlaying');
+
     // 상황 오디오 재생
     if (state.setData.contextAudio && state.setData.contextAudio !== 'PLACEHOLDER') {
+        if (audioIndicator) audioIndicator.style.display = 'block';
         _corrSpkPlayAudio(state.setData.contextAudio, function() {
+            if (audioIndicator) audioIndicator.style.display = 'none';
             if (state.destroyed) return;
             setTimeout(function() {
                 if (state.destroyed) return;
@@ -174,6 +179,7 @@ function _showCorrSpkContext() {
             }, 1500);
         });
     } else {
+        if (audioIndicator) audioIndicator.style.display = 'none';
         setTimeout(function() {
             if (state.destroyed) return;
             _startCorrSpkQuestion(0);
@@ -211,10 +217,12 @@ function _startCorrSpkQuestion(qIndex) {
     if (recordingUI) recordingUI.style.display = 'none';
 
     var videoEl = document.getElementById('corrSpkVideo');
+    var videoPlaceholder = document.getElementById('corrSpkVideoPlaceholder');
 
     // 질문 영상 재생
     var videoData = state.setData.videos[qIndex];
     if (videoData && videoData.video && videoData.video !== 'PLACEHOLDER') {
+        if (videoPlaceholder) videoPlaceholder.style.display = 'none';
         if (videoEl) {
             videoEl.src = videoData.video;
             videoEl.style.display = 'block';
@@ -238,12 +246,14 @@ function _startCorrSpkQuestion(qIndex) {
             };
         }
     } else {
-        // 영상 없으면 바로 카운트다운
+        // 영상 없으면 플레이스홀더 표시 후 카운트다운
         if (videoEl) videoEl.style.display = 'none';
+        if (videoPlaceholder) videoPlaceholder.style.display = 'block';
         setTimeout(function() {
             if (state.destroyed) return;
+            if (videoPlaceholder) videoPlaceholder.style.display = 'none';
             _startCorrSpkCountdown(qIndex);
-        }, 1000);
+        }, 2000);
     }
 }
 
@@ -252,6 +262,10 @@ function _startCorrSpkCountdown(qIndex) {
     if (!state || state.destroyed) return;
 
     console.log('⏱️ [Correction Speaking] Q' + (qIndex + 1) + ' 카운트다운 시작 (45초)');
+
+    // 플레이스홀더 숨김
+    var videoPlaceholder = document.getElementById('corrSpkVideoPlaceholder');
+    if (videoPlaceholder) videoPlaceholder.style.display = 'none';
 
     // Nodding 비디오 반복 재생
     var videoEl = document.getElementById('corrSpkVideo');
@@ -307,7 +321,7 @@ function _updateCorrSpkTimerDisplay() {
     var m = Math.floor(sec / 60);
     var s = sec % 60;
     var el = document.getElementById('corrSpkTimer');
-    if (el) el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    if (el) el.textContent = '00:' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 function _onCorrSpkCountdownEnd(qIndex) {
@@ -664,9 +678,16 @@ function _cleanupCorrectionSpeaking() {
 
 function _corrSpkShowSection(sectionId) {
     var sections = ['corrSpkReadySection', 'corrSpkContextSection', 'corrSpkQuestionSection', 'corrSpkUploadSection'];
+    // interview-question-screen은 CSS에서 text-align:center를 block으로 사용
+    var displayMap = {
+        corrSpkReadySection: 'flex',
+        corrSpkContextSection: 'flex',
+        corrSpkQuestionSection: 'block',
+        corrSpkUploadSection: 'flex'
+    };
     sections.forEach(function(id) {
         var el = document.getElementById(id);
-        if (el) el.style.display = (id === sectionId) ? 'flex' : 'none';
+        if (el) el.style.display = (id === sectionId) ? (displayMap[id] || 'flex') : 'none';
     });
 }
 
