@@ -561,6 +561,185 @@
         </div>
     </div>
 
+    <!-- ============================= -->
+    <!-- 첨삭 Writing - Email 화면 -->
+    <!-- ============================= -->
+    <div id="correctionWritingEmailScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionWriting()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrEmailHeader" class="test-progress">SESSION 01 · Email 1</span>
+            <div class="test-title">
+                <i class="fas fa-envelope"></i>
+                <span>Writing - Write an Email</span>
+            </div>
+            <div class="test-header-right">
+                <span class="timer" id="corrEmailTimer"><i class="fas fa-clock"></i> 7:00</span>
+                <button class="btn btn-success" onclick="submitCorrectionWriting()">
+                    Submit <i class="fas fa-check"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div class="email-layout">
+                <!-- 왼쪽: 과제 설명 -->
+                <div class="email-task-panel">
+                    <div class="email-task-box">
+                        <p id="corrEmailSituation" class="email-situation"></p>
+                        <p id="corrEmailTask" class="email-task-title"></p>
+                        <ul class="email-instructions">
+                            <li id="corrEmailInstruction1"></li>
+                            <li id="corrEmailInstruction2"></li>
+                            <li id="corrEmailInstruction3"></li>
+                        </ul>
+                        <p class="email-note">Write as much as you can and in complete sentences.</p>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 답안 작성 -->
+                <div class="email-response-panel">
+                    <div class="email-response-header">
+                        <h3>Your Response:</h3>
+                        <p><strong>To:</strong> <span id="corrEmailTo"></span></p>
+                        <p><strong>Subject:</strong> <span id="corrEmailSubject"></span></p>
+                    </div>
+
+                    <div class="email-editor-box">
+                        <div class="email-editor-toolbar">
+                            <div class="toolbar-left">
+                                <button class="toolbar-btn" onclick="corrEmailCut()" title="Cut">
+                                    <i class="fas fa-cut"></i> Cut
+                                </button>
+                                <button class="toolbar-btn" onclick="corrEmailPaste()" title="Paste">
+                                    <i class="fas fa-paste"></i> Paste
+                                </button>
+                                <button class="toolbar-btn" onclick="corrEmailUndo()" title="Undo">
+                                    <i class="fas fa-undo"></i> Undo
+                                </button>
+                                <button class="toolbar-btn" onclick="corrEmailRedo()" title="Redo">
+                                    <i class="fas fa-redo"></i> Redo
+                                </button>
+                            </div>
+                            <div class="toolbar-right">
+                                <span class="word-count">
+                                    <span id="corrEmailWordCount">0</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <textarea
+                            id="corrEmailTextarea"
+                            class="email-textarea"
+                            placeholder="Start typing your email here..."
+                            oninput="onCorrEmailTextInput()">
+                        </textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- 첨삭 Writing - Discussion 화면 -->
+    <!-- ============================= -->
+    <div id="correctionWritingDiscussionScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionWriting()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrDiscussionHeader" class="test-progress">SESSION 01 · Discussion 1</span>
+            <div class="test-title">
+                <i class="fas fa-comments"></i>
+                <span>Writing - Writing for an Academic Discussion</span>
+            </div>
+            <div class="test-header-right">
+                <span class="timer" id="corrDiscussionTimer"><i class="fas fa-clock"></i> 10:00</span>
+                <button class="btn btn-success" onclick="submitCorrectionWriting()">
+                    Submit <i class="fas fa-check"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="test-content" style="display: flex; flex-direction: column; height: calc(100vh - 80px); overflow: hidden; padding: 0;">
+            <div class="discussion-layout" style="flex: 1; min-height: 0; overflow-y: auto;">
+                <!-- 왼쪽: 토론 주제 -->
+                <div class="discussion-task-panel">
+                    <div class="discussion-task-box">
+                        <p id="corrDiscussionClassContext" class="discussion-context"></p>
+
+                        <div class="discussion-instruction">
+                            <p class="discussion-instruction-title">In your response, you should do the following.</p>
+                            <ul class="discussion-instructions">
+                                <li>Express and support your opinion.</li>
+                                <li>Make a contribution to the discussion in your own words.</li>
+                            </ul>
+                            <p class="discussion-note">An effective response will contain at least 100 words.</p>
+                        </div>
+
+                        <div class="professor-section">
+                            <img id="corrDiscussionProfessorImage" src="" alt="Professor" class="professor-image">
+                            <p id="corrDiscussionProfessorName" style="font-weight: bold; margin: 0 0 8px 0; font-size: 15px;"></p>
+                            <p id="corrDiscussionTopic" class="discussion-topic"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 학생 의견 & 답안 작성 -->
+                <div class="discussion-response-panel">
+                    <div class="student-opinions">
+                        <div class="student-opinion">
+                            <img id="corrDiscussionStudent1Image" src="" alt="Student 1" class="student-image">
+                            <div style="flex: 1;">
+                                <div class="student-name" id="corrDiscussionStudent1Name" style="margin-bottom: 5px;">Student 1</div>
+                                <p id="corrDiscussionStudent1Opinion" class="student-text"></p>
+                            </div>
+                        </div>
+                        <div class="student-opinion">
+                            <img id="corrDiscussionStudent2Image" src="" alt="Student 2" class="student-image">
+                            <div style="flex: 1;">
+                                <div class="student-name" id="corrDiscussionStudent2Name" style="margin-bottom: 5px;">Student 2</div>
+                                <p id="corrDiscussionStudent2Opinion" class="student-text"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="discussion-editor-box">
+                        <div class="discussion-editor-toolbar">
+                            <div class="toolbar-left">
+                                <button class="toolbar-btn" onclick="corrDiscussionCut()" title="Cut">
+                                    <i class="fas fa-cut"></i> Cut
+                                </button>
+                                <button class="toolbar-btn" onclick="corrDiscussionPaste()" title="Paste">
+                                    <i class="fas fa-paste"></i> Paste
+                                </button>
+                                <button class="toolbar-btn" onclick="corrDiscussionUndo()" title="Undo">
+                                    <i class="fas fa-undo"></i> Undo
+                                </button>
+                                <button class="toolbar-btn" onclick="corrDiscussionRedo()" title="Redo">
+                                    <i class="fas fa-redo"></i> Redo
+                                </button>
+                            </div>
+                            <div class="toolbar-right">
+                                <span class="word-count">
+                                    <span id="corrDiscussionWordCount">0</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <textarea
+                            id="corrDiscussionTextarea"
+                            class="discussion-textarea"
+                            placeholder="Write your response here..."
+                            oninput="onCorrDiscussionTextInput()">
+                        </textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 메인 시작 화면 (기존 시험 개요 화면 - 추후 제거 가능) -->
     <div id="taskListScreen" class="screen" style="display:none;">
         <!-- 상단 네비게이션 바 (container 밖) -->
@@ -2419,6 +2598,7 @@
     <!-- ===== Correction (FEEDBACK) ===== -->
     <script src="js/correction/correction-main.js?v=001"></script>
     <script src="js/correction/correction-session.js?v=001"></script>
+    <script src="js/correction/correction-writing.js?v=001"></script>
 
     <script src="js/main.js?v=20260223_progress_fix"></script>
     <script src="js/navigation.js?v=003_popup_rules"></script>

@@ -156,9 +156,16 @@ function _getCorrectionCardStatus(sub) {
 function _onCorrectionTaskClick(taskType, session, submission, action) {
     console.log('🎯 [Correction] 태스크 클릭:', taskType, action, 'Session', session.session);
 
+    var sessionState = window._correctionSessionState;
+    var scheduleData = sessionState ? sessionState.scheduleData : null;
+
     if (action === 'write') {
-        // Phase 4/5에서 Writing/Speaking 제출 화면으로 전환
-        alert(taskType + ' 작성 화면은 Phase 4/5에서 구현됩니다.');
+        if (taskType === 'writing') {
+            startCorrectionWriting(session, scheduleData, null);
+        } else {
+            // Speaking은 Phase 5에서 구현
+            alert('Speaking 작성 화면은 Phase 5에서 구현됩니다.');
+        }
         return;
     }
 
