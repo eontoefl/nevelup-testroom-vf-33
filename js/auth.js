@@ -357,6 +357,13 @@ function logout() {
             setCourseMode('regular');
         }
         
+        // 첨삭(FEEDBACK) 상태 초기화
+        if (typeof _stopCorrDeadlineTimer === 'function') _stopCorrDeadlineTimer();
+        if (typeof _cleanupCorrectionWriting === 'function') _cleanupCorrectionWriting();
+        if (typeof _cleanupCorrectionSpeaking === 'function') _cleanupCorrectionSpeaking();
+        window._correctionSessionState = null;
+        window.__isAdmin = false;
+        
         // 2차 풀이 플로팅 UI 제거
         const retakeFloating = document.getElementById('retakeFloatingUI');
         if (retakeFloating) retakeFloating.remove();
