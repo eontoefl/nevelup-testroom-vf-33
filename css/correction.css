@@ -1,0 +1,211 @@
+/**
+ * ================================================
+ * correction.css — 첨삭(FEEDBACK) 전용 스타일
+ * ================================================
+ * 
+ * 기존 CSS 변수(primary #9480c5 등) 그대로 사용.
+ * 첨삭 화면만 design.md 규칙(No-Line, 배경색 차이 구분) 적용.
+ */
+
+/* ================================================
+   FEEDBACK 메인 — 세션 카드
+   ================================================ */
+
+/* 3열 그리드 (기존 style.css의 correction-days-grid 보완) */
+.correction-session-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 12px;
+    background: #fff;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.08);
+    text-align: center;
+    font-family: inherit;
+    min-height: 90px;
+}
+
+.correction-session-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.15);
+}
+
+.correction-session-card:active {
+    transform: translateY(0);
+}
+
+.correction-session-card .session-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-color, #1a1a1a);
+    letter-spacing: 0.03em;
+}
+
+.correction-session-card .session-tasks {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.4;
+}
+
+.correction-session-card .session-date {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 2px;
+}
+
+/* 세션 카드 상태 아이콘 */
+.correction-session-card .session-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.session-status.status-none {
+    background: #ddd;
+}
+
+.session-status.status-progress {
+    background: #f0ad4e;
+}
+
+.session-status.status-complete {
+    background: var(--success-color, #77bf7e);
+}
+
+.session-status.status-expired,
+.session-status.status-failed {
+    background: var(--danger-color, #e74c3c);
+}
+
+/* ================================================
+   세션 상세 화면 (correctionSessionScreen)
+   ================================================ */
+
+.correction-session-detail {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.correction-task-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.08);
+    transition: all 0.2s ease;
+}
+
+.correction-task-card:hover {
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.12);
+}
+
+.correction-task-card .task-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.correction-task-card .task-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+}
+
+.correction-task-card .task-card-icon.writing {
+    background: var(--primary-color, #9480c5);
+}
+
+.correction-task-card .task-card-icon.speaking {
+    background: #e8913a;
+}
+
+.correction-task-card .task-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-color, #1a1a1a);
+}
+
+.correction-task-card .task-card-status {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.correction-task-card .task-card-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.correction-task-card .task-card-btn.btn-active {
+    background: var(--primary-color, #9480c5);
+    color: #fff;
+}
+
+.correction-task-card .task-card-btn.btn-active:hover {
+    opacity: 0.9;
+}
+
+.correction-task-card .task-card-btn.btn-disabled {
+    background: #f0edf5;
+    color: #bbb;
+    cursor: not-allowed;
+}
+
+.correction-task-card .task-card-btn.btn-highlight {
+    background: var(--success-color, #77bf7e);
+    color: #fff;
+}
+
+/* ================================================
+   첨삭 일정 미배정 메시지 (correction-empty-msg는 style.css에 있음)
+   ================================================ */
+
+/* ================================================
+   데드라인 배너 (정규과정 패턴 재사용)
+   ================================================ */
+
+.correction-deadline-banner {
+    text-align: center;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.correction-deadline-banner.deadline-normal {
+    background: #f0edf5;
+    color: var(--primary-color, #9480c5);
+}
+
+.correction-deadline-banner.deadline-urgent {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.correction-deadline-banner.deadline-passed {
+    background: #fce4ec;
+    color: #c62828;
+}
+

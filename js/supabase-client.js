@@ -505,6 +505,85 @@ async function getCompletedTasksPractice(userId) {
 }
 
 // ================================================
+// 첨삭(FEEDBACK) 관련 함수들
+// ================================================
+
+/**
+ * 첨삭 스케줄 조회 (correction_schedules)
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<object|null>} { start_date, duration_weeks } 또는 null
+ */
+async function getCorrectionSchedule(userId) {
+    console.log('📋 [Correction] 스케줄 조회:', userId);
+    var rows = await supabaseSelect(
+        'correction_schedules',
+        'user_id=eq.' + userId + '&limit=1'
+    );
+    if (!rows || rows.length === 0) {
+        console.log('📋 [Correction] 스케줄 없음');
+        return null;
+    }
+    console.log('📋 [Correction] 스케줄 발견:', rows[0].start_date);
+    return rows[0];
+}
+
+/**
+ * 첨삭 제출 전체 조회 (correction_submissions)
+ * 해당 사용자의 모든 제출 행 반환 (세션 카드 상태 매핑용)
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<Array>} 제출 행 배열
+ */
+async function getCorrectionSubmissions(userId) {
+    console.log('📋 [Correction] 제출 내역 조회:', userId);
+    var rows = await supabaseSelect(
+        'correction_submissions',
+        'user_id=eq.' + userId + '&select=id,session_number,task_type,task_number,status,feedback_1_status,feedback_2_status,released_1,released_2,draft_1_submitted_at,feedback_1_at,draft_2_submitted_at,feedback_2_at'
+    );
+    console.log('📋 [Correction] 제출 내역:', (rows ? rows.length : 0) + '건');
+    return rows || [];
+}
+
+/**
+ * 첨삭 제출 단일 행 조회
+ * @param {string} userId
+ * @param {number} sessionNumber
+ * @param {string} taskType - 'writing' | 'speaking'
+ * @returns {Promise<object|null>}
+ */
+async function getCorrectionSubmission(userId, sessionNumber, taskType) {
+    console.log('📋 [Correction] 제출 조회:', 'S' + sessionNumber, taskType);
+    var rows = await supabaseSelect(
+        'correction_submissions',
+        'user_id=eq.' + userId
+        + '&session_number=eq.' + sessionNumber
+        + '&task_type=eq.' + encodeURIComponent(taskType)
+        + '&limit=1'
+    );
+    return (rows && rows.length > 0) ? rows[0] : null;
+}
+
+/**
+ * 첨삭 제출 INSERT
+ * @param {object} data - 제출 데이터
+ * @returns {Promise<object|null>}
+ */
+async function insertCorrectionSubmission(data) {
+    console.log('💾 [Correction] 제출 저장:', data.task_type, 'S' + data.session_number);
+    return await supabaseInsert('correction_submissions', data);
+}
+
+/**
+ * 첨삭 제출 UPDATE
+ * @param {string} id - 제출 행 ID
+ * @param {object} data - 업데이트 데이터
+ * @returns {Promise<object|null>}
+ */
+async function updateCorrectionSubmission(id, data) {
+    console.log('💾 [Correction] 제출 업데이트:', id);
+    return await supabaseUpdate('correction_submissions', 'id=eq.' + id, data);
+}
+
+// ================================================
 // Storage 파일 업로드
 // ================================================
 
