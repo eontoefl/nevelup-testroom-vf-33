@@ -114,35 +114,35 @@ function _getCorrectionCardStatus(sub) {
 
     switch (status) {
         case 'draft1_submitted':
-            return { text: '1차 제출 완료 · 첨삭 대기', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '1차 제출 완료 · 첨삭 대기', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'feedback1_processing':
-            return { text: '1차 첨삭 진행중', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '1차 첨삭 진행중', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'feedback1_ready':
             if (sub.released_1) {
-                return { text: '1차 첨삭 도착!', btnText: '확인하기', btnClass: 'btn-highlight', disabled: false, action: 'view_feedback1' };
+                return { text: '1차 첨삭 도착!', btnText: '확인하기', btnClass: 'btn-highlight', disabled: false, action: 'view' };
             }
-            return { text: '1차 첨삭 완료 · 검수중', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '1차 첨삭 완료 · 검수중', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'feedback1_failed':
-            return { text: '첨삭 준비 중 문제가 발생했습니다. 잠시 후 다시 확인해주세요.', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '첨삭 오류 · 재처리 대기', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'draft2_submitted':
-            return { text: '2차 제출 완료 · 첨삭 대기', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '2차 제출 완료 · 첨삭 대기', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'feedback2_processing':
-            return { text: '2차 첨삭 진행중', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '2차 첨삭 진행중', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'feedback2_ready':
             if (sub.released_2) {
-                return { text: '최종 첨삭 도착!', btnText: '확인하기', btnClass: 'btn-highlight', disabled: false, action: 'view_feedback2' };
+                return { text: '최종 첨삭 도착!', btnText: '확인하기', btnClass: 'btn-highlight', disabled: false, action: 'view' };
             }
-            return { text: '최종 첨삭 완료 · 검수중', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '최종 첨삭 완료 · 검수중', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'feedback2_failed':
-            return { text: '첨삭 준비 중 문제가 발생했습니다. 잠시 후 다시 확인해주세요.', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: '첨삭 오류 · 재처리 대기', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'complete':
-            return { text: '완료', btnText: '다시보기', btnClass: 'btn-active', disabled: false, action: 'view_complete' };
+            return { text: '완료', btnText: '다시보기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'expired':
-            return { text: '마감됨', btnText: '모범답안 보기', btnClass: 'btn-active', disabled: false, action: 'view_model' };
+            return { text: '마감됨', btnText: '모범답안 보기', btnClass: 'btn-active', disabled: false, action: 'view' };
         case 'skipped':
-            return { text: '건너뜀', btnText: '모범답안 보기', btnClass: 'btn-active', disabled: false, action: 'view_model' };
+            return { text: '건너뜀', btnText: '모범답안 보기', btnClass: 'btn-active', disabled: false, action: 'view' };
         default:
-            return { text: status || '알 수 없음', btnText: '확인하기', btnClass: 'btn-disabled', disabled: true, action: 'view' };
+            return { text: status || '알 수 없음', btnText: '확인하기', btnClass: 'btn-active', disabled: false, action: 'view' };
     }
 }
 
