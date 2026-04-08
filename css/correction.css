@@ -575,6 +575,35 @@
 }
 
 /* ================================================
+   과제 상세 — failed 에러 메시지
+   ================================================ */
+
+.corr-detail-error-msg {
+    text-align: center;
+    padding: 24px 20px;
+    color: #b91c1c;
+}
+
+.corr-detail-error-msg i {
+    font-size: 28px;
+    color: #dc2626;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.corr-detail-error-msg p {
+    font-size: 14px;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.corr-detail-error-msg .corr-detail-error-sub {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #888;
+}
+
+/* ================================================
    Speaking 상세 — 2×2 그리드 카드
    ================================================ */
 

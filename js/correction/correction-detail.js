@@ -56,6 +56,9 @@ async function openCorrectionDetail(taskType, session, submission) {
         : 'Interview ' + session.speaking.number;
     if (headerEl) headerEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0') + ' · ' + taskLabel;
 
+    // 데드라인 배너 (과제 상세)
+    _renderCorrDetailDeadlineBanner(session, submission);
+
     // 아코디언 렌더링
     var accordionEl = document.getElementById('corrDetailAccordion');
     if (!accordionEl) return;
@@ -63,6 +66,12 @@ async function openCorrectionDetail(taskType, session, submission) {
 
     var status = submission ? submission.status : '';
     var isWriting = (taskType === 'writing');
+    var isTerminal = (status === 'expired' || status === 'skipped');
+
+    // --- Section: failed 에러 메시지 ---
+    if (status === 'feedback1_failed' || status === 'feedback2_failed') {
+        _addAccordionItem(accordionEl, '⚠️ 첨삭 오류', _renderFailedMessage(status), true, 'error');
+    }
 
     // --- Section 1: Draft 1 ---
     if (submission) {
@@ -79,10 +88,14 @@ async function openCorrectionDetail(taskType, session, submission) {
     }
 
     // --- Section 3: Draft 2 ---
+    // expired/skipped + 2차 미제출 → Draft 2 섹션 생략
     if (submission && submission.released_1) {
-        var draft2Content = _renderDraft2Content(isWriting, submission, taskType, session);
-        var draft2Open = (status === 'feedback1_ready' && !submission.draft_2_text && !submission.draft_2_audio_q1);
-        _addAccordionItem(accordionEl, '2차 수정본', draft2Content, draft2Open, 'draft2');
+        var hasDraft2 = isWriting ? !!submission.draft_2_text : !!submission.draft_2_audio_q1;
+        if (!isTerminal || hasDraft2) {
+            var draft2Content = _renderDraft2Content(isWriting, submission, taskType, session, isTerminal);
+            var draft2Open = (!isTerminal && status === 'feedback1_ready' && !hasDraft2);
+            _addAccordionItem(accordionEl, '2차 수정본', draft2Content, draft2Open, 'draft2');
+        }
     }
 
     // --- Section 4: 최종 피드백 ---
@@ -136,7 +149,7 @@ function _renderDraft1Content(isWriting, sub) {
 // 3. Draft 2 렌더링
 // ============================================================
 
-function _renderDraft2Content(isWriting, sub, taskType, session) {
+function _renderDraft2Content(isWriting, sub, taskType, session, isTerminal) {
     var hasDraft2 = isWriting ? !!sub.draft_2_text : !!sub.draft_2_audio_q1;
 
     if (!hasDraft2) {
@@ -290,6 +303,15 @@ function onCorrDetailDraft2Click(taskType) {
     var subKey = session.session + '_' + taskType;
     var submission = submissionMap[subKey] || null;
 
+    // 2차 데드라인 초과 체크
+    if (scheduleData && submission) {
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at);
+        if (new Date() > dl2) {
+            alert('2차 수정 마감이 지났습니다.');
+            return;
+        }
+    }
+
     if (taskType === 'writing') {
         startCorrectionWriting(session, scheduleData, submission);
     } else {
@@ -329,7 +351,70 @@ function backFromCorrectionDetail() {
 }
 
 // ============================================================
-// 9. 유틸리티
+// 9. 데드라인 배너 + 에러 메시지
+// ============================================================
+
+/**
+ * 과제 상세 데드라인 배너 렌더링
+ * correction-session.js의 renderDeadlineBanner, getCorrDraft1/2Deadline 재사용
+ */
+function _renderCorrDetailDeadlineBanner(session, submission) {
+    var bannerEl = document.getElementById('corrDetailDeadlineBanner');
+    if (!bannerEl) return;
+
+    var status = submission ? submission.status : '';
+
+    // complete/expired/skipped면 배너 숨김
+    if (['complete', 'expired', 'skipped'].indexOf(status) >= 0) {
+        bannerEl.style.display = 'none';
+        return;
+    }
+
+    var sessionState = window._correctionSessionState;
+    if (!sessionState || !sessionState.scheduleData) {
+        bannerEl.style.display = 'none';
+        return;
+    }
+
+    var scheduleData = sessionState.scheduleData;
+
+    // 2차 단계인지 판별
+    var isDraft2Phase = false;
+    if (submission) {
+        var s = status;
+        if (s === 'draft2_submitted' || s === 'feedback2_processing' || s === 'feedback2_ready' || s === 'feedback2_failed') {
+            isDraft2Phase = true;
+        }
+        if (submission.released_1 && !submission.draft_2_text && !submission.draft_2_audio_q1 &&
+            s !== 'draft1_submitted' && s !== 'feedback1_processing' && s !== 'feedback1_failed') {
+            isDraft2Phase = true;
+        }
+    }
+
+    if (isDraft2Phase) {
+        var feedback1At = submission ? submission.feedback_1_at : null;
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, feedback1At);
+        renderDeadlineBanner(bannerEl, '2차 마감', dl2);
+    } else {
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
+        renderDeadlineBanner(bannerEl, '1차 마감', dl1);
+    }
+}
+
+/**
+ * failed 상태 에러 메시지 렌더링
+ */
+function _renderFailedMessage(status) {
+    var round = (status === 'feedback2_failed') ? '최종' : '1차';
+    return '<div class="corr-detail-error-msg">' +
+        '<i class="fas fa-exclamation-triangle"></i>' +
+        '<p>' + round + ' 첨삭 준비 중 문제가 발생했습니다.<br>잠시 후 다시 확인해주세요.</p>' +
+        '<p class="corr-detail-error-sub">문제가 지속되면 담당자에게 문의해주세요.</p>' +
+        '</div>';
+}
+
+// ============================================================
+// 10. 유틸리티
 // ============================================================
 
 // ============================================================
