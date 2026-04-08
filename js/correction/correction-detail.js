@@ -24,6 +24,9 @@
  * @param {object} session - CORRECTION_SCHEDULE 항목
  * @param {object} submission - correction_submissions 전체 행 (feedback 포함)
  */
+// 인터뷰 질문 텍스트 캐시 (openCorrectionDetail에서 로드)
+var _corrDetailInterviewData = null;
+
 async function openCorrectionDetail(taskType, session, submission) {
     console.log('📋 [Correction Detail] 열기:', taskType, 'Session', session.session);
 
@@ -35,6 +38,13 @@ async function openCorrectionDetail(taskType, session, submission) {
             : 'speaking_interview';
         var fullSub = await getCorrectionSubmission(user.id, session.session, fullTaskType);
         if (fullSub) submission = fullSub;
+    }
+
+    // Speaking일 때 인터뷰 질문 텍스트 로드
+    _corrDetailInterviewData = null;
+    if (taskType === 'speaking' && typeof _loadCorrectionInterviewSet === 'function') {
+        var setNum = session.speaking.number;
+        _corrDetailInterviewData = await _loadCorrectionInterviewSet(setNum);
     }
 
     showScreen('correctionDetailScreen');
@@ -111,16 +121,13 @@ function _renderDraft1Content(isWriting, sub) {
         html += '</div>';
         html += '<div class="corr-detail-text">' + _escapeAndNl2br(text) + '</div>';
     } else {
-        // Speaking: 오디오 파일 목록
+        // Speaking: 2×2 그리드 카드
         html += '<div class="corr-detail-meta">';
         if (sub.draft_1_submitted_at) {
             html += '<span>' + _formatDate(sub.draft_1_submitted_at) + ' 제출</span>';
         }
         html += '</div>';
-        for (var q = 1; q <= 4; q++) {
-            var path = sub['draft_1_audio_q' + q];
-            html += _renderAudioRow('Q' + q, path);
-        }
+        html += _renderSpeakingGrid(sub, 'draft_1_audio_q');
     }
     return html;
 }
@@ -160,10 +167,7 @@ function _renderDraft2Content(isWriting, sub, taskType, session) {
             html += '<span>' + _formatDate(sub.draft_2_submitted_at) + ' 제출</span>';
         }
         html += '</div>';
-        for (var q = 1; q <= 4; q++) {
-            var path = sub['draft_2_audio_q' + q];
-            html += _renderAudioRow('Q' + q, path);
-        }
+        html += _renderSpeakingGrid(sub, 'draft_2_audio_q');
     }
     return html;
 }
@@ -327,6 +331,44 @@ function backFromCorrectionDetail() {
 // ============================================================
 // 9. 유틸리티
 // ============================================================
+
+// ============================================================
+// Speaking 2×2 그리드 카드
+// ============================================================
+
+function _renderSpeakingGrid(sub, audioPrefix) {
+    var interviewData = _corrDetailInterviewData;
+    var html = '<div class="corr-spk-grid">';
+    for (var q = 1; q <= 4; q++) {
+        var path = sub[audioPrefix + q];
+        var questionText = '';
+        if (interviewData && interviewData.videos && interviewData.videos[q - 1]) {
+            questionText = interviewData.videos[q - 1].script || '';
+        }
+        var url = '';
+        if (path) {
+            url = (path.indexOf('http') === 0) ? path : (window.SUPABASE_CONFIG ? window.SUPABASE_CONFIG.url + '/storage/v1/object/public/correction-audio/' + path : path);
+        }
+
+        html += '<div class="corr-spk-card">';
+        html += '<div class="corr-spk-card-header">';
+        html += '<span class="corr-spk-card-badge">Q' + q + '</span>';
+        html += '</div>';
+        if (questionText) {
+            html += '<p class="corr-spk-card-text">' + _escapeAndNl2br(questionText) + '</p>';
+        }
+        if (url) {
+            html += '<div class="corr-spk-card-player">';
+            html += '<audio controls preload="none"><source src="' + url + '"></audio>';
+            html += '</div>';
+        } else {
+            html += '<div class="corr-spk-card-empty">파일 없음</div>';
+        }
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
 
 function _renderAudioRow(label, path) {
     if (!path) {

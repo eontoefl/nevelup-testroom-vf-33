@@ -575,6 +575,78 @@
 }
 
 /* ================================================
+   Speaking 상세 — 2×2 그리드 카드
+   ================================================ */
+
+.corr-spk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.corr-spk-card {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.2s;
+}
+
+.corr-spk-card:hover {
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.12);
+}
+
+.corr-spk-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.corr-spk-card-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #f0edf5;
+    color: var(--primary-color, #9480c5);
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+}
+
+.corr-spk-card-text {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--text-color, #1a1a1a);
+    margin: 0;
+    flex: 1;
+}
+
+.corr-spk-card-player {
+    background: #eee;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-top: auto;
+}
+
+.corr-spk-card-player audio {
+    width: 100%;
+    height: 36px;
+    display: block;
+}
+
+.corr-spk-card-empty {
+    font-size: 13px;
+    color: #aaa;
+    text-align: center;
+    padding: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    margin-top: auto;
+}
+
+/* ================================================
    반응형 (모바일)
    ================================================ */
 
@@ -604,6 +676,18 @@
         min-width: 150px;
         max-width: 250px;
         font-size: 12px;
+    }
+
+    .corr-spk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .corr-spk-card {
+        padding: 14px;
+    }
+
+    .corr-spk-card-text {
+        font-size: 13px;
     }
 }
 
