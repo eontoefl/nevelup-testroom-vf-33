@@ -231,31 +231,57 @@ function _formatDeadlineRemaining(diff) {
     var days = Math.floor(diff / (1000 * 60 * 60 * 24));
     var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
     if (days > 0) return days + '일 ' + hours + '시간 남음';
     if (hours > 0) return hours + '시간 ' + minutes + '분 남음';
-    return minutes + '분 남음';
+    if (minutes >= 10) return minutes + '분 남음';
+    // 10분 미만: 분 + 초
+    return minutes + '분 ' + (seconds < 10 ? '0' : '') + seconds + '초 남음';
+}
+
+// 실시간 카운트다운 타이머 ID (화면 전환 시 정리)
+var _corrDeadlineTimerId = null;
+
+function _stopCorrDeadlineTimer() {
+    if (_corrDeadlineTimerId) {
+        clearInterval(_corrDeadlineTimerId);
+        _corrDeadlineTimerId = null;
+    }
 }
 
 /**
  * 데드라인 배너를 특정 엘리먼트에 렌더링
+ * 10분 미만이면 1초마다 갱신, 마감 순간 "마감됨"으로 전환
  * @param {HTMLElement} bannerEl
  * @param {string} label - '1차 마감' 또는 '2차 마감'
  * @param {Date} deadline
  */
 function renderDeadlineBanner(bannerEl, label, deadline) {
     if (!bannerEl) return;
-    var now = new Date();
+    _stopCorrDeadlineTimer();
 
-    if (now > deadline) {
-        bannerEl.className = 'correction-deadline-banner deadline-passed';
-        bannerEl.innerHTML = '<i class="fas fa-lock"></i> ' + label + ' 완료';
-    } else {
+    function update() {
+        var now = new Date();
+        if (now > deadline) {
+            _stopCorrDeadlineTimer();
+            bannerEl.className = 'correction-deadline-banner deadline-passed';
+            bannerEl.innerHTML = '<i class="fas fa-lock"></i> ' + label + ' 완료';
+            return;
+        }
+
         var diff = deadline - now;
         var timeText = _formatDeadlineRemaining(diff);
-        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        var totalMinutes = diff / (1000 * 60);
 
-        if (days === 0 && hours < 6) {
+        if (totalMinutes < 10) {
+            bannerEl.className = 'correction-deadline-banner deadline-urgent';
+            bannerEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + timeText;
+            // 10분 미만 진입 시 1초 갱신 시작
+            if (!_corrDeadlineTimerId) {
+                _corrDeadlineTimerId = setInterval(update, 1000);
+            }
+        } else if (totalMinutes < 360) { // 6시간 미만
             bannerEl.className = 'correction-deadline-banner deadline-urgent';
             bannerEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + timeText;
         } else {
@@ -263,6 +289,8 @@ function renderDeadlineBanner(bannerEl, label, deadline) {
             bannerEl.innerHTML = '<i class="fas fa-clock"></i> ' + label + ' · ' + timeText;
         }
     }
+
+    update();
     bannerEl.style.display = '';
 }
 
@@ -321,6 +349,7 @@ function _renderCorrectionDeadlineBanner(session, scheduleData) {
  * 세션 상세에서 FEEDBACK 메인으로 복귀
  */
 function backToCorrectionMain() {
+    _stopCorrDeadlineTimer();
     window._correctionSessionState = null;
     showScreen('scheduleScreen');
     // scheduleScreen에서 correction 모드를 다시 렌더링

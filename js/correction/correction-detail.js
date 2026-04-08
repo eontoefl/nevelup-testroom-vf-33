@@ -324,6 +324,7 @@ function onCorrDetailDraft2Click(taskType) {
 // ============================================================
 
 function backFromCorrectionDetail() {
+    _stopCorrDeadlineTimer();
     var sessionState = window._correctionSessionState;
     if (!sessionState) {
         showScreen('scheduleScreen');
