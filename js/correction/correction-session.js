@@ -107,7 +107,7 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
  */
 function _getCorrectionCardStatus(sub) {
     if (!sub) {
-        return { text: '미제출', btnText: '작성하기', btnClass: 'btn-active', disabled: false, action: 'write' };
+        return { text: '미제출', btnText: '시작하기', btnClass: 'btn-active', disabled: false, action: 'write' };
     }
 
     var status = sub.status;
