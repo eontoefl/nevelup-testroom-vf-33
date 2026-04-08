@@ -218,3 +218,64 @@
     color: #c62828;
 }
 
+/* ================================================
+   Speaking 파일 업로드 UI
+   ================================================ */
+
+.corr-spk-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.corr-spk-q-label {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--primary-color, #9480c5);
+    min-width: 32px;
+}
+
+.corr-spk-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.corr-spk-file-btn:hover {
+    border-color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-file-status {
+    font-size: 12px;
+    color: #9ca3af;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.corr-spk-file-status.success {
+    color: #059669;
+}
+
+.corr-spk-file-status.error {
+    color: #dc2626;
+}
+

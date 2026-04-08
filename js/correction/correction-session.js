@@ -163,8 +163,7 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
         if (taskType === 'writing') {
             startCorrectionWriting(session, scheduleData, null);
         } else {
-            // Speaking은 Phase 5에서 구현
-            alert('Speaking 작성 화면은 Phase 5에서 구현됩니다.');
+            startCorrectionSpeaking(session, scheduleData, null);
         }
         return;
     }

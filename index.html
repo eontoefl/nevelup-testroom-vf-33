@@ -740,6 +740,128 @@
         </div>
     </div>
 
+    <!-- ============================= -->
+    <!-- 첨삭 Speaking - Interview 화면 -->
+    <!-- ============================= -->
+    <div id="correctionSpeakingScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionSpeaking()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrSpkHeader" class="test-progress">SESSION 01 · Interview 1</span>
+            <div class="test-title">
+                <i class="fas fa-microphone"></i>
+                <span>Speaking - Interview</span>
+            </div>
+            <div class="test-header-right">
+                <span id="corrSpkProgress">Question 1 of 4</span>
+            </div>
+        </div>
+
+        <div class="test-content" style="position:relative;">
+
+            <!-- Section 1: 준비 화면 -->
+            <div id="corrSpkReadySection" style="display:flex; justify-content:center; align-items:center; flex-direction:column; min-height:60vh;">
+                <div style="text-align:center; padding:40px;">
+                    <div style="font-size:48px; margin-bottom:20px;">🎙️</div>
+                    <h2 style="font-size:22px; margin-bottom:12px; color:#333;">스피킹 인터뷰 (첨삭)</h2>
+                    <p style="font-size:15px; color:#666; margin-bottom:8px;">4개 질문에 대해 각 45초간 답변 시간이 주어집니다.</p>
+                    <p style="font-size:14px; color:#e67e22; margin-bottom:8px; line-height:1.6;">⚠️ 실시간 녹음이 아닙니다. 별도 기기로 녹음한 후<br>카운트다운 종료 후 파일을 업로드합니다.</p>
+                    <p id="corrSpkReadyStatus" style="font-size:14px; color:#888; margin-bottom:24px;">준비 중...</p>
+                    <button id="corrSpkStartBtn" disabled onclick="onCorrSpkStartTap()" style="padding:14px 48px; font-size:18px; font-weight:bold; background:#4CAF50; color:#fff; border:none; border-radius:8px; cursor:pointer; opacity:0.5;">
+                        시작
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section 2: 상황 설명 -->
+            <div id="corrSpkContextSection" style="display:none; justify-content:center; align-items:center; flex-direction:column; min-height:60vh; text-align:center; padding:40px;">
+                <p id="corrSpkContextText" style="font-size:18px; line-height:1.8; max-width:700px; color:#333;"></p>
+                <img id="corrSpkContextImage" src="" alt="" style="display:none; max-width:300px; margin-top:20px; border-radius:12px;">
+            </div>
+
+            <!-- Section 3: 질문 + 카운트다운 -->
+            <div id="corrSpkQuestionSection" style="display:none; flex-direction:column; align-items:center; min-height:60vh; padding:20px;">
+                <p id="corrSpkInstruction" style="font-size:16px; color:#666; margin-bottom:20px; text-align:center;"></p>
+
+                <video id="corrSpkVideo" playsinline webkit-playsinline style="display:none; max-width:700px; width:100%; border-radius:12px; margin-bottom:20px;">
+                    Your browser does not support the video tag.
+                </video>
+
+                <!-- 카운트다운 UI -->
+                <div id="corrSpkRecordingUI" style="display:none; flex-direction:column; align-items:center; margin-top:20px;">
+                    <div style="font-size:13px; color:#888; margin-bottom:8px;">RESPONSE TIME</div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="position:relative; width:50px; height:50px;">
+                            <svg width="50" height="50" viewBox="0 0 50 50">
+                                <circle cx="25" cy="25" r="20" fill="none" stroke="#e5e7eb" stroke-width="3"></circle>
+                                <circle id="corrSpkProgressCircle" cx="25" cy="25" r="20" fill="none" stroke="#3b82f6" stroke-width="3"
+                                        stroke-dasharray="125.6" stroke-dashoffset="125.6"
+                                        style="transform:rotate(-90deg); transform-origin:center;"></circle>
+                            </svg>
+                            <svg style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:20px; height:20px; color:#3b82f6;" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"/>
+                            </svg>
+                        </div>
+                        <span id="corrSpkTimer" style="font-size:28px; font-weight:bold; font-family:monospace; color:#333;">00:45</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: 파일 업로드 -->
+            <div id="corrSpkUploadSection" style="display:none; flex-direction:column; align-items:center; padding:30px; min-height:60vh;">
+                <h2 style="font-size:20px; margin-bottom:8px; color:#333;">🎧 녹음 파일 업로드</h2>
+                <p style="font-size:14px; color:#888; margin-bottom:24px;">Q1~Q4 각 질문에 대한 녹음 파일을 선택해주세요.</p>
+
+                <div style="display:flex; flex-direction:column; gap:16px; width:100%; max-width:500px;">
+                    <!-- Q1 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q1</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ1">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ1" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(1)">
+                        </label>
+                        <span id="corrSpkFileStatusQ1" class="corr-spk-file-status"></span>
+                    </div>
+                    <!-- Q2 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q2</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ2">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ2" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(2)">
+                        </label>
+                        <span id="corrSpkFileStatusQ2" class="corr-spk-file-status"></span>
+                    </div>
+                    <!-- Q3 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q3</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ3">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ3" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(3)">
+                        </label>
+                        <span id="corrSpkFileStatusQ3" class="corr-spk-file-status"></span>
+                    </div>
+                    <!-- Q4 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q4</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ4">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ4" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(4)">
+                        </label>
+                        <span id="corrSpkFileStatusQ4" class="corr-spk-file-status"></span>
+                    </div>
+                </div>
+
+                <p style="font-size:12px; color:#aaa; margin-top:16px;">허용 형식: mp3, m4a, wav, webm, mp4, ogg, aac · 최대 25MB</p>
+
+                <button id="corrSpkSubmitBtn" class="btn btn-success" onclick="submitCorrectionSpeaking()" disabled style="margin-top:24px; padding:12px 40px; font-size:16px; opacity:0.5;">
+                    <i class="fas fa-check"></i> 제출하기
+                </button>
+            </div>
+
+        </div>
+    </div>
+
     <!-- 메인 시작 화면 (기존 시험 개요 화면 - 추후 제거 가능) -->
     <div id="taskListScreen" class="screen" style="display:none;">
         <!-- 상단 네비게이션 바 (container 밖) -->
@@ -2599,6 +2721,7 @@
     <script src="js/correction/correction-main.js?v=001"></script>
     <script src="js/correction/correction-session.js?v=001"></script>
     <script src="js/correction/correction-writing.js?v=001"></script>
+    <script src="js/correction/correction-speaking.js?v=001"></script>
 
     <script src="js/main.js?v=20260223_progress_fix"></script>
     <script src="js/navigation.js?v=003_popup_rules"></script>
