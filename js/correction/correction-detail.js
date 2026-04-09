@@ -106,7 +106,7 @@ async function openCorrectionDetail(taskType, session, submission) {
     }
 
     // --- Section 5: 모범답안 ---
-    if (status === 'complete' || status === 'expired' || status === 'skipped') {
+    if (status === 'complete' || status === 'expired' || status === 'skipped' || (status === 'feedback2_ready' && submission.released_2)) {
         var modelContent = _renderModelAnswer(isWriting, submission);
         _addAccordionItem(accordionEl, '모범답안', modelContent, true, 'model');
     }
