@@ -575,7 +575,7 @@ function _sendCorrectionWebhook(isDraft2, payload) {
     var config = window.CORRECTION_CONFIG;
     if (!config) return;
 
-    var webhookUrl = isDraft2 ? config.webhookUrlDraft2 : config.webhookUrlDraft1;
+    var webhookUrl = isDraft2 ? config.writingWebhookDraft2 : config.writingWebhookDraft1;
     if (!webhookUrl || webhookUrl.indexOf('placeholder') >= 0) {
         console.log('📡 [Correction] Webhook 스킵 (placeholder URL)');
         return;

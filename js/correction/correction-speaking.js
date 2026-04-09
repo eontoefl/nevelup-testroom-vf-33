@@ -557,7 +557,7 @@ function _sendCorrSpkWebhook(isDraft2, payload) {
     var config = window.CORRECTION_CONFIG;
     if (!config) return;
 
-    var webhookUrl = isDraft2 ? config.webhookUrlDraft2 : config.webhookUrlDraft1;
+    var webhookUrl = isDraft2 ? config.speakingWebhookDraft2 : config.speakingWebhookDraft1;
     if (!webhookUrl || webhookUrl.indexOf('placeholder') >= 0) {
         console.log('📡 [Correction Speaking] Webhook 스킵 (placeholder URL)');
         return;

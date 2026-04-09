@@ -4,8 +4,10 @@
  */
 
 window.CORRECTION_CONFIG = {
-    webhookUrlDraft1: 'https://eontoefl.app.n8n.cloud/webhook-test/correction-writing-draft1',
-    webhookUrlDraft2: 'https://eontoefl.app.n8n.cloud/webhook-test/correction-writing-draft2'
+    writingWebhookDraft1:  'https://eontoefl.app.n8n.cloud/webhook-test/correction-writing-draft1',
+    writingWebhookDraft2:  'https://eontoefl.app.n8n.cloud/webhook-test/correction-writing-draft2',
+    speakingWebhookDraft1: 'https://eontoefl.app.n8n.cloud/webhook/correction-speaking-draft1',
+    speakingWebhookDraft2: 'https://eontoefl.app.n8n.cloud/webhook/correction-speaking-draft2'
 };
 
 console.log('✅ correction-config.js 로드 완료');
