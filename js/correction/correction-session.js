@@ -48,7 +48,7 @@ function openCorrectionSession(session, scheduleData, submissionMap) {
     _renderCorrectionTaskCard(
         'corrWritingCard',
         'writing',
-        writingLabel + ' ' + session.writing.number,
+        writingLabel + ' ' + session.session,
         writingSub,
         session
     );
@@ -58,7 +58,7 @@ function openCorrectionSession(session, scheduleData, submissionMap) {
     _renderCorrectionTaskCard(
         'corrSpeakingCard',
         'speaking',
-        'Interview ' + session.speaking.number,
+        'Interview ' + session.session,
         speakingSub,
         session
     );

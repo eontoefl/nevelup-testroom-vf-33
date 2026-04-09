@@ -52,8 +52,8 @@ async function openCorrectionDetail(taskType, session, submission) {
     // 헤더
     var headerEl = document.getElementById('corrDetailHeader');
     var taskLabel = (taskType === 'writing')
-        ? (session.writing.type === 'email' ? 'Email ' : 'Discussion ') + session.writing.number
-        : 'Interview ' + session.speaking.number;
+        ? (session.writing.type === 'email' ? 'Email ' : 'Discussion ') + session.session
+        : 'Interview ' + session.session;
     if (headerEl) headerEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0') + ' · ' + taskLabel;
 
     // 데드라인 배너 (과제 상세)

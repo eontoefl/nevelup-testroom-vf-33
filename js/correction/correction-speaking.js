@@ -51,12 +51,13 @@ async function _loadCorrectionInterviewSet(setNumber) {
         console.log('✅ [Correction Speaking] ' + _cachedCorrInterviewData.length + '세트 로드');
     }
 
-    var idx = setNumber - 1;
-    if (idx < 0 || idx >= _cachedCorrInterviewData.length) {
-        console.error('❌ [Correction Speaking] 세트 인덱스 범위 초과:', setNumber);
+    var setId = 'interview_set_' + String(setNumber).padStart(4, '0');
+    var found = _cachedCorrInterviewData.find(function(s) { return s.setId === setId; });
+    if (!found) {
+        console.error('❌ [Correction Speaking] 세트 없음:', setId);
         return null;
     }
-    return _cachedCorrInterviewData[idx];
+    return found;
 }
 
 // ============================================================
@@ -105,7 +106,7 @@ async function startCorrectionSpeaking(session, scheduleData, submission) {
     var headerEl = document.getElementById('corrSpkHeader');
     if (headerEl) {
         headerEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0') +
-            ' · Interview ' + setNumber + (isDraft2 ? ' (2차)' : '');
+            ' · Interview ' + session.session + (isDraft2 ? ' (2차)' : '');
     }
 
     // 준비 화면 표시

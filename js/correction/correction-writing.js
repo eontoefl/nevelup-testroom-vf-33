@@ -212,7 +212,7 @@ async function _initCorrectionEmail(setNumber) {
     var headerEl = document.getElementById('corrEmailHeader');
     if (headerEl) {
         headerEl.textContent = 'SESSION ' + String(state.session.session).padStart(2, '0') +
-            ' · Email ' + setNumber + (state.isDraft2 ? ' (2차 작성)' : '');
+            ' · Email ' + state.session.session + (state.isDraft2 ? ' (2차 작성)' : '');
     }
 
     // 문제 렌더링
@@ -260,7 +260,7 @@ async function _initCorrectionDiscussion(setNumber) {
     var headerEl = document.getElementById('corrDiscussionHeader');
     if (headerEl) {
         headerEl.textContent = 'SESSION ' + String(state.session.session).padStart(2, '0') +
-            ' · Discussion ' + setNumber + (state.isDraft2 ? ' (2차 작성)' : '');
+            ' · Discussion ' + state.session.session + (state.isDraft2 ? ' (2차 작성)' : '');
     }
 
     // 문제 렌더링
