@@ -528,7 +528,7 @@ async function submitCorrectionSpeaking() {
         }
 
         // Webhook (비동기)
-        _sendCorrSpkWebhook({
+        _sendCorrSpkWebhook(state.isDraft2, {
             event: state.isDraft2 ? 'draft2_submitted' : 'draft1_submitted',
             user_id: user.id,
             user_name: user.name,
@@ -553,8 +553,11 @@ async function submitCorrectionSpeaking() {
     }
 }
 
-function _sendCorrSpkWebhook(payload) {
-    var webhookUrl = window.CORRECTION_CONFIG ? window.CORRECTION_CONFIG.webhookUrl : null;
+function _sendCorrSpkWebhook(isDraft2, payload) {
+    var config = window.CORRECTION_CONFIG;
+    if (!config) return;
+
+    var webhookUrl = isDraft2 ? config.webhookUrlDraft2 : config.webhookUrlDraft1;
     if (!webhookUrl || webhookUrl.indexOf('placeholder') >= 0) {
         console.log('📡 [Correction Speaking] Webhook 스킵 (placeholder URL)');
         return;

@@ -180,9 +180,9 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
 
     if (action === 'write') {
         if (taskType === 'writing') {
-            startCorrectionWriting(session, scheduleData, null);
+            startCorrectionWriting(session, scheduleData, submission);
         } else {
-            startCorrectionSpeaking(session, scheduleData, null);
+            startCorrectionSpeaking(session, scheduleData, submission);
         }
         return;
     }
