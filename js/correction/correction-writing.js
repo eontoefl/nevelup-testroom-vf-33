@@ -168,6 +168,16 @@ async function startCorrectionWriting(session, scheduleData, submission) {
     var setNumber = session.writing.number;
     var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 
+    // 2차 작성인데 feedback_1이 없으면 단일 행 다시 조회 (목록 조회는 feedback JSONB 미포함)
+    if (isDraft2 && submission && !submission.feedback_1) {
+        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+        if (user && user.id) {
+            var fullTaskType = (writingType === 'email') ? 'writing_email' : 'writing_discussion';
+            var fullSub = await getCorrectionSubmission(user.id, session.session, fullTaskType);
+            if (fullSub) submission = fullSub;
+        }
+    }
+
     window._correctionWritingState = {
         session: session,
         scheduleData: scheduleData,
@@ -223,6 +233,9 @@ async function _initCorrectionEmail(setNumber) {
     _setTextContent('corrEmailInstruction3', setData.instruction3);
     _setTextContent('corrEmailTo', setData.to);
     _setTextContent('corrEmailSubject', setData.subject);
+
+    // 1차 피드백 토글 패널 (2차 작성 시에만)
+    _insertFeedbackTogglePanel('corrEmailTextarea');
 
     // Textarea 초기화
     var textarea = document.getElementById('corrEmailTextarea');
@@ -289,6 +302,9 @@ async function _initCorrectionDiscussion(setNumber) {
     if (s2Name) s2Name.textContent = state.profiles.student2.name;
     if (s2Op) s2Op.textContent = _corrReplaceNames(setData.student2Opinion, state.profiles);
 
+    // 1차 피드백 토글 패널 (2차 작성 시에만)
+    _insertFeedbackTogglePanel('corrDiscussionTextarea');
+
     // Textarea 초기화
     var textarea = document.getElementById('corrDiscussionTextarea');
     if (textarea) {
@@ -315,6 +331,9 @@ function _startCorrectionWritingTimer(seconds) {
     state.timerRemaining = seconds;
     state.timerExpired = false;
     _updateCorrectionWritingTimerDisplay();
+
+    // 2차 전용 안내 문구
+    _insertDraft2TimerHint();
 
     console.log('⏱️ [Correction Writing] 타이머 시작:', seconds + '초');
 
@@ -361,14 +380,26 @@ function _onCorrectionWritingTimerExpired() {
 
     console.log('⏰ [Correction Writing] 시간 만료');
 
-    var textareaId = state.writingType === 'email' ? 'corrEmailTextarea' : 'corrDiscussionTextarea';
-    var textarea = document.getElementById(textareaId);
-    if (textarea) {
-        textarea.disabled = true;
-        textarea.style.opacity = '0.7';
+    if (state.isDraft2) {
+        // ── 2차: textarea 비활성화 안 함, 인라인 메시지만 ──
+        var timerId = state.writingType === 'email' ? 'corrEmailTimer' : 'corrDiscussionTimer';
+        var timerEl = document.getElementById(timerId);
+        if (timerEl) {
+            var msg = document.createElement('span');
+            msg.className = 'corr-timer-expired-msg';
+            msg.textContent = '⏰ 제한 시간이 지났습니다. 마무리 후 제출해주세요.';
+            timerEl.parentNode.insertBefore(msg, timerEl.nextSibling);
+        }
+    } else {
+        // ── 1차: 기존 동작 유지 ──
+        var textareaId = state.writingType === 'email' ? 'corrEmailTextarea' : 'corrDiscussionTextarea';
+        var textarea = document.getElementById(textareaId);
+        if (textarea) {
+            textarea.disabled = true;
+            textarea.style.opacity = '0.7';
+        }
+        alert('시간이 종료되었습니다. Submit 버튼을 눌러 제출해주세요.');
     }
-
-    alert('시간이 종료되었습니다. Submit 버튼을 눌러 제출해주세요.');
 }
 
 // ============================================================
@@ -672,6 +703,122 @@ function _cleanupCorrectionWriting() {
 function _setTextContent(id, text) {
     var el = document.getElementById(id);
     if (el) el.textContent = text || '';
+}
+
+// ============================================================
+// 13. 1차 피드백 토글 패널 (2차 작성 전용)
+// ============================================================
+
+/**
+ * 2차 작성 시 textarea 위에 1차 피드백 참고 토글 패널을 동적 삽입
+ * @param {string} textareaId - 'corrEmailTextarea' | 'corrDiscussionTextarea'
+ */
+function _insertFeedbackTogglePanel(textareaId) {
+    // 기존 토글 패널 제거 (재진입 시 중복 방지)
+    var existing = document.getElementById('corrFbToggleWrap_' + textareaId);
+    if (existing) existing.remove();
+
+    var state = window._correctionWritingState;
+    if (!state || !state.isDraft2) return;
+
+    var submission = state.submission;
+    if (!submission || !submission.feedback_1) return;
+
+    // feedback_1이 문자열(이중 직렬화)일 수 있으므로 파싱
+    var fb = submission.feedback_1;
+    if (typeof fb === 'string') {
+        try { fb = JSON.parse(fb); } catch (e) { return; }
+    }
+
+    // 토글 wrapper 생성
+    var wrap = document.createElement('div');
+    wrap.id = 'corrFbToggleWrap_' + textareaId;
+    wrap.className = 'corr-fb-toggle-wrap';
+
+    // 토글 버튼
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'corr-fb-toggle-btn';
+    btn.innerHTML = '<i class="fas fa-lightbulb"></i> 1차 피드백 참고';
+    wrap.appendChild(btn);
+
+    // 패널 (기본 닫힘)
+    var panel = document.createElement('div');
+    panel.className = 'corr-fb-toggle-panel';
+
+    // annotated_html
+    if (fb.annotated_html) {
+        var annotDiv = document.createElement('div');
+        annotDiv.className = 'corr-fb-toggle-annotated';
+        annotDiv.innerHTML = fb.annotated_html;
+        panel.appendChild(annotDiv);
+        // 토글 패널 전용 tooltip 직접 생성
+        var marks = annotDiv.querySelectorAll('.correction-mark[data-comment]');
+        for (var m = 0; m < marks.length; m++) {
+            var tip = document.createElement('span');
+            tip.className = 'correction-tooltip';
+            tip.textContent = marks[m].getAttribute('data-comment');
+            marks[m].appendChild(tip);
+        }
+    }
+
+    // summary
+    if (fb.summary) {
+        var summDiv = document.createElement('div');
+        summDiv.className = 'corr-fb-toggle-summary';
+        summDiv.innerHTML = '<div class="corr-fb-toggle-summary-title"><i class="fas fa-comment-dots"></i> 총평</div>' +
+            '<div class="corr-fb-toggle-summary-text">' + _escapeHtmlForToggle(fb.summary) + '</div>';
+        panel.appendChild(summDiv);
+    }
+
+    wrap.appendChild(panel);
+
+    // 토글 동작
+    btn.addEventListener('click', function() {
+        var isOpen = wrap.classList.toggle('open');
+        btn.innerHTML = isOpen
+            ? '<i class="fas fa-lightbulb"></i> 1차 피드백 닫기'
+            : '<i class="fas fa-lightbulb"></i> 1차 피드백 참고';
+    });
+
+    // DOM 삽입: editor-box 바로 앞
+    var textarea = document.getElementById(textareaId);
+    if (!textarea) return;
+    var editorBox = textarea.closest('.email-editor-box') || textarea.closest('.discussion-editor-box');
+    if (editorBox && editorBox.parentNode) {
+        editorBox.parentNode.insertBefore(wrap, editorBox);
+    }
+}
+
+function _escapeHtmlForToggle(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// 14. 2차 전용 타이머 안내 문구
+// ============================================================
+
+function _insertDraft2TimerHint() {
+    // 기존 힌트 제거
+    var oldHints = document.querySelectorAll('.corr-timer-draft2-hint');
+    for (var i = 0; i < oldHints.length; i++) oldHints[i].remove();
+
+    // 기존 만료 메시지도 제거
+    var oldMsgs = document.querySelectorAll('.corr-timer-expired-msg');
+    for (var i = 0; i < oldMsgs.length; i++) oldMsgs[i].remove();
+
+    var state = window._correctionWritingState;
+    if (!state || !state.isDraft2) return;
+
+    var timerId = state.writingType === 'email' ? 'corrEmailTimer' : 'corrDiscussionTimer';
+    var timerEl = document.getElementById(timerId);
+    if (!timerEl) return;
+
+    var hint = document.createElement('span');
+    hint.className = 'corr-timer-draft2-hint';
+    hint.textContent = '2차 작성은 시간이 지나도 계속 쓸 수 있어요. 실전 감각 유지용 타이머입니다.';
+    timerEl.parentNode.insertBefore(hint, timerEl.nextSibling);
 }
 
 console.log('✅ correction-writing.js 로드 완료');

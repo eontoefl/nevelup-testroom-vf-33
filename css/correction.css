@@ -845,3 +845,128 @@
     }
 }
 
+/* ================================================
+   1차 피드백 참고 토글 패널 (2차 작성 전용)
+   ================================================ */
+
+.corr-fb-toggle-wrap {
+    margin-bottom: 12px;
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+}
+
+.corr-fb-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--surface-color, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-color, #9480c5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.corr-fb-toggle-btn:hover {
+    background: #f9f7fc;
+    border-color: var(--primary-color, #9480c5);
+}
+
+.corr-fb-toggle-btn i {
+    font-size: 14px;
+}
+
+.corr-fb-toggle-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    border-radius: 12px;
+}
+
+.corr-fb-toggle-wrap.open .corr-fb-toggle-panel {
+    max-height: 2000px;
+    margin-top: 10px;
+    background: var(--bg-color, #f1f4f8);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.corr-fb-toggle-annotated {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 토글 패널 내 마크: hover tooltip 표시 */
+.corr-fb-toggle-annotated .correction-mark {
+    background: rgba(148, 128, 197, 0.13);
+    border-bottom: 2px solid rgba(148, 128, 197, 0.45);
+    cursor: pointer;
+    position: relative;
+}
+
+.corr-fb-toggle-summary {
+    background: var(--surface-color, #ffffff);
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+
+.corr-fb-toggle-summary-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-color, #9480c5);
+    margin-bottom: 6px;
+}
+
+.corr-fb-toggle-summary-title i {
+    margin-right: 5px;
+}
+
+.corr-fb-toggle-summary-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary, #64748b);
+}
+
+/* ================================================
+   2차 전용 타이머 안내 / 만료 메시지
+   ================================================ */
+
+.corr-timer-draft2-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    margin-top: 4px;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.corr-timer-expired-msg {
+    display: block;
+    font-size: 13px;
+    color: var(--danger-color, #e74c3c);
+    font-weight: 600;
+    margin-top: 4px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .corr-timer-draft2-hint,
+    .corr-timer-expired-msg {
+        white-space: normal;
+        font-size: 11px;
+    }
+
+    .corr-fb-toggle-annotated {
+        max-height: 200px;
+    }
+}
+

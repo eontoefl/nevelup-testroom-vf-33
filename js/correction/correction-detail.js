@@ -192,6 +192,13 @@ function _renderDraft2Content(isWriting, sub, taskType, session, isTerminal) {
 function _renderFeedbackContent(isWriting, feedback, isFinal) {
     if (!feedback) return '<div style="padding:20px; color:#888;">피드백 데이터가 없습니다.</div>';
 
+    // feedback이 문자열(이중 직렬화)일 수 있으므로 파싱
+    if (typeof feedback === 'string') {
+        try { feedback = JSON.parse(feedback); } catch (e) {
+            return '<div style="padding:20px; color:#888;">피드백 데이터를 읽을 수 없습니다.</div>';
+        }
+    }
+
     var suffix = isFinal ? 'final' : 'first';
     var html = '';
 
