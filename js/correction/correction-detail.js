@@ -192,24 +192,38 @@ function _renderDraft2Content(isWriting, sub, taskType, session, isTerminal) {
 function _renderFeedbackContent(isWriting, feedback, isFinal) {
     if (!feedback) return '<div style="padding:20px; color:#888;">피드백 데이터가 없습니다.</div>';
 
+    var suffix = isFinal ? 'final' : 'first';
     var html = '';
 
-    // annotated_html 영역
-    html += '<div class="corr-feedback-annotated" id="corrFb_' + (isFinal ? 'final' : 'first') + '"></div>';
-
-    // summary 영역
-    html += '<div class="corr-feedback-summary" id="corrFbSummary_' + (isFinal ? 'final' : 'first') + '"></div>';
+    if (isWriting) {
+        // ── Writing: 좌우 스플릿 레이아웃 ──
+        html += '<div class="corr-fb-split-wrap" data-fb-scope="' + suffix + '">';
+        html += '  <div class="corr-fb-split">';
+        html += '    <div class="corr-fb-split-left">';
+        html += '      <div class="corr-feedback-annotated" id="corrFb_' + suffix + '"></div>';
+        html += '    </div>';
+        html += '    <div class="corr-fb-split-right" id="corrFbMemo_' + suffix + '"></div>';
+        html += '  </div>';
+        html += '  <div class="corr-feedback-summary" id="corrFbSummary_' + suffix + '"></div>';
+        html += '</div>';
+    } else {
+        // ── Speaking: 기존 단일 컬럼 ──
+        html += '<div class="corr-feedback-annotated" id="corrFb_' + suffix + '"></div>';
+        html += '<div class="corr-feedback-summary" id="corrFbSummary_' + suffix + '"></div>';
+    }
 
     // 렌더링은 DOM에 삽입된 후 실행해야 하므로 setTimeout 사용
     var feedbackData = feedback;
     var writing = isWriting;
     setTimeout(function() {
-        var annotatedEl = document.getElementById('corrFb_' + (isFinal ? 'final' : 'first'));
-        var summaryEl = document.getElementById('corrFbSummary_' + (isFinal ? 'final' : 'first'));
+        var annotatedEl = document.getElementById('corrFb_' + suffix);
+        var summaryEl = document.getElementById('corrFbSummary_' + suffix);
 
         if (annotatedEl) {
             if (writing) {
                 renderAnnotatedHtml(annotatedEl, feedbackData.annotated_html || '');
+                // 메모 패널 동적 생성 + 양방향 클릭 연동
+                _buildMemoPanel(suffix);
             } else {
                 renderSpeakingFeedback(annotatedEl, feedbackData);
             }
@@ -220,6 +234,113 @@ function _renderFeedbackContent(isWriting, feedback, isFinal) {
     }, 50);
 
     return html;
+}
+
+// ============================================================
+// 4-B. 메모 패널 생성 + 양방향 하이라이트
+// ============================================================
+
+/**
+ * 왼쪽 본문의 .correction-mark[data-comment] 를 순회하여
+ * 오른쪽 메모 패널에 카드를 동적으로 생성하고 클릭 연동을 바인딩한다.
+ * @param {string} suffix - 'first' | 'final'
+ */
+function _buildMemoPanel(suffix) {
+    var wrap = document.querySelector('.corr-fb-split-wrap[data-fb-scope="' + suffix + '"]');
+    if (!wrap) return;
+
+    var annotatedEl = document.getElementById('corrFb_' + suffix);
+    var memoEl = document.getElementById('corrFbMemo_' + suffix);
+    if (!annotatedEl || !memoEl) return;
+
+    var marks = annotatedEl.querySelectorAll('.correction-mark[data-comment]');
+    if (marks.length === 0) {
+        memoEl.innerHTML = '<div class="corr-memo-empty">교정 코멘트가 없습니다.</div>';
+        return;
+    }
+
+    memoEl.innerHTML = '<div class="corr-memo-header">교정 메모</div>';
+
+    for (var i = 0; i < marks.length; i++) {
+        var mark = marks[i];
+        var comment = mark.getAttribute('data-comment');
+        var uid = suffix + '_' + i;
+
+        // 마크에 uid 부여
+        mark.setAttribute('data-memo-id', uid);
+
+        // 메모 카드 생성
+        var card = document.createElement('div');
+        card.className = 'corr-memo-card';
+        card.setAttribute('data-memo-id', uid);
+        card.textContent = comment;
+        memoEl.appendChild(card);
+    }
+
+    // ── 양방향 클릭 이벤트 ──
+    // 왼쪽 마크 클릭 → 오른쪽 메모 활성 + 스크롤
+    for (var i = 0; i < marks.length; i++) {
+        (function(mark) {
+            mark.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var id = mark.getAttribute('data-memo-id');
+                _activatePair(wrap, id);
+            });
+        })(marks[i]);
+    }
+
+    // 오른쪽 메모 카드 클릭 → 왼쪽 마크 활성 + 스크롤
+    var cards = memoEl.querySelectorAll('.corr-memo-card');
+    for (var i = 0; i < cards.length; i++) {
+        (function(card) {
+            card.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var id = card.getAttribute('data-memo-id');
+                _activatePair(wrap, id);
+            });
+        })(cards[i]);
+    }
+
+    // 빈 곳 클릭 → 모든 활성 해제 (wrap 범위)
+    wrap.addEventListener('click', function(e) {
+        if (!e.target.closest('.correction-mark') && !e.target.closest('.corr-memo-card')) {
+            _deactivateAll(wrap);
+        }
+    });
+}
+
+/**
+ * 특정 memo-id 쌍을 활성화하고 나머지 해제
+ */
+function _activatePair(wrap, memoId) {
+    // 이미 활성인 같은 쌍이면 토글(해제)
+    var alreadyActive = wrap.querySelector('.correction-mark.memo-active[data-memo-id="' + memoId + '"]');
+    _deactivateAll(wrap);
+    if (alreadyActive) return;
+
+    // 마크 활성
+    var mark = wrap.querySelector('.correction-mark[data-memo-id="' + memoId + '"]');
+    if (mark) {
+        mark.classList.add('memo-active');
+        mark.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 메모 카드 활성
+    var card = wrap.querySelector('.corr-memo-card[data-memo-id="' + memoId + '"]');
+    if (card) {
+        card.classList.add('memo-active');
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+/**
+ * wrap 내 모든 활성 해제
+ */
+function _deactivateAll(wrap) {
+    var actives = wrap.querySelectorAll('.memo-active');
+    for (var i = 0; i < actives.length; i++) {
+        actives[i].classList.remove('memo-active');
+    }
 }
 
 // ============================================================
