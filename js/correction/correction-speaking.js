@@ -109,8 +109,13 @@ async function startCorrectionSpeaking(session, scheduleData, submission) {
             ' · Interview ' + session.session + (isDraft2 ? ' (2차)' : '');
     }
 
-    // 준비 화면 표시
-    _showCorrSpkReadyScreen();
+    if (isDraft2) {
+        // ── 2차: Phase 1 건너뛰고 모달 바로 띄움 ──
+        _showCorrSpkDraft2Modal();
+    } else {
+        // ── 1차: 기존 동작 100% 유지 ──
+        _showCorrSpkReadyScreen();
+    }
 }
 
 // ============================================================
@@ -648,6 +653,317 @@ function _returnToCorrectionSessionFromSpeaking() {
     }
 }
 
+// ============================================================
+// 9-B. 2차 전용 모달 UI
+// ============================================================
+
+function _showCorrSpkDraft2Modal() {
+    var state = window._correctionSpeakingState;
+    if (!state || !state.setData) return;
+
+    // 기존 모달 제거
+    var old = document.getElementById('corrSpkDraft2Modal');
+    if (old) old.remove();
+
+    var sessionNum = String(state.session.session).padStart(2, '0');
+
+    // ── 오버레이 ──
+    var overlay = document.createElement('div');
+    overlay.id = 'corrSpkDraft2Modal';
+    overlay.className = 'corr-spk-modal-overlay';
+
+    // ── 모달 박스 ──
+    var box = document.createElement('div');
+    box.className = 'corr-spk-modal-box';
+
+    // ── 헤더 ──
+    var header = document.createElement('div');
+    header.className = 'corr-spk-modal-header';
+    header.innerHTML = '<span>Interview S' + sessionNum + ' (2차)</span>' +
+        '<button class="corr-spk-modal-close" id="corrSpkModalCloseBtn">&times;</button>';
+    box.appendChild(header);
+
+    // ── 탭 ──
+    var tabWrap = document.createElement('div');
+    tabWrap.className = 'corr-spk-modal-tabs';
+    for (var t = 1; t <= 4; t++) {
+        var tab = document.createElement('button');
+        tab.className = 'corr-spk-modal-tab' + (t === 1 ? ' active' : '');
+        tab.textContent = 'Q' + t;
+        tab.setAttribute('data-q', t);
+        tabWrap.appendChild(tab);
+    }
+    box.appendChild(tabWrap);
+
+    // ── 비디오 플레이어 ──
+    var videoWrap = document.createElement('div');
+    videoWrap.className = 'corr-spk-modal-video-wrap';
+
+    var videoEl = document.createElement('video');
+    videoEl.id = 'corrSpkModalVideo';
+    videoEl.className = 'corr-spk-modal-video';
+    videoEl.setAttribute('controls', '');
+    videoEl.setAttribute('playsinline', '');
+    videoEl.preload = 'metadata';
+
+    var noVideoMsg = document.createElement('div');
+    noVideoMsg.id = 'corrSpkModalNoVideo';
+    noVideoMsg.className = 'corr-spk-modal-no-video';
+    noVideoMsg.textContent = '영상 없음';
+    noVideoMsg.style.display = 'none';
+
+    videoWrap.appendChild(videoEl);
+    videoWrap.appendChild(noVideoMsg);
+    box.appendChild(videoWrap);
+
+    // ── 45초 타이머 ──
+    var timerWrap = document.createElement('div');
+    timerWrap.className = 'corr-spk-modal-timer-wrap';
+    timerWrap.innerHTML =
+        '<span class="corr-spk-modal-timer-display" id="corrSpkModalTimerDisplay">00:45</span>' +
+        '<div class="corr-spk-modal-timer-btns">' +
+        '  <button class="corr-spk-modal-timer-btn start" id="corrSpkModalTimerStart">시작</button>' +
+        '  <button class="corr-spk-modal-timer-btn pause" id="corrSpkModalTimerPause">멈춤</button>' +
+        '  <button class="corr-spk-modal-timer-btn reset" id="corrSpkModalTimerReset">리셋</button>' +
+        '</div>';
+    box.appendChild(timerWrap);
+
+    // ── 파일 업로드 Q1~Q4 ──
+    var uploadWrap = document.createElement('div');
+    uploadWrap.className = 'corr-spk-modal-upload-wrap';
+    for (var q = 1; q <= 4; q++) {
+        var row = document.createElement('div');
+        row.className = 'corr-spk-modal-upload-row';
+        row.innerHTML =
+            '<span class="corr-spk-modal-upload-label">Q' + q + '</span>' +
+            '<label class="corr-spk-modal-upload-btn" for="corrSpkModalFileQ' + q + '">' +
+            '  <i class="fas fa-file-audio"></i> <span id="corrSpkModalFileLabelQ' + q + '">파일 선택</span>' +
+            '</label>' +
+            '<input type="file" id="corrSpkModalFileQ' + q + '" accept="audio/*,video/mp4,video/webm" style="display:none;" data-q="' + q + '">' +
+            '<span class="corr-spk-modal-upload-status" id="corrSpkModalFileStatusQ' + q + '"></span>';
+        uploadWrap.appendChild(row);
+    }
+    box.appendChild(uploadWrap);
+
+    // ── 제출 버튼 ──
+    var submitBtn = document.createElement('button');
+    submitBtn.id = 'corrSpkModalSubmitBtn';
+    submitBtn.className = 'corr-spk-modal-submit-btn';
+    submitBtn.textContent = '제출하기';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    box.appendChild(submitBtn);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // DOM 삽입 후 초기 영상 로드 (Q1)
+    _corrSpkModalLoadVideo(1);
+
+    // ── 이벤트 바인딩 ──
+    _corrSpkModalBindEvents();
+}
+
+// ── 비디오 소스 전환 ──
+function _corrSpkModalLoadVideo(qNum) {
+    var state = window._correctionSpeakingState;
+    if (!state || !state.setData) return;
+
+    var videoEl = document.getElementById('corrSpkModalVideo');
+    var noVideoMsg = document.getElementById('corrSpkModalNoVideo');
+    if (!videoEl || !noVideoMsg) return;
+
+    var videoData = state.setData.videos[qNum - 1];
+    var src = videoData ? videoData.video : '';
+
+    if (src && src !== '' && src !== 'PLACEHOLDER') {
+        videoEl.src = src;
+        videoEl.style.display = 'block';
+        noVideoMsg.style.display = 'none';
+        videoEl.pause();
+        videoEl.currentTime = 0;
+    } else {
+        videoEl.removeAttribute('src');
+        videoEl.style.display = 'none';
+        noVideoMsg.style.display = 'flex';
+    }
+}
+
+// ── 이벤트 바인딩 ──
+function _corrSpkModalBindEvents() {
+    var state = window._correctionSpeakingState;
+    if (!state) return;
+
+    // 탭 클릭
+    var tabs = document.querySelectorAll('.corr-spk-modal-tab');
+    for (var i = 0; i < tabs.length; i++) {
+        tabs[i].addEventListener('click', function() {
+            for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+            this.classList.add('active');
+            _corrSpkModalLoadVideo(parseInt(this.getAttribute('data-q')));
+        });
+    }
+
+    // 45초 타이머
+    var timerState = { remaining: 45, interval: null, running: false };
+    var display = document.getElementById('corrSpkModalTimerDisplay');
+    var startBtn = document.getElementById('corrSpkModalTimerStart');
+    var pauseBtn = document.getElementById('corrSpkModalTimerPause');
+    var resetBtn = document.getElementById('corrSpkModalTimerReset');
+
+    function updateTimerDisplay() {
+        if (!display) return;
+        var m = Math.floor(timerState.remaining / 60);
+        var s = timerState.remaining % 60;
+        display.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        display.style.color = timerState.remaining <= 10 ? 'var(--danger-color, #e74c3c)' : '';
+    }
+
+    if (startBtn) startBtn.addEventListener('click', function() {
+        if (timerState.running || timerState.remaining <= 0) return;
+        timerState.running = true;
+        timerState.interval = setInterval(function() {
+            timerState.remaining--;
+            updateTimerDisplay();
+            if (timerState.remaining <= 0) {
+                clearInterval(timerState.interval);
+                timerState.interval = null;
+                timerState.running = false;
+            }
+        }, 1000);
+    });
+
+    if (pauseBtn) pauseBtn.addEventListener('click', function() {
+        if (!timerState.running) return;
+        clearInterval(timerState.interval);
+        timerState.interval = null;
+        timerState.running = false;
+    });
+
+    if (resetBtn) resetBtn.addEventListener('click', function() {
+        if (timerState.interval) clearInterval(timerState.interval);
+        timerState.interval = null;
+        timerState.running = false;
+        timerState.remaining = 45;
+        updateTimerDisplay();
+    });
+
+    // 모달 내 타이머 정리를 cleanup에서 할 수 있도록 state에 저장
+    state._modalTimerState = timerState;
+
+    // 파일 업로드
+    for (var q = 1; q <= 4; q++) {
+        var input = document.getElementById('corrSpkModalFileQ' + q);
+        if (input) {
+            input.addEventListener('change', function() {
+                var qNum = parseInt(this.getAttribute('data-q'));
+                _corrSpkModalFileChange(qNum, this);
+            });
+        }
+    }
+
+    // 제출 버튼
+    var submitBtn = document.getElementById('corrSpkModalSubmitBtn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
+            submitCorrectionSpeaking();
+        });
+    }
+
+    // X 닫기
+    var closeBtn = document.getElementById('corrSpkModalCloseBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            _corrSpkModalClose();
+        });
+    }
+}
+
+// ── 모달 전용 파일 변경 핸들러 (검증 로직 재사용) ──
+function _corrSpkModalFileChange(qNum, input) {
+    var state = window._correctionSpeakingState;
+    if (!state) return;
+
+    var label = document.getElementById('corrSpkModalFileLabelQ' + qNum);
+    var status = document.getElementById('corrSpkModalFileStatusQ' + qNum);
+
+    if (!input.files || input.files.length === 0) {
+        state.uploadFiles['q' + qNum] = null;
+        if (label) label.textContent = '파일 선택';
+        if (status) { status.textContent = ''; status.className = 'corr-spk-modal-upload-status'; }
+        _corrSpkModalUpdateSubmitBtn();
+        return;
+    }
+
+    var file = input.files[0];
+    var ext = file.name.split('.').pop().toLowerCase();
+
+    // 확장자 검증 (기존 상수 재사용)
+    if (CORR_SPK_ALLOWED_EXT.indexOf(ext) < 0) {
+        input.value = '';
+        state.uploadFiles['q' + qNum] = null;
+        if (label) label.textContent = '파일 선택';
+        if (status) {
+            status.textContent = '허용되지 않는 형식 (mp3, m4a, wav, webm, mp4, ogg, aac)';
+            status.className = 'corr-spk-modal-upload-status error';
+        }
+        _corrSpkModalUpdateSubmitBtn();
+        return;
+    }
+
+    // 용량 검증 (기존 상수 재사용)
+    if (file.size > CORR_SPK_MAX_SIZE) {
+        input.value = '';
+        state.uploadFiles['q' + qNum] = null;
+        if (label) label.textContent = '파일 선택';
+        if (status) {
+            status.textContent = '파일이 너무 큽니다 (최대 25MB)';
+            status.className = 'corr-spk-modal-upload-status error';
+        }
+        _corrSpkModalUpdateSubmitBtn();
+        return;
+    }
+
+    // 성공
+    state.uploadFiles['q' + qNum] = file;
+    if (label) label.textContent = file.name;
+    if (status) {
+        var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        status.textContent = sizeMB + 'MB · ' + ext.toUpperCase();
+        status.className = 'corr-spk-modal-upload-status success';
+    }
+    _corrSpkModalUpdateSubmitBtn();
+}
+
+function _corrSpkModalUpdateSubmitBtn() {
+    var state = window._correctionSpeakingState;
+    var btn = document.getElementById('corrSpkModalSubmitBtn');
+    if (!state || !btn) return;
+
+    var allSelected = state.uploadFiles.q1 && state.uploadFiles.q2 &&
+                      state.uploadFiles.q3 && state.uploadFiles.q4;
+    btn.disabled = !allSelected;
+    btn.style.opacity = allSelected ? '1' : '0.5';
+}
+
+// ── 모달 닫기 ──
+function _corrSpkModalClose() {
+    var state = window._correctionSpeakingState;
+    if (state) {
+        var hasFile = state.uploadFiles.q1 || state.uploadFiles.q2 ||
+                      state.uploadFiles.q3 || state.uploadFiles.q4;
+        if (hasFile && !confirm('선택한 파일이 있습니다. 나가시겠습니까?')) {
+            return;
+        }
+        // 모달 타이머 정리
+        if (state._modalTimerState && state._modalTimerState.interval) {
+            clearInterval(state._modalTimerState.interval);
+        }
+    }
+    _cleanupCorrectionSpeaking();
+    backToCorrectionSession();
+}
+
 function _cleanupCorrectionSpeaking() {
     var state = window._correctionSpeakingState;
     if (!state) return;
@@ -671,6 +987,10 @@ function _cleanupCorrectionSpeaking() {
         videoEl.removeAttribute('src');
         videoEl.load();
     }
+
+    // 2차 모달 DOM 제거
+    var modal = document.getElementById('corrSpkDraft2Modal');
+    if (modal) modal.remove();
 
     window._correctionSpeakingState = null;
     console.log('🧹 [Correction Speaking] 정리 완료');

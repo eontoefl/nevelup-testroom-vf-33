@@ -970,3 +970,316 @@
     }
 }
 
+/* ================================================
+   Speaking 2차 모달 UI
+   ================================================ */
+
+.corr-spk-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+}
+
+.corr-spk-modal-box {
+    background: var(--surface-color, #ffffff);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 720px;
+    overflow-x: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* ── 헤더 ── */
+.corr-spk-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+}
+
+.corr-spk-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-secondary, #64748b);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.corr-spk-modal-close:hover {
+    color: var(--text-primary, #1e293b);
+}
+
+/* ── 탭 ── */
+.corr-spk-modal-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.corr-spk-modal-tab {
+    padding: 6px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.corr-spk-modal-tab:hover {
+    border-color: var(--primary-color, #9480c5);
+    color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-tab.active {
+    background: var(--primary-color, #9480c5);
+    border-color: var(--primary-color, #9480c5);
+    color: #ffffff;
+}
+
+/* ── 비디오 ── */
+.corr-spk-modal-video-wrap {
+    padding: 16px 24px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.corr-spk-modal-video {
+    max-width: 100%;
+    max-height: 360px;
+    height: auto;
+    border-radius: 8px;
+    background: #000;
+    object-fit: contain;
+}
+
+.corr-spk-modal-no-video {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 14px;
+    height: 200px;
+    width: 100%;
+}
+
+/* ── 45초 타이머 ── */
+.corr-spk-modal-timer-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.corr-spk-modal-timer-display {
+    font-size: 28px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary, #1e293b);
+    min-width: 80px;
+}
+
+.corr-spk-modal-timer-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.corr-spk-modal-timer-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: inherit;
+    color: #fff;
+}
+
+.corr-spk-modal-timer-btn:hover {
+    opacity: 0.85;
+}
+
+.corr-spk-modal-timer-btn.start {
+    background: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-timer-btn.pause {
+    background: #f0ad4e;
+}
+
+.corr-spk-modal-timer-btn.reset {
+    background: var(--text-secondary, #64748b);
+}
+
+/* ── 파일 업로드 ── */
+.corr-spk-modal-upload-wrap {
+    padding: 14px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.corr-spk-modal-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-color, #f1f4f8);
+    border-radius: 10px;
+}
+
+.corr-spk-modal-upload-label {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--primary-color, #9480c5);
+    min-width: 28px;
+}
+
+.corr-spk-modal-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--surface-color, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-primary, #1e293b);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.corr-spk-modal-upload-btn:hover {
+    border-color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-upload-btn i {
+    color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-upload-status {
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.corr-spk-modal-upload-status.success {
+    color: #059669;
+}
+
+.corr-spk-modal-upload-status.error {
+    color: var(--danger-color, #e74c3c);
+}
+
+/* ── 제출 버튼 ── */
+.corr-spk-modal-submit-btn {
+    margin: 16px 24px 20px;
+    padding: 14px;
+    background: var(--primary-color, #9480c5);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: inherit;
+}
+
+.corr-spk-modal-submit-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.corr-spk-modal-submit-btn:disabled {
+    cursor: not-allowed;
+}
+
+/* ── 모바일 대응 ── */
+@media (max-width: 768px) {
+    .corr-spk-modal-overlay {
+        padding: 8px;
+    }
+
+    .corr-spk-modal-box {
+        max-height: 95vh;
+        border-radius: 12px;
+    }
+
+    .corr-spk-modal-header {
+        padding: 14px 16px;
+        font-size: 15px;
+    }
+
+    .corr-spk-modal-tabs {
+        padding: 10px 16px;
+        gap: 6px;
+    }
+
+    .corr-spk-modal-tab {
+        padding: 5px 14px;
+        font-size: 12px;
+    }
+
+    .corr-spk-modal-video-wrap {
+        padding: 12px 16px;
+        min-height: 160px;
+    }
+
+    .corr-spk-modal-timer-wrap {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .corr-spk-modal-timer-display {
+        font-size: 22px;
+    }
+
+    .corr-spk-modal-upload-wrap {
+        padding: 12px 16px;
+    }
+
+    .corr-spk-modal-upload-row {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 10px;
+    }
+
+    .corr-spk-modal-submit-btn {
+        margin: 12px 16px 16px;
+    }
+}
+
