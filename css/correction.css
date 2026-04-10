@@ -1092,56 +1092,224 @@
    Speaking 2차 모달 UI
    ================================================ */
 
-.corr-spk-modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
+
+/* 2차 진입 시 페이지 전체 배경 */
+#correctionSpeakingScreen.draft2-bg {
+    background: #fefeff;
+}
+
+.corr-spk-d2-section {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 30px;
     font-family: 'Pretendard Variable', Pretendard, sans-serif;
 }
 
-.corr-spk-modal-box {
-    background: var(--surface-color, #ffffff);
-    border-radius: 16px;
-    width: 100%;
-    max-width: 720px;
-    overflow-x: hidden;
-    max-height: 90vh;
-    overflow-y: auto;
+/* ── 좌우 스플릿 ── */
+.corr-spk-d2-split {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    min-height: 0;
+    margin-top: 20px;
+}
+
+.corr-spk-d2-left {
+    width: 400px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-/* ── 헤더 ── */
-.corr-spk-modal-header {
+/* ── 가운데: 1차 피드백 본문 ── */
+.corr-spk-d2-mid {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.corr-spk-d2-mid-header {
+    padding: 10px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary-color, #9480c5);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 18px 24px;
-    border-bottom: 1px solid var(--border-color, #e2e8f0);
-    font-size: 16px;
+    gap: 6px;
+}
+
+.corr-spk-d2-mid-header i {
+    color: #f0ad4e;
+}
+
+.corr-spk-d2-fb-text {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ── 오른쪽: 메모 카드 패널 ── */
+.corr-spk-d2-right {
+    width: 280px;
+    min-width: 280px;
+    flex-shrink: 0;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    background: #f1f4f8;
+    border-radius: 12px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.corr-spk-d2-fb-q {
+    background: var(--bg-color, #f1f4f8);
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+
+.corr-spk-d2-fb-q:last-child {
+    margin-bottom: 0;
+}
+
+.corr-spk-d2-fb-q-label {
+    font-size: 13px;
     font-weight: 700;
+    color: var(--primary-color, #9480c5);
+    margin-bottom: 6px;
+}
+
+.corr-spk-d2-fb-annotated {
+    font-size: 14px;
+    line-height: 1.7;
     color: var(--text-primary, #1e293b);
 }
 
-.corr-spk-modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
+.corr-spk-d2-fb-comment {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    font-size: 13px;
+    font-style: italic;
     color: var(--text-secondary, #64748b);
-    cursor: pointer;
-    padding: 0 4px;
-    line-height: 1;
-    transition: color 0.2s;
+    line-height: 1.5;
 }
 
-.corr-spk-modal-close:hover {
+/* ── 총평 (전체 너비) ── */
+.corr-spk-d2-fb-summary {
+    background: #f9f7fc;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-top: 0;
+    font-size: 14px;
     color: var(--text-primary, #1e293b);
+    line-height: 1.6;
+}
+
+.corr-spk-d2-fb-summary-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary-color, #9480c5);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.corr-spk-d2-fb-summary-label i {
+    color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-d2-fb-summary-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary, #1e293b);
+}
+
+.corr-spk-d2-fb-empty {
+    padding: 40px 18px;
+    text-align: center;
+    color: var(--text-secondary, #64748b);
+    font-size: 13px;
+}
+
+/* ── 가운데 패널 내 correction-mark (Writing 동일 보라색 계열) ── */
+.corr-spk-d2-mid .correction-mark {
+    background: rgba(148, 128, 197, 0.13);
+    border-bottom: 2px solid rgba(148, 128, 197, 0.45);
+    padding: 1px 2px;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.corr-spk-d2-mid .correction-mark:hover {
+    background: rgba(148, 128, 197, 0.22);
+}
+
+.corr-spk-d2-mid .correction-mark.memo-active {
+    background: rgba(148, 128, 197, 0.28);
+    border-bottom-color: var(--primary-color, #9480c5);
+    box-shadow: 0 1px 4px rgba(148, 128, 197, 0.25);
+}
+
+/* tooltip 숨김 (메모 카드로 대체) */
+.corr-spk-d2-mid .correction-tooltip {
+    display: none !important;
+}
+
+/* ── 메모 패널 내부 (오른쪽 컬럼 직접 사용) ── */
+.corr-spk-d2-memo-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.corr-spk-d2-memo-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    margin-bottom: 2px;
+}
+
+.corr-spk-d2-memo-empty {
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
+    text-align: center;
+    padding: 20px 0;
+}
+
+.corr-spk-d2-memo-card {
+    background: var(--surface-color, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-left: 3px solid transparent;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary, #1e293b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    word-break: break-word;
+}
+
+.corr-spk-d2-memo-card:hover {
+    background: #f9f7fc;
+}
+
+.corr-spk-d2-memo-card.memo-active {
+    border-left: 3px solid var(--primary-color, #9480c5);
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.18);
+    transform: scale(1.01);
+    background: var(--surface-color, #ffffff);
 }
 
 /* ── 탭 ── */
@@ -1351,14 +1519,27 @@
         padding: 8px;
     }
 
-    .corr-spk-modal-box {
-        max-height: 95vh;
-        border-radius: 12px;
+    .corr-spk-d2-split {
+        flex-direction: column;
     }
 
-    .corr-spk-modal-header {
-        padding: 14px 16px;
-        font-size: 15px;
+    .corr-spk-d2-section {
+        padding: 0 8px;
+    }
+
+    .corr-spk-d2-left {
+        width: 100%;
+    }
+
+    .corr-spk-d2-mid {
+        width: 100%;
+        max-height: 300px;
+    }
+
+    .corr-spk-d2-right {
+        width: 100%;
+        min-width: 0;
+        max-height: 200px;
     }
 
     .corr-spk-modal-tabs {
