@@ -116,16 +116,13 @@ function _attachTooltip(mark) {
     var comment = mark.getAttribute('data-comment');
     if (!comment) return;
 
-    // 툴팁 엘리먼트 생성
-    var tooltip = document.createElement('span');
-    tooltip.className = 'correction-tooltip';
-    tooltip.textContent = comment;
-    mark.appendChild(tooltip);
-
-    // 모바일 tap
+    // tooltip 엘리먼트 생성하지 않음 (메모 패널로 대체)
+    // 클릭 이벤트: 스플릿 메모 패널 연동은 _buildMemoPanel에서 처리
+    // 스플릿 외부(Speaking 등)에서 호출될 경우를 위한 기본 active 토글만 유지
     mark.addEventListener('click', function(e) {
         e.stopPropagation();
-        // 다른 active 제거
+        // 스플릿 wrap 안이면 _buildMemoPanel 이벤트가 처리하므로 여기서는 무시
+        if (mark.closest('.corr-fb-split-wrap')) return;
         var allActive = document.querySelectorAll('.correction-mark.active');
         for (var j = 0; j < allActive.length; j++) {
             if (allActive[j] !== mark) allActive[j].classList.remove('active');
@@ -134,7 +131,7 @@ function _attachTooltip(mark) {
     });
 }
 
-// 문서 클릭 시 모든 active tooltip 닫기
+// 문서 클릭 시 모든 active 해제 (스플릿 밖의 Speaking 등)
 document.addEventListener('click', function() {
     var allActive = document.querySelectorAll('.correction-mark.active');
     for (var i = 0; i < allActive.length; i++) {
