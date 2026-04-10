@@ -109,6 +109,13 @@ async function openCorrectionDetail(taskType, session, submission) {
     if (status === 'complete' || status === 'expired' || status === 'skipped' || (status === 'feedback2_ready' && submission.released_2)) {
         var modelContent = _renderModelAnswer(isWriting, submission);
         _addAccordionItem(accordionEl, '모범답안', modelContent, true, 'model');
+
+        // Speaking 모범답안 번역 토글 이벤트 바인딩 (DOM 삽입 후 실행)
+        if (!isWriting) {
+            setTimeout(function() {
+                _bindModelTransToggle();
+            }, 50);
+        }
     }
 
     // 아코디언이 비어있으면 상태 메시지
@@ -379,20 +386,83 @@ function _renderModelAnswer(isWriting, sub) {
             html += '<div style="padding:20px; color:#888; text-align:center;">모범답안이 준비되지 않았습니다.</div>';
         }
     } else {
-        // Speaking 모범답안
-        var modelText = sub.model_answer_text || '';
-        if (modelText) {
-            html += '<div class="corr-detail-text">' + _escapeAndNl2br(modelText) + '</div>';
-        }
-        var modelAudio = sub.model_answer_audio_url || '';
-        if (modelAudio) {
-            html += _renderAudioPlayer('모범답안 오디오', modelAudio);
-        }
-        if (!modelText && !modelAudio) {
-            html += '<div style="padding:20px; color:#888; text-align:center;">모범답안이 준비되지 않았습니다.</div>';
+        // Speaking 모범답안 — JSON Q1~Q4 카드
+        html += _renderSpeakingModelAnswer(sub);
+    }
+
+    return html;
+}
+
+/**
+ * Speaking 모범답안 2×2 그리드 카드 렌더링
+ * model_answer_text:      { q1:{text,trans}, q2:{...}, q3:{...}, q4:{...} }
+ * model_answer_audio_url: { q1:"url", q2:"url", q3:"url", q4:"url" }
+ */
+function _renderSpeakingModelAnswer(sub) {
+    var raw = sub.model_answer_text;
+    if (!raw || (typeof raw === 'string' && !raw.trim())) {
+        return '<div style="padding:20px; color:#888; text-align:center;">모범답안이 준비되지 않았습니다.</div>';
+    }
+
+    // 텍스트 파싱: 객체이면 그대로, 문자열이면 JSON.parse 시도
+    var data = null;
+    if (typeof raw === 'object') {
+        data = raw;
+    } else {
+        try { data = JSON.parse(raw); } catch (e) { data = null; }
+    }
+
+    // 파싱 실패 → 단순 텍스트 fallback
+    if (!data || typeof data !== 'object') {
+        return '<div class="corr-detail-text">' + _escapeAndNl2br(String(raw)) + '</div>';
+    }
+
+    // 오디오 파싱: 별도 컬럼 (model_answer_audio_url)
+    var rawAudio = sub.model_answer_audio_url;
+    var audioData = null;
+    if (rawAudio) {
+        if (typeof rawAudio === 'object') {
+            audioData = rawAudio;
+        } else if (typeof rawAudio === 'string' && rawAudio.trim()) {
+            try { audioData = JSON.parse(rawAudio); } catch (e) { audioData = null; }
         }
     }
 
+    var html = '<div class="corr-model-grid">';
+    for (var q = 1; q <= 4; q++) {
+        // 소문자 키 우선, 대문자 fallback
+        var key = 'q' + q;
+        var item = data[key] || data['Q' + q] || null;
+
+        html += '<div class="corr-model-card">';
+        // Q 배지
+        html += '<div class="corr-model-card-header">';
+        html += '<span class="corr-model-card-badge">Q' + q + '</span>';
+        html += '</div>';
+
+        if (item && item.text) {
+            // 영어 원문
+            html += '<p class="corr-model-card-text">' + _escapeAndNl2br(item.text) + '</p>';
+            // 번역 토글 + 번역 텍스트
+            if (item.trans) {
+                html += '<button class="corr-model-trans-btn" data-model-q="' + q + '" type="button">번역 보기</button>';
+                html += '<div class="corr-model-trans" id="corrModelTrans_' + q + '" style="display:none;">' + _escapeAndNl2br(item.trans) + '</div>';
+            }
+            // 오디오 플레이어 — model_answer_audio_url에서 읽기
+            var audioPath = audioData ? (audioData[key] || audioData['Q' + q] || '') : '';
+            if (audioPath) {
+                var audioUrl = (audioPath.indexOf('http') === 0) ? audioPath : supabaseStorageUrl('correction-audio', audioPath);
+                html += '<div class="corr-model-card-player">';
+                html += '<audio controls preload="none"><source src="' + audioUrl + '"></audio>';
+                html += '</div>';
+            }
+        } else {
+            html += '<div class="corr-model-card-empty">모범답안 없음</div>';
+        }
+
+        html += '</div>';
+    }
+    html += '</div>';
     return html;
 }
 
@@ -628,14 +698,33 @@ function _formatDate(isoStr) {
     return m + '/' + day + ' ' + (h < 10 ? '0' : '') + h + ':' + (min < 10 ? '0' : '') + min;
 }
 
+/**
+ * Speaking 모범답안 번역 토글 버튼 이벤트 바인딩
+ * 카드별 독립 동작 — Q1 열어도 Q2~Q4는 닫힌 상태 유지
+ */
+function _bindModelTransToggle() {
+    var btns = document.querySelectorAll('.corr-model-trans-btn');
+    for (var i = 0; i < btns.length; i++) {
+        (function(btn) {
+            btn.addEventListener('click', function() {
+                var qNum = btn.getAttribute('data-model-q');
+                var transEl = document.getElementById('corrModelTrans_' + qNum);
+                if (!transEl) return;
+                var isHidden = transEl.style.display === 'none';
+                transEl.style.display = isHidden ? 'block' : 'none';
+                btn.textContent = isHidden ? '번역 숨기기' : '번역 보기';
+            });
+        })(btns[i]);
+    }
+}
+
 function _escapeAndNl2br(text) {
     if (!text) return '';
     return text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/\n/g, '<br>');
+        .replace(/"/g, '&quot;');
 }
 
 console.log('✅ correction-detail.js 로드 완료');
