@@ -207,9 +207,16 @@ function _renderFeedbackContent(isWriting, feedback, isFinal) {
         html += '  <div class="corr-feedback-summary" id="corrFbSummary_' + suffix + '"></div>';
         html += '</div>';
     } else {
-        // ── Speaking: 기존 단일 컬럼 ──
-        html += '<div class="corr-feedback-annotated" id="corrFb_' + suffix + '"></div>';
-        html += '<div class="corr-feedback-summary" id="corrFbSummary_' + suffix + '"></div>';
+        // ── Speaking: 동일 스플릿 레이아웃 ──
+        html += '<div class="corr-fb-split-wrap" data-fb-scope="' + suffix + '">';
+        html += '  <div class="corr-fb-split">';
+        html += '    <div class="corr-fb-split-left">';
+        html += '      <div class="corr-feedback-annotated" id="corrFb_' + suffix + '"></div>';
+        html += '    </div>';
+        html += '    <div class="corr-fb-split-right" id="corrFbMemo_' + suffix + '"></div>';
+        html += '  </div>';
+        html += '  <div class="corr-feedback-summary" id="corrFbSummary_' + suffix + '"></div>';
+        html += '</div>';
     }
 
     // 렌더링은 DOM에 삽입된 후 실행해야 하므로 setTimeout 사용
@@ -226,6 +233,8 @@ function _renderFeedbackContent(isWriting, feedback, isFinal) {
                 _buildMemoPanel(suffix);
             } else {
                 renderSpeakingFeedback(annotatedEl, feedbackData);
+                // Speaking도 메모 패널 동적 생성 + 양방향 클릭 연동
+                _buildMemoPanel(suffix);
             }
         }
         if (summaryEl) {
