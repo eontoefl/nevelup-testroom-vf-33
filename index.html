@@ -83,6 +83,7 @@
     <link rel="stylesheet" href="css/task-dashboard.css?v=001">
     <link rel="stylesheet" href="css/explain-viewer.css?v=001">
     <link rel="stylesheet" href="css/tutorial.css?v=001">
+    <link rel="stylesheet" href="css/correction.css?v=002">
     
     <!-- [V3] 삭제됨: V2 Stage Selector 인라인 스타일 -->
 
@@ -381,6 +382,7 @@
                 <div class="course-segment-control" id="courseSegmentControl" style="display:none;">
                     <button class="seg-btn seg-active" id="segBtnRegular">TESTROOM</button>
                     <button class="seg-btn" id="segBtnPractice">PRACTICE</button>
+                    <button class="seg-btn" id="segBtnFeedback">FEEDBACK</button>
                 </div>
 
                 <!-- 🔔 알림 버튼 -->
@@ -515,7 +517,382 @@
                 <!-- renderPracticeSchedule()에서 동적 생성 -->
             </section>
 
+            <!-- 첨삭(FEEDBACK) 스케줄 (Week 1~4, 세션 1~12) -->
+            <section class="schedule-section" id="correctionScheduleContainer" style="display:none;">
+                <!-- _renderCorrectionMode()에서 동적 생성 -->
+            </section>
+
             
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- 첨삭 세션 상세 화면 -->
+    <!-- ============================= -->
+    <div id="correctionSessionScreen" class="screen" style="display:none;">
+        <div class="top-nav-bar">
+            <div class="top-nav-left">
+                <button class="btn-back" onclick="backToCorrectionMain()" title="뒤로가기">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="task-dashboard-title">
+                    <span id="corrSessionTitle">SESSION 01</span>
+                    <span class="task-dashboard-subtitle" id="corrSessionSubtitle">Week 1</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- 데드라인 배너 -->
+            <div id="corrSessionDeadlineBanner" class="correction-deadline-banner" style="display:none;"></div>
+
+            <!-- Writing + Speaking 좌우 배치 -->
+            <div class="correction-session-grid">
+                <!-- Writing 카드 -->
+                <div class="correction-task-card" id="corrWritingCard">
+                    <!-- correction-session.js에서 동적 렌더링 -->
+                </div>
+
+                <!-- Speaking 카드 -->
+                <div class="correction-task-card" id="corrSpeakingCard">
+                    <!-- correction-session.js에서 동적 렌더링 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- 첨삭 과제 상세 화면 (아코디언) -->
+    <!-- ============================= -->
+    <div id="correctionDetailScreen" class="screen" style="display:none;">
+        <div class="top-nav-bar">
+            <div class="top-nav-left">
+                <button class="btn-back" onclick="backFromCorrectionDetail()" title="뒤로가기">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="task-dashboard-title">
+                    <span id="corrDetailHeader">SESSION 01</span>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div id="corrDetailDeadlineBanner" class="correction-deadline-banner" style="display:none;"></div>
+            <div id="corrDetailAccordion" class="corr-accordion"></div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- 첨삭 Writing - Email 화면 -->
+    <!-- ============================= -->
+    <div id="correctionWritingEmailScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionWriting()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrEmailHeader" class="test-progress">SESSION 01 · Email 1</span>
+            <div class="test-title">
+                <i class="fas fa-envelope"></i>
+                <span>Writing - Write an Email</span>
+            </div>
+            <div class="test-header-right">
+                <span class="timer" id="corrEmailTimer"><i class="fas fa-clock"></i> 7:00</span>
+                <button class="btn btn-success" onclick="submitCorrectionWriting()">
+                    Submit <i class="fas fa-check"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div class="email-layout">
+                <!-- 왼쪽: 과제 설명 -->
+                <div class="email-task-panel">
+                    <div class="email-task-box">
+                        <p id="corrEmailSituation" class="email-situation"></p>
+                        <p id="corrEmailTask" class="email-task-title"></p>
+                        <ul class="email-instructions">
+                            <li id="corrEmailInstruction1"></li>
+                            <li id="corrEmailInstruction2"></li>
+                            <li id="corrEmailInstruction3"></li>
+                        </ul>
+                        <p class="email-note">Write as much as you can and in complete sentences.</p>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 답안 작성 -->
+                <div class="email-response-panel">
+                    <div class="email-response-header">
+                        <h3>Your Response:</h3>
+                        <p><strong>To:</strong> <span id="corrEmailTo"></span></p>
+                        <p><strong>Subject:</strong> <span id="corrEmailSubject"></span></p>
+                    </div>
+
+                    <div class="email-editor-box">
+                        <div class="email-editor-toolbar">
+                            <div class="toolbar-left">
+                                <button class="toolbar-btn" onclick="corrEmailCut()" title="Cut">
+                                    <i class="fas fa-cut"></i> Cut
+                                </button>
+                                <button class="toolbar-btn" onclick="corrEmailPaste()" title="Paste">
+                                    <i class="fas fa-paste"></i> Paste
+                                </button>
+                                <button class="toolbar-btn" onclick="corrEmailUndo()" title="Undo">
+                                    <i class="fas fa-undo"></i> Undo
+                                </button>
+                                <button class="toolbar-btn" onclick="corrEmailRedo()" title="Redo">
+                                    <i class="fas fa-redo"></i> Redo
+                                </button>
+                            </div>
+                            <div class="toolbar-right">
+                                <span class="word-count">
+                                    <span id="corrEmailWordCount">0</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <textarea
+                            id="corrEmailTextarea"
+                            class="email-textarea"
+                            placeholder="Start typing your email here..."
+                            oninput="onCorrEmailTextInput()">
+                        </textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- 첨삭 Writing - Discussion 화면 -->
+    <!-- ============================= -->
+    <div id="correctionWritingDiscussionScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionWriting()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrDiscussionHeader" class="test-progress">SESSION 01 · Discussion 1</span>
+            <div class="test-title">
+                <i class="fas fa-comments"></i>
+                <span>Writing - Writing for an Academic Discussion</span>
+            </div>
+            <div class="test-header-right">
+                <span class="timer" id="corrDiscussionTimer"><i class="fas fa-clock"></i> 10:00</span>
+                <button class="btn btn-success" onclick="submitCorrectionWriting()">
+                    Submit <i class="fas fa-check"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="test-content" style="display: flex; flex-direction: column; height: calc(100vh - 80px); overflow: hidden; padding: 0;">
+            <div class="discussion-layout" style="flex: 1; min-height: 0; overflow-y: auto;">
+                <!-- 왼쪽: 토론 주제 -->
+                <div class="discussion-task-panel">
+                    <div class="discussion-task-box">
+                        <p id="corrDiscussionClassContext" class="discussion-context"></p>
+
+                        <div class="discussion-instruction">
+                            <p class="discussion-instruction-title">In your response, you should do the following.</p>
+                            <ul class="discussion-instructions">
+                                <li>Express and support your opinion.</li>
+                                <li>Make a contribution to the discussion in your own words.</li>
+                            </ul>
+                            <p class="discussion-note">An effective response will contain at least 100 words.</p>
+                        </div>
+
+                        <div class="professor-section">
+                            <img id="corrDiscussionProfessorImage" src="" alt="Professor" class="professor-image">
+                            <p id="corrDiscussionProfessorName" style="font-weight: bold; margin: 0 0 8px 0; font-size: 15px;"></p>
+                            <p id="corrDiscussionTopic" class="discussion-topic"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 학생 의견 & 답안 작성 -->
+                <div class="discussion-response-panel">
+                    <div class="student-opinions">
+                        <div class="student-opinion">
+                            <img id="corrDiscussionStudent1Image" src="" alt="Student 1" class="student-image">
+                            <div style="flex: 1;">
+                                <div class="student-name" id="corrDiscussionStudent1Name" style="margin-bottom: 5px;">Student 1</div>
+                                <p id="corrDiscussionStudent1Opinion" class="student-text"></p>
+                            </div>
+                        </div>
+                        <div class="student-opinion">
+                            <img id="corrDiscussionStudent2Image" src="" alt="Student 2" class="student-image">
+                            <div style="flex: 1;">
+                                <div class="student-name" id="corrDiscussionStudent2Name" style="margin-bottom: 5px;">Student 2</div>
+                                <p id="corrDiscussionStudent2Opinion" class="student-text"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="discussion-editor-box">
+                        <div class="discussion-editor-toolbar">
+                            <div class="toolbar-left">
+                                <button class="toolbar-btn" onclick="corrDiscussionCut()" title="Cut">
+                                    <i class="fas fa-cut"></i> Cut
+                                </button>
+                                <button class="toolbar-btn" onclick="corrDiscussionPaste()" title="Paste">
+                                    <i class="fas fa-paste"></i> Paste
+                                </button>
+                                <button class="toolbar-btn" onclick="corrDiscussionUndo()" title="Undo">
+                                    <i class="fas fa-undo"></i> Undo
+                                </button>
+                                <button class="toolbar-btn" onclick="corrDiscussionRedo()" title="Redo">
+                                    <i class="fas fa-redo"></i> Redo
+                                </button>
+                            </div>
+                            <div class="toolbar-right">
+                                <span class="word-count">
+                                    <span id="corrDiscussionWordCount">0</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <textarea
+                            id="corrDiscussionTextarea"
+                            class="discussion-textarea"
+                            placeholder="Write your response here..."
+                            oninput="onCorrDiscussionTextInput()">
+                        </textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- 첨삭 Speaking - Interview 화면 -->
+    <!-- ============================= -->
+    <div id="correctionSpeakingScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionSpeaking()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrSpkHeader" class="test-progress">SESSION 01 · Interview 1</span>
+            <div class="test-title">
+                <i class="fas fa-microphone"></i>
+                <span>Speaking - Interview</span>
+            </div>
+            <div class="test-header-right">
+                <span id="corrSpkProgress">Question 1 of 4</span>
+            </div>
+        </div>
+
+        <div class="test-content" style="position:relative;">
+
+            <!-- Section 1: 준비 화면 -->
+            <div id="corrSpkReadySection" style="display:flex; justify-content:center; align-items:center; flex-direction:column; min-height:60vh;">
+                <div style="text-align:center; padding:40px;">
+                    <div style="font-size:48px; margin-bottom:20px;">🎙️</div>
+                    <h2 style="font-size:22px; margin-bottom:12px; color:#333;">스피킹 인터뷰 (첨삭)</h2>
+                    <p style="font-size:15px; color:#666; margin-bottom:8px;">4개 질문에 대해 각 45초간 답변 시간이 주어집니다.</p>
+                    <p style="font-size:14px; color:#e67e22; margin-bottom:8px; line-height:1.6;">⚠️ 실시간 녹음이 아닙니다. 별도 기기로 녹음한 후<br>카운트다운 종료 후 파일을 업로드합니다.</p>
+                    <p id="corrSpkReadyStatus" style="font-size:14px; color:#888; margin-bottom:24px;">준비 중...</p>
+                    <button id="corrSpkStartBtn" disabled onclick="onCorrSpkStartTap()" style="padding:14px 48px; font-size:18px; font-weight:bold; background:#4CAF50; color:#fff; border:none; border-radius:8px; cursor:pointer; opacity:0.5;">
+                        시작
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section 2: 상황 설명 (정규과정 interview-context-screen 클래스 재사용) -->
+            <div id="corrSpkContextSection" class="interview-context-screen" style="display:none;">
+                <p id="corrSpkContextText" class="interview-context-text"></p>
+                <img id="corrSpkContextImage" src="" alt="" class="interview-image" style="display:none;">
+            </div>
+
+            <!-- Section 3: 질문 + 카운트다운 (정규과정 interview-question-screen 클래스 재사용) -->
+            <div id="corrSpkQuestionSection" class="interview-question-screen" style="display:none;">
+                <p id="corrSpkInstruction" class="interview-instruction-text"></p>
+
+                <!-- 영상 플레이스홀더 (정규과정과 동일) -->
+                <div id="corrSpkVideoPlaceholder" style="display: none; max-width: 700px; margin: 0 auto 40px; background: #f3f4f6; border-radius: 16px; padding: 60px 40px; border: 3px dashed #9ca3af;">
+                    <div style="text-align: center;">
+                        <svg style="width: 80px; height: 80px; color: #6b7280; margin: 0 auto 20px;" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
+                        </svg>
+                        <p style="font-size: 20px; font-weight: 600; color: #4b5563; margin: 0;">인터뷰 영상이 재생됩니다</p>
+                        <p style="font-size: 16px; color: #6b7280; margin-top: 10px;">질문을 듣고 답변해주세요</p>
+                    </div>
+                </div>
+
+                <video id="corrSpkVideo" class="interview-video" playsinline webkit-playsinline style="display:none;">
+                    Your browser does not support the video tag.
+                </video>
+
+                <!-- 카운트다운 UI (정규과정 repeat-recording-ui 클래스 재사용) -->
+                <div id="corrSpkRecordingUI" class="repeat-recording-ui" style="display:none;">
+                    <div class="repeat-timer-display">
+                        <div class="repeat-response-label">RESPONSE TIME</div>
+                        <div class="repeat-timer-content">
+                            <div class="repeat-timer-wrapper">
+                                <div class="repeat-progress-circle">
+                                    <svg width="50" height="50" viewBox="0 0 50 50">
+                                        <circle class="repeat-progress-circle-bg" cx="25" cy="25" r="20"></circle>
+                                        <circle id="corrSpkProgressCircle" class="repeat-progress-circle-fill" cx="25" cy="25" r="20"
+                                                stroke-dasharray="125.6" stroke-dashoffset="125.6"></circle>
+                                    </svg>
+                                    <svg class="repeat-mic-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"/>
+                                    </svg>
+                                </div>
+                                <span id="corrSpkTimer" class="repeat-timer">00:45</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: 파일 업로드 -->
+            <div id="corrSpkUploadSection" style="display:none; flex-direction:column; align-items:center; padding:30px; min-height:60vh;">
+                <h2 style="font-size:20px; margin-bottom:8px; color:#333;">🎧 녹음 파일 업로드</h2>
+                <p style="font-size:14px; color:#888; margin-bottom:24px;">Q1~Q4 각 질문에 대한 녹음 파일을 선택해주세요.</p>
+
+                <div style="display:flex; flex-direction:column; gap:16px; width:100%; max-width:500px;">
+                    <!-- Q1 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q1</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ1">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ1" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(1)">
+                        </label>
+                        <span id="corrSpkFileStatusQ1" class="corr-spk-file-status"></span>
+                    </div>
+                    <!-- Q2 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q2</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ2">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ2" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(2)">
+                        </label>
+                        <span id="corrSpkFileStatusQ2" class="corr-spk-file-status"></span>
+                    </div>
+                    <!-- Q3 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q3</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ3">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ3" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(3)">
+                        </label>
+                        <span id="corrSpkFileStatusQ3" class="corr-spk-file-status"></span>
+                    </div>
+                    <!-- Q4 -->
+                    <div class="corr-spk-upload-row">
+                        <span class="corr-spk-q-label">Q4</span>
+                        <label class="corr-spk-file-btn">
+                            <i class="fas fa-upload"></i> <span id="corrSpkFileLabelQ4">파일 선택</span>
+                            <input type="file" id="corrSpkFileQ4" accept="audio/*,video/mp4,video/webm" style="display:none;" onchange="onCorrSpkFileChange(4)">
+                        </label>
+                        <span id="corrSpkFileStatusQ4" class="corr-spk-file-status"></span>
+                    </div>
+                </div>
+
+                <p style="font-size:12px; color:#aaa; margin-top:16px;">허용 형식: mp3, m4a, wav, webm, mp4, ogg, aac · 최대 25MB</p>
+
+                <button id="corrSpkSubmitBtn" class="btn btn-success" onclick="submitCorrectionSpeaking()" disabled style="margin-top:24px; padding:12px 40px; font-size:16px; opacity:0.5;">
+                    <i class="fas fa-check"></i> 제출하기
+                </button>
+            </div>
+
         </div>
     </div>
 
@@ -2292,6 +2669,8 @@
     <!-- [V3] 삭제됨: "시험 완료!" 트로피 단순 채점 화면 (과제 대시보드로 대체) -->
     <!-- [V2] 중복 navigation.js 제거 — line 3400에서 로드 -->
     <script src="js/app-state.js?v=001"></script>
+    <script src="js/correction-config.js?v=001"></script>
+    <script src="js/correction-schedule-data.js?v=001"></script>
     <script src="js/schedule-data.js?v=001"></script>
     <script src="js/task-router.js?v=010_v3_dashboard"></script>
     <!-- [V3] 과제 대시보드 제어 (V2 stage-selector.js 대체) -->
@@ -2371,6 +2750,14 @@
     <!-- Speaking Module Controller (V3) -->
     <script src="js/speaking/speaking-module-controller.js?v=001"></script>
 <script src="js/vocab-test-logic-v2.js?v=20260223_stats"></script>
+
+    <!-- ===== Correction (FEEDBACK) ===== -->
+    <script src="js/correction/correction-main.js?v=001"></script>
+    <script src="js/correction/correction-session.js?v=001"></script>
+    <script src="js/correction/correction-writing.js?v=002"></script>
+    <script src="js/correction/correction-speaking.js?v=002"></script>
+    <script src="js/correction/correction-feedback.js?v=002"></script>
+    <script src="js/correction/correction-detail.js?v=002"></script>
 
     <script src="js/main.js?v=20260223_progress_fix"></script>
     <script src="js/navigation.js?v=003_popup_rules"></script>

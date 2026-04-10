@@ -48,7 +48,9 @@ function initScheduleScreen() {
     
     // 코스 모드에 따라 적절한 렌더링
     var mode = window.courseMode || 'regular';
-    if (mode === 'practice') {
+    if (mode === 'correction') {
+        _renderCorrectionMode();
+    } else if (mode === 'practice') {
         _renderPracticeMode();
     } else {
         _renderRegularMode();
@@ -57,12 +59,14 @@ function initScheduleScreen() {
 
 /** 정규코스 렌더링 */
 function _renderRegularMode() {
-    // 정규코스 컨테이너 표시 / 연습코스 컨테이너 숨김
+    // 정규코스 컨테이너 표시 / 연습·첨삭 컨테이너 숨김
     var regularContainer = document.getElementById('scheduleContainer');
     var practiceContainer = document.getElementById('practiceScheduleContainer');
+    var correctionContainer = document.getElementById('correctionScheduleContainer');
     var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
     if (regularContainer) regularContainer.style.display = '';
     if (practiceContainer) practiceContainer.style.display = 'none';
+    if (correctionContainer) correctionContainer.style.display = 'none';
     if (scheduleHeader) {
         scheduleHeader.querySelector('h1').textContent = 'NEVEL-UP TESTROOM';
         scheduleHeader.querySelector('p').textContent = 'Select the desired week and day.';
@@ -90,12 +94,14 @@ function _renderRegularMode() {
 
 /** 연습코스 렌더링 */
 function _renderPracticeMode() {
-    // 정규코스 컨테이너 숨김 / 연습코스 컨테이너 표시
+    // 정규·첨삭 컨테이너 숨김 / 연습코스 컨테이너 표시
     var regularContainer = document.getElementById('scheduleContainer');
     var practiceContainer = document.getElementById('practiceScheduleContainer');
+    var correctionContainer = document.getElementById('correctionScheduleContainer');
     var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
     if (regularContainer) regularContainer.style.display = 'none';
     if (practiceContainer) practiceContainer.style.display = '';
+    if (correctionContainer) correctionContainer.style.display = 'none';
     if (scheduleHeader) {
         scheduleHeader.querySelector('h1').textContent = 'PRACTICE MODE';
         scheduleHeader.querySelector('p').textContent = 'Select the desired practice.';
@@ -103,6 +109,26 @@ function _renderPracticeMode() {
     
     renderPracticeSchedule();
 }
+
+/** 첨삭(FEEDBACK) 모드 렌더링 */
+function _renderCorrectionMode() {
+    // 정규·연습 컨테이너 숨김 / 첨삭 컨테이너 표시
+    var regularContainer = document.getElementById('scheduleContainer');
+    var practiceContainer = document.getElementById('practiceScheduleContainer');
+    var correctionContainer = document.getElementById('correctionScheduleContainer');
+    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
+    if (regularContainer) regularContainer.style.display = 'none';
+    if (practiceContainer) practiceContainer.style.display = 'none';
+    if (correctionContainer) correctionContainer.style.display = '';
+    if (scheduleHeader) {
+        scheduleHeader.querySelector('h1').textContent = '1:1 FEEDBACK';
+        scheduleHeader.querySelector('p').textContent = 'Select the desired session.';
+    }
+
+    renderCorrectionSchedule();
+}
+
+// renderCorrectionSchedule()은 js/correction/correction-main.js에서 정의
 
 function renderSchedule(program) {
     const container = document.getElementById('scheduleContainer');
@@ -561,16 +587,26 @@ function showTaskListScreen(week, dayKr, tasks) {
 
 // ===== SEGMENT CONTROL =====
 
-/** 세그먼트 컨트롤 초기화 (정규코스 / 연습코스 토글) */
+/** 세그먼트 컨트롤 초기화 (TESTROOM / PRACTICE / FEEDBACK 토글) */
 function _initSegmentControl() {
     var segmentWrap = document.getElementById('courseSegmentControl');
     if (!segmentWrap) return;
     
-    // practice_enabled이 아니면 세그먼트 컨트롤 숨김
-    if (!currentUser || !currentUser.practiceEnabled) {
+    var btnRegular = document.getElementById('segBtnRegular');
+    var btnPractice = document.getElementById('segBtnPractice');
+    var btnFeedback = document.getElementById('segBtnFeedback');
+    
+    var hasPractice = currentUser && currentUser.practiceEnabled;
+    var hasCorrection = currentUser && (currentUser.correctionEnabled || window.__isAdmin);
+    
+    // PRACTICE / FEEDBACK 버튼 개별 표시
+    if (btnPractice) btnPractice.style.display = hasPractice ? '' : 'none';
+    if (btnFeedback) btnFeedback.style.display = hasCorrection ? '' : 'none';
+    
+    // 세그먼트 컨트롤: 정규코스만 있으면 숨김
+    if (!hasPractice && !hasCorrection) {
         segmentWrap.style.display = 'none';
-        // 정규코스로 강제
-        if (window.courseMode === 'practice') {
+        if (window.courseMode !== 'regular') {
             setCourseMode('regular');
             _renderRegularMode();
         }
@@ -579,20 +615,20 @@ function _initSegmentControl() {
     
     segmentWrap.style.display = '';
     
-    var btnRegular = document.getElementById('segBtnRegular');
-    var btnPractice = document.getElementById('segBtnPractice');
-    
-    // 현재 모드에 따라 active 클래스 설정
+    // 현재 모드 유효성 검증
     var mode = window.courseMode || 'regular';
-    if (btnRegular) btnRegular.classList.toggle('seg-active', mode === 'regular');
-    if (btnPractice) btnPractice.classList.toggle('seg-active', mode === 'practice');
+    if (mode === 'practice' && !hasPractice) mode = 'regular';
+    if (mode === 'correction' && !hasCorrection) mode = 'regular';
+    if (mode !== window.courseMode) setCourseMode(mode);
+    
+    // active 클래스 동기화
+    _syncSegmentActive(mode);
     
     if (btnRegular) {
         btnRegular.onclick = function() {
             if (window.courseMode === 'regular') return;
             setCourseMode('regular');
-            btnRegular.classList.add('seg-active');
-            btnPractice.classList.remove('seg-active');
+            _syncSegmentActive('regular');
             _renderRegularMode();
         };
     }
@@ -600,11 +636,28 @@ function _initSegmentControl() {
         btnPractice.onclick = function() {
             if (window.courseMode === 'practice') return;
             setCourseMode('practice');
-            btnPractice.classList.add('seg-active');
-            btnRegular.classList.remove('seg-active');
+            _syncSegmentActive('practice');
             _renderPracticeMode();
         };
     }
+    if (btnFeedback) {
+        btnFeedback.onclick = function() {
+            if (window.courseMode === 'correction') return;
+            setCourseMode('correction');
+            _syncSegmentActive('correction');
+            _renderCorrectionMode();
+        };
+    }
+}
+
+/** 세그먼트 버튼 active 상태 동기화 */
+function _syncSegmentActive(mode) {
+    var btnRegular = document.getElementById('segBtnRegular');
+    var btnPractice = document.getElementById('segBtnPractice');
+    var btnFeedback = document.getElementById('segBtnFeedback');
+    if (btnRegular) btnRegular.classList.toggle('seg-active', mode === 'regular');
+    if (btnPractice) btnPractice.classList.toggle('seg-active', mode === 'practice');
+    if (btnFeedback) btnFeedback.classList.toggle('seg-active', mode === 'correction');
 }
 
 // backToSchedule: 스케줄 화면 복귀 (공통)

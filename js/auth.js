@@ -105,7 +105,8 @@ async function handleLogin(event) {
             programType: programType,  // 'fast' = 4주, 'standard' = 8주
             applicationId: programInfo.applicationId,
             startDate: programInfo.startDate,
-            practiceEnabled: !!programInfo.practiceEnabled  // 연습코스 활성화 여부
+            practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부
+            correctionEnabled: !!programInfo.correctionEnabled  // 첨삭(FEEDBACK) 활성화 여부
         };
         
         // 세션에 저장 (새로고침 시에도 유지)
@@ -355,6 +356,13 @@ function logout() {
         if (typeof setCourseMode === 'function') {
             setCourseMode('regular');
         }
+        
+        // 첨삭(FEEDBACK) 상태 초기화
+        if (typeof _stopCorrDeadlineTimer === 'function') _stopCorrDeadlineTimer();
+        if (typeof _cleanupCorrectionWriting === 'function') _cleanupCorrectionWriting();
+        if (typeof _cleanupCorrectionSpeaking === 'function') _cleanupCorrectionSpeaking();
+        window._correctionSessionState = null;
+        window.__isAdmin = false;
         
         // 2차 풀이 플로팅 UI 제거
         const retakeFloating = document.getElementById('retakeFloatingUI');

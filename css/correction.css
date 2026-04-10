@@ -1,0 +1,1403 @@
+/**
+ * ================================================
+ * correction.css — 첨삭(FEEDBACK) 전용 스타일
+ * ================================================
+ * 
+ * 기존 CSS 변수(primary #9480c5 등) 그대로 사용.
+ * 첨삭 화면만 design.md 규칙(No-Line, 배경색 차이 구분) 적용.
+ */
+
+/* ================================================
+   FEEDBACK 메인 — 세션 카드
+   ================================================ */
+
+/* 3열 그리드 (기존 style.css의 correction-days-grid 보완) */
+.correction-session-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 12px;
+    background: #fff;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.08);
+    text-align: center;
+    font-family: inherit;
+    min-height: 90px;
+}
+
+.correction-session-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.15);
+}
+
+.correction-session-card:active {
+    transform: translateY(0);
+}
+
+.correction-session-card .session-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-color, #1a1a1a);
+    letter-spacing: 0.03em;
+}
+
+.correction-session-card .session-tasks {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.4;
+}
+
+.correction-session-card .session-date {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 2px;
+}
+
+/* 세션 카드 상태 아이콘 */
+.correction-session-card .session-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.session-status.status-none {
+    background: #ddd;
+}
+
+.session-status.status-progress {
+    background: #f0ad4e;
+}
+
+.session-status.status-complete {
+    background: var(--success-color, #77bf7e);
+}
+
+.session-status.status-expired,
+.session-status.status-failed {
+    background: var(--danger-color, #e74c3c);
+}
+
+/* ================================================
+   세션 상세 화면 (correctionSessionScreen)
+   ================================================ */
+
+.correction-session-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .correction-session-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.correction-task-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.08);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.correction-task-card:hover {
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.12);
+}
+
+.correction-task-card .task-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.correction-task-card .task-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+}
+
+.correction-task-card .task-card-icon.writing {
+    background: var(--primary-color, #9480c5);
+}
+
+.correction-task-card .task-card-icon.speaking {
+    background: #e8913a;
+}
+
+.correction-task-card .task-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-color, #1a1a1a);
+}
+
+.correction-task-card .task-card-status {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 16px;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.correction-task-card .task-card-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    margin-top: auto;
+}
+
+.correction-task-card .task-card-btn.btn-active {
+    background: var(--primary-color, #9480c5);
+    color: #fff;
+}
+
+.correction-task-card .task-card-btn.btn-active:hover {
+    opacity: 0.9;
+}
+
+.correction-task-card .task-card-btn.btn-disabled {
+    background: #f0edf5;
+    color: #bbb;
+    cursor: not-allowed;
+}
+
+.correction-task-card .task-card-btn.btn-highlight {
+    background: var(--success-color, #77bf7e);
+    color: #fff;
+}
+
+/* ================================================
+   첨삭 일정 미배정 메시지 (correction-empty-msg는 style.css에 있음)
+   ================================================ */
+
+/* ================================================
+   데드라인 배너 (정규과정 패턴 재사용)
+   ================================================ */
+
+.correction-deadline-banner {
+    text-align: center;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.correction-deadline-banner.deadline-normal {
+    background: #f0edf5;
+    color: var(--primary-color, #9480c5);
+}
+
+.correction-deadline-banner.deadline-urgent {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.correction-deadline-banner.deadline-passed {
+    background: #fce4ec;
+    color: #c62828;
+}
+
+/* ================================================
+   Speaking 파일 업로드 UI
+   ================================================ */
+
+.corr-spk-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.corr-spk-q-label {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--primary-color, #9480c5);
+    min-width: 32px;
+}
+
+.corr-spk-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.corr-spk-file-btn:hover {
+    border-color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-file-status {
+    font-size: 12px;
+    color: #9ca3af;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.corr-spk-file-status.success {
+    color: #059669;
+}
+
+.corr-spk-file-status.error {
+    color: #dc2626;
+}
+
+/* ================================================
+   과제 상세 — 아코디언
+   ================================================ */
+
+.corr-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.corr-accordion-item {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.08);
+    overflow: hidden;
+}
+
+.corr-accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-color, #1a1a1a);
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.corr-accordion-header:hover {
+    background: #f9f7fc;
+}
+
+.corr-accordion-arrow {
+    font-size: 13px;
+    color: #aaa;
+    transition: transform 0.25s ease;
+}
+
+.corr-accordion-item.open .corr-accordion-arrow {
+    transform: rotate(180deg);
+}
+
+.corr-accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding: 0 20px;
+}
+
+.corr-accordion-item.open .corr-accordion-body {
+    max-height: 3000px;
+    padding: 0 20px 20px;
+}
+
+/* ================================================
+   과제 상세 — Draft 텍스트 / 메타
+   ================================================ */
+
+.corr-detail-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0edf5;
+}
+
+.corr-detail-text {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #333;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.corr-detail-audio-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.corr-detail-audio-row + .corr-detail-audio-row {
+    border-top: 1px solid #f0edf5;
+}
+
+.corr-detail-audio-label {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--primary-color, #9480c5);
+    min-width: 32px;
+}
+
+.corr-detail-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--primary-color, #9480c5);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: inherit;
+}
+
+.corr-detail-action-btn:hover {
+    opacity: 0.9;
+}
+
+/* ================================================
+   피드백 — annotated_html 마크 + 툴팁
+   ================================================ */
+
+.corr-feedback-annotated {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #333;
+    margin-bottom: 16px;
+}
+
+.correction-mark {
+    background: #fef3c7;
+    border-bottom: 2px solid #f59e0b;
+    padding: 1px 2px;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.correction-mark:hover {
+    background: #fde68a;
+}
+
+.correction-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 8px 14px;
+    border-radius: 8px;
+    white-space: normal;
+    min-width: 180px;
+    max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    pointer-events: none;
+}
+
+.correction-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1f2937;
+}
+
+/* PC: hover */
+.correction-mark:hover .correction-tooltip {
+    display: block;
+}
+
+/* 모바일: tap (active 클래스) */
+.correction-mark.active .correction-tooltip {
+    display: block;
+}
+
+/* ================================================
+   피드백 — Speaking 질문별 구조
+   ================================================ */
+
+.corr-feedback-question {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 10px;
+}
+
+.corr-feedback-q-label {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--primary-color, #9480c5);
+    margin-bottom: 8px;
+}
+
+.corr-feedback-q-body {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.corr-feedback-q-comment {
+    font-size: 13px;
+    color: #666;
+    font-style: italic;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* ================================================
+   피드백 — Summary / Level / Encouragement
+   ================================================ */
+
+.corr-feedback-summary-card {
+    background: #f9f7fc;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+
+.corr-feedback-summary-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary-color, #9480c5);
+    margin-bottom: 8px;
+}
+
+.corr-feedback-summary-title i {
+    margin-right: 6px;
+}
+
+.corr-feedback-summary-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #444;
+}
+
+.corr-feedback-hint {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.corr-feedback-level-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f0edf5;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+
+.corr-feedback-level-badge {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary-color, #9480c5);
+}
+
+.corr-feedback-level-label {
+    font-size: 13px;
+    color: #888;
+    font-weight: 600;
+}
+
+.corr-feedback-encouragement-card {
+    background: #f0fdf4;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+
+.corr-feedback-encouragement-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--success-color, #77bf7e);
+    margin-bottom: 8px;
+}
+
+.corr-feedback-encouragement-title i {
+    margin-right: 6px;
+}
+
+.corr-feedback-encouragement-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #444;
+}
+
+/* ================================================
+   과제 상세 — failed 에러 메시지
+   ================================================ */
+
+.corr-detail-error-msg {
+    text-align: center;
+    padding: 24px 20px;
+    color: #b91c1c;
+}
+
+.corr-detail-error-msg i {
+    font-size: 28px;
+    color: #dc2626;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.corr-detail-error-msg p {
+    font-size: 14px;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.corr-detail-error-msg .corr-detail-error-sub {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #888;
+}
+
+/* ================================================
+   Speaking 상세 — 2×2 그리드 카드
+   ================================================ */
+
+.corr-spk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.corr-spk-card {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.2s;
+}
+
+.corr-spk-card:hover {
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.12);
+}
+
+.corr-spk-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.corr-spk-card-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #f0edf5;
+    color: var(--primary-color, #9480c5);
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+}
+
+.corr-spk-card-text {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #444;
+    margin: 0;
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.corr-spk-card-player {
+    background: #eee;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-top: auto;
+}
+
+.corr-spk-card-player audio {
+    width: 100%;
+    height: 36px;
+    display: block;
+}
+
+.corr-spk-card-empty {
+    font-size: 13px;
+    color: #aaa;
+    text-align: center;
+    padding: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    margin-top: auto;
+}
+
+/* ================================================
+   모범답안 Speaking — 2×2 그리드 카드
+   ================================================ */
+
+.corr-model-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.corr-model-card {
+    background: #fff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.2s;
+}
+
+.corr-model-card:hover {
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.10);
+}
+
+.corr-model-card-header {
+    display: flex;
+    align-items: center;
+}
+
+.corr-model-card-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--primary-color, #9480c5);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 50%;
+}
+
+.corr-model-card-text {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--text-primary, #1e293b);
+    margin: 0;
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.corr-model-trans-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color, #9480c5);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+}
+
+.corr-model-trans-btn:hover {
+    text-decoration: underline;
+}
+
+.corr-model-trans {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary, #64748b);
+    padding-left: 12px;
+    border-left: 2px solid var(--border-color, #e2e8f0);
+    margin-top: 2px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.corr-model-card-player {
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-top: auto;
+}
+
+.corr-model-card-player audio {
+    width: 100%;
+    height: 36px;
+    display: block;
+}
+
+.corr-model-card-empty {
+    font-size: 13px;
+    color: #aaa;
+    text-align: center;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-top: auto;
+}
+
+/* ================================================
+   반응형 (모바일)
+   ================================================ */
+
+@media (max-width: 768px) {
+    .corr-accordion-header {
+        padding: 14px 16px;
+        font-size: 14px;
+    }
+
+    .corr-accordion-body {
+        padding: 0 16px;
+    }
+
+    .corr-accordion-item.open .corr-accordion-body {
+        padding: 0 16px 16px;
+    }
+
+    .corr-detail-text {
+        font-size: 14px;
+    }
+
+    .corr-feedback-annotated {
+        font-size: 14px;
+    }
+
+    .correction-tooltip {
+        min-width: 150px;
+        max-width: 250px;
+        font-size: 12px;
+    }
+
+    .corr-spk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .corr-spk-card {
+        padding: 14px;
+    }
+
+    .corr-spk-card-text {
+        font-size: 13px;
+    }
+
+    /* 모범답안 모바일 */
+    .corr-model-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .corr-model-card {
+        padding: 14px;
+    }
+
+    .corr-model-card-text {
+        font-size: 13px;
+    }
+}
+
+/* ================================================
+   피드백 스플릿 레이아웃 (Writing 전용)
+   ================================================ */
+
+.corr-fb-split-wrap {
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+}
+
+.corr-fb-split {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+}
+
+/* 왼쪽: annotated_html 본문 */
+.corr-fb-split-left {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+}
+
+/* 오른쪽: 메모 패널 (280px 고정) */
+.corr-fb-split-right {
+    width: 280px;
+    min-width: 280px;
+    max-height: 520px;
+    overflow-y: auto;
+    background: var(--bg-color, #f1f4f8);
+    border-radius: 12px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.corr-memo-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    margin-bottom: 2px;
+}
+
+.corr-memo-empty {
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* ── 메모 카드 (비활성) ── */
+.corr-memo-card {
+    background: var(--surface-color, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-left: 3px solid transparent;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary, #1e293b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    word-break: break-word;
+}
+
+.corr-memo-card:hover {
+    background: #f9f7fc;
+}
+
+/* ── 메모 카드 (활성) ── */
+.corr-memo-card.memo-active {
+    border-left: 3px solid var(--primary-color, #9480c5);
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.18);
+    transform: scale(1.01);
+    background: var(--surface-color, #ffffff);
+}
+
+/* ================================================
+   Writing 전용 — correction-mark 보라색 계열
+   스플릿 wrap 안에서만 적용 (Speaking 영향 없음)
+   ================================================ */
+
+.corr-fb-split-wrap .correction-mark {
+    background: rgba(148, 128, 197, 0.13);
+    border-bottom: 2px solid rgba(148, 128, 197, 0.45);
+    padding: 1px 2px;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.corr-fb-split-wrap .correction-mark:hover {
+    background: rgba(148, 128, 197, 0.22);
+}
+
+/* ── Writing 본문 마크 (활성) ── */
+.corr-fb-split-wrap .correction-mark.memo-active {
+    background: rgba(148, 128, 197, 0.28);
+    border-bottom-color: var(--primary-color, #9480c5);
+    box-shadow: 0 1px 4px rgba(148, 128, 197, 0.25);
+}
+
+/* ── tooltip 숨김 (Writing 스플릿 내부) ── */
+.corr-fb-split-wrap .correction-tooltip {
+    display: none !important;
+}
+
+/* ================================================
+   모바일 대응 — 스플릿 → 1컬럼
+   ================================================ */
+
+@media (max-width: 768px) {
+    .corr-fb-split {
+        flex-direction: column;
+    }
+
+    .corr-fb-split-right {
+        width: 100%;
+        min-width: 0;
+        max-height: 200px;
+    }
+}
+
+/* ================================================
+   1차 피드백 참고 토글 패널 (2차 작성 전용)
+   ================================================ */
+
+.corr-fb-toggle-wrap {
+    margin-bottom: 12px;
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+}
+
+.corr-fb-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--surface-color, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-color, #9480c5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.corr-fb-toggle-btn:hover {
+    background: #f9f7fc;
+    border-color: var(--primary-color, #9480c5);
+}
+
+.corr-fb-toggle-btn i {
+    font-size: 14px;
+}
+
+.corr-fb-toggle-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    border-radius: 12px;
+}
+
+.corr-fb-toggle-wrap.open .corr-fb-toggle-panel {
+    max-height: 2000px;
+    margin-top: 10px;
+    background: var(--bg-color, #f1f4f8);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.corr-fb-toggle-annotated {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 토글 패널 내 마크: hover tooltip 표시 */
+.corr-fb-toggle-annotated .correction-mark {
+    background: rgba(148, 128, 197, 0.13);
+    border-bottom: 2px solid rgba(148, 128, 197, 0.45);
+    cursor: pointer;
+    position: relative;
+}
+
+.corr-fb-toggle-summary {
+    background: var(--surface-color, #ffffff);
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+
+.corr-fb-toggle-summary-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-color, #9480c5);
+    margin-bottom: 6px;
+}
+
+.corr-fb-toggle-summary-title i {
+    margin-right: 5px;
+}
+
+.corr-fb-toggle-summary-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary, #64748b);
+}
+
+/* ================================================
+   2차 전용 타이머 안내 / 만료 메시지
+   ================================================ */
+
+.corr-timer-draft2-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    margin-top: 4px;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.corr-timer-expired-msg {
+    display: block;
+    font-size: 13px;
+    color: var(--danger-color, #e74c3c);
+    font-weight: 600;
+    margin-top: 4px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .corr-timer-draft2-hint,
+    .corr-timer-expired-msg {
+        white-space: normal;
+        font-size: 11px;
+    }
+
+    .corr-fb-toggle-annotated {
+        max-height: 200px;
+    }
+}
+
+/* ================================================
+   Speaking 2차 모달 UI
+   ================================================ */
+
+.corr-spk-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+}
+
+.corr-spk-modal-box {
+    background: var(--surface-color, #ffffff);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 720px;
+    overflow-x: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* ── 헤더 ── */
+.corr-spk-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+}
+
+.corr-spk-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-secondary, #64748b);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.corr-spk-modal-close:hover {
+    color: var(--text-primary, #1e293b);
+}
+
+/* ── 탭 ── */
+.corr-spk-modal-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.corr-spk-modal-tab {
+    padding: 6px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.corr-spk-modal-tab:hover {
+    border-color: var(--primary-color, #9480c5);
+    color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-tab.active {
+    background: var(--primary-color, #9480c5);
+    border-color: var(--primary-color, #9480c5);
+    color: #ffffff;
+}
+
+/* ── 비디오 ── */
+.corr-spk-modal-video-wrap {
+    padding: 16px 24px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.corr-spk-modal-video {
+    max-width: 100%;
+    max-height: 360px;
+    height: auto;
+    border-radius: 8px;
+    background: #000;
+    object-fit: contain;
+}
+
+.corr-spk-modal-no-video {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 14px;
+    height: 200px;
+    width: 100%;
+}
+
+/* ── 45초 타이머 ── */
+.corr-spk-modal-timer-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.corr-spk-modal-timer-display {
+    font-size: 28px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary, #1e293b);
+    min-width: 80px;
+}
+
+.corr-spk-modal-timer-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.corr-spk-modal-timer-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: inherit;
+    color: #fff;
+}
+
+.corr-spk-modal-timer-btn:hover {
+    opacity: 0.85;
+}
+
+.corr-spk-modal-timer-btn.start {
+    background: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-timer-btn.pause {
+    background: #f0ad4e;
+}
+
+.corr-spk-modal-timer-btn.reset {
+    background: var(--text-secondary, #64748b);
+}
+
+/* ── 파일 업로드 ── */
+.corr-spk-modal-upload-wrap {
+    padding: 14px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.corr-spk-modal-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-color, #f1f4f8);
+    border-radius: 10px;
+}
+
+.corr-spk-modal-upload-label {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--primary-color, #9480c5);
+    min-width: 28px;
+}
+
+.corr-spk-modal-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--surface-color, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-primary, #1e293b);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.corr-spk-modal-upload-btn:hover {
+    border-color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-upload-btn i {
+    color: var(--primary-color, #9480c5);
+}
+
+.corr-spk-modal-upload-status {
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.corr-spk-modal-upload-status.success {
+    color: #059669;
+}
+
+.corr-spk-modal-upload-status.error {
+    color: var(--danger-color, #e74c3c);
+}
+
+/* ── 제출 버튼 ── */
+.corr-spk-modal-submit-btn {
+    margin: 16px 24px 20px;
+    padding: 14px;
+    background: var(--primary-color, #9480c5);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: inherit;
+}
+
+.corr-spk-modal-submit-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.corr-spk-modal-submit-btn:disabled {
+    cursor: not-allowed;
+}
+
+/* ── 모바일 대응 ── */
+@media (max-width: 768px) {
+    .corr-spk-modal-overlay {
+        padding: 8px;
+    }
+
+    .corr-spk-modal-box {
+        max-height: 95vh;
+        border-radius: 12px;
+    }
+
+    .corr-spk-modal-header {
+        padding: 14px 16px;
+        font-size: 15px;
+    }
+
+    .corr-spk-modal-tabs {
+        padding: 10px 16px;
+        gap: 6px;
+    }
+
+    .corr-spk-modal-tab {
+        padding: 5px 14px;
+        font-size: 12px;
+    }
+
+    .corr-spk-modal-video-wrap {
+        padding: 12px 16px;
+        min-height: 160px;
+    }
+
+    .corr-spk-modal-timer-wrap {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .corr-spk-modal-timer-display {
+        font-size: 22px;
+    }
+
+    .corr-spk-modal-upload-wrap {
+        padding: 12px 16px;
+    }
+
+    .corr-spk-modal-upload-row {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 10px;
+    }
+
+    .corr-spk-modal-submit-btn {
+        margin: 12px 16px 16px;
+    }
+}
+

@@ -158,6 +158,18 @@
                 }
             }
         }
+        
+        // 첨삭 Speaking 카운트다운 타이머
+        var corrSpkState = window._correctionSpeakingState;
+        if (corrSpkState && corrSpkState.countdownTimer) {
+            console.log('⏭ [Admin] 첨삭 Speaking 카운트다운 스킵');
+            clearInterval(corrSpkState.countdownTimer);
+            corrSpkState.countdownTimer = null;
+            corrSpkState.countdownRemaining = 0;
+            if (typeof _onCorrSpkCountdownEnd === 'function') {
+                _onCorrSpkCountdownEnd(corrSpkState.currentQuestion);
+            }
+        }
     }
     
     // ========================================
@@ -227,8 +239,10 @@
                 setTimeout(function() {
                     var repeatUI = document.getElementById('repeatRecordingUI');
                     var interviewUI = document.getElementById('interviewRecordingUI');
+                    var corrSpkUI = document.getElementById('corrSpkRecordingUI');
                     if ((repeatUI && repeatUI.style.display === 'flex') || 
-                        (interviewUI && interviewUI.style.display === 'flex')) {
+                        (interviewUI && interviewUI.style.display === 'flex') ||
+                        (corrSpkUI && corrSpkUI.style.display === 'flex')) {
                         showSkip('SKIP Timer');
                     }
                 }, 100);
