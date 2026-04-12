@@ -73,6 +73,15 @@ async function startCorrectionSpeaking(session, scheduleData, submission) {
     var setNumber = session.speaking.number;
     var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 
+    // 2차인데 feedback_1이 없으면 단일 행 다시 조회 (목록 조회는 feedback JSONB 미포함)
+    if (isDraft2 && submission && !submission.feedback_1) {
+        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+        if (user && user.id) {
+            var fullSub = await getCorrectionSubmission(user.id, session.session, 'speaking_interview');
+            if (fullSub) submission = fullSub;
+        }
+    }
+
     window._correctionSpeakingState = {
         session: session,
         scheduleData: scheduleData,
@@ -110,8 +119,8 @@ async function startCorrectionSpeaking(session, scheduleData, submission) {
     }
 
     if (isDraft2) {
-        // ── 2차: Phase 1 건너뛰고 모달 바로 띄움 ──
-        _showCorrSpkDraft2Modal();
+        // ── 2차: Phase 1 건너뛰고 2차 전용 페이지 렌더링 ──
+        _showCorrSpkDraft2Page();
     } else {
         // ── 1차: 기존 동작 100% 유지 ──
         _showCorrSpkReadyScreen();
@@ -618,7 +627,7 @@ function backFromCorrectionSpeaking() {
         if (!confirm('진행을 취소하시겠습니까? 처음부터 다시 시작해야 합니다.')) {
             return;
         }
-    } else if (state && state.phase === 'upload') {
+    } else if (state && (state.phase === 'upload' || state.phase === 'draft2')) {
         var hasFile = state.uploadFiles.q1 || state.uploadFiles.q2 ||
                       state.uploadFiles.q3 || state.uploadFiles.q4;
         if (hasFile && !confirm('선택한 파일이 있습니다. 나가시겠습니까?')) {
@@ -654,123 +663,298 @@ function _returnToCorrectionSessionFromSpeaking() {
 }
 
 // ============================================================
-// 9-B. 2차 전용 모달 UI
+// 9-B. 2차 전용 페이지 UI
 // ============================================================
 
-function _showCorrSpkDraft2Modal() {
+function _showCorrSpkDraft2Page() {
     var state = window._correctionSpeakingState;
     if (!state || !state.setData) return;
 
-    // 기존 모달 제거
-    var old = document.getElementById('corrSpkDraft2Modal');
+    state.phase = 'draft2';
+
+    // 기존 1차 섹션 모두 숨김 (DOM 수정/삭제 없음)
+    var hide = ['corrSpkReadySection', 'corrSpkContextSection', 'corrSpkQuestionSection', 'corrSpkUploadSection'];
+    hide.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // Question 1 of 4 숨김
+    var progressEl = document.getElementById('corrSpkProgress');
+    if (progressEl) progressEl.style.display = 'none';
+
+    // 기존 2차 섹션 제거 (재진입 방지)
+    var old = document.getElementById('corrSpkDraft2Section');
     if (old) old.remove();
 
-    var sessionNum = String(state.session.session).padStart(2, '0');
+    var screen = document.getElementById('correctionSpeakingScreen');
+    if (!screen) return;
+    screen.classList.add('draft2-bg');
+    var testContent = screen.querySelector('.test-content');
+    if (!testContent) return;
 
-    // ── 오버레이 ──
-    var overlay = document.createElement('div');
-    overlay.id = 'corrSpkDraft2Modal';
-    overlay.className = 'corr-spk-modal-overlay';
+    // ── 2차 전용 섹션 ──
+    var section = document.createElement('div');
+    section.id = 'corrSpkDraft2Section';
+    section.className = 'corr-spk-d2-section';
 
-    // ── 모달 박스 ──
-    var box = document.createElement('div');
-    box.className = 'corr-spk-modal-box';
+    // ── 좌우 스플릿 래퍼 ──
+    var splitWrap = document.createElement('div');
+    splitWrap.className = 'corr-spk-d2-split';
 
-    // ── 헤더 ──
-    var header = document.createElement('div');
-    header.className = 'corr-spk-modal-header';
-    header.innerHTML = '<span>Interview S' + sessionNum + ' (2차)</span>' +
-        '<button class="corr-spk-modal-close" id="corrSpkModalCloseBtn">&times;</button>';
-    box.appendChild(header);
+    // ══════ 왼쪽: 탭 + 영상 + 타이머 + 업로드 + 제출 ══════
+    var leftCol = document.createElement('div');
+    leftCol.className = 'corr-spk-d2-left';
 
     // ── 탭 ──
     var tabWrap = document.createElement('div');
-    tabWrap.className = 'corr-spk-modal-tabs';
+    tabWrap.className = 'corr-spk-d2-tabs';
     for (var t = 1; t <= 4; t++) {
         var tab = document.createElement('button');
-        tab.className = 'corr-spk-modal-tab' + (t === 1 ? ' active' : '');
+        tab.className = 'corr-spk-d2-tab' + (t === 1 ? ' active' : '');
         tab.textContent = 'Q' + t;
         tab.setAttribute('data-q', t);
         tabWrap.appendChild(tab);
     }
-    box.appendChild(tabWrap);
+    leftCol.appendChild(tabWrap);
 
     // ── 비디오 플레이어 ──
     var videoWrap = document.createElement('div');
-    videoWrap.className = 'corr-spk-modal-video-wrap';
+    videoWrap.className = 'corr-spk-d2-video-wrap';
 
     var videoEl = document.createElement('video');
-    videoEl.id = 'corrSpkModalVideo';
-    videoEl.className = 'corr-spk-modal-video';
+    videoEl.id = 'corrSpkD2Video';
+    videoEl.className = 'corr-spk-d2-video';
     videoEl.setAttribute('controls', '');
     videoEl.setAttribute('playsinline', '');
     videoEl.preload = 'metadata';
 
     var noVideoMsg = document.createElement('div');
-    noVideoMsg.id = 'corrSpkModalNoVideo';
-    noVideoMsg.className = 'corr-spk-modal-no-video';
+    noVideoMsg.id = 'corrSpkD2NoVideo';
+    noVideoMsg.className = 'corr-spk-d2-no-video';
     noVideoMsg.textContent = '영상 없음';
     noVideoMsg.style.display = 'none';
 
     videoWrap.appendChild(videoEl);
     videoWrap.appendChild(noVideoMsg);
-    box.appendChild(videoWrap);
+    leftCol.appendChild(videoWrap);
 
     // ── 45초 타이머 ──
     var timerWrap = document.createElement('div');
-    timerWrap.className = 'corr-spk-modal-timer-wrap';
+    timerWrap.className = 'corr-spk-d2-timer-wrap';
     timerWrap.innerHTML =
-        '<span class="corr-spk-modal-timer-display" id="corrSpkModalTimerDisplay">00:45</span>' +
-        '<div class="corr-spk-modal-timer-btns">' +
-        '  <button class="corr-spk-modal-timer-btn start" id="corrSpkModalTimerStart">시작</button>' +
-        '  <button class="corr-spk-modal-timer-btn pause" id="corrSpkModalTimerPause">멈춤</button>' +
-        '  <button class="corr-spk-modal-timer-btn reset" id="corrSpkModalTimerReset">리셋</button>' +
+        '<span class="corr-spk-d2-timer-display" id="corrSpkD2TimerDisplay">00:45</span>' +
+        '<div class="corr-spk-d2-timer-btns">' +
+        '  <button class="corr-spk-d2-timer-btn start" id="corrSpkD2TimerStart">시작</button>' +
+        '  <button class="corr-spk-d2-timer-btn pause" id="corrSpkD2TimerPause">멈춤</button>' +
+        '  <button class="corr-spk-d2-timer-btn reset" id="corrSpkD2TimerReset">리셋</button>' +
         '</div>';
-    box.appendChild(timerWrap);
+    leftCol.appendChild(timerWrap);
 
     // ── 파일 업로드 Q1~Q4 ──
     var uploadWrap = document.createElement('div');
-    uploadWrap.className = 'corr-spk-modal-upload-wrap';
+    uploadWrap.className = 'corr-spk-d2-upload-wrap';
     for (var q = 1; q <= 4; q++) {
         var row = document.createElement('div');
-        row.className = 'corr-spk-modal-upload-row';
+        row.className = 'corr-spk-d2-upload-row';
         row.innerHTML =
-            '<span class="corr-spk-modal-upload-label">Q' + q + '</span>' +
-            '<label class="corr-spk-modal-upload-btn" for="corrSpkModalFileQ' + q + '">' +
-            '  <i class="fas fa-file-audio"></i> <span id="corrSpkModalFileLabelQ' + q + '">파일 선택</span>' +
+            '<span class="corr-spk-d2-upload-label">Q' + q + '</span>' +
+            '<label class="corr-spk-d2-upload-btn" for="corrSpkD2FileQ' + q + '">' +
+            '  <i class="fas fa-file-audio"></i> <span id="corrSpkD2FileLabelQ' + q + '">파일 선택</span>' +
             '</label>' +
-            '<input type="file" id="corrSpkModalFileQ' + q + '" accept="audio/*,video/mp4,video/webm" style="display:none;" data-q="' + q + '">' +
-            '<span class="corr-spk-modal-upload-status" id="corrSpkModalFileStatusQ' + q + '"></span>';
+            '<input type="file" id="corrSpkD2FileQ' + q + '" accept="audio/*,video/mp4,video/webm" style="display:none;" data-q="' + q + '">' +
+            '<span class="corr-spk-d2-upload-status" id="corrSpkD2FileStatusQ' + q + '"></span>';
         uploadWrap.appendChild(row);
     }
-    box.appendChild(uploadWrap);
+    leftCol.appendChild(uploadWrap);
 
     // ── 제출 버튼 ──
     var submitBtn = document.createElement('button');
-    submitBtn.id = 'corrSpkModalSubmitBtn';
-    submitBtn.className = 'corr-spk-modal-submit-btn';
+    submitBtn.id = 'corrSpkD2SubmitBtn';
+    submitBtn.className = 'corr-spk-d2-submit-btn';
     submitBtn.textContent = '제출하기';
     submitBtn.disabled = true;
     submitBtn.style.opacity = '0.5';
-    box.appendChild(submitBtn);
+    leftCol.appendChild(submitBtn);
 
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
+    splitWrap.appendChild(leftCol);
+
+    // ══════ 가운데: 1차 피드백 본문 (annotated_html) ══════
+    var fb1 = state.submission ? state.submission.feedback_1 : null;
+    if (fb1 && typeof fb1 === 'string') {
+        try { fb1 = JSON.parse(fb1); } catch(e) { fb1 = null; }
+    }
+
+    var midCol = document.createElement('div');
+    midCol.className = 'corr-spk-d2-mid';
+
+    var midHeader = document.createElement('div');
+    midHeader.className = 'corr-spk-d2-mid-header';
+    midHeader.innerHTML = '<i class="fas fa-lightbulb"></i> 1차 피드백';
+    midCol.appendChild(midHeader);
+
+    if (fb1) {
+        var fbText = document.createElement('div');
+        fbText.className = 'corr-spk-d2-fb-text';
+        fbText.id = 'corrSpkD2FbText';
+
+        if (fb1.per_question && fb1.per_question.length > 0) {
+            for (var pq = 0; pq < fb1.per_question.length; pq++) {
+                var qItem = fb1.per_question[pq];
+                var qDiv = document.createElement('div');
+                qDiv.className = 'corr-spk-d2-fb-q';
+                var qLabel = '<div class="corr-spk-d2-fb-q-label">Q' + (pq + 1) + '</div>';
+                var qBody = '';
+                if (qItem.annotated_html) {
+                    qBody += '<div class="corr-spk-d2-fb-annotated">' + qItem.annotated_html + '</div>';
+                }
+                if (qItem.comment) {
+                    qBody += '<div class="corr-spk-d2-fb-comment">' + (typeof _escapeHtml === 'function' ? _escapeHtml(qItem.comment) : qItem.comment) + '</div>';
+                }
+                qDiv.innerHTML = qLabel + qBody;
+                fbText.appendChild(qDiv);
+            }
+        } else if (fb1.annotated_html) {
+            var annotDiv = document.createElement('div');
+            annotDiv.className = 'corr-spk-d2-fb-annotated';
+            annotDiv.innerHTML = fb1.annotated_html;
+            fbText.appendChild(annotDiv);
+        }
+
+        // summary를 Q카드 바로 아래에 (mid 컬럼 안)
+        if (fb1.summary) {
+            var sumDiv = document.createElement('div');
+            sumDiv.className = 'corr-spk-d2-fb-summary';
+            sumDiv.innerHTML = '<div class="corr-spk-d2-fb-summary-label"><i class="fas fa-comment-dots"></i> 총평</div>' +
+                '<div class="corr-spk-d2-fb-summary-text">' + (typeof _escapeHtml === 'function' ? _escapeHtml(fb1.summary) : fb1.summary) + '</div>';
+            fbText.appendChild(sumDiv);
+        }
+
+        midCol.appendChild(fbText);
+    } else {
+        var noFb = document.createElement('div');
+        noFb.className = 'corr-spk-d2-fb-empty';
+        noFb.textContent = '1차 피드백이 없습니다.';
+        midCol.appendChild(noFb);
+    }
+
+    splitWrap.appendChild(midCol);
+
+    // ══════ 오른쪽: 메모 카드 패널 ══════
+    var rightCol = document.createElement('div');
+    rightCol.className = 'corr-spk-d2-right';
+
+    var memoPanel = document.createElement('div');
+    memoPanel.className = 'corr-spk-d2-memo-panel';
+    memoPanel.id = 'corrSpkD2MemoPanel';
+    memoPanel.innerHTML = '<div class="corr-spk-d2-memo-header">교정 메모</div>';
+    rightCol.appendChild(memoPanel);
+
+    splitWrap.appendChild(rightCol);
+    section.appendChild(splitWrap);
+
+    testContent.appendChild(section);
+
+    // DOM 삽입 후 메모 카드 생성 + 양방향 클릭 연동
+    if (fb1) {
+        _corrSpkD2BuildMemoCards(section);
+    }
 
     // DOM 삽입 후 초기 영상 로드 (Q1)
-    _corrSpkModalLoadVideo(1);
+    _corrSpkD2LoadVideo(1);
 
     // ── 이벤트 바인딩 ──
-    _corrSpkModalBindEvents();
+    _corrSpkD2BindEvents();
+}
+
+// ── 메모 카드 생성 + 양방향 클릭 연동 (Writing _buildMemoPanel 동일 패턴) ──
+function _corrSpkD2BuildMemoCards(wrap) {
+    var textEl = document.getElementById('corrSpkD2FbText');
+    var memoEl = document.getElementById('corrSpkD2MemoPanel');
+    if (!textEl || !memoEl) return;
+
+    var marks = textEl.querySelectorAll('.correction-mark[data-comment]');
+    if (marks.length === 0) {
+        memoEl.innerHTML = '<div class="corr-spk-d2-memo-header">교정 메모</div>' +
+            '<div class="corr-spk-d2-memo-empty">교정 코멘트가 없습니다.</div>';
+        return;
+    }
+
+    for (var i = 0; i < marks.length; i++) {
+        var mark = marks[i];
+        var comment = mark.getAttribute('data-comment');
+        var uid = 'spkd2_' + i;
+
+        mark.setAttribute('data-memo-id', uid);
+
+        var card = document.createElement('div');
+        card.className = 'corr-spk-d2-memo-card';
+        card.setAttribute('data-memo-id', uid);
+        card.textContent = comment;
+        memoEl.appendChild(card);
+    }
+
+    // 양방향 클릭: 마크 → 메모 카드
+    for (var i = 0; i < marks.length; i++) {
+        (function(mark) {
+            mark.addEventListener('click', function(e) {
+                e.stopPropagation();
+                _corrSpkD2ActivatePair(wrap, mark.getAttribute('data-memo-id'));
+            });
+        })(marks[i]);
+    }
+
+    // 양방향 클릭: 메모 카드 → 마크
+    var cards = memoEl.querySelectorAll('.corr-spk-d2-memo-card');
+    for (var i = 0; i < cards.length; i++) {
+        (function(card) {
+            card.addEventListener('click', function(e) {
+                e.stopPropagation();
+                _corrSpkD2ActivatePair(wrap, card.getAttribute('data-memo-id'));
+            });
+        })(cards[i]);
+    }
+
+    // 빈 곳 클릭 → 모든 활성 해제
+    wrap.addEventListener('click', function(e) {
+        if (!e.target.closest('.correction-mark') && !e.target.closest('.corr-spk-d2-memo-card')) {
+            _corrSpkD2DeactivateAll(wrap);
+        }
+    });
+}
+
+function _corrSpkD2ActivatePair(wrap, memoId) {
+    var alreadyActive = wrap.querySelector('.correction-mark.memo-active[data-memo-id="' + memoId + '"]');
+    _corrSpkD2DeactivateAll(wrap);
+    if (alreadyActive) return;
+
+    var mark = wrap.querySelector('.correction-mark[data-memo-id="' + memoId + '"]');
+    if (mark) {
+        mark.classList.add('memo-active');
+        mark.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    var card = wrap.querySelector('.corr-spk-d2-memo-card[data-memo-id="' + memoId + '"]');
+    if (card) {
+        card.classList.add('memo-active');
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function _corrSpkD2DeactivateAll(wrap) {
+    var actives = wrap.querySelectorAll('.memo-active');
+    for (var i = 0; i < actives.length; i++) {
+        actives[i].classList.remove('memo-active');
+    }
 }
 
 // ── 비디오 소스 전환 ──
-function _corrSpkModalLoadVideo(qNum) {
+function _corrSpkD2LoadVideo(qNum) {
     var state = window._correctionSpeakingState;
     if (!state || !state.setData) return;
 
-    var videoEl = document.getElementById('corrSpkModalVideo');
-    var noVideoMsg = document.getElementById('corrSpkModalNoVideo');
+    var videoEl = document.getElementById('corrSpkD2Video');
+    var noVideoMsg = document.getElementById('corrSpkD2NoVideo');
     if (!videoEl || !noVideoMsg) return;
 
     var videoData = state.setData.videos[qNum - 1];
@@ -790,26 +974,26 @@ function _corrSpkModalLoadVideo(qNum) {
 }
 
 // ── 이벤트 바인딩 ──
-function _corrSpkModalBindEvents() {
+function _corrSpkD2BindEvents() {
     var state = window._correctionSpeakingState;
     if (!state) return;
 
     // 탭 클릭
-    var tabs = document.querySelectorAll('.corr-spk-modal-tab');
+    var tabs = document.querySelectorAll('.corr-spk-d2-tab');
     for (var i = 0; i < tabs.length; i++) {
         tabs[i].addEventListener('click', function() {
             for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
             this.classList.add('active');
-            _corrSpkModalLoadVideo(parseInt(this.getAttribute('data-q')));
+            _corrSpkD2LoadVideo(parseInt(this.getAttribute('data-q')));
         });
     }
 
     // 45초 타이머
     var timerState = { remaining: 45, interval: null, running: false };
-    var display = document.getElementById('corrSpkModalTimerDisplay');
-    var startBtn = document.getElementById('corrSpkModalTimerStart');
-    var pauseBtn = document.getElementById('corrSpkModalTimerPause');
-    var resetBtn = document.getElementById('corrSpkModalTimerReset');
+    var display = document.getElementById('corrSpkD2TimerDisplay');
+    var startBtn = document.getElementById('corrSpkD2TimerStart');
+    var pauseBtn = document.getElementById('corrSpkD2TimerPause');
+    var resetBtn = document.getElementById('corrSpkD2TimerReset');
 
     function updateTimerDisplay() {
         if (!display) return;
@@ -848,50 +1032,42 @@ function _corrSpkModalBindEvents() {
         updateTimerDisplay();
     });
 
-    // 모달 내 타이머 정리를 cleanup에서 할 수 있도록 state에 저장
-    state._modalTimerState = timerState;
+    // 타이머 정리를 cleanup에서 할 수 있도록 state에 저장
+    state._d2TimerState = timerState;
 
     // 파일 업로드
     for (var q = 1; q <= 4; q++) {
-        var input = document.getElementById('corrSpkModalFileQ' + q);
+        var input = document.getElementById('corrSpkD2FileQ' + q);
         if (input) {
             input.addEventListener('change', function() {
                 var qNum = parseInt(this.getAttribute('data-q'));
-                _corrSpkModalFileChange(qNum, this);
+                _corrSpkD2FileChange(qNum, this);
             });
         }
     }
 
     // 제출 버튼
-    var submitBtn = document.getElementById('corrSpkModalSubmitBtn');
+    var submitBtn = document.getElementById('corrSpkD2SubmitBtn');
     if (submitBtn) {
         submitBtn.addEventListener('click', function() {
             submitCorrectionSpeaking();
         });
     }
-
-    // X 닫기
-    var closeBtn = document.getElementById('corrSpkModalCloseBtn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            _corrSpkModalClose();
-        });
-    }
 }
 
-// ── 모달 전용 파일 변경 핸들러 (검증 로직 재사용) ──
-function _corrSpkModalFileChange(qNum, input) {
+// ── 파일 변경 핸들러 (검증 로직 재사용) ──
+function _corrSpkD2FileChange(qNum, input) {
     var state = window._correctionSpeakingState;
     if (!state) return;
 
-    var label = document.getElementById('corrSpkModalFileLabelQ' + qNum);
-    var status = document.getElementById('corrSpkModalFileStatusQ' + qNum);
+    var label = document.getElementById('corrSpkD2FileLabelQ' + qNum);
+    var status = document.getElementById('corrSpkD2FileStatusQ' + qNum);
 
     if (!input.files || input.files.length === 0) {
         state.uploadFiles['q' + qNum] = null;
         if (label) label.textContent = '파일 선택';
-        if (status) { status.textContent = ''; status.className = 'corr-spk-modal-upload-status'; }
-        _corrSpkModalUpdateSubmitBtn();
+        if (status) { status.textContent = ''; status.className = 'corr-spk-d2-upload-status'; }
+        _corrSpkD2UpdateSubmitBtn();
         return;
     }
 
@@ -905,9 +1081,9 @@ function _corrSpkModalFileChange(qNum, input) {
         if (label) label.textContent = '파일 선택';
         if (status) {
             status.textContent = '허용되지 않는 형식 (mp3, m4a, wav, webm, mp4, ogg, aac)';
-            status.className = 'corr-spk-modal-upload-status error';
+            status.className = 'corr-spk-d2-upload-status error';
         }
-        _corrSpkModalUpdateSubmitBtn();
+        _corrSpkD2UpdateSubmitBtn();
         return;
     }
 
@@ -918,9 +1094,9 @@ function _corrSpkModalFileChange(qNum, input) {
         if (label) label.textContent = '파일 선택';
         if (status) {
             status.textContent = '파일이 너무 큽니다 (최대 25MB)';
-            status.className = 'corr-spk-modal-upload-status error';
+            status.className = 'corr-spk-d2-upload-status error';
         }
-        _corrSpkModalUpdateSubmitBtn();
+        _corrSpkD2UpdateSubmitBtn();
         return;
     }
 
@@ -930,38 +1106,20 @@ function _corrSpkModalFileChange(qNum, input) {
     if (status) {
         var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
         status.textContent = sizeMB + 'MB · ' + ext.toUpperCase();
-        status.className = 'corr-spk-modal-upload-status success';
+        status.className = 'corr-spk-d2-upload-status success';
     }
-    _corrSpkModalUpdateSubmitBtn();
+    _corrSpkD2UpdateSubmitBtn();
 }
 
-function _corrSpkModalUpdateSubmitBtn() {
+function _corrSpkD2UpdateSubmitBtn() {
     var state = window._correctionSpeakingState;
-    var btn = document.getElementById('corrSpkModalSubmitBtn');
+    var btn = document.getElementById('corrSpkD2SubmitBtn');
     if (!state || !btn) return;
 
     var allSelected = state.uploadFiles.q1 && state.uploadFiles.q2 &&
                       state.uploadFiles.q3 && state.uploadFiles.q4;
     btn.disabled = !allSelected;
     btn.style.opacity = allSelected ? '1' : '0.5';
-}
-
-// ── 모달 닫기 ──
-function _corrSpkModalClose() {
-    var state = window._correctionSpeakingState;
-    if (state) {
-        var hasFile = state.uploadFiles.q1 || state.uploadFiles.q2 ||
-                      state.uploadFiles.q3 || state.uploadFiles.q4;
-        if (hasFile && !confirm('선택한 파일이 있습니다. 나가시겠습니까?')) {
-            return;
-        }
-        // 모달 타이머 정리
-        if (state._modalTimerState && state._modalTimerState.interval) {
-            clearInterval(state._modalTimerState.interval);
-        }
-    }
-    _cleanupCorrectionSpeaking();
-    backToCorrectionSession();
 }
 
 function _cleanupCorrectionSpeaking() {
@@ -973,6 +1131,11 @@ function _cleanupCorrectionSpeaking() {
     if (state.countdownTimer) {
         clearInterval(state.countdownTimer);
         state.countdownTimer = null;
+    }
+
+    // 2차 타이머 정리
+    if (state._d2TimerState && state._d2TimerState.interval) {
+        clearInterval(state._d2TimerState.interval);
     }
 
     if (_corrSpkCurrentAudio) {
@@ -988,9 +1151,23 @@ function _cleanupCorrectionSpeaking() {
         videoEl.load();
     }
 
-    // 2차 모달 DOM 제거
-    var modal = document.getElementById('corrSpkDraft2Modal');
-    if (modal) modal.remove();
+    // 2차 페이지 video 정리
+    var d2Video = document.getElementById('corrSpkD2Video');
+    if (d2Video) {
+        d2Video.pause();
+        d2Video.removeAttribute('src');
+        d2Video.load();
+    }
+
+    // 2차 전용 섹션 DOM 제거
+    var d2Section = document.getElementById('corrSpkDraft2Section');
+    if (d2Section) d2Section.remove();
+
+    // 2차 진입 시 변경한 UI 복원
+    var screen = document.getElementById('correctionSpeakingScreen');
+    if (screen) screen.classList.remove('draft2-bg');
+    var progressEl = document.getElementById('corrSpkProgress');
+    if (progressEl) progressEl.style.display = '';
 
     window._correctionSpeakingState = null;
     console.log('🧹 [Correction Speaking] 정리 완료');

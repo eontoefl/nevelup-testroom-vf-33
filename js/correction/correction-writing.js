@@ -711,6 +711,7 @@ function _setTextContent(id, text) {
 
 /**
  * 2차 작성 시 textarea 위에 1차 피드백 참고 토글 패널을 동적 삽입
+ * — 좌우 스플릿 레이아웃(본문 + 교정 메모) + 총평
  * @param {string} textareaId - 'corrEmailTextarea' | 'corrDiscussionTextarea'
  */
 function _insertFeedbackTogglePanel(textareaId) {
@@ -730,6 +731,8 @@ function _insertFeedbackTogglePanel(textareaId) {
         try { fb = JSON.parse(fb); } catch (e) { return; }
     }
 
+    var scopeId = 'toggle_' + textareaId;
+
     // 토글 wrapper 생성
     var wrap = document.createElement('div');
     wrap.id = 'corrFbToggleWrap_' + textareaId;
@@ -746,23 +749,33 @@ function _insertFeedbackTogglePanel(textareaId) {
     var panel = document.createElement('div');
     panel.className = 'corr-fb-toggle-panel';
 
-    // annotated_html
-    if (fb.annotated_html) {
-        var annotDiv = document.createElement('div');
-        annotDiv.className = 'corr-fb-toggle-annotated';
-        annotDiv.innerHTML = fb.annotated_html;
-        panel.appendChild(annotDiv);
-        // 토글 패널 전용 tooltip 직접 생성
-        var marks = annotDiv.querySelectorAll('.correction-mark[data-comment]');
-        for (var m = 0; m < marks.length; m++) {
-            var tip = document.createElement('span');
-            tip.className = 'correction-tooltip';
-            tip.textContent = marks[m].getAttribute('data-comment');
-            marks[m].appendChild(tip);
-        }
-    }
+    // ── 좌우 스플릿 레이아웃 ──
+    var splitWrap = document.createElement('div');
+    splitWrap.className = 'corr-fb-split-wrap';
+    splitWrap.setAttribute('data-fb-scope', scopeId);
 
-    // summary
+    var splitRow = document.createElement('div');
+    splitRow.className = 'corr-fb-split';
+
+    // 왼쪽: annotated_html 본문
+    var splitLeft = document.createElement('div');
+    splitLeft.className = 'corr-fb-split-left';
+    var annotDiv = document.createElement('div');
+    annotDiv.className = 'corr-feedback-annotated';
+    annotDiv.id = 'corrFb_' + scopeId;
+    splitLeft.appendChild(annotDiv);
+    splitRow.appendChild(splitLeft);
+
+    // 오른쪽: 교정 메모 패널
+    var splitRight = document.createElement('div');
+    splitRight.className = 'corr-fb-split-right';
+    splitRight.id = 'corrFbMemo_' + scopeId;
+    splitRow.appendChild(splitRight);
+
+    splitWrap.appendChild(splitRow);
+    panel.appendChild(splitWrap);
+
+    // ── 총평 (스플릿 아래) ──
     if (fb.summary) {
         var summDiv = document.createElement('div');
         summDiv.className = 'corr-fb-toggle-summary';
@@ -779,6 +792,16 @@ function _insertFeedbackTogglePanel(textareaId) {
         btn.innerHTML = isOpen
             ? '<i class="fas fa-lightbulb"></i> 1차 피드백 닫기'
             : '<i class="fas fa-lightbulb"></i> 1차 피드백 참고';
+
+        // 최초 열림 시 annotated_html 렌더링 + 메모 패널 빌드
+        if (isOpen && !wrap._rendered) {
+            wrap._rendered = true;
+            var annotEl = document.getElementById('corrFb_' + scopeId);
+            if (annotEl && fb.annotated_html) {
+                renderAnnotatedHtml(annotEl, fb.annotated_html);
+                _buildMemoPanel(scopeId);
+            }
+        }
     });
 
     // DOM 삽입: editor-box 바로 앞
