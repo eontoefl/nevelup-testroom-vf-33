@@ -158,8 +158,10 @@ function _getSessionStatus(writingSub, speakingSub) {
         return { dotClass: 'dot-none', label: '미시작' };
     }
 
-    // 둘 다 complete
-    if (wStatus === 'complete' && sStatus === 'complete') {
+    // 둘 다 완료 (feedback2_ready + released_2 또는 complete)
+    var wDone = (wStatus === 'complete') || (wStatus === 'feedback2_ready' && writingSub && writingSub.released_2);
+    var sDone = (sStatus === 'complete') || (sStatus === 'feedback2_ready' && speakingSub && speakingSub.released_2);
+    if (wDone && sDone) {
         return { dotClass: 'dot-done', label: '완료' };
     }
 
