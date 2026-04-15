@@ -4,6 +4,7 @@
  */
 
 var _arrangeRetryMode = null;
+var _arrangeRetryCountMap = {}; // 문제별 재풀이 시도 횟수 { retryId: count }
 
 /**
  * 결과 화면 표시
@@ -19,6 +20,7 @@ function showArrangeResult(data, mode) {
     }
 
     _arrangeRetryMode = mode || null;
+    _arrangeRetryCountMap = {}; // 초기화
     var resultsData = data;
 
     // 점수 표시
@@ -357,9 +359,29 @@ function handleArrangeRetrySubmit(retryId) {
             if (locked) locked.style.display = '';
         }, 500);
     } else {
+        // 오답 → 시도 횟수 증가
+        if (!_arrangeRetryCountMap[retryId]) _arrangeRetryCountMap[retryId] = 0;
+        _arrangeRetryCountMap[retryId]++;
+        var count = _arrangeRetryCountMap[retryId];
+
         if (feedbackEl) {
-            feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 다시 생각해보세요';
+            feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 다시 생각해보세요 (' + count + '/5)';
             feedbackEl.className = 'ar-retry-feedback ar-retry-feedback-wrong';
+        }
+
+        // 5회 실패 → 정답 보기 버튼 표시
+        if (count >= 5) {
+            var revealBtnId = retryId + '-reveal';
+            if (!document.getElementById(revealBtnId) && feedbackEl) {
+                var revealBtn = document.createElement('button');
+                revealBtn.id = revealBtnId;
+                revealBtn.className = 'ar-retry-reveal';
+                revealBtn.innerHTML = '<i class="fas fa-eye"></i> 정답 보기';
+                revealBtn.onclick = function() {
+                    handleArrangeRevealAnswer(retryId);
+                };
+                feedbackEl.parentNode.insertBefore(revealBtn, feedbackEl.nextSibling);
+            }
         }
 
         // 슬롯 전체 초기화
@@ -410,10 +432,58 @@ function renderArrangeAnswerStructure(result, isCorrectAnswer) {
     return html;
 }
 
+// ── 정답 보기 핸들러 ──
+
+function handleArrangeRevealAnswer(retryId) {
+    var area = document.getElementById(retryId);
+    if (!area) return;
+
+    var correctArr = JSON.parse(area.getAttribute('data-correct'));
+    var slots = document.querySelectorAll('.ar-retry-slot[data-retry-id="' + retryId + '"]');
+    var wordBtns = document.querySelectorAll('.ar-retry-word[data-retry-id="' + retryId + '"]');
+
+    // 슬롯에 정답 채우기
+    for (var i = 0; i < slots.length; i++) {
+        var textEl = slots[i].querySelector('.ar-retry-slot-text');
+        textEl.textContent = correctArr[i] || '';
+        slots[i].setAttribute('data-filled', 'revealed');
+        slots[i].classList.add('filled', 'correct');
+        slots[i].style.pointerEvents = 'none';
+    }
+
+    // 단어 버튼 전체 비활성화
+    wordBtns.forEach(function(b) { b.disabled = true; b.classList.add('used'); });
+
+    // 확인 버튼 비활성화
+    var submitBtn = area.querySelector('.ar-retry-submit');
+    if (submitBtn) submitBtn.disabled = true;
+
+    // 정답 보기 버튼 비활성화
+    var revealBtn = document.getElementById(retryId + '-reveal');
+    if (revealBtn) {
+        revealBtn.disabled = true;
+        revealBtn.innerHTML = '<i class="fas fa-eye"></i> 정답이 표시되었습니다';
+    }
+
+    // 피드백 메시지
+    var feedbackEl = document.getElementById(retryId + '-feedback');
+    if (feedbackEl) {
+        feedbackEl.innerHTML = '<i class="fas fa-info-circle"></i> 정답을 확인하세요';
+        feedbackEl.className = 'ar-retry-feedback ar-retry-feedback-reveal';
+    }
+
+    // 잠금 해제 (내 답변 + 정답 + 해설 표시)
+    setTimeout(function() {
+        var locked = document.getElementById(retryId + '-locked');
+        if (locked) locked.style.display = '';
+    }, 500);
+}
+
 // 전역 노출
 window.showArrangeResult = showArrangeResult;
 window.handleArrangeWordClick = handleArrangeWordClick;
 window.handleArrangeSlotClick = handleArrangeSlotClick;
 window.handleArrangeRetrySubmit = handleArrangeRetrySubmit;
+window.handleArrangeRevealAnswer = handleArrangeRevealAnswer;
 
 console.log('✅ [Writing] arrange-result.js 로드 완료');

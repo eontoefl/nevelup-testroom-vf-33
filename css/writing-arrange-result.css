@@ -559,6 +559,39 @@
     color: #d97706;
 }
 
+#arrangeExplainScreen .ar-retry-feedback-reveal {
+    color: var(--primary-purple);
+}
+
+/* Retry: 정답 보기 버튼 */
+#arrangeExplainScreen .ar-retry-reveal {
+    margin-top: 12px;
+    padding: 8px 18px;
+    border: 1.5px solid var(--text-gray);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text-gray);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    font-family: 'Pretendard', sans-serif;
+}
+
+#arrangeExplainScreen .ar-retry-reveal:hover:not(:disabled) {
+    background: #f5f3fa;
+    border-color: var(--primary-purple);
+    color: var(--primary-purple);
+}
+
+#arrangeExplainScreen .ar-retry-reveal:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     #arrangeExplainScreen .test-content {
@@ -605,5 +638,10 @@
     #arrangeExplainScreen .ar-retry-submit {
         padding: 8px 18px;
         font-size: 13px;
+    }
+
+    #arrangeExplainScreen .ar-retry-reveal {
+        font-size: 13px;
+        padding: 6px 14px;
     }
 }
