@@ -582,8 +582,12 @@ function _sendCorrSpkWebhook(isDraft2, payload) {
         body: JSON.stringify(payload)
     }).then(function(res) {
         console.log('📡 [Correction Speaking] Webhook 응답:', res.status);
+        if (res.status !== 200) {
+            _onWebhookFailed(webhookUrl, payload, 'HTTP ' + res.status);
+        }
     }).catch(function(err) {
         console.warn('⚠️ [Correction Speaking] Webhook 실패 (무시):', err);
+        _onWebhookFailed(webhookUrl, payload, err.message || String(err));
     });
 }
 

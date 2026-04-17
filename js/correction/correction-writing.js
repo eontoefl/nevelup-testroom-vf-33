@@ -618,9 +618,111 @@ function _sendCorrectionWebhook(isDraft2, payload) {
         body: JSON.stringify(payload)
     }).then(function(res) {
         console.log('📡 [Correction] Webhook 응답:', res.status);
+        if (res.status !== 200) {
+            _onWebhookFailed(webhookUrl, payload, 'HTTP ' + res.status);
+        }
     }).catch(function(err) {
         console.warn('⚠️ [Correction] Webhook 실패 (무시):', err);
+        _onWebhookFailed(webhookUrl, payload, err.message || String(err));
     });
+}
+
+// ============================================================
+// 10-A. Webhook 실패 시 텔레그램 알림 (공통 유틸리티)
+// ============================================================
+
+/**
+ * task_type → 사람이 읽을 수 있는 라벨로 변환
+ */
+var _TASK_TYPE_LABELS = {
+    writing_email: 'Writing Email',
+    writing_discussion: 'Writing Discussion',
+    speaking_interview: 'Speaking Interview'
+};
+
+/**
+ * 중복 알림 방지 — localStorage 기반, 동일 webhook URL 기준 5분 쿨다운
+ * @param {string} webhookUrl - 실패한 webhook URL
+ * @returns {boolean} true면 알림 전송 가능, false면 쿨다운 중
+ */
+function _canSendAlert(webhookUrl) {
+    var config = window.CORRECTION_CONFIG;
+    var cooldownMs = (config && config.telegramAlertCooldownMs) ? config.telegramAlertCooldownMs : 300000;
+
+    // webhook URL에서 고유 키 생성 (예: correction_alert_writing_draft1)
+    var keyPart = webhookUrl.replace(/^.*\/webhook\//, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    var storageKey = 'correction_alert_' + keyPart;
+
+    try {
+        var lastSent = localStorage.getItem(storageKey);
+        if (lastSent) {
+            var elapsed = Date.now() - parseInt(lastSent, 10);
+            if (elapsed < cooldownMs) {
+                console.warn('⏳ [Alert] 쿨다운 중 (' + Math.round((cooldownMs - elapsed) / 1000) + '초 남음), 알림 생략:', storageKey);
+                return false;
+            }
+        }
+        localStorage.setItem(storageKey, String(Date.now()));
+        return true;
+    } catch (e) {
+        // localStorage 접근 불가 시 알림 전송 허용 (안전 우선)
+        return true;
+    }
+}
+
+/**
+ * Webhook 실패 시 텔레그램 알림 전송
+ * — 알림 실패가 학생 제출 흐름을 막지 않도록 try-catch로 감쌈
+ * @param {string} webhookUrl - 실패한 webhook URL
+ * @param {object} payload - webhook에 전송하려던 payload
+ * @param {string} errorDetail - 에러 메시지 또는 HTTP status
+ */
+function _onWebhookFailed(webhookUrl, payload, errorDetail) {
+    try {
+        // 중복 알림 방지
+        if (!_canSendAlert(webhookUrl)) return;
+
+        var config = window.CORRECTION_CONFIG;
+        if (!config || !config.telegramAlertUrl || !config.telegramAlertSecret) {
+            console.warn('⚠️ [Alert] 텔레그램 알림 설정 없음, 생략');
+            return;
+        }
+
+        var taskTypeLabel = _TASK_TYPE_LABELS[payload.task_type] || payload.task_type || 'Unknown';
+        var draftNum = payload.event && payload.event.indexOf('draft2') >= 0 ? '2' : '1';
+        var sessionNum = payload.session_number || '?';
+        var userName = payload.user_name || '알 수 없음';
+        var nowKST = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+
+        var message = '\ud83d\udea8 첨삭 Webhook 실패\n\n'
+            + '학생: ' + userName + '\n'
+            + '과제: ' + taskTypeLabel + ' ' + draftNum + '차\n'
+            + '세션: ' + sessionNum + '\n'
+            + '시각: ' + nowKST + '\n'
+            + '에러: ' + errorDetail + '\n\n'
+            + '→ 관리자 대시보드에서 재실행해주세요.';
+
+        fetch(config.telegramAlertUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + SUPABASE_CONFIG.anonKey,
+                'x-alert-secret': config.telegramAlertSecret,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        }).then(function(res) {
+            if (res.ok) {
+                console.log('📨 [Alert] 텔레그램 알림 전송 성공');
+            } else {
+                console.warn('⚠️ [Alert] 텔레그램 알림 응답:', res.status);
+            }
+        }).catch(function(alertErr) {
+            console.warn('⚠️ [Alert] 텔레그램 알림 전송 실패 (무시):', alertErr);
+        });
+    } catch (e) {
+        // 알림 실패가 학생 제출 흐름을 절대 막지 않음
+        console.warn('⚠️ [Alert] 알림 처리 중 예외 (무시):', e);
+    }
 }
 
 // ============================================================
