@@ -683,7 +683,7 @@ function _onWebhookFailed(webhookUrl, payload, errorDetail) {
         if (!_canSendAlert(webhookUrl)) return;
 
         var config = window.CORRECTION_CONFIG;
-        if (!config || !config.telegramAlertUrl || !config.telegramAlertSecret) {
+        if (!config || !config.telegramAlertRpcName || !config.telegramAlertSecret) {
             console.warn('⚠️ [Alert] 텔레그램 알림 설정 없음, 생략');
             return;
         }
@@ -702,14 +702,19 @@ function _onWebhookFailed(webhookUrl, payload, errorDetail) {
             + '에러: ' + errorDetail + '\n\n'
             + '→ 관리자 대시보드에서 재실행해주세요.';
 
-        fetch(config.telegramAlertUrl, {
+        // Supabase RPC 호출 (send_telegram_alert 함수)
+        var rpcUrl = SUPABASE_CONFIG.url + '/rest/v1/rpc/' + config.telegramAlertRpcName;
+        fetch(rpcUrl, {
             method: 'POST',
             headers: {
+                'apikey': SUPABASE_CONFIG.anonKey,
                 'Authorization': 'Bearer ' + SUPABASE_CONFIG.anonKey,
-                'x-alert-secret': config.telegramAlertSecret,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({
+                message_text: message,
+                alert_secret: config.telegramAlertSecret
+            })
         }).then(function(res) {
             if (res.ok) {
                 console.log('📨 [Alert] 텔레그램 알림 전송 성공');
