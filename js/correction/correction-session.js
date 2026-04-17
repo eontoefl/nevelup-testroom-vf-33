@@ -344,13 +344,8 @@ function _buildCardDeadlineHtml(submission, session) {
         if (diff2 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 2차 마감 초과', cls: 'overdue' });
         } else {
-            var totalMin2 = diff2 / (1000 * 60);
-            if (totalMin2 < 10) {
-                rows.push({ html: '<i class="fas fa-exclamation-circle"></i> 2차: ' + _formatDeadlineRemaining(diff2), cls: 'urgent', dynamic: 'draft2' });
-            } else {
-                rows.push({ html: '<i class="far fa-calendar-alt"></i> 2차: ' + _formatDeadlineDateTime(dl2) + ' 까지', cls: '' });
-                rows.push({ html: '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff2), cls: '', dynamic: 'draft2' });
-            }
+            var urgentCls2 = (diff2 / (1000 * 60)) < 10 ? 'urgent' : '';
+            rows.push({ html: '<i class="far fa-calendar-alt"></i> 2차: ' + _formatDeadlineDateTime(dl2) + ' 까지 (' + _formatDeadlineRemaining(diff2) + ')', cls: urgentCls2, dynamic: 'draft2' });
         }
         return _wrapDeadlineRows(rows);
     }
@@ -384,13 +379,8 @@ function _buildCardDeadlineHtml(submission, session) {
         if (diff1 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
         } else {
-            var totalMin1 = diff1 / (1000 * 60);
-            if (totalMin1 < 10) {
-                rows.push({ html: '<i class="fas fa-exclamation-circle"></i> 1차: ' + _formatDeadlineRemaining(diff1), cls: 'urgent', dynamic: 'draft1' });
-            } else {
-                rows.push({ html: '<i class="far fa-calendar-alt"></i> 1차: ' + _formatDeadlineDateTime(dl1) + ' 까지', cls: '' });
-                rows.push({ html: '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff1), cls: '', dynamic: 'draft1' });
-            }
+            var urgentCls1 = (diff1 / (1000 * 60)) < 10 ? 'urgent' : '';
+            rows.push({ html: '<i class="far fa-calendar-alt"></i> 1차: ' + _formatDeadlineDateTime(dl1) + ' 까지 (' + _formatDeadlineRemaining(diff1) + ')', cls: urgentCls1, dynamic: 'draft1' });
         }
         return _wrapDeadlineRows(rows);
     }
@@ -525,15 +515,11 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
             deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 1차 마감 초과</div>';
             return false;
         }
-        var totalMin1 = diff1 / (1000 * 60);
-        if (totalMin1 < 10) {
-            deadlineEl.innerHTML = '<div class="task-card-deadline-row urgent"><i class="fas fa-exclamation-circle"></i> 1차: ' + _formatDeadlineRemaining(diff1) + '</div>';
-            return true;
-        }
-        // 10분 이상 → 남은 시간 row만 갱신 (분 단위 변경 반영)
-        var rows = deadlineEl.querySelectorAll('.task-card-deadline-row');
-        if (rows.length >= 2) {
-            rows[1].innerHTML = '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff1);
+        var urgentCls1 = (diff1 / (1000 * 60)) < 10 ? ' urgent' : '';
+        var row = deadlineEl.querySelector('.task-card-deadline-row');
+        if (row) {
+            row.className = 'task-card-deadline-row' + urgentCls1;
+            row.innerHTML = '<i class="far fa-calendar-alt"></i> 1차: ' + _formatDeadlineDateTime(dl1) + ' 까지 (' + _formatDeadlineRemaining(diff1) + ')';
         }
         return true;
     }
@@ -548,18 +534,11 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
                 '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 2차 마감 초과</div>';
             return false;
         }
-        var totalMin2 = diff2 / (1000 * 60);
-        if (totalMin2 < 10) {
-            deadlineEl.innerHTML =
-                '<div class="task-card-deadline-row completed"><i class="fas fa-check-circle"></i> 1차 완료</div>' +
-                '<div class="task-card-deadline-row urgent"><i class="fas fa-exclamation-circle"></i> 2차: ' + _formatDeadlineRemaining(diff2) + '</div>';
-            return true;
-        }
-        // 10분 이상 → 분 단위 갱신으로 충분하지만, 10분 진입 감지를 위해 계속 틱
-        // (다만 표시 텍스트 갱신은 남은 시간 row만)
+        var urgentCls2 = (diff2 / (1000 * 60)) < 10 ? ' urgent' : '';
         var rows = deadlineEl.querySelectorAll('.task-card-deadline-row');
         if (rows.length >= 2) {
-            rows[1].innerHTML = '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff2);
+            rows[1].className = 'task-card-deadline-row' + urgentCls2;
+            rows[1].innerHTML = '<i class="far fa-calendar-alt"></i> 2차: ' + _formatDeadlineDateTime(dl2) + ' 까지 (' + _formatDeadlineRemaining(diff2) + ')';
         }
         return true;
     }
