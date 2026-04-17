@@ -39,8 +39,11 @@ function openCorrectionSession(session, scheduleData, submissionMap) {
     if (titleEl) titleEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0');
     if (subtitleEl) subtitleEl.textContent = 'Week ' + session.week;
 
-    // 데드라인 배너
+    // 데드라인 배너 (카드별 마감으로 이전 — 상단 배너 숨김)
     _renderCorrectionDeadlineBanner(session, scheduleData);
+
+    // 카드별 마감 타이머 초기화
+    _stopCorrDeadlineTimer();
 
     // Writing 카드
     var writingSub = submissionMap[session.session + '_writing'] || null;
@@ -62,6 +65,9 @@ function openCorrectionSession(session, scheduleData, submissionMap) {
         speakingSub,
         session
     );
+
+    // 카드별 마감 실시간 타이머 시작 (동적 갱신이 필요한 카드가 있으면)
+    _startCardDeadlineTimer();
 }
 
 /**
@@ -99,6 +105,9 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
     var iconClass = taskType === 'writing' ? 'fas fa-pen' : 'fas fa-microphone';
     var iconBgClass = taskType === 'writing' ? 'writing' : 'speaking';
 
+    // 마감 정보 HTML
+    var deadlineHtml = _buildCardDeadlineHtml(submission, session);
+
     container.innerHTML =
         '<div class="task-card-header">' +
             '<div class="task-card-icon ' + iconBgClass + '"><i class="' + iconClass + '"></i></div>' +
@@ -108,7 +117,8 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         '<button class="task-card-btn ' + statusInfo.btnClass + '" id="' + containerId + 'Btn"' +
             (statusInfo.disabled ? ' disabled' : '') + '>' +
             statusInfo.btnText +
-        '</button>';
+        '</button>' +
+        deadlineHtml;
 
     // 버튼 클릭 핸들러
     var btn = document.getElementById(containerId + 'Btn');
@@ -240,6 +250,189 @@ function _formatDeadlineRemaining(diff) {
     return minutes + '분 ' + (seconds < 10 ? '0' : '') + seconds + '초 남음';
 }
 
+// ============================================================
+// 카드별 마감 정보 렌더링
+// ============================================================
+
+var _WEEKDAY_KR = ['일', '월', '화', '수', '목', '금', '토'];
+
+/**
+ * 마감 시각 포맷: "4/21(월) 04:00"
+ * @param {Date} date
+ * @returns {string}
+ */
+function _formatDeadlineDateTime(date) {
+    var m = date.getMonth() + 1;
+    var d = date.getDate();
+    var w = _WEEKDAY_KR[date.getDay()];
+    var hh = String(date.getHours()).padStart(2, '0');
+    var mm = String(date.getMinutes()).padStart(2, '0');
+    return m + '/' + d + '(' + w + ') ' + hh + ':' + mm;
+}
+
+/**
+ * 예상 시각 포맷 (시:분만): "10:00"
+ * @param {Date} date
+ * @returns {string}
+ */
+function _formatTimeHHMM(date) {
+    var hh = String(date.getHours()).padStart(2, '0');
+    var mm = String(date.getMinutes()).padStart(2, '0');
+    return hh + ':' + mm;
+}
+
+/**
+ * 카드 마감 정보 HTML 생성 (상태별 케이스 분기)
+ * @param {object|null} submission
+ * @param {object} session
+ * @returns {string} HTML
+ */
+function _buildCardDeadlineHtml(submission, session) {
+    var state = window._correctionSessionState;
+    var scheduleData = state ? state.scheduleData : null;
+    if (!scheduleData) return '';
+
+    var status = submission ? submission.status : null;
+    var released1 = submission ? submission.released_1 : false;
+    var released2 = submission ? submission.released_2 : false;
+    var now = new Date();
+    var rows = [];
+
+    // --- expired / skipped ---
+    if (status === 'expired' || status === 'skipped') {
+        rows.push({ html: '❌ 1차 마감 초과', cls: 'overdue' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- complete / feedback2_ready+released_2 ---
+    if (status === 'complete' || (status === 'feedback2_ready' && released2)) {
+        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
+        rows.push({ html: '✅ 2차 완료', cls: 'completed' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- feedback2_ready + released_2=false (최종 첨삭 검수중) ---
+    if (status === 'feedback2_ready' && !released2) {
+        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
+        rows.push({ html: '✅ 2차 제출 완료', cls: 'completed' });
+        rows.push({ html: '곧 도착합니다', cls: 'waiting' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- draft2_submitted / feedback2_processing ---
+    if (status === 'draft2_submitted' || status === 'feedback2_processing') {
+        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
+        rows.push({ html: '✅ 2차 제출 완료', cls: 'completed' });
+        var est2 = _getEstimatedArrival(submission.draft_2_submitted_at);
+        rows.push({ html: '최종 첨삭 예상: ' + est2, cls: 'waiting' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- feedback2_failed ---
+    if (status === 'feedback2_failed') {
+        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
+        rows.push({ html: '✅ 2차 제출 완료', cls: 'completed' });
+        rows.push({ html: '첨삭 대기중', cls: 'waiting' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- feedback1_ready + released_1=true (2차 단계) ---
+    if (status === 'feedback1_ready' && released1) {
+        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at);
+        var diff2 = dl2 - now;
+        if (diff2 <= 0) {
+            rows.push({ html: '❌ 2차 마감 초과', cls: 'overdue' });
+        } else {
+            var totalMin2 = diff2 / (1000 * 60);
+            if (totalMin2 < 10) {
+                rows.push({ html: '🔴 2차: ' + _formatDeadlineRemaining(diff2), cls: 'urgent', dynamic: 'draft2' });
+            } else {
+                rows.push({ html: '2차: ' + _formatDeadlineDateTime(dl2), cls: '' });
+                rows.push({ html: '⏰ ' + _formatDeadlineRemaining(diff2), cls: '', dynamic: 'draft2' });
+            }
+        }
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- feedback1_ready + released_1=false (검수중) ---
+    if (status === 'feedback1_ready' && !released1) {
+        rows.push({ html: '✅ 1차 제출 완료', cls: 'completed' });
+        rows.push({ html: '곧 도착합니다', cls: 'waiting' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- feedback1_failed ---
+    if (status === 'feedback1_failed') {
+        rows.push({ html: '✅ 1차 제출 완료', cls: 'completed' });
+        rows.push({ html: '첨삭 대기중', cls: 'waiting' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- draft1_submitted / feedback1_processing ---
+    if (status === 'draft1_submitted' || status === 'feedback1_processing') {
+        rows.push({ html: '✅ 1차 제출 완료', cls: 'completed' });
+        var est1 = _getEstimatedArrival(submission.draft_1_submitted_at);
+        rows.push({ html: '첨삭 도착 예상: ' + est1, cls: 'waiting' });
+        return _wrapDeadlineRows(rows);
+    }
+
+    // --- 미제출 (null) ---
+    if (!status) {
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
+        var diff1 = dl1 - now;
+        if (diff1 <= 0) {
+            rows.push({ html: '❌ 1차 마감 초과', cls: 'overdue' });
+        } else {
+            var totalMin1 = diff1 / (1000 * 60);
+            if (totalMin1 < 10) {
+                rows.push({ html: '🔴 1차: ' + _formatDeadlineRemaining(diff1), cls: 'urgent', dynamic: 'draft1' });
+            } else {
+                rows.push({ html: '1차: ' + _formatDeadlineDateTime(dl1), cls: '' });
+                rows.push({ html: '⏰ ' + _formatDeadlineRemaining(diff1), cls: '', dynamic: 'draft1' });
+            }
+        }
+        return _wrapDeadlineRows(rows);
+    }
+
+    // fallback
+    return '';
+}
+
+/**
+ * 첨삭 도착 예상 시각 계산
+ * submitted_at + 6시간, 이미 지났으면 "곧 도착"
+ * @param {string} submittedAt - ISO 날짜 문자열
+ * @returns {string}
+ */
+function _getEstimatedArrival(submittedAt) {
+    if (!submittedAt) return '곧 도착';
+    var est = new Date(submittedAt);
+    est.setHours(est.getHours() + 6);
+    if (new Date() >= est) return '곧 도착';
+    return _formatTimeHHMM(est);
+}
+
+/**
+ * 마감 행 배열 → task-card-deadline HTML 래핑
+ * @param {Array<{html:string, cls:string}>} rows
+ * @returns {string}
+ */
+function _wrapDeadlineRows(rows) {
+    if (!rows.length) return '';
+    var html = '<div class="task-card-deadline">';
+    for (var i = 0; i < rows.length; i++) {
+        var clsAttr = rows[i].cls ? ' ' + rows[i].cls : '';
+        html += '<div class="task-card-deadline-row' + clsAttr + '">' + rows[i].html + '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+// ============================================================
+// 카드별 마감 실시간 갱신 타이머
+// ============================================================
+
 // 실시간 카운트다운 타이머 ID (화면 전환 시 정리)
 var _corrDeadlineTimerId = null;
 
@@ -251,98 +444,136 @@ function _stopCorrDeadlineTimer() {
 }
 
 /**
- * 데드라인 배너를 특정 엘리먼트에 렌더링
- * 10분 미만이면 1초마다 갱신, 마감 순간 "마감됨"으로 전환
+ * 데드라인 배너를 특정 엘리먼트에 렌더링 (레거시 — 외부 호출 유지)
  * @param {HTMLElement} bannerEl
  * @param {string} label - '1차 마감' 또는 '2차 마감'
  * @param {Date} deadline
  */
 function renderDeadlineBanner(bannerEl, label, deadline) {
-    if (!bannerEl) return;
-    _stopCorrDeadlineTimer();
-
-    function update() {
-        var now = new Date();
-        if (now > deadline) {
-            _stopCorrDeadlineTimer();
-            bannerEl.className = 'correction-deadline-banner deadline-passed';
-            bannerEl.innerHTML = '<i class="fas fa-lock"></i> ' + label + ' 완료';
-            return;
-        }
-
-        var diff = deadline - now;
-        var timeText = _formatDeadlineRemaining(diff);
-        var totalMinutes = diff / (1000 * 60);
-
-        if (totalMinutes < 10) {
-            bannerEl.className = 'correction-deadline-banner deadline-urgent';
-            bannerEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + timeText;
-            // 10분 미만 진입 시 1초 갱신 시작
-            if (!_corrDeadlineTimerId) {
-                _corrDeadlineTimerId = setInterval(update, 1000);
-            }
-        } else if (totalMinutes < 360) { // 6시간 미만
-            bannerEl.className = 'correction-deadline-banner deadline-urgent';
-            bannerEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + timeText;
-        } else {
-            bannerEl.className = 'correction-deadline-banner deadline-normal';
-            bannerEl.innerHTML = '<i class="fas fa-clock"></i> ' + label + ' · ' + timeText;
-        }
-    }
-
-    update();
-    bannerEl.style.display = '';
+    // 카드별 마감으로 이전됨 — 배너 숨김 유지
+    if (bannerEl) bannerEl.style.display = 'none';
 }
 
 /**
- * 세션 상세 데드라인 배너 — submission 상태에 따라 1차/2차 표시
+ * 카드별 마감 실시간 갱신
+ * Writing + Speaking 카드를 1개의 setInterval로 동시 갱신
+ */
+function _startCardDeadlineTimer() {
+    _stopCorrDeadlineTimer();
+
+    function tick() {
+        var state = window._correctionSessionState;
+        if (!state) { _stopCorrDeadlineTimer(); return; }
+
+        var session = state.session;
+        var scheduleData = state.scheduleData;
+        var submissionMap = state.submissionMap;
+        if (!session || !scheduleData) { _stopCorrDeadlineTimer(); return; }
+
+        var writingSub = submissionMap[session.session + '_writing'] || null;
+        var speakingSub = submissionMap[session.session + '_speaking'] || null;
+
+        var needsTick = false;
+
+        needsTick = _updateCardDeadlineEl('corrWritingCard', writingSub, session, scheduleData) || needsTick;
+        needsTick = _updateCardDeadlineEl('corrSpeakingCard', speakingSub, session, scheduleData) || needsTick;
+
+        // 동적 갱신이 필요한 카드가 없으면 타이머 해제
+        if (!needsTick) {
+            _stopCorrDeadlineTimer();
+        }
+    }
+
+    // 초기 1회 체크 — 동적 갱신이 필요하면 1초 간격 시작
+    var state = window._correctionSessionState;
+    if (!state || !state.session || !state.scheduleData) return;
+
+    var session = state.session;
+    var sd = state.scheduleData;
+    var sm = state.submissionMap;
+    var wSub = sm[session.session + '_writing'] || null;
+    var sSub = sm[session.session + '_speaking'] || null;
+
+    var needs = _updateCardDeadlineEl('corrWritingCard', wSub, session, sd) ||
+                _updateCardDeadlineEl('corrSpeakingCard', sSub, session, sd);
+
+    if (needs) {
+        _corrDeadlineTimerId = setInterval(tick, 1000);
+    }
+}
+
+/**
+ * 개별 카드의 마감 영역 동적 갱신
+ * @returns {boolean} 계속 틱이 필요한지
+ */
+function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
+    var container = document.getElementById(containerId);
+    if (!container) return false;
+
+    var deadlineEl = container.querySelector('.task-card-deadline');
+    if (!deadlineEl) return false;
+
+    var status = submission ? submission.status : null;
+    var released1 = submission ? submission.released_1 : false;
+    var now = new Date();
+
+    // 미제출 → 1차 마감 카운트다운
+    if (!status) {
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
+        var diff1 = dl1 - now;
+        if (diff1 <= 0) {
+            deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue">❌ 1차 마감 초과</div>';
+            return false;
+        }
+        var totalMin1 = diff1 / (1000 * 60);
+        if (totalMin1 < 10) {
+            deadlineEl.innerHTML = '<div class="task-card-deadline-row urgent">🔴 1차: ' + _formatDeadlineRemaining(diff1) + '</div>';
+            return true;
+        }
+        // 10분 이상 → 남은 시간 row만 갱신 (분 단위 변경 반영)
+        var rows = deadlineEl.querySelectorAll('.task-card-deadline-row');
+        if (rows.length >= 2) {
+            rows[1].innerHTML = '⏰ ' + _formatDeadlineRemaining(diff1);
+        }
+        return true;
+    }
+
+    // feedback1_ready + released_1 → 2차 마감 카운트다운
+    if (status === 'feedback1_ready' && released1) {
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at);
+        var diff2 = dl2 - now;
+        if (diff2 <= 0) {
+            deadlineEl.innerHTML =
+                '<div class="task-card-deadline-row completed">✅ 1차 완료</div>' +
+                '<div class="task-card-deadline-row overdue">❌ 2차 마감 초과</div>';
+            return false;
+        }
+        var totalMin2 = diff2 / (1000 * 60);
+        if (totalMin2 < 10) {
+            deadlineEl.innerHTML =
+                '<div class="task-card-deadline-row completed">✅ 1차 완료</div>' +
+                '<div class="task-card-deadline-row urgent">🔴 2차: ' + _formatDeadlineRemaining(diff2) + '</div>';
+            return true;
+        }
+        // 10분 이상 → 분 단위 갱신으로 충분하지만, 10분 진입 감지를 위해 계속 틱
+        // (다만 표시 텍스트 갱신은 남은 시간 row만)
+        var rows = deadlineEl.querySelectorAll('.task-card-deadline-row');
+        if (rows.length >= 2) {
+            rows[1].innerHTML = '⏰ ' + _formatDeadlineRemaining(diff2);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * 세션 상세 데드라인 배너 — 카드별 마감으로 이전, 상단 배너 숨김
+ * (함수 호출은 유지하되 early return)
  */
 function _renderCorrectionDeadlineBanner(session, scheduleData) {
     var bannerEl = document.getElementById('corrSessionDeadlineBanner');
-    if (!bannerEl) return;
-
-    var state = window._correctionSessionState;
-    var submissionMap = state ? state.submissionMap : {};
-    var writingSub = submissionMap[session.session + '_writing'];
-    var speakingSub = submissionMap[session.session + '_speaking'];
-
-    // 둘 중 하나라도 2차 단계면 2차 데드라인 표시
-    var anyDraft2Phase = false;
-    var feedback1At = null;
-    [writingSub, speakingSub].forEach(function(sub) {
-        if (!sub) return;
-        var s = sub.status;
-        if (s === 'draft2_submitted' || s === 'feedback2_processing' || s === 'feedback2_ready' || s === 'feedback2_failed') {
-            anyDraft2Phase = true;
-        }
-        if (sub.released_1 && !anyDraft2Phase && !sub.draft_2_text && !sub.draft_2_audio_q1) {
-            // 1차 피드백 도착 + 2차 미제출 → 2차 데드라인 보여줘야 함
-            anyDraft2Phase = true;
-        }
-        if (sub.feedback_1_at && (!feedback1At || new Date(sub.feedback_1_at) > new Date(feedback1At))) {
-            feedback1At = sub.feedback_1_at;
-        }
-    });
-
-    // complete/expired/skipped면 배너 숨김
-    var allDone = true;
-    [writingSub, speakingSub].forEach(function(sub) {
-        if (!sub || ['complete', 'expired', 'skipped'].indexOf(sub.status) === -1) {
-            allDone = false;
-        }
-    });
-    if (writingSub && speakingSub && allDone) {
-        bannerEl.style.display = 'none';
-        return;
-    }
-
-    if (anyDraft2Phase) {
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, feedback1At);
-        renderDeadlineBanner(bannerEl, '2차 마감', dl2);
-    } else {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
-        renderDeadlineBanner(bannerEl, '1차 마감', dl1);
-    }
+    if (bannerEl) bannerEl.style.display = 'none';
 }
 
 /**
