@@ -382,6 +382,7 @@ function _buildCardDeadlineHtml(submission, session) {
             var urgentCls1 = (diff1 / (1000 * 60)) < 10 ? 'urgent' : '';
             rows.push({ html: '<i class="far fa-calendar-alt"></i> 1차: ' + _formatDeadlineDateTime(dl1) + ' 까지 (' + _formatDeadlineRemaining(diff1) + ')', cls: urgentCls1, dynamic: 'draft1' });
         }
+        rows.push({ html: '<i class="fas fa-lock"></i> 2차: 1차 완료 후 진행', cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
 
