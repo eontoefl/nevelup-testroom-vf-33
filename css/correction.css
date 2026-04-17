@@ -209,44 +209,46 @@
 
 .task-card-deadline {
     border-top: 1px solid #e2e8f0;
-    margin: 12px -24px 0;
-    padding: 12px 24px 0;
+    margin: 16px -24px 0;
+    padding: 14px 24px 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     font-size: 13px;
-    color: #64748b;
+    color: #334155;
+    font-weight: 600;
 }
 
 .task-card-deadline-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    line-height: 1.5;
+    gap: 7px;
+    line-height: 1.6;
+}
+
+.task-card-deadline-row i {
+    font-size: 13px;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
 }
 
 .task-card-deadline-row.completed {
-    color: #22c55e;
+    color: #16a34a;
 }
 
 .task-card-deadline-row.overdue {
     color: #dc2626;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .task-card-deadline-row.urgent {
     color: #dc2626;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .task-card-deadline-row.waiting {
-    color: #64748b;
-}
-
-.task-card-deadline-time {
-    font-size: 12px;
-    color: #94a3b8;
-    padding-left: 20px;
+    color: #6366f1;
 }
 
 .correction-deadline-banner.deadline-normal {
