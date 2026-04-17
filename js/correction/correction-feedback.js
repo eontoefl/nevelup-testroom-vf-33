@@ -85,8 +85,8 @@ function renderFeedbackSummary(container, feedback) {
     // Level (2차 피드백)
     if (feedback.level !== undefined && feedback.level !== null) {
         html += '<div class="corr-feedback-level-card">';
-        html += '<div class="corr-feedback-level-badge">' + Number(feedback.level).toFixed(1) + '</div>';
-        html += '<div class="corr-feedback-level-label">Level Score</div>';
+        html += '<div class="corr-feedback-level-badge">' + Math.round(Number(feedback.level)) + '</div>';
+        html += '<div class="corr-feedback-level-label">Score</div>';
         html += '</div>';
     }
 
