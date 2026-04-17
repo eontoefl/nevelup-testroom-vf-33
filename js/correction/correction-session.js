@@ -300,56 +300,56 @@ function _buildCardDeadlineHtml(submission, session) {
 
     // --- expired / skipped ---
     if (status === 'expired' || status === 'skipped') {
-        rows.push({ html: '❌ 1차 마감 초과', cls: 'overdue' });
+        rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
         return _wrapDeadlineRows(rows);
     }
 
     // --- complete / feedback2_ready+released_2 ---
     if (status === 'complete' || (status === 'feedback2_ready' && released2)) {
-        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
-        rows.push({ html: '✅ 2차 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 2차 완료', cls: 'completed' });
         return _wrapDeadlineRows(rows);
     }
 
     // --- feedback2_ready + released_2=false (최종 첨삭 검수중) ---
     if (status === 'feedback2_ready' && !released2) {
-        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
-        rows.push({ html: '✅ 2차 제출 완료', cls: 'completed' });
-        rows.push({ html: '곧 도착합니다', cls: 'waiting' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 2차 제출 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-spinner fa-pulse"></i> 곧 도착합니다', cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
 
     // --- draft2_submitted / feedback2_processing ---
     if (status === 'draft2_submitted' || status === 'feedback2_processing') {
-        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
-        rows.push({ html: '✅ 2차 제출 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 2차 제출 완료', cls: 'completed' });
         var est2 = _getEstimatedArrival(submission.draft_2_submitted_at);
-        rows.push({ html: '최종 첨삭 예상: ' + est2, cls: 'waiting' });
+        rows.push({ html: '<i class="fas fa-hourglass-half"></i> 최종 첨삭 예상: ' + est2, cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
 
     // --- feedback2_failed ---
     if (status === 'feedback2_failed') {
-        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
-        rows.push({ html: '✅ 2차 제출 완료', cls: 'completed' });
-        rows.push({ html: '첨삭 대기중', cls: 'waiting' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 2차 제출 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-hourglass-half"></i> 첨삭 대기중', cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
 
     // --- feedback1_ready + released_1=true (2차 단계) ---
     if (status === 'feedback1_ready' && released1) {
-        rows.push({ html: '✅ 1차 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
         var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
-            rows.push({ html: '❌ 2차 마감 초과', cls: 'overdue' });
+            rows.push({ html: '<i class="fas fa-times-circle"></i> 2차 마감 초과', cls: 'overdue' });
         } else {
             var totalMin2 = diff2 / (1000 * 60);
             if (totalMin2 < 10) {
-                rows.push({ html: '🔴 2차: ' + _formatDeadlineRemaining(diff2), cls: 'urgent', dynamic: 'draft2' });
+                rows.push({ html: '<i class="fas fa-exclamation-circle"></i> 2차: ' + _formatDeadlineRemaining(diff2), cls: 'urgent', dynamic: 'draft2' });
             } else {
-                rows.push({ html: '2차: ' + _formatDeadlineDateTime(dl2), cls: '' });
-                rows.push({ html: '⏰ ' + _formatDeadlineRemaining(diff2), cls: '', dynamic: 'draft2' });
+                rows.push({ html: '<i class="far fa-calendar-alt"></i> 2차: ' + _formatDeadlineDateTime(dl2) + ' 까지', cls: '' });
+                rows.push({ html: '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff2), cls: '', dynamic: 'draft2' });
             }
         }
         return _wrapDeadlineRows(rows);
@@ -357,23 +357,23 @@ function _buildCardDeadlineHtml(submission, session) {
 
     // --- feedback1_ready + released_1=false (검수중) ---
     if (status === 'feedback1_ready' && !released1) {
-        rows.push({ html: '✅ 1차 제출 완료', cls: 'completed' });
-        rows.push({ html: '곧 도착합니다', cls: 'waiting' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 제출 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-spinner fa-pulse"></i> 곧 도착합니다', cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
 
     // --- feedback1_failed ---
     if (status === 'feedback1_failed') {
-        rows.push({ html: '✅ 1차 제출 완료', cls: 'completed' });
-        rows.push({ html: '첨삭 대기중', cls: 'waiting' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 제출 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-hourglass-half"></i> 첨삭 대기중', cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
 
     // --- draft1_submitted / feedback1_processing ---
     if (status === 'draft1_submitted' || status === 'feedback1_processing') {
-        rows.push({ html: '✅ 1차 제출 완료', cls: 'completed' });
+        rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 제출 완료', cls: 'completed' });
         var est1 = _getEstimatedArrival(submission.draft_1_submitted_at);
-        rows.push({ html: '첨삭 도착 예상: ' + est1, cls: 'waiting' });
+        rows.push({ html: '<i class="fas fa-hourglass-half"></i> 첨삭 도착 예상: ' + est1, cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
 
@@ -382,14 +382,14 @@ function _buildCardDeadlineHtml(submission, session) {
         var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
-            rows.push({ html: '❌ 1차 마감 초과', cls: 'overdue' });
+            rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
         } else {
             var totalMin1 = diff1 / (1000 * 60);
             if (totalMin1 < 10) {
-                rows.push({ html: '🔴 1차: ' + _formatDeadlineRemaining(diff1), cls: 'urgent', dynamic: 'draft1' });
+                rows.push({ html: '<i class="fas fa-exclamation-circle"></i> 1차: ' + _formatDeadlineRemaining(diff1), cls: 'urgent', dynamic: 'draft1' });
             } else {
-                rows.push({ html: '1차: ' + _formatDeadlineDateTime(dl1), cls: '' });
-                rows.push({ html: '⏰ ' + _formatDeadlineRemaining(diff1), cls: '', dynamic: 'draft1' });
+                rows.push({ html: '<i class="far fa-calendar-alt"></i> 1차: ' + _formatDeadlineDateTime(dl1) + ' 까지', cls: '' });
+                rows.push({ html: '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff1), cls: '', dynamic: 'draft1' });
             }
         }
         return _wrapDeadlineRows(rows);
@@ -522,18 +522,18 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
         var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
-            deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue">❌ 1차 마감 초과</div>';
+            deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 1차 마감 초과</div>';
             return false;
         }
         var totalMin1 = diff1 / (1000 * 60);
         if (totalMin1 < 10) {
-            deadlineEl.innerHTML = '<div class="task-card-deadline-row urgent">🔴 1차: ' + _formatDeadlineRemaining(diff1) + '</div>';
+            deadlineEl.innerHTML = '<div class="task-card-deadline-row urgent"><i class="fas fa-exclamation-circle"></i> 1차: ' + _formatDeadlineRemaining(diff1) + '</div>';
             return true;
         }
         // 10분 이상 → 남은 시간 row만 갱신 (분 단위 변경 반영)
         var rows = deadlineEl.querySelectorAll('.task-card-deadline-row');
         if (rows.length >= 2) {
-            rows[1].innerHTML = '⏰ ' + _formatDeadlineRemaining(diff1);
+            rows[1].innerHTML = '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff1);
         }
         return true;
     }
@@ -544,22 +544,22 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             deadlineEl.innerHTML =
-                '<div class="task-card-deadline-row completed">✅ 1차 완료</div>' +
-                '<div class="task-card-deadline-row overdue">❌ 2차 마감 초과</div>';
+                '<div class="task-card-deadline-row completed"><i class="fas fa-check-circle"></i> 1차 완료</div>' +
+                '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 2차 마감 초과</div>';
             return false;
         }
         var totalMin2 = diff2 / (1000 * 60);
         if (totalMin2 < 10) {
             deadlineEl.innerHTML =
-                '<div class="task-card-deadline-row completed">✅ 1차 완료</div>' +
-                '<div class="task-card-deadline-row urgent">🔴 2차: ' + _formatDeadlineRemaining(diff2) + '</div>';
+                '<div class="task-card-deadline-row completed"><i class="fas fa-check-circle"></i> 1차 완료</div>' +
+                '<div class="task-card-deadline-row urgent"><i class="fas fa-exclamation-circle"></i> 2차: ' + _formatDeadlineRemaining(diff2) + '</div>';
             return true;
         }
         // 10분 이상 → 분 단위 갱신으로 충분하지만, 10분 진입 감지를 위해 계속 틱
         // (다만 표시 텍스트 갱신은 남은 시간 row만)
         var rows = deadlineEl.querySelectorAll('.task-card-deadline-row');
         if (rows.length >= 2) {
-            rows[1].innerHTML = '⏰ ' + _formatDeadlineRemaining(diff2);
+            rows[1].innerHTML = '<i class="fas fa-clock"></i> ' + _formatDeadlineRemaining(diff2);
         }
         return true;
     }
