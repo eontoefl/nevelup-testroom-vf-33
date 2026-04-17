@@ -146,10 +146,8 @@ class DiscussionComponent {
         const femaleStudent = this.FEMALE_STUDENT_PROFILES[Math.floor(Math.random() * this.FEMALE_STUDENT_PROFILES.length)];
         const maleStudent = this.MALE_STUDENT_PROFILES[Math.floor(Math.random() * this.MALE_STUDENT_PROFILES.length)];
         
-        // 순서 랜덤 (50% 확률)
-        const students = Math.random() < 0.5
-            ? [femaleStudent, maleStudent]
-            : [maleStudent, femaleStudent];
+        // student1 = 여학생, student2 = 남학생 고정
+        const students = [femaleStudent, maleStudent];
         
         return {
             professor: { image: professorImage, name: professorName },

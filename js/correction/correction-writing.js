@@ -133,7 +133,7 @@ function _getCorrRandomProfiles() {
     var profGender = Math.random() < 0.5 ? 'male' : 'female';
     var f = CORR_FEMALE_STUDENTS[Math.floor(Math.random() * CORR_FEMALE_STUDENTS.length)];
     var m = CORR_MALE_STUDENTS[Math.floor(Math.random() * CORR_MALE_STUDENTS.length)];
-    var students = Math.random() < 0.5 ? [f, m] : [m, f];
+    var students = [f, m]; // student1 = 여학생, student2 = 남학생 고정
     return {
         professor: {
             image: CORR_PROFESSOR_PROFILES[profGender],
