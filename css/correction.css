@@ -520,6 +520,7 @@
     font-size: 14px;
     line-height: 1.7;
     color: #444;
+    white-space: pre-line;
 }
 
 .corr-feedback-hint {
@@ -572,6 +573,7 @@
     font-size: 14px;
     line-height: 1.7;
     color: #444;
+    white-space: pre-line;
 }
 
 /* ================================================
@@ -1062,6 +1064,7 @@
     font-size: 13px;
     line-height: 1.7;
     color: var(--text-secondary, #64748b);
+    white-space: pre-line;
 }
 
 /* ================================================
@@ -1239,6 +1242,7 @@
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-primary, #1e293b);
+    white-space: pre-line;
 }
 
 .corr-spk-d2-fb-empty {
