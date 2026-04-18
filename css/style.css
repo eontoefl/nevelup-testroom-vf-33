@@ -1525,6 +1525,7 @@ body {
 .dot-done { background-color: var(--success-color); box-shadow: 0 0 8px rgba(119, 191, 126, 0.4); }
 .dot-partial { background-color: var(--warning-color); box-shadow: 0 0 8px rgba(255, 179, 71, 0.4); }
 .dot-none { background-color: #cbd5e1; }
+.dot-expired { background-color: var(--danger-color); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
 
 .day-tasks {
     font-size: 0.875rem;
