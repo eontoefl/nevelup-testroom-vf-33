@@ -599,6 +599,14 @@
     font-weight: 600;
 }
 
+.corr-feedback-level-desc {
+    flex: 1;
+    font-size: 12px;
+    color: #999;
+    line-height: 1.5;
+    text-align: right;
+}
+
 .corr-feedback-encouragement-card {
     background: #f0fdf4;
     border-radius: 12px;
