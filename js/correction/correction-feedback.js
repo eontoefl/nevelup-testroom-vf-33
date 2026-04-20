@@ -99,6 +99,14 @@ function renderFeedbackSummary(container, feedback) {
         html += '</div>';
     }
 
+    // 점수 변화 설명 (2차 피드백)
+    if (feedback.level_change) {
+        html += '<div class="corr-feedback-level-change-card">';
+        html += '<div class="corr-feedback-level-change-title"><i class="fas fa-chart-line"></i> 점수 변화 설명</div>';
+        html += '<div class="corr-feedback-level-change-text">' + _escapeHtml(feedback.level_change) + '</div>';
+        html += '</div>';
+    }
+
     container.innerHTML = html;
 }
 
