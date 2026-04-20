@@ -632,6 +632,31 @@
     white-space: pre-line;
 }
 
+.corr-feedback-level-change-card {
+    background: #f0f9ff;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 12px;
+}
+
+.corr-feedback-level-change-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #0369a1;
+    margin-bottom: 8px;
+}
+
+.corr-feedback-level-change-title i {
+    margin-right: 6px;
+}
+
+.corr-feedback-level-change-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #1e293b;
+    white-space: pre-line;
+}
+
 /* ================================================
    과제 상세 — failed 에러 메시지
    ================================================ */
