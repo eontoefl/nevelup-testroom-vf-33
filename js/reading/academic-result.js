@@ -11,7 +11,7 @@ function splitToMatchTranslations_ac(cleanContent, translationCount) {
     }
     
     if (cleanContent.includes('#|#') || cleanContent.includes('##')) {
-        let raw = cleanContent.replace(/<<([^>]+)>>/g, '$1');
+        let raw = cleanContent.replace(/<<([^>]+)>>/g, '$1').replace(/\[\[([^\]]+)\]\]/g, '$1');
         const sentences = raw.split(/(?:##|#\|\|#|#\|#)/).map(s => s.trim()).filter(s => s);
         if (sentences.length === translationCount) return sentences;
     }
@@ -109,7 +109,7 @@ function renderAcademicSetResult(setResult, setIdx, mode) {
     sentences.forEach((sentence, idx) => {
         const translation = translations[idx] || '';
         
-        let highlightedSentence = escapeHtml(sentence).replace(/\n/g, '<br>');
+        let highlightedSentence = escapeHtml(sentence).replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/\n/g, '<br>');
         if (setResult.passage.interactiveWords) {
             setResult.passage.interactiveWords.forEach(wordObj => {
                 const regex = new RegExp(`(?<![\w-])${wordObj.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\w-])`, 'gi');

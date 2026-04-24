@@ -152,6 +152,11 @@ class AcademicComponent {
             this.cleanupInsertion();
         }
 
+        // simplification 문장 하이라이트 토글
+        contentEl.querySelectorAll('.ac-simplification-sentence').forEach(el => {
+            el.classList.toggle('ac-simplification-active', type === 'simplification');
+        });
+
         // insertion 마커 표시/숨김 (renderPassage에서 이미 span으로 감싸놓음)
         contentEl.querySelectorAll('.ac-insertion-marker').forEach(el => {
             el.classList.toggle('ac-insertion-active', type === 'insertion');
