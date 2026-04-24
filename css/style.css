@@ -2276,6 +2276,26 @@ body {
     }
 }
 
+/* ── Simplification 문장: 비활성 (simplification 문제가 아닐 때) ── */
+.ac-simplification-sentence {
+    display: inline;
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    border-radius: 0;
+    transition: background-color 0.3s ease;
+}
+
+/* ── Simplification 문장: 활성 (simplification 문제일 때) ── */
+.ac-simplification-sentence.ac-simplification-active {
+    background-color: rgba(80, 201, 255, 0.45);
+    color: #191c1d;
+    font-weight: 600;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
 .insert-marker.selected {
     background: var(--success-color);
     border-color: var(--success-color);

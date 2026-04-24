@@ -81,6 +81,7 @@ function convertAcademicPassage(raw) {
     if (!raw) return '';
     return raw
         .replace(/<<([^>]+)>>/g, '<span class="ac-highlight-word">$1</span>')
+        .replace(/\[\[([^\]]+)\]\]/g, '<span class="ac-simplification-sentence">$1</span>')
         .replace(/#\|\|#/g, '\n')
         .replace(/#\|#/g, ' ')
         .replace(/##/g, '\n\n')
