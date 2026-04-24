@@ -101,7 +101,12 @@ function showAcademicResults(data, mode) {
 // 세트별 결과 렌더링
 function renderAcademicSetResult(setResult, setIdx, mode) {
     const rawContent = setResult.passage.contentRaw || setResult.passage.content;
-    const cleanContent = rawContent.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+    let cleanContent = rawContent.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+
+    // 마커 제거: insertion (A)~(D) + select_sentence {A}~{D}
+    cleanContent = cleanContent.replace(/\([A-D]\)\s*/g, '');
+    cleanContent = cleanContent.replace(/\{[A-D]\}\s*/g, '');
+
     const translations = setResult.passage.translations || [];
     const sentences = splitToMatchTranslations_ac(cleanContent, translations.length);
     

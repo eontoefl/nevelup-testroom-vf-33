@@ -2276,6 +2276,46 @@ body {
     }
 }
 
+/* ── Select Sentence 마커: 비활성 (select_sentence 문제가 아닐 때) ── */
+.ac-ss-marker {
+    display: none;
+}
+
+/* ── Select Sentence 마커: 활성 (select_sentence 문제일 때, 기본 상태) ── */
+.ac-ss-marker.ac-ss-active {
+    display: inline;
+    background: rgba(34, 139, 34, 0.08);
+    color: #1a7a1a;
+    font-weight: 600;
+    padding: 2px 8px;
+    border: 1px dashed rgba(34, 139, 34, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: inherit;
+}
+
+.ac-ss-marker.ac-ss-active:hover {
+    background: rgba(34, 139, 34, 0.15);
+    border-style: solid;
+}
+
+/* ── Select Sentence 마커: 선택된 상태 ── */
+.ac-ss-marker.ac-ss-active.ss-selected {
+    background: #1a7a1a;
+    color: #ffffff;
+    border: 1px solid #1a7a1a;
+    font-weight: 700;
+}
+
+/* ── 반응형: 모바일 select_sentence ── */
+@media (max-width: 768px) {
+    .ac-ss-marker.ac-ss-active {
+        padding: 2px 6px;
+        font-size: 14px;
+    }
+}
+
 /* ── Simplification 문장: 비활성 (simplification 문제가 아닐 때) ── */
 .ac-simplification-sentence {
     display: inline;
