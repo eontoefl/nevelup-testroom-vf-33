@@ -1,11 +1,12 @@
 /**
- * AcademicComponent.js v=008
+ * AcademicComponent.js v=009
  * 
  * Academic Reading 컴포넌트
  * - 세트당 5문제
  * - 지문 렌더링, 문제 로드, 선택지 처리
  * - 답안 채점 및 sessionStorage 저장
- * - Insertion 문제: 마커 클릭 → 문장 삽입 인터랙션
+ * - Insertion 문제: (A)~(D) 마커 클릭 → 문장 삽입 인터랙션
+ * - Select Sentence 문제: {A}~{D} 마커 → [A]~[D] 라벨 표시, 지문↔보기 양방향 동기화
  * - 타이머, 버튼 제어, 진행바는 Module Controller에서 관리
  */
 
@@ -122,19 +123,28 @@ class AcademicComponent {
             titleEl.innerHTML = passage.title || '';
         }
         if (contentEl) {
-            // 지문 렌더링 시 (A)~(D) 마커를 미리 span으로 감싸놓기 (기본 숨김)
+            // 지문 렌더링 시 마커를 미리 span으로 감싸놓기 (기본 숨김)
             // data-marker: A=1, B=2, C=3, D=4
             let html = passage.content || '';
+
+            // Insertion 마커: (A)~(D) → ac-insertion-marker (표시는 순수 알파벳)
             html = html.replace(/\(([A-D])\)/g, (match, letter) => {
                 const markerNum = letter.charCodeAt(0) - 64; // A=1, B=2, C=3, D=4
-                return `<span class="ac-insertion-marker" data-marker="${markerNum}">(${letter})</span>`;
+                return `<span class="ac-insertion-marker" data-marker="${markerNum}">${letter}</span>`;
             });
+
+            // Select Sentence 마커: {A}~{D} → ac-ss-marker (표시는 순수 알파벳)
+            html = html.replace(/\{([A-D])\}/g, (match, letter) => {
+                const markerNum = letter.charCodeAt(0) - 64; // A=1, B=2, C=3, D=4
+                return `<span class="ac-ss-marker" data-marker="${markerNum}">${letter}</span>`;
+            });
+
             contentEl.innerHTML = html;
         }
     }
 
     /**
-     * 지문 highlight/insertion 스타일 토글
+     * 지문 highlight/insertion/select_sentence 스타일 토글
      */
     updatePassageHighlight(question) {
         const contentEl = document.getElementById(this.passageContentId);
@@ -152,14 +162,24 @@ class AcademicComponent {
             this.cleanupInsertion();
         }
 
+        // select_sentence가 아닌 문제로 전환 시 — 마커 ss-selected 해제
+        if (type !== 'select_sentence') {
+            this.cleanupSelectSentence();
+        }
+
         // simplification 문장 하이라이트 토글
         contentEl.querySelectorAll('.ac-simplification-sentence').forEach(el => {
             el.classList.toggle('ac-simplification-active', type === 'simplification');
         });
 
-        // insertion 마커 표시/숨김 (renderPassage에서 이미 span으로 감싸놓음)
+        // insertion 마커 표시/숨김
         contentEl.querySelectorAll('.ac-insertion-marker').forEach(el => {
             el.classList.toggle('ac-insertion-active', type === 'insertion');
+        });
+
+        // select_sentence 마커 표시/숨김
+        contentEl.querySelectorAll('.ac-ss-marker').forEach(el => {
+            el.classList.toggle('ac-ss-active', type === 'select_sentence');
         });
     }
 
@@ -177,6 +197,67 @@ class AcademicComponent {
         contentEl.querySelectorAll('.ac-insertion-marker.selected').forEach(el => {
             el.classList.remove('selected');
         });
+    }
+
+    /**
+     * Select Sentence 관련 DOM 정리 (마커 ss-selected 해제)
+     */
+    cleanupSelectSentence() {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
+
+        contentEl.querySelectorAll('.ac-ss-marker.ss-selected').forEach(el => {
+            el.classList.remove('ss-selected');
+        });
+    }
+
+    /**
+     * Select Sentence 문제: 마커 클릭 인터랙션 설정
+     * - 이벤트 위임 방식으로 한 번만 등록
+     * - 마커 클릭 → 이전 선택 해제 → 현재 마커 ss-selected → 답안 저장 → 보기 동기화
+     */
+    setupSelectSentenceInteraction() {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
+
+        // 이전 리스너 제거
+        if (this._ssClickHandler) {
+            contentEl.removeEventListener('click', this._ssClickHandler);
+        }
+
+        this._ssClickHandler = (e) => {
+            const marker = e.target.closest('.ac-ss-marker.ac-ss-active');
+            if (!marker) return;
+
+            const markerNum = parseInt(marker.dataset.marker, 10);
+            if (!markerNum) return;
+
+            // 1. 이전 선택 해제
+            this.cleanupSelectSentence();
+
+            // 2. 현재 마커에 ss-selected 추가
+            marker.classList.add('ss-selected');
+
+            // 3. 답안 저장
+            this.answers[this.currentQuestion] = markerNum;
+
+            // 4. 우측 보기 동기화 (CSS 클래스 직접 조작 — selectOption 호출 안 함)
+            const options = document.querySelectorAll(`#${this.optionsId} .answer-option`);
+            options.forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === String(markerNum));
+            });
+        };
+
+        contentEl.addEventListener('click', this._ssClickHandler);
+
+        // 이전 답안 복원
+        const savedAnswer = this.answers[this.currentQuestion];
+        if (savedAnswer) {
+            const savedMarker = contentEl.querySelector(`.ac-ss-marker[data-marker="${savedAnswer}"]`);
+            if (savedMarker) {
+                savedMarker.classList.add('ss-selected');
+            }
+        }
     }
 
     /**
@@ -272,9 +353,24 @@ class AcademicComponent {
             return;
         }
 
-        const isInsertion = (question.questionType || 'normal') === 'insertion';
+        const qType = question.questionType || 'normal';
+        const isInsertion = qType === 'insertion';
+        const isSelectSentence = qType === 'select_sentence';
         
-        // highlight/insertion 지문 스타일 토글
+        // 이전 문제의 이벤트 리스너 공통 정리 (어떤 유형이든 안전하게)
+        const contentEl = document.getElementById(this.passageContentId);
+        if (contentEl) {
+            if (this._insertionClickHandler) {
+                contentEl.removeEventListener('click', this._insertionClickHandler);
+                this._insertionClickHandler = null;
+            }
+            if (this._ssClickHandler) {
+                contentEl.removeEventListener('click', this._ssClickHandler);
+                this._ssClickHandler = null;
+            }
+        }
+
+        // highlight/insertion/select_sentence 지문 스타일 토글
         this.updatePassageHighlight(question);
         
         // 질문 텍스트 (insertion 문제: "..." 를 박스로 표시)
@@ -294,16 +390,12 @@ class AcademicComponent {
                 container.innerHTML = '<p class="ac-insertion-hint">Click on a location in the passage to insert the sentence.</p>';
             }
             this.setupInsertionInteraction();
+        } else if (isSelectSentence) {
+            // Select Sentence 문제: 객관식 보기 + 지문 마커 인터랙션
+            this.renderOptions(question.options, questionIndex);
+            this.setupSelectSentenceInteraction();
         } else {
             // 일반 문제: 객관식 보기 렌더링
-            // 이전 insertion 이벤트 리스너 제거
-            if (this._insertionClickHandler) {
-                const contentEl = document.getElementById(this.passageContentId);
-                if (contentEl) {
-                    contentEl.removeEventListener('click', this._insertionClickHandler);
-                }
-                this._insertionClickHandler = null;
-            }
             this.renderOptions(question.options, questionIndex);
         }
     }
@@ -356,6 +448,21 @@ class AcademicComponent {
                 opt.classList.remove('selected');
             }
         });
+
+        // Select Sentence 문제: 지문 마커 동기화 (CSS 클래스 직접 조작)
+        const currentQ = this.currentSet.questions[this.currentQuestion];
+        if (currentQ && currentQ.questionType === 'select_sentence') {
+            const contentEl = document.getElementById(this.passageContentId);
+            if (contentEl) {
+                contentEl.querySelectorAll('.ac-ss-marker.ss-selected').forEach(el => {
+                    el.classList.remove('ss-selected');
+                });
+                const targetMarker = contentEl.querySelector(`.ac-ss-marker[data-marker="${value}"]`);
+                if (targetMarker) {
+                    targetMarker.classList.add('ss-selected');
+                }
+            }
+        }
     }
 
     /**
