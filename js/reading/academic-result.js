@@ -295,8 +295,8 @@ function _renderAcademicCorrectOrReviewed(answer, qIdx, setId, isCorrect, qType,
     // 유형 뱃지 (normal 제외)
     var badgeHTML = _renderTypeBadge(qType);
 
-    // "지문에서 확인하기" 버튼 (normal 제외)
-    var passageBtnHTML = _renderPassageCheckButton(qType, setIdx, qIdx, answer);
+    // "지문에서 확인하기" 버튼 (normal 제외) — 이미 정답 공개된 상태이므로 reveal 모드
+    var passageBtnHTML = _renderPassageCheckButton(qType, setIdx, qIdx, answer, false);
 
     // insertion 유형: 삽입 문장 박스 + 정답 위치
     var insertionInfoHTML = '';
@@ -343,7 +343,8 @@ function _renderAcademicRetryQuestion(answer, qIdx, setId, setIdx) {
     var userAnswerText = userOpt ? userOpt.label + ') ' + userOpt.text : '미응답';
 
     var badgeHTML = _renderTypeBadge(qType);
-    var passageBtnHTML = _renderPassageCheckButton(qType, setIdx, qIdx, answer);
+    // 재풀이 대상 → 힌트 모드 (정답 색상 숨김)
+    var passageBtnHTML = _renderPassageCheckButton(qType, setIdx, qIdx, answer, true);
     
     var optionBtnsHTML = '';
     if (Array.isArray(answer.options)) {
@@ -622,9 +623,10 @@ function _renderTypeBadge(qType) {
 // "지문에서 확인하기" 버튼 렌더링 (normal 제외)
 // ============================================================
 
-function _renderPassageCheckButton(qType, setIdx, qIdx, answer) {
+function _renderPassageCheckButton(qType, setIdx, qIdx, answer, isHintMode) {
     if (qType === 'normal') return '';
-    return '<button class="ac-res-btn-passage" onclick="_acShowInPassage(' + setIdx + ',' + qIdx + ',\'' + qType + '\',' + answer.correctAnswer + ',' + (answer.userAnswer || 0) + ',' + (answer.isCorrect ? 'true' : 'false') + ')">' +
+    var hintFlag = isHintMode ? 'true' : 'false';
+    return '<button class="ac-res-btn-passage" onclick="_acShowInPassage(' + setIdx + ',' + qIdx + ',\'' + qType + '\',' + answer.correctAnswer + ',' + (answer.userAnswer || 0) + ',' + (answer.isCorrect ? 'true' : 'false') + ',' + hintFlag + ')">' +
         '<i class="fas fa-search"></i> 지문에서 확인하기' +
     '</button>';
 }
@@ -633,7 +635,7 @@ function _renderPassageCheckButton(qType, setIdx, qIdx, answer) {
 // "지문에서 확인하기" 클릭 핸들러
 // ============================================================
 
-function _acShowInPassage(setIdx, qIdx, qType, correctAnswer, userAnswer, isCorrect) {
+function _acShowInPassage(setIdx, qIdx, qType, correctAnswer, userAnswer, isCorrect, isHintMode) {
     var setUniqueId = 'ac-set-' + setIdx;
     var passagePanel = document.getElementById(setUniqueId + '-passage');
     var markerLayer = document.getElementById(setUniqueId + '-marker-layer');
@@ -672,10 +674,13 @@ function _acShowInPassage(setIdx, qIdx, qType, correctAnswer, userAnswer, isCorr
             markerLayer.querySelectorAll('.ac-res-insertion-marker[data-set="' + setIdx + '"]').forEach(function(m) {
                 var mn = parseInt(m.dataset.marker, 10);
                 m.classList.add('ac-res-marker-active');
-                if (mn === correctAnswer) {
-                    m.classList.add('ac-res-marker-correct');
-                } else if (!isCorrect && mn === userAnswer) {
-                    m.classList.add('ac-res-marker-wrong');
+                if (!isHintMode) {
+                    // 해설 모드: 정답/오답 색상 표시
+                    if (mn === correctAnswer) {
+                        m.classList.add('ac-res-marker-correct');
+                    } else if (!isCorrect && mn === userAnswer) {
+                        m.classList.add('ac-res-marker-wrong');
+                    }
                 }
             });
             _acPassageHighlight = { setIdx: setIdx, qIdx: qIdx };
@@ -685,10 +690,13 @@ function _acShowInPassage(setIdx, qIdx, qType, correctAnswer, userAnswer, isCorr
             markerLayer.querySelectorAll('.ac-res-ss-marker[data-set="' + setIdx + '"]').forEach(function(m) {
                 var mn = parseInt(m.dataset.marker, 10);
                 m.classList.add('ac-res-marker-active');
-                if (mn === correctAnswer) {
-                    m.classList.add('ac-res-marker-correct');
-                } else if (!isCorrect && mn === userAnswer) {
-                    m.classList.add('ac-res-marker-wrong');
+                if (!isHintMode) {
+                    // 해설 모드: 정답/오답 색상 표시
+                    if (mn === correctAnswer) {
+                        m.classList.add('ac-res-marker-correct');
+                    } else if (!isCorrect && mn === userAnswer) {
+                        m.classList.add('ac-res-marker-wrong');
+                    }
                 }
             });
             _acPassageHighlight = { setIdx: setIdx, qIdx: qIdx };
