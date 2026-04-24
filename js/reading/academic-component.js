@@ -1,10 +1,11 @@
 /**
- * AcademicComponent.js v=007
+ * AcademicComponent.js v=008
  * 
  * Academic Reading 컴포넌트
  * - 세트당 5문제
  * - 지문 렌더링, 문제 로드, 선택지 처리
  * - 답안 채점 및 sessionStorage 저장
+ * - Insertion 문제: 마커 클릭 → 문장 삽입 인터랙션
  * - 타이머, 버튼 제어, 진행바는 Module Controller에서 관리
  */
 
@@ -122,8 +123,12 @@ class AcademicComponent {
         }
         if (contentEl) {
             // 지문 렌더링 시 (A)~(D) 마커를 미리 span으로 감싸놓기 (기본 숨김)
+            // data-marker: A=1, B=2, C=3, D=4
             let html = passage.content || '';
-            html = html.replace(/\(([A-D])\)/g, '<span class="ac-insertion-marker">($1)</span>');
+            html = html.replace(/\(([A-D])\)/g, (match, letter) => {
+                const markerNum = letter.charCodeAt(0) - 64; // A=1, B=2, C=3, D=4
+                return `<span class="ac-insertion-marker" data-marker="${markerNum}">(${letter})</span>`;
+            });
             contentEl.innerHTML = html;
         }
     }
@@ -142,10 +147,112 @@ class AcademicComponent {
             el.classList.toggle('ac-highlight-active', type === 'highlight');
         });
 
+        // insertion이 아닌 문제로 전환 시 — 삽입된 문장 제거 + 마커 selected 해제
+        if (type !== 'insertion') {
+            this.cleanupInsertion();
+        }
+
         // insertion 마커 표시/숨김 (renderPassage에서 이미 span으로 감싸놓음)
         contentEl.querySelectorAll('.ac-insertion-marker').forEach(el => {
             el.classList.toggle('ac-insertion-active', type === 'insertion');
         });
+    }
+
+    /**
+     * Insertion 관련 DOM 정리 (삽입 문장 제거 + 마커 selected 해제)
+     */
+    cleanupInsertion() {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
+
+        // 삽입된 문장 요소 제거
+        contentEl.querySelectorAll('.ac-inserted-sentence').forEach(el => el.remove());
+
+        // 마커 selected 해제
+        contentEl.querySelectorAll('.ac-insertion-marker.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+    }
+
+    /**
+     * Insertion 문제: 삽입 문장 텍스트 추출
+     * 질문 데이터에서 "..." (따옴표로 감싼 문장)을 추출
+     */
+    extractInsertionSentence(questionText) {
+        const match = questionText.match(/"([^"]+)"/);
+        return match ? match[1] : '';
+    }
+
+    /**
+     * Insertion 문제: 마커 클릭 인터랙션 설정
+     * - 이벤트 위임 방식으로 한 번만 등록
+     * - 마커 클릭 → 이전 삽입 제거 → 현재 마커 selected → 문장 삽입 → 답안 저장
+     */
+    setupInsertionInteraction() {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
+
+        const question = this.currentSet.questions[this.currentQuestion];
+        const sentenceText = this.extractInsertionSentence(question.question || '');
+
+        if (!sentenceText) {
+            console.warn('[AcademicComponent] insertion 문장을 추출할 수 없습니다');
+            return;
+        }
+
+        // 이벤트 위임: contentEl에 한 번만 리스너 등록
+        // 이전 리스너 제거를 위해 bound 함수를 저장
+        if (this._insertionClickHandler) {
+            contentEl.removeEventListener('click', this._insertionClickHandler);
+        }
+
+        this._insertionClickHandler = (e) => {
+            const marker = e.target.closest('.ac-insertion-marker.ac-insertion-active');
+            if (!marker) return;
+
+            const markerNum = parseInt(marker.dataset.marker, 10);
+            if (!markerNum) return;
+
+            this.applyInsertionSelection(marker, markerNum, sentenceText);
+        };
+
+        contentEl.addEventListener('click', this._insertionClickHandler);
+
+        // 이전 답안 복원
+        const savedAnswer = this.answers[this.currentQuestion];
+        if (savedAnswer) {
+            const savedMarker = contentEl.querySelector(`.ac-insertion-marker[data-marker="${savedAnswer}"]`);
+            if (savedMarker) {
+                this.applyInsertionSelection(savedMarker, savedAnswer, sentenceText);
+            }
+        }
+    }
+
+    /**
+     * Insertion 문제: 마커 선택 적용
+     * - 이전 삽입 제거 → 현재 마커 selected → 문장 삽입 → 답안 저장
+     */
+    applyInsertionSelection(marker, markerNum, sentenceText) {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
+
+        // 1. 이전 삽입 정리
+        this.cleanupInsertion();
+
+        // 2. 현재 마커에 selected 클래스 추가
+        marker.classList.add('selected');
+
+        // 3. 마커 바로 뒤에 삽입 문장 요소 추가
+        // <p> 안에서 안전하게 동작하도록 <span>을 사용 (CSS에서 display:block)
+        const insertedEl = document.createElement('span');
+        insertedEl.className = 'ac-inserted-sentence';
+        insertedEl.textContent = sentenceText;
+
+        // 마커 바로 뒤에 삽입
+        marker.insertAdjacentElement('afterend', insertedEl);
+
+        // 4. 답안 저장
+        this.answers[this.currentQuestion] = markerNum;
     }
 
     /**
@@ -159,6 +266,8 @@ class AcademicComponent {
             console.error(`[AcademicComponent] 문제 데이터 없음 - index: ${questionIndex}`);
             return;
         }
+
+        const isInsertion = (question.questionType || 'normal') === 'insertion';
         
         // highlight/insertion 지문 스타일 토글
         this.updatePassageHighlight(question);
@@ -167,14 +276,31 @@ class AcademicComponent {
         const questionTextEl = document.getElementById(this.questionId);
         if (questionTextEl) {
             let qText = question.question || '';
-            if ((question.questionType || 'normal') === 'insertion') {
-                qText = qText.replace(/"([^"]+)"/g, '<div class="ac-insertion-sentence">"$1"</div>');
+            if (isInsertion) {
+                qText = qText.replace(/"([^"]+)"/g, '<span class="ac-insertion-sentence">"$1"</span>');
             }
             questionTextEl.innerHTML = qText;
         }
         
-        // 선택지 렌더링
-        this.renderOptions(question.options, questionIndex);
+        if (isInsertion) {
+            // Insertion 문제: 객관식 보기 대신 안내 문구 표시
+            const container = document.getElementById(this.optionsId);
+            if (container) {
+                container.innerHTML = '<p class="ac-insertion-hint">Click on a location in the passage to insert the sentence.</p>';
+            }
+            this.setupInsertionInteraction();
+        } else {
+            // 일반 문제: 객관식 보기 렌더링
+            // 이전 insertion 이벤트 리스너 제거
+            if (this._insertionClickHandler) {
+                const contentEl = document.getElementById(this.passageContentId);
+                if (contentEl) {
+                    contentEl.removeEventListener('click', this._insertionClickHandler);
+                }
+                this._insertionClickHandler = null;
+            }
+            this.renderOptions(question.options, questionIndex);
+        }
     }
 
     /**

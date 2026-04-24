@@ -2189,29 +2189,91 @@ body {
     border-radius: 4px;
 }
 
+/* ── Insertion 마커: 비활성 (insertion 문제가 아닐 때) ── */
 .ac-insertion-marker {
     display: none;
 }
 
+/* ── Insertion 마커: 활성 (insertion 문제일 때, 기본 상태) ── */
 .ac-insertion-marker.ac-insertion-active {
     display: inline;
-    background-color: #FFF9C4;
-    font-weight: bold;
-    padding: 2px 6px;
-    border: 1px solid #F9A825;
+    background: rgba(0, 102, 136, 0.08);
+    color: #006688;
+    font-weight: 600;
+    padding: 2px 8px;
+    border: 1px dashed rgba(0, 102, 136, 0.3);
     border-radius: 4px;
-    color: #E65100;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: inherit;
 }
 
-/* Academic - insertion 문제 삽입 문장 박스 */
+.ac-insertion-marker.ac-insertion-active:hover {
+    background: rgba(0, 102, 136, 0.15);
+    border-style: solid;
+}
+
+/* ── Insertion 마커: 선택된 상태 ── */
+.ac-insertion-marker.ac-insertion-active.selected {
+    background: #006688;
+    color: #ffffff;
+    border: 1px solid #006688;
+    font-weight: 700;
+}
+
+/* ── 삽입된 문장 (지문 안에 인라인으로 나타나는 요소) ── */
+.ac-inserted-sentence {
+    display: inline;
+    background: rgba(0, 102, 136, 0.08);
+    color: #191c1d;
+    font-weight: 700;
+    padding: 2px 4px;
+    border-radius: 3px;
+    line-height: inherit;
+    transition: opacity 0.3s ease;
+}
+
+/* ── 질문 패널의 삽입 문장 박스 (리뉴얼) ── */
 .ac-insertion-sentence {
-    margin-top: 12px;
-    padding: 12px 16px;
-    background-color: #F3F4F6;
-    border-left: 4px solid #6366F1;
-    border-radius: 6px;
-    font-style: italic;
+    display: block;
+    background: rgba(0, 102, 136, 0.04);
+    border: 1px solid rgba(0, 102, 136, 0.15);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 24px 0 28px;
+    font-size: inherit;
+    line-height: 1.8;
+    color: #191c1d;
+}
+
+.ac-insertion-sentence::first-letter {
+    color: #006688;
+}
+
+/* ── 질문 패널 안내 문구 ── */
+.ac-insertion-hint {
+    font-size: 16px;
     line-height: 1.6;
+    color: #64748b;
+    font-weight: 400;
+    margin: 0;
+    padding: 0;
+}
+
+/* ── 반응형: 모바일 insertion ── */
+@media (max-width: 768px) {
+    .ac-insertion-marker.ac-insertion-active {
+        padding: 2px 6px;
+        font-size: 14px;
+    }
+
+    .ac-inserted-sentence {
+        padding: 2px 4px;
+    }
+
+    .ac-insertion-sentence {
+        padding: 12px 16px;
+    }
 }
 
 .insert-marker.selected {
