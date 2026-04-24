@@ -2178,15 +2178,15 @@ body {
 
 /* 🆕 Academic - highlight/insertion 문제 유형 스타일 */
 .ac-highlight-word {
-    transition: all 0.3s;
+    transition: background-color 0.3s ease;
 }
 
 .ac-highlight-word.ac-highlight-active {
-    background: #FFEB3B;
-    color: #000;
-    font-weight: 700;
+    background-color: rgba(80, 201, 255, 0.45);
+    color: #191c1d;
+    font-weight: 600;
     padding: 2px 4px;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
 .ac-insertion-marker {
