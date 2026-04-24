@@ -732,3 +732,291 @@
         font-size: 0.88rem;
     }
 }
+
+/* ============================================
+   Academic Result — 유형별 해설 스타일
+   v2: 뱃지, 지문확인 버튼, 마커 하이라이트, insertion 재풀이
+   ============================================ */
+
+/* ── 유형 뱃지 ── */
+.ac-res-type-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+    margin-right: 8px;
+    position: relative;
+    top: -1px;
+}
+
+.ac-res-badge-highlight {
+    background: rgba(148, 128, 197, 0.12);
+    color: #7c6bb5;
+    border: 1px solid rgba(148, 128, 197, 0.25);
+}
+
+.ac-res-badge-simplification {
+    background: rgba(80, 201, 255, 0.12);
+    color: #2a8ab5;
+    border: 1px solid rgba(80, 201, 255, 0.25);
+}
+
+.ac-res-badge-insertion {
+    background: rgba(0, 102, 136, 0.1);
+    color: #006688;
+    border: 1px solid rgba(0, 102, 136, 0.2);
+}
+
+.ac-res-badge-select_sentence {
+    background: rgba(34, 139, 34, 0.1);
+    color: #1a7a1a;
+    border: 1px solid rgba(34, 139, 34, 0.2);
+}
+
+/* ── "지문에서 확인하기" / "지문에서 다시 풀기" 버튼 ── */
+.ac-res-btn-passage {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    margin: 12px 0;
+    background: #f5f3fa;
+    color: #7c6bb5;
+    border: 1.5px solid #e0dce8;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ac-res-btn-passage:hover {
+    background: #ebe7f5;
+    border-color: #9480c5;
+    transform: translateY(-1px);
+}
+
+.ac-res-btn-passage:active {
+    transform: translateY(0);
+}
+
+.ac-res-btn-passage i {
+    font-size: 0.85rem;
+}
+
+.ac-res-btn-retry-insertion {
+    background: rgba(0, 102, 136, 0.06);
+    color: #006688;
+    border-color: rgba(0, 102, 136, 0.2);
+}
+
+.ac-res-btn-retry-insertion:hover {
+    background: rgba(0, 102, 136, 0.12);
+    border-color: #006688;
+}
+
+/* ── 지문 마커 레이어 ── */
+.ac-passage-marker-layer {
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    background: #faf9fd;
+    border-radius: 12px;
+    border: 1px solid #eae7f2;
+    font-size: 1.02rem;
+    line-height: 1.85;
+    color: #2d3436;
+}
+
+/* ── 마커 기본 (숨김) ── */
+.ac-res-highlight-word,
+.ac-res-simplification,
+.ac-res-insertion-marker,
+.ac-res-ss-marker {
+    /* 기본: 일반 텍스트처럼 보임 */
+    transition: all 0.3s ease;
+}
+
+/* ── highlight 활성화 ── */
+.ac-res-highlight-word.ac-res-highlight-active {
+    background-color: rgba(148, 128, 197, 0.2);
+    color: #5a4a8a;
+    font-weight: 600;
+    padding: 2px 4px;
+    border-radius: 4px;
+    border-bottom: 2px solid #9480c5;
+}
+
+/* ── simplification 활성화 ── */
+.ac-res-simplification.ac-res-simplification-active {
+    background-color: rgba(80, 201, 255, 0.2);
+    color: #1a6a8a;
+    font-weight: 500;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+/* ── insertion/select_sentence 마커 기본 (숨김) ── */
+.ac-res-insertion-marker,
+.ac-res-ss-marker {
+    display: none;
+}
+
+/* ── 마커 활성화 (보임) ── */
+.ac-res-insertion-marker.ac-res-marker-active,
+.ac-res-ss-marker.ac-res-marker-active {
+    display: inline-block;
+    background: rgba(100, 100, 120, 0.08);
+    color: #555;
+    font-weight: 600;
+    padding: 2px 10px;
+    border: 1.5px dashed rgba(100, 100, 120, 0.3);
+    border-radius: 5px;
+    margin: 0 3px;
+    font-size: 0.9em;
+    line-height: inherit;
+    vertical-align: baseline;
+}
+
+/* ── 마커 클릭 가능 (insertion 재풀이) ── */
+.ac-res-insertion-marker.ac-res-marker-clickable {
+    cursor: pointer;
+    border-style: dashed;
+    border-color: #006688;
+    color: #006688;
+    background: rgba(0, 102, 136, 0.06);
+}
+
+.ac-res-insertion-marker.ac-res-marker-clickable:hover {
+    background: rgba(0, 102, 136, 0.15);
+    border-style: solid;
+    transform: scale(1.05);
+}
+
+/* ── 마커 정답 (초록) ── */
+.ac-res-insertion-marker.ac-res-marker-correct,
+.ac-res-ss-marker.ac-res-marker-correct {
+    background: rgba(77, 175, 80, 0.15);
+    color: #2e7d32;
+    border: 1.5px solid #4caf50;
+    font-weight: 700;
+}
+
+/* ── 마커 오답 (빨강) ── */
+.ac-res-insertion-marker.ac-res-marker-wrong,
+.ac-res-ss-marker.ac-res-marker-wrong {
+    background: rgba(229, 115, 115, 0.15);
+    color: #c62828;
+    border: 1.5px solid #e57373;
+    font-weight: 600;
+    text-decoration: line-through;
+}
+
+/* ── insertion 삽입 문장 박스 (문제 카드 안) ── */
+.ac-res-insertion-box {
+    margin: 12px 0 16px;
+    padding: 16px 20px;
+    background: rgba(0, 102, 136, 0.04);
+    border: 1px solid rgba(0, 102, 136, 0.15);
+    border-radius: 10px;
+    border-left: 3px solid #006688;
+}
+
+.ac-res-insertion-box-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #006688;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+}
+
+.ac-res-insertion-box-label i {
+    margin-right: 4px;
+}
+
+.ac-res-insertion-box-text {
+    font-size: 0.98rem;
+    line-height: 1.7;
+    color: #2d3436;
+}
+
+/* ── insertion 재풀이 안내 ── */
+.ac-res-insertion-retry-guide {
+    margin-top: 12px;
+    text-align: center;
+}
+
+.ac-res-insertion-retry-guide p {
+    font-size: 0.9rem;
+    color: #636e72;
+    margin: 0 0 12px 0;
+}
+
+/* ── 플로팅 삽입 문장 (지문 상단) ── */
+.ac-res-floating-sentence {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 0 16px 0;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #006688 0%, #007fa3 100%);
+    color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 102, 136, 0.25);
+}
+
+.ac-res-floating-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.85;
+    margin-bottom: 6px;
+    letter-spacing: 0.03em;
+}
+
+.ac-res-floating-label i {
+    margin-right: 4px;
+}
+
+.ac-res-floating-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+    .ac-res-type-badge {
+        font-size: 0.65rem;
+        padding: 2px 8px;
+    }
+
+    .ac-res-btn-passage {
+        font-size: 0.82rem;
+        padding: 7px 12px;
+    }
+
+    .ac-passage-marker-layer {
+        padding: 14px 16px;
+        font-size: 0.95rem;
+    }
+
+    .ac-res-insertion-box {
+        padding: 12px 14px;
+    }
+
+    .ac-res-floating-sentence {
+        padding: 10px 14px;
+    }
+
+    .ac-res-floating-text {
+        font-size: 0.88rem;
+    }
+
+    .ac-res-insertion-marker.ac-res-marker-active,
+    .ac-res-ss-marker.ac-res-marker-active {
+        padding: 2px 7px;
+        font-size: 0.85em;
+    }
+}

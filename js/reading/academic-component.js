@@ -543,6 +543,7 @@ class AcademicComponent {
             
             setResults.answers.push({
                 questionNum: question.questionNum || `Q${index + 1}`,
+                questionType: question.questionType || 'normal',
                 question: question.question,
                 questionTranslation: question.questionTranslation || '',
                 options: question.options || [],
