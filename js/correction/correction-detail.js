@@ -512,7 +512,7 @@ function onCorrDetailDraft2Click(taskType) {
 
     // 2차 데드라인 초과 체크
     if (scheduleData && submission) {
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at);
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, submission.deadline_extended_hours);
         if (new Date() > dl2) {
             alert('2차 수정 마감이 지났습니다.');
             return;
@@ -601,10 +601,10 @@ function _renderCorrDetailDeadlineBanner(session, submission) {
 
     if (isDraft2Phase) {
         var feedback1At = submission ? submission.feedback_1_at : null;
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, feedback1At);
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, feedback1At, (submission && submission.deadline_extended_hours) || 0);
         renderDeadlineBanner(bannerEl, '2차 마감', dl2);
     } else {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
         renderDeadlineBanner(bannerEl, '1차 마감', dl1);
     }
 }

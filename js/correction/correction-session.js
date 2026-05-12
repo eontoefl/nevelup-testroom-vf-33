@@ -89,7 +89,7 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         var state = window._correctionSessionState;
         var scheduleData = state ? state.scheduleData : null;
         if (scheduleData) {
-            var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
+            var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
             if (new Date() > dl1) {
                 statusInfo = {
                     text: '마감됨 · 제출 불가',
@@ -208,10 +208,11 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
 /**
  * 1차 Draft 데드라인: sessionDate 다음날 04:00
  */
-function getCorrDraft1Deadline(startDate, dayOffset) {
+function getCorrDraft1Deadline(startDate, dayOffset, extendedHours) {
     var base = new Date(startDate + 'T00:00:00');
     base.setDate(base.getDate() + dayOffset + 1);
     base.setHours(4, 0, 0, 0);
+    if (extendedHours) base.setHours(base.getHours() + extendedHours);
     return base;
 }
 
@@ -219,16 +220,18 @@ function getCorrDraft1Deadline(startDate, dayOffset) {
  * 2차 Draft 데드라인: max(스케줄상 마감, feedback_1_at + 24시간)
  * 스케줄상 2차: dayOffset+1일의 다음날 04:00
  */
-function getCorrDraft2Deadline(startDate, dayOffset, feedback1At) {
+function getCorrDraft2Deadline(startDate, dayOffset, feedback1At, extendedHours) {
     // 스케줄 기반
     var base = new Date(startDate + 'T00:00:00');
     base.setDate(base.getDate() + dayOffset + 2);
     base.setHours(4, 0, 0, 0);
+    if (extendedHours) base.setHours(base.getHours() + extendedHours);
 
     // feedback_1_at + 24시간
     if (feedback1At) {
         var fbDeadline = new Date(feedback1At);
         fbDeadline.setHours(fbDeadline.getHours() + 24);
+        if (extendedHours) fbDeadline.setHours(fbDeadline.getHours() + extendedHours);
         if (fbDeadline > base) return fbDeadline;
     }
     return base;
@@ -339,7 +342,7 @@ function _buildCardDeadlineHtml(submission, session) {
     // --- feedback1_ready + released_1=true (2차 단계) ---
     if (status === 'feedback1_ready' && released1) {
         rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at);
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, submission.deadline_extended_hours);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 2차 마감 초과', cls: 'overdue' });
@@ -374,7 +377,7 @@ function _buildCardDeadlineHtml(submission, session) {
 
     // --- 미제출 (null) ---
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
@@ -510,7 +513,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
 
     // 미제출 → 1차 마감 카운트다운
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset);
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 1차 마감 초과</div>';
@@ -527,7 +530,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
 
     // feedback1_ready + released_1 → 2차 마감 카운트다운
     if (status === 'feedback1_ready' && released1) {
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at);
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, submission.deadline_extended_hours);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             deadlineEl.innerHTML =
