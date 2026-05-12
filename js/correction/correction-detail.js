@@ -57,7 +57,7 @@ async function openCorrectionDetail(taskType, session, submission) {
     if (headerEl) headerEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0') + ' · ' + taskLabel;
 
     // 데드라인 배너 (과제 상세)
-    _renderCorrDetailDeadlineBanner(session, submission);
+    _renderCorrDetailDeadlineBanner(session, submission, taskType);
 
     // 아코디언 렌더링
     var accordionEl = document.getElementById('corrDetailAccordion');
@@ -512,7 +512,9 @@ function onCorrDetailDraft2Click(taskType) {
 
     // 2차 데드라인 초과 체크
     if (scheduleData && submission) {
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, submission.deadline_extended_hours);
+        var extMap = sessionState.extensionMap || {};
+        var extHours = extMap[session.session + '_' + taskType] || 0;
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, extHours);
         if (new Date() > dl2) {
             alert('2차 수정 마감이 지났습니다.');
             return;
@@ -549,12 +551,12 @@ function backFromCorrectionDetail() {
                 newMap[sub.session_number + '_' + category] = sub;
             });
             sessionState.submissionMap = newMap;
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap);
+            openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap, sessionState.extensionMap);
         }).catch(function() {
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap);
+            openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
         });
     } else {
-        openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap);
+        openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
     }
 }
 
@@ -566,7 +568,7 @@ function backFromCorrectionDetail() {
  * 과제 상세 데드라인 배너 렌더링
  * correction-session.js의 renderDeadlineBanner, getCorrDraft1/2Deadline 재사용
  */
-function _renderCorrDetailDeadlineBanner(session, submission) {
+function _renderCorrDetailDeadlineBanner(session, submission, taskType) {
     var bannerEl = document.getElementById('corrDetailDeadlineBanner');
     if (!bannerEl) return;
 
@@ -585,6 +587,8 @@ function _renderCorrDetailDeadlineBanner(session, submission) {
     }
 
     var scheduleData = sessionState.scheduleData;
+    var extMap = sessionState.extensionMap || {};
+    var extHours = extMap[session.session + '_' + (taskType || 'writing')] || 0;
 
     // 2차 단계인지 판별
     var isDraft2Phase = false;
@@ -601,10 +605,10 @@ function _renderCorrDetailDeadlineBanner(session, submission) {
 
     if (isDraft2Phase) {
         var feedback1At = submission ? submission.feedback_1_at : null;
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, feedback1At, (submission && submission.deadline_extended_hours) || 0);
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, feedback1At, extHours);
         renderDeadlineBanner(bannerEl, '2차 마감', dl2);
     } else {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
         renderDeadlineBanner(bannerEl, '1차 마감', dl1);
     }
 }

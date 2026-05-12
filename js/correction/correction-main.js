@@ -67,6 +67,30 @@ async function renderCorrectionSchedule() {
         submissionMap[sub.session_number + '_' + category] = sub;
     });
 
+    // 3. correction_deadline_extensions에서 마감 연장 조회
+    var extensions = [];
+    try {
+        extensions = await supabaseSelect(
+            'correction_deadline_extensions',
+            'user_id=eq.' + user.id + '&select=session_number,task_type,extended_hours'
+        );
+    } catch (e) {
+        console.warn('⚠️ [Correction] 마감 연장 조회 실패:', e);
+    }
+
+    // extensionMap 빌드 (이중 키: 원본 + 카테고리)
+    var extensionMap = {};
+    if (extensions && extensions.length > 0) {
+        extensions.forEach(function(ext) {
+            // 원본 키: "1_writing_email"
+            extensionMap[ext.session_number + '_' + ext.task_type] = ext.extended_hours;
+            // 카테고리 키: "1_writing"
+            var category = ext.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
+            extensionMap[ext.session_number + '_' + category] = ext.extended_hours;
+        });
+        console.log('📋 [Correction] 마감 연장:', Object.keys(extensionMap).length + '건');
+    }
+
     console.log('📋 [Correction] 렌더링 시작 — start_date:', scheduleData.start_date, ', sessions:', schedule.length);
 
     // 3. 주차별 그룹핑
@@ -131,7 +155,7 @@ async function renderCorrectionSchedule() {
 
             dayButton.onclick = function() {
                 console.log('🎯 [Correction] Session ' + session.session + ' 선택');
-                openCorrectionSession(session, scheduleData, submissionMap);
+                openCorrectionSession(session, scheduleData, submissionMap, extensionMap);
             };
 
             daysGrid.appendChild(dayButton);

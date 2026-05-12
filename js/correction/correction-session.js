@@ -20,14 +20,15 @@ window._correctionSessionState = null;
  * @param {object} scheduleData - correction_schedules 행 { start_date, duration_weeks }
  * @param {object} submissionMap - 전체 제출 상태 맵
  */
-function openCorrectionSession(session, scheduleData, submissionMap) {
+function openCorrectionSession(session, scheduleData, submissionMap, extensionMap) {
     console.log('📋 [Correction] 세션 상세 열기: Session', session.session);
 
     // 상태 저장
     window._correctionSessionState = {
         session: session,
         scheduleData: scheduleData,
-        submissionMap: submissionMap
+        submissionMap: submissionMap,
+        extensionMap: extensionMap || {}
     };
 
     // 화면 전환
@@ -89,7 +90,9 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         var state = window._correctionSessionState;
         var scheduleData = state ? state.scheduleData : null;
         if (scheduleData) {
-            var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
+            var extMap = state.extensionMap || {};
+            var extHours = extMap[session.session + '_' + taskType] || 0;
+            var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
             if (new Date() > dl1) {
                 statusInfo = {
                     text: '마감됨 · 제출 불가',
@@ -106,7 +109,7 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
     var iconBgClass = taskType === 'writing' ? 'writing' : 'speaking';
 
     // 마감 정보 HTML
-    var deadlineHtml = _buildCardDeadlineHtml(submission, session);
+    var deadlineHtml = _buildCardDeadlineHtml(submission, session, taskType);
 
     container.innerHTML =
         '<div class="task-card-header">' +
@@ -290,10 +293,13 @@ function _formatTimeHHMM(date) {
  * @param {object} session
  * @returns {string} HTML
  */
-function _buildCardDeadlineHtml(submission, session) {
+function _buildCardDeadlineHtml(submission, session, taskType) {
     var state = window._correctionSessionState;
     var scheduleData = state ? state.scheduleData : null;
     if (!scheduleData) return '';
+
+    var extMap = state.extensionMap || {};
+    var extHours = extMap[session.session + '_' + (taskType || 'writing')] || 0;
 
     var status = submission ? submission.status : null;
     var released1 = submission ? submission.released_1 : false;
@@ -342,7 +348,7 @@ function _buildCardDeadlineHtml(submission, session) {
     // --- feedback1_ready + released_1=true (2차 단계) ---
     if (status === 'feedback1_ready' && released1) {
         rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, submission.deadline_extended_hours);
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, extHours);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 2차 마감 초과', cls: 'overdue' });
@@ -377,7 +383,7 @@ function _buildCardDeadlineHtml(submission, session) {
 
     // --- 미제출 (null) ---
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
@@ -469,8 +475,8 @@ function _startCardDeadlineTimer() {
 
         var needsTick = false;
 
-        needsTick = _updateCardDeadlineEl('corrWritingCard', writingSub, session, scheduleData) || needsTick;
-        needsTick = _updateCardDeadlineEl('corrSpeakingCard', speakingSub, session, scheduleData) || needsTick;
+        needsTick = _updateCardDeadlineEl('corrWritingCard', writingSub, session, scheduleData, 'writing') || needsTick;
+        needsTick = _updateCardDeadlineEl('corrSpeakingCard', speakingSub, session, scheduleData, 'speaking') || needsTick;
 
         // 동적 갱신이 필요한 카드가 없으면 타이머 해제
         if (!needsTick) {
@@ -488,8 +494,8 @@ function _startCardDeadlineTimer() {
     var wSub = sm[session.session + '_writing'] || null;
     var sSub = sm[session.session + '_speaking'] || null;
 
-    var needs = _updateCardDeadlineEl('corrWritingCard', wSub, session, sd) ||
-                _updateCardDeadlineEl('corrSpeakingCard', sSub, session, sd);
+    var needs = _updateCardDeadlineEl('corrWritingCard', wSub, session, sd, 'writing') ||
+                _updateCardDeadlineEl('corrSpeakingCard', sSub, session, sd, 'speaking');
 
     if (needs) {
         _corrDeadlineTimerId = setInterval(tick, 1000);
@@ -500,12 +506,16 @@ function _startCardDeadlineTimer() {
  * 개별 카드의 마감 영역 동적 갱신
  * @returns {boolean} 계속 틱이 필요한지
  */
-function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
+function _updateCardDeadlineEl(containerId, submission, session, scheduleData, taskType) {
     var container = document.getElementById(containerId);
     if (!container) return false;
 
     var deadlineEl = container.querySelector('.task-card-deadline');
     if (!deadlineEl) return false;
+
+    var state = window._correctionSessionState;
+    var extMap = state ? (state.extensionMap || {}) : {};
+    var extHours = extMap[session.session + '_' + (taskType || 'writing')] || 0;
 
     var status = submission ? submission.status : null;
     var released1 = submission ? submission.released_1 : false;
@@ -513,7 +523,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
 
     // 미제출 → 1차 마감 카운트다운
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, (submission && submission.deadline_extended_hours) || 0);
+        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 1차 마감 초과</div>';
@@ -530,7 +540,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData) {
 
     // feedback1_ready + released_1 → 2차 마감 카운트다운
     if (status === 'feedback1_ready' && released1) {
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, submission.deadline_extended_hours);
+        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, extHours);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             deadlineEl.innerHTML =

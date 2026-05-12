@@ -537,7 +537,7 @@ async function getCorrectionSubmissions(userId) {
     console.log('📋 [Correction] 제출 내역 조회:', userId);
     var rows = await supabaseSelect(
         'correction_submissions',
-        'user_id=eq.' + userId + '&select=id,session_number,task_type,task_number,status,feedback_1_status,feedback_2_status,released_1,released_2,draft_1_submitted_at,feedback_1_at,draft_2_submitted_at,feedback_2_at,deadline_extended_hours'
+        'user_id=eq.' + userId + '&select=id,session_number,task_type,task_number,status,feedback_1_status,feedback_2_status,released_1,released_2,draft_1_submitted_at,feedback_1_at,draft_2_submitted_at,feedback_2_at'
     );
     console.log('📋 [Correction] 제출 내역:', (rows ? rows.length : 0) + '건');
     return rows || [];

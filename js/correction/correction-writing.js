@@ -762,7 +762,8 @@ function backToCorrectionSession() {
         openCorrectionSession(
             sessionState.session,
             sessionState.scheduleData,
-            sessionState.submissionMap
+            sessionState.submissionMap,
+            sessionState.extensionMap
         );
     } else {
         showScreen('scheduleScreen');
@@ -788,12 +789,12 @@ function _returnToCorrectionSession() {
                 newMap[sub.session_number + '_' + category] = sub;
             });
             sessionState.submissionMap = newMap;
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap);
+            openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap, sessionState.extensionMap);
         }).catch(function() {
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap);
+            openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
         });
     } else {
-        openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap);
+        openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
     }
 }
 
