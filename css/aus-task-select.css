@@ -43,7 +43,10 @@
     color: var(--text-secondary);
 }
 
-/* 선택 패널 — Ethereal 디자인 (explain-select-panel 참고) */
+/* ============================= */
+/* 선택 패널                       */
+/* ============================= */
+
 .aus-select-panel {
     display: flex;
     flex-direction: column;
@@ -71,7 +74,10 @@
     flex-wrap: wrap;
 }
 
-/* 선택 버튼 */
+/* ============================= */
+/* 공통 카드 베이스                 */
+/* ============================= */
+
 .aus-select-btn {
     flex: 0 1 320px;
     display: flex;
@@ -100,7 +106,7 @@
     transform: translateY(0);
 }
 
-/* 아이콘 배지 */
+/* 해설보기 카드 아이콘 */
 .aus-select-btn-icon {
     width: 60px;
     height: 60px;
@@ -113,19 +119,11 @@
     margin-bottom: 5px;
 }
 
-/* 문제풀기 아이콘 배경 */
-#ausSelectBtnSolve .aus-select-btn-icon {
-    background-color: #eef2ff;
-    color: #6366f1;
-}
-
-/* 해설보기 아이콘 배경 */
 #ausSelectBtnExplain .aus-select-btn-icon {
     background-color: #fdf2f2;
     color: #e5a08d;
 }
 
-/* 버튼 라벨 */
 .aus-select-btn-label {
     font-size: 1.1rem;
     font-weight: 600;
@@ -134,12 +132,99 @@
     margin-top: 15px;
 }
 
-/* 버튼 설명 */
 .aus-select-btn-desc {
     font-size: 0.85rem;
     font-weight: 400;
     color: var(--text-secondary);
     margin-top: 6px;
+}
+
+/* ============================= */
+/* 분할 카드 (다시풀기 | 실전풀이)  */
+/* ============================= */
+
+.aus-select-btn--split {
+    flex-direction: row;
+    padding: 0;
+    gap: 0;
+    cursor: default;
+    overflow: hidden;
+}
+
+/* 분할 카드는 hover 시 카드 자체가 올라가지 않음 */
+.aus-select-btn--split:hover {
+    transform: none;
+    box-shadow: 0 10px 25px rgba(148, 128, 197, 0.08),
+                0 4px 10px rgba(0, 0, 0, 0.02);
+}
+
+/* 좌우 반쪽 버튼 */
+.aus-split-half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px 16px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s ease;
+    position: relative;
+}
+
+.aus-split-half:hover {
+    background: rgba(148, 128, 197, 0.04);
+}
+
+.aus-split-half:active {
+    background: rgba(148, 128, 197, 0.10);
+}
+
+/* 구분선 */
+.aus-split-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 28px 0;
+    background: var(--border-color);
+    flex-shrink: 0;
+}
+
+/* 분할 아이콘 */
+.aus-split-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/* 다시풀기 아이콘 */
+.aus-split-left .aus-split-icon {
+    background-color: #f0fdf4;
+    color: #22c55e;
+}
+
+/* 실전풀이 아이콘 */
+.aus-split-right .aus-split-icon {
+    background-color: #eef2ff;
+    color: #6366f1;
+}
+
+/* 분할 라벨 */
+.aus-split-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2d3748;
+    letter-spacing: -0.01em;
+    text-align: center;
+    line-height: 1.4;
 }
 
 /* ============================= */
@@ -168,6 +253,15 @@
         height: auto;
         min-height: 180px;
         padding: 24px 20px;
+    }
+
+    .aus-select-btn--split {
+        padding: 0;
+        min-height: 160px;
+    }
+
+    .aus-split-half {
+        padding: 20px 12px;
     }
 
     .aus-select-header {

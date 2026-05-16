@@ -959,11 +959,19 @@
         <div class="aus-select-panel">
             <p class="aus-select-prompt">학습 방법을 선택해 주세요</p>
             <div class="aus-select-buttons">
-                <button class="aus-select-btn" id="ausSelectBtnSolve">
-                    <span class="aus-select-btn-icon"><i class="fa-solid fa-pen-to-square"></i></span>
-                    <span class="aus-select-btn-label">문제풀기 바로가기</span>
-                    <span class="aus-select-btn-desc">문제를 직접 풀어봅니다</span>
-                </button>
+                <!-- 문제풀기 카드: 좌우 분할 (다시풀기 | 실전풀이) -->
+                <div class="aus-select-btn aus-select-btn--split">
+                    <button class="aus-split-half aus-split-left" id="ausSelectBtnRetry">
+                        <span class="aus-split-icon"><i class="fa-solid fa-rotate-right"></i></span>
+                        <span class="aus-split-label">다시풀기</span>
+                    </button>
+                    <div class="aus-split-divider"></div>
+                    <button class="aus-split-half aus-split-right" id="ausSelectBtnSolve">
+                        <span class="aus-split-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+                        <span class="aus-split-label">실전풀이<br>바로가기</span>
+                    </button>
+                </div>
+                <!-- 해설보기 카드 -->
                 <button class="aus-select-btn" id="ausSelectBtnExplain">
                     <span class="aus-select-btn-icon"><i class="fa-solid fa-book-open"></i></span>
                     <span class="aus-select-btn-label">해설보기</span>

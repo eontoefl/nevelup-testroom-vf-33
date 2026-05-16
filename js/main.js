@@ -392,11 +392,20 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
         };
     }
     
-    // 문제풀기 버튼
+    // 실전풀이 바로가기 버튼
     var solveBtn = document.getElementById('ausSelectBtnSolve');
     if (solveBtn) {
         solveBtn.onclick = function() {
-            console.log('[Australia] 문제풀기 선택: ' + taskName);
+            console.log('[Australia] 실전풀이 바로가기 선택: ' + taskName);
+            _showAusPreparing();
+        };
+    }
+    
+    // 다시풀기 버튼
+    var retryBtn = document.getElementById('ausSelectBtnRetry');
+    if (retryBtn) {
+        retryBtn.onclick = function() {
+            console.log('[Australia] 다시풀기 선택: ' + taskName);
             _showAusPreparing();
         };
     }
