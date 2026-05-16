@@ -174,65 +174,67 @@ function renderAustraliaSchedule(program) {
     var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     
     for (var week = 1; week <= totalWeeks; week++) {
-        var weekBlock = document.createElement('div');
-        weekBlock.className = 'week-block';
-        
-        var weekHeader = document.createElement('div');
-        weekHeader.className = 'week-header';
-        
-        var weekTitle = document.createElement('h2');
-        weekTitle.className = 'week-title';
-        weekTitle.textContent = 'Week ' + String(week).padStart(2, '0');
-        
-        var weekDivider = document.createElement('div');
-        weekDivider.className = 'week-divider';
-        
-        weekHeader.appendChild(weekTitle);
-        weekHeader.appendChild(weekDivider);
-        
-        var daysGrid = document.createElement('div');
-        daysGrid.className = 'days-grid';
-        
-        var dayMapping = {
-            '일': 'sunday', '월': 'monday', '화': 'tuesday',
-            '수': 'wednesday', '목': 'thursday', '금': 'friday'
-        };
-        
-        daysOfWeek.forEach(function(dayKr, dayIndex) {
-            var dayEn = dayMapping[dayKr];
-            var dayButton = document.createElement('button');
-            dayButton.className = 'day-button';
+        (function(w) {
+            var weekBlock = document.createElement('div');
+            weekBlock.className = 'week-block';
             
-            var tasks = getAusDayTasks(programType, week, dayEn);
+            var weekHeader = document.createElement('div');
+            weekHeader.className = 'week-header';
             
-            dayButton.onclick = function() {
-                selectAustraliaDay(week, dayKr, dayEn);
+            var weekTitle = document.createElement('h2');
+            weekTitle.className = 'week-title';
+            weekTitle.textContent = 'Week ' + String(w).padStart(2, '0');
+            
+            var weekDivider = document.createElement('div');
+            weekDivider.className = 'week-divider';
+            
+            weekHeader.appendChild(weekTitle);
+            weekHeader.appendChild(weekDivider);
+            
+            var daysGrid = document.createElement('div');
+            daysGrid.className = 'days-grid';
+            
+            var dayMapping = {
+                '일': 'sunday', '월': 'monday', '화': 'tuesday',
+                '수': 'wednesday', '목': 'thursday', '금': 'friday'
             };
             
-            var dateStr = '';
-            if (startDate) {
-                var d = new Date(startDate);
-                d.setDate(d.getDate() + (week - 1) * 7 + dayIndex);
-                dateStr = monthNames[d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0');
-            }
+            daysOfWeek.forEach(function(dayKr, dayIndex) {
+                var dayEn = dayMapping[dayKr];
+                var dayButton = document.createElement('button');
+                dayButton.className = 'day-button';
+                
+                var tasks = getAusDayTasks(programType, w, dayEn);
+                
+                dayButton.onclick = function() {
+                    selectAustraliaDay(w, dayKr, dayEn);
+                };
+                
+                var dateStr = '';
+                if (startDate) {
+                    var d = new Date(startDate);
+                    d.setDate(d.getDate() + (w - 1) * 7 + dayIndex);
+                    dateStr = monthNames[d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0');
+                }
+                
+                dayButton.innerHTML =
+                    '<span class="day-name">' + dayEnShort[dayKr] + '</span>' +
+                    '<div class="progress-dot dot-none"></div>' +
+                    '<span class="day-tasks">' + dateStr + '</span>';
+                
+                if (tasks.length === 0) {
+                    dayButton.style.opacity = '0.5';
+                    dayButton.style.cursor = 'default';
+                    dayButton.onclick = null;
+                }
+                
+                daysGrid.appendChild(dayButton);
+            });
             
-            dayButton.innerHTML =
-                '<span class="day-name">' + dayEnShort[dayKr] + '</span>' +
-                '<div class="progress-dot dot-none"></div>' +
-                '<span class="day-tasks">' + dateStr + '</span>';
-            
-            if (tasks.length === 0) {
-                dayButton.style.opacity = '0.5';
-                dayButton.style.cursor = 'default';
-                dayButton.onclick = null;
-            }
-            
-            daysGrid.appendChild(dayButton);
-        });
-        
-        weekBlock.appendChild(weekHeader);
-        weekBlock.appendChild(daysGrid);
-        container.appendChild(weekBlock);
+            weekBlock.appendChild(weekHeader);
+            weekBlock.appendChild(daysGrid);
+            container.appendChild(weekBlock);
+        })(week);
     }
 }
 
@@ -296,9 +298,9 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
             var icon = 'fas fa-book';
             var description = taskName;
             
-            if (taskName.includes('단어')) {
+            if (taskName.includes('내벨업보카')) {
                 icon = 'fas fa-spell-check';
-                description = '단어 학습';
+                description = '단어 시험';
             } else if (taskName.includes('입문서') || taskName.includes('일문서')) {
                 icon = 'fas fa-book-reader';
                 description = 'PDF 읽기';
