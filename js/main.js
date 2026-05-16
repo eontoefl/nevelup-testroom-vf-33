@@ -327,6 +327,9 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
                     if (!currentTest.currentWeek) currentTest.currentWeek = week;
                     if (!currentTest.currentDay) currentTest.currentDay = dayKr;
                     executeTask(taskName);
+                } else if (_isAusSelectableTask(taskName)) {
+                    // 리딩/리스닝/통스/토라 → 문제풀기·해설보기 선택 화면
+                    _showAusTaskSelectScreen(taskName, week, dayKr);
                 } else {
                     _showAusPreparing();
                 }
@@ -340,6 +343,75 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
             sectionsGrid.appendChild(card);
         });
     }
+}
+
+/**
+ * Australia 과제가 선택 화면(문제풀기/해설보기) 대상인지 판별
+ * 리딩, 리스닝, 통스, 토라(통라)만 대상
+ */
+function _isAusSelectableTask(taskName) {
+    if (taskName.includes('리딩')) return true;
+    if (taskName.includes('리스닝')) return true;
+    if (taskName.includes('통스')) return true;
+    if (taskName.includes('토라') || taskName.includes('통라')) return true;
+    return false;
+}
+
+/**
+ * Australia 과제 선택 화면 표시 (문제풀기 바로가기 / 해설보기)
+ * explain-viewer의 실전풀이/다시풀기 선택 화면과 동일 UX — 별도 screen으로 전환
+ */
+function _showAusTaskSelectScreen(taskName, week, dayKr) {
+    console.log('[Australia] task select: ' + taskName + ' (Week ' + week + ' ' + dayKr + ')');
+    
+    // 아이콘·타입 결정
+    var iconEmoji = '📚';
+    if (taskName.includes('리딩')) iconEmoji = '📖';
+    else if (taskName.includes('리스닝')) iconEmoji = '🎧';
+    else if (taskName.includes('통스')) iconEmoji = '🎤';
+    else if (taskName.includes('토라') || taskName.includes('통라')) iconEmoji = '✏️';
+    
+    // 요일 영문 매핑
+    var dayEnMap = { '일': 'SUNDAY', '월': 'MONDAY', '화': 'TUESDAY', '수': 'WEDNESDAY', '목': 'THURSDAY', '금': 'FRIDAY', '토': 'SATURDAY' };
+    var dayEn = dayEnMap[dayKr] || dayKr;
+    
+    // 헤더 정보 세팅
+    var iconBadge = document.getElementById('ausSelectIconBadge');
+    var titleEl = document.getElementById('ausSelectTitle');
+    var subtitleEl = document.getElementById('ausSelectSubtitle');
+    
+    if (iconBadge) iconBadge.textContent = iconEmoji;
+    if (titleEl) titleEl.textContent = taskName;
+    if (subtitleEl) subtitleEl.textContent = 'Week ' + week + ' - ' + dayEn;
+    
+    // 뒤로가기 → 과제 목록(taskListScreen)으로 복귀
+    var backBtn = document.getElementById('ausSelectBackBtn');
+    if (backBtn) {
+        backBtn.onclick = function() {
+            showScreen('taskListScreen');
+        };
+    }
+    
+    // 문제풀기 버튼
+    var solveBtn = document.getElementById('ausSelectBtnSolve');
+    if (solveBtn) {
+        solveBtn.onclick = function() {
+            console.log('[Australia] 문제풀기 선택: ' + taskName);
+            _showAusPreparing();
+        };
+    }
+    
+    // 해설보기 버튼
+    var explainBtn = document.getElementById('ausSelectBtnExplain');
+    if (explainBtn) {
+        explainBtn.onclick = function() {
+            console.log('[Australia] 해설보기 선택: ' + taskName);
+            _showAusPreparing();
+        };
+    }
+    
+    // 화면 전환
+    showScreen('ausTaskSelectScreen');
 }
 
 /** Australia 준비중 팝업 */

@@ -84,6 +84,7 @@
     <link rel="stylesheet" href="css/explain-viewer.css?v=001">
     <link rel="stylesheet" href="css/tutorial.css?v=001">
     <link rel="stylesheet" href="css/correction.css?v=009">
+    <link rel="stylesheet" href="css/aus-task-select.css?v=001">
     
     <!-- [V3] 삭제됨: V2 Stage Selector 인라인 스타일 -->
 
@@ -934,6 +935,40 @@
                 <div class="sections-grid">
                     <!-- JS(showTaskListScreen)에서 동적으로 과제 카드 생성 -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- [Australia] 과제 선택 화면 (문제풀기 / 해설보기) -->
+    <!-- ============================= -->
+    <div id="ausTaskSelectScreen" class="screen" style="display:none;">
+        <!-- 헤더 -->
+        <div class="aus-select-header">
+            <button class="btn-back" id="ausSelectBackBtn" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="aus-select-title-area">
+                <span class="aus-select-icon-badge" id="ausSelectIconBadge">📚</span>
+                <span class="aus-select-title" id="ausSelectTitle">리딩1</span>
+                <span class="aus-select-subtitle" id="ausSelectSubtitle">Week 1 - SUNDAY</span>
+            </div>
+        </div>
+
+        <!-- 선택 패널 -->
+        <div class="aus-select-panel">
+            <p class="aus-select-prompt">학습 방법을 선택해 주세요</p>
+            <div class="aus-select-buttons">
+                <button class="aus-select-btn" id="ausSelectBtnSolve">
+                    <span class="aus-select-btn-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+                    <span class="aus-select-btn-label">문제풀기 바로가기</span>
+                    <span class="aus-select-btn-desc">문제를 직접 풀어봅니다</span>
+                </button>
+                <button class="aus-select-btn" id="ausSelectBtnExplain">
+                    <span class="aus-select-btn-icon"><i class="fa-solid fa-book-open"></i></span>
+                    <span class="aus-select-btn-label">해설보기</span>
+                    <span class="aus-select-btn-desc">정답과 해설을 확인합니다</span>
+                </button>
             </div>
         </div>
     </div>

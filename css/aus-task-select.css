@@ -1,0 +1,185 @@
+/* ============================= */
+/* Australia 과제 선택 화면        */
+/* (문제풀기 / 해설보기)           */
+/* explain-viewer.css 디자인 참고  */
+/* ============================= */
+
+/* 헤더 */
+.aus-select-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.aus-select-title-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.aus-select-icon-badge {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.aus-select-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.aus-select-subtitle {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+/* 선택 패널 — Ethereal 디자인 (explain-select-panel 참고) */
+.aus-select-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 71px);
+    padding: 48px 24px;
+    gap: 40px;
+    background: var(--bg-color);
+}
+
+.aus-select-prompt {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #4a5568;
+    letter-spacing: -0.01em;
+}
+
+.aus-select-buttons {
+    display: flex;
+    gap: 25px;
+    width: 100%;
+    max-width: 700px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* 선택 버튼 */
+.aus-select-btn {
+    flex: 0 1 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 30px;
+    height: 220px;
+    background: #ffffff;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    font-family: inherit;
+    box-shadow: 0 10px 25px rgba(148, 128, 197, 0.08),
+                0 4px 10px rgba(0, 0, 0, 0.02);
+}
+
+.aus-select-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(148, 128, 197, 0.15);
+}
+
+.aus-select-btn:active {
+    transform: translateY(0);
+}
+
+/* 아이콘 배지 */
+.aus-select-btn-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+/* 문제풀기 아이콘 배경 */
+#ausSelectBtnSolve .aus-select-btn-icon {
+    background-color: #eef2ff;
+    color: #6366f1;
+}
+
+/* 해설보기 아이콘 배경 */
+#ausSelectBtnExplain .aus-select-btn-icon {
+    background-color: #fdf2f2;
+    color: #e5a08d;
+}
+
+/* 버튼 라벨 */
+.aus-select-btn-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    letter-spacing: -0.01em;
+    margin-top: 15px;
+}
+
+/* 버튼 설명 */
+.aus-select-btn-desc {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+/* ============================= */
+/* 모바일 대응                     */
+/* ============================= */
+@media (max-width: 768px) {
+    .aus-select-panel {
+        padding: 32px 16px;
+        gap: 28px;
+        min-height: calc(100vh - 60px);
+    }
+
+    .aus-select-prompt {
+        font-size: 1.2rem;
+    }
+
+    .aus-select-buttons {
+        flex-direction: column;
+        max-width: 100%;
+        gap: 16px;
+    }
+
+    .aus-select-btn {
+        flex: none;
+        width: 100%;
+        height: auto;
+        min-height: 180px;
+        padding: 24px 20px;
+    }
+
+    .aus-select-header {
+        padding: 12px 16px;
+        gap: 12px;
+    }
+
+    .aus-select-title {
+        font-size: 16px;
+    }
+
+    .aus-select-subtitle {
+        font-size: 12px;
+    }
+}
