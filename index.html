@@ -381,6 +381,7 @@
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div class="course-segment-control" id="courseSegmentControl" style="display:none;">
                     <button class="seg-btn seg-active" id="segBtnRegular">TESTROOM</button>
+                    <button class="seg-btn" id="segBtnAustralia">AUSTRALIA</button>
                     <button class="seg-btn" id="segBtnPractice">PRACTICE</button>
                     <button class="seg-btn" id="segBtnFeedback">FEEDBACK</button>
                 </div>
@@ -512,6 +513,11 @@
                 <!-- 주차별 일정이 여기에 동적으로 생성됩니다 -->
             </section>
             
+            <!-- Australia 스케줄 -->
+            <section class="schedule-section" id="australiaScheduleContainer" style="display:none;">
+                <!-- renderAustraliaSchedule()에서 동적 생성 -->
+            </section>
+
             <!-- 연습코스 스케줄 (Practice 1~60 그리드) -->
             <section class="schedule-section" id="practiceScheduleContainer" style="display:none;">
                 <!-- renderPracticeSchedule()에서 동적 생성 -->
@@ -2672,6 +2678,7 @@
     <script src="js/correction-config.js?v=002"></script>
     <script src="js/correction-schedule-data.js?v=001"></script>
     <script src="js/schedule-data.js?v=001"></script>
+    <script src="js/australia-schedule-data.js?v=001"></script>
     <script src="js/task-router.js?v=010_v3_dashboard"></script>
     <!-- [V3] 과제 대시보드 제어 (V2 stage-selector.js 대체) -->
     <script src="js/task-dashboard.js?v=001"></script>

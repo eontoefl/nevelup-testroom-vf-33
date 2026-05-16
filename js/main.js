@@ -52,6 +52,8 @@ function initScheduleScreen() {
         _renderCorrectionMode();
     } else if (mode === 'practice') {
         _renderPracticeMode();
+    } else if (mode === 'australia') {
+        _renderAustraliaMode();
     } else {
         _renderRegularMode();
     }
@@ -59,14 +61,16 @@ function initScheduleScreen() {
 
 /** 정규코스 렌더링 */
 function _renderRegularMode() {
-    // 정규코스 컨테이너 표시 / 연습·첨삭 컨테이너 숨김
+    // 정규코스 컨테이너 표시 / 연습·첨삭·호주 컨테이너 숨김
     var regularContainer = document.getElementById('scheduleContainer');
     var practiceContainer = document.getElementById('practiceScheduleContainer');
     var correctionContainer = document.getElementById('correctionScheduleContainer');
+    var australiaContainer = document.getElementById('australiaScheduleContainer');
     var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
     if (regularContainer) regularContainer.style.display = '';
     if (practiceContainer) practiceContainer.style.display = 'none';
     if (correctionContainer) correctionContainer.style.display = 'none';
+    if (australiaContainer) australiaContainer.style.display = 'none';
     if (scheduleHeader) {
         scheduleHeader.querySelector('h1').textContent = 'NEVEL-UP TESTROOM';
         scheduleHeader.querySelector('p').textContent = 'Select the desired week and day.';
@@ -94,14 +98,16 @@ function _renderRegularMode() {
 
 /** 연습코스 렌더링 */
 function _renderPracticeMode() {
-    // 정규·첨삭 컨테이너 숨김 / 연습코스 컨테이너 표시
+    // 정규·첨삭·호주 컨테이너 숨김 / 연습코스 컨테이너 표시
     var regularContainer = document.getElementById('scheduleContainer');
     var practiceContainer = document.getElementById('practiceScheduleContainer');
     var correctionContainer = document.getElementById('correctionScheduleContainer');
+    var australiaContainer = document.getElementById('australiaScheduleContainer');
     var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
     if (regularContainer) regularContainer.style.display = 'none';
     if (practiceContainer) practiceContainer.style.display = '';
     if (correctionContainer) correctionContainer.style.display = 'none';
+    if (australiaContainer) australiaContainer.style.display = 'none';
     if (scheduleHeader) {
         scheduleHeader.querySelector('h1').textContent = 'PRACTICE MODE';
         scheduleHeader.querySelector('p').textContent = 'Select the desired practice.';
@@ -112,20 +118,248 @@ function _renderPracticeMode() {
 
 /** 첨삭(FEEDBACK) 모드 렌더링 */
 function _renderCorrectionMode() {
-    // 정규·연습 컨테이너 숨김 / 첨삭 컨테이너 표시
+    // 정규·연습·호주 컨테이너 숨김 / 첨삭 컨테이너 표시
     var regularContainer = document.getElementById('scheduleContainer');
     var practiceContainer = document.getElementById('practiceScheduleContainer');
     var correctionContainer = document.getElementById('correctionScheduleContainer');
+    var australiaContainer = document.getElementById('australiaScheduleContainer');
     var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
     if (regularContainer) regularContainer.style.display = 'none';
     if (practiceContainer) practiceContainer.style.display = 'none';
     if (correctionContainer) correctionContainer.style.display = '';
+    if (australiaContainer) australiaContainer.style.display = 'none';
     if (scheduleHeader) {
         scheduleHeader.querySelector('h1').textContent = '1:1 FEEDBACK';
         scheduleHeader.querySelector('p').textContent = 'Select the desired session.';
     }
 
     renderCorrectionSchedule();
+}
+
+/** Australia 모드 렌더링 */
+function _renderAustraliaMode() {
+    // 정규·연습·첨삭 컨테이너 숨김 / 호주 컨테이너 표시
+    var regularContainer = document.getElementById('scheduleContainer');
+    var practiceContainer = document.getElementById('practiceScheduleContainer');
+    var correctionContainer = document.getElementById('correctionScheduleContainer');
+    var australiaContainer = document.getElementById('australiaScheduleContainer');
+    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
+    if (regularContainer) regularContainer.style.display = 'none';
+    if (practiceContainer) practiceContainer.style.display = 'none';
+    if (correctionContainer) correctionContainer.style.display = 'none';
+    if (australiaContainer) australiaContainer.style.display = '';
+    if (scheduleHeader) {
+        scheduleHeader.querySelector('h1').innerHTML = 'NEVEL-UP TESTROOM <span style="font-size:0.5em; font-weight:400; opacity:0.7; vertical-align:middle;">Australia</span>';
+        scheduleHeader.querySelector('p').textContent = 'Select the desired week and day.';
+    }
+    
+    renderAustraliaSchedule(currentUser.program);
+}
+
+/** Australia 스케줄 렌더링 (TESTROOM과 동일 구조) */
+function renderAustraliaSchedule(program) {
+    var container = document.getElementById('australiaScheduleContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // 프로그램 타입 결정
+    var programType = program === '내벨업챌린지 - Standard' ? 'standard' : 'fast';
+    var totalWeeks = programType === 'standard' ? 8 : 4;
+    
+    console.log('[Australia] schedule render: ' + programType + ', weeks=' + totalWeeks);
+    
+    // startDate 기반 날짜 계산
+    var startDate = currentUser && currentUser.startDate ? new Date(currentUser.startDate + 'T00:00:00') : null;
+    var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    
+    for (var week = 1; week <= totalWeeks; week++) {
+        var weekBlock = document.createElement('div');
+        weekBlock.className = 'week-block';
+        
+        var weekHeader = document.createElement('div');
+        weekHeader.className = 'week-header';
+        
+        var weekTitle = document.createElement('h2');
+        weekTitle.className = 'week-title';
+        weekTitle.textContent = 'Week ' + String(week).padStart(2, '0');
+        
+        var weekDivider = document.createElement('div');
+        weekDivider.className = 'week-divider';
+        
+        weekHeader.appendChild(weekTitle);
+        weekHeader.appendChild(weekDivider);
+        
+        var daysGrid = document.createElement('div');
+        daysGrid.className = 'days-grid';
+        
+        var dayMapping = {
+            '일': 'sunday', '월': 'monday', '화': 'tuesday',
+            '수': 'wednesday', '목': 'thursday', '금': 'friday'
+        };
+        
+        daysOfWeek.forEach(function(dayKr, dayIndex) {
+            var dayEn = dayMapping[dayKr];
+            var dayButton = document.createElement('button');
+            dayButton.className = 'day-button';
+            
+            var tasks = getAusDayTasks(programType, week, dayEn);
+            
+            dayButton.onclick = function() {
+                selectAustraliaDay(week, dayKr, dayEn);
+            };
+            
+            var dateStr = '';
+            if (startDate) {
+                var d = new Date(startDate);
+                d.setDate(d.getDate() + (week - 1) * 7 + dayIndex);
+                dateStr = monthNames[d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0');
+            }
+            
+            dayButton.innerHTML =
+                '<span class="day-name">' + dayEnShort[dayKr] + '</span>' +
+                '<div class="progress-dot dot-none"></div>' +
+                '<span class="day-tasks">' + dateStr + '</span>';
+            
+            if (tasks.length === 0) {
+                dayButton.style.opacity = '0.5';
+                dayButton.style.cursor = 'default';
+                dayButton.onclick = null;
+            }
+            
+            daysGrid.appendChild(dayButton);
+        });
+        
+        weekBlock.appendChild(weekHeader);
+        weekBlock.appendChild(daysGrid);
+        container.appendChild(weekBlock);
+    }
+}
+
+/** Australia 요일 선택 */
+function selectAustraliaDay(week, dayKr, dayEn) {
+    if (!currentUser) return;
+    
+    currentTest.currentWeek = week;
+    currentTest.currentDay = dayKr;
+    
+    var program = currentUser.program;
+    var programType = program === '내벨업챌린지 - Standard' ? 'standard' : 'fast';
+    var tasks = getAusDayTasks(programType, week, dayEn);
+    
+    if (tasks.length === 0) return;
+    
+    showAustraliaTaskListScreen(week, dayKr, tasks);
+}
+
+/** Australia 과제 목록 화면 (TESTROOM showTaskListScreen 복제, 클릭 시 준비중 팝업) */
+function showAustraliaTaskListScreen(week, dayKr, tasks) {
+    console.log('[Australia] task list: Week ' + week + ' ' + dayKr + ' tasks=' + tasks.length);
+    
+    document.querySelectorAll('.screen').forEach(function(screen) {
+        screen.classList.remove('active');
+        screen.style.display = 'none';
+    });
+    
+    var taskListScreenEl = document.getElementById('taskListScreen');
+    taskListScreenEl.classList.add('active');
+    taskListScreenEl.style.display = 'block';
+    
+    if (currentUser) {
+        var userNameElement = document.getElementById('currentUserName');
+        var programBadgeElement = document.getElementById('currentUserProgramBadge');
+        if (userNameElement) userNameElement.textContent = currentUser.name;
+        if (programBadgeElement) programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 - ', '');
+    }
+    
+    var welcomeHeader = document.querySelector('#taskListScreen .welcome-header h1');
+    var subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
+    
+    if (welcomeHeader) {
+        var dayEnMap = { '일': 'SUNDAY', '월': 'MONDAY', '화': 'TUESDAY', '수': 'WEDNESDAY', '목': 'THURSDAY', '금': 'FRIDAY', '토': 'SATURDAY' };
+        var dayEn = dayEnMap[dayKr] || dayKr;
+        welcomeHeader.textContent = 'Week ' + week + ' - ' + dayEn;
+    }
+    if (subtitle) {
+        subtitle.textContent = tasks.length + '개의 과제가 있습니다';
+    }
+    
+    var sectionsGrid = document.querySelector('#taskListScreen .sections-grid');
+    if (sectionsGrid) {
+        sectionsGrid.innerHTML = '';
+        
+        tasks.forEach(function(taskName, index) {
+            var card = document.createElement('div');
+            card.className = 'section-card';
+            card.style.cursor = 'pointer';
+            
+            var icon = 'fas fa-book';
+            var description = taskName;
+            
+            if (taskName.includes('단어')) {
+                icon = 'fas fa-spell-check';
+                description = '단어 학습';
+            } else if (taskName.includes('입문서') || taskName.includes('일문서')) {
+                icon = 'fas fa-book-reader';
+                description = 'PDF 읽기';
+            } else if (taskName.includes('리딩')) {
+                icon = 'fas fa-book-open';
+                description = '독해 연습';
+            } else if (taskName.includes('리스닝')) {
+                icon = 'fas fa-headphones';
+                description = '듣기 연습';
+            } else if (taskName.includes('통스')) {
+                icon = 'fas fa-microphone';
+                description = '말하기 연습';
+            } else if (taskName.includes('토라')) {
+                icon = 'fas fa-pen';
+                description = '쓰기 연습';
+            } else if (taskName.includes('브레인스토밍')) {
+                icon = 'fas fa-brain';
+                description = '브레인스토밍';
+            }
+            
+            card.onclick = function() {
+                _showAusPreparing();
+            };
+            
+            card.innerHTML =
+                '<div class="card-icon"><i class="' + icon + '"></i></div>' +
+                '<h3>' + taskName + '</h3>' +
+                '<p>' + description + '</p>';
+            
+            sectionsGrid.appendChild(card);
+        });
+    }
+}
+
+/** Australia 준비중 팝업 */
+function _showAusPreparing() {
+    // 기존 팝업이 있으면 제거
+    var existing = document.getElementById('ausPrepPopup');
+    if (existing) existing.remove();
+    
+    var overlay = document.createElement('div');
+    overlay.id = 'ausPrepPopup';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:16px;padding:32px 28px;text-align:center;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);';
+    box.innerHTML =
+        '<div style="font-size:48px;margin-bottom:16px;">🚧</div>' +
+        '<h3 style="margin:0 0 8px;font-size:18px;color:#333;">준비중입니다</h3>' +
+        '<p style="margin:0 0 20px;font-size:14px;color:#888;">이 과제는 아직 준비중입니다.</p>' +
+        '<button id="ausPrepCloseBtn" style="background:#4A90D9;color:#fff;border:none;border-radius:8px;padding:10px 32px;font-size:15px;cursor:pointer;">확인</button>';
+    
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    
+    document.getElementById('ausPrepCloseBtn').onclick = function() {
+        overlay.remove();
+    };
+    overlay.onclick = function(e) {
+        if (e.target === overlay) overlay.remove();
+    };
 }
 
 // renderCorrectionSchedule()은 js/correction/correction-main.js에서 정의
@@ -587,24 +821,27 @@ function showTaskListScreen(week, dayKr, tasks) {
 
 // ===== SEGMENT CONTROL =====
 
-/** 세그먼트 컨트롤 초기화 (TESTROOM / PRACTICE / FEEDBACK 토글) */
+/** 세그먼트 컨트롤 초기화 (TESTROOM / AUSTRALIA / PRACTICE / FEEDBACK 토글) */
 function _initSegmentControl() {
     var segmentWrap = document.getElementById('courseSegmentControl');
     if (!segmentWrap) return;
     
     var btnRegular = document.getElementById('segBtnRegular');
+    var btnAustralia = document.getElementById('segBtnAustralia');
     var btnPractice = document.getElementById('segBtnPractice');
     var btnFeedback = document.getElementById('segBtnFeedback');
     
     var hasPractice = currentUser && currentUser.practiceEnabled;
     var hasCorrection = currentUser && (currentUser.correctionEnabled || window.__isAdmin);
+    var hasAustralia = true; // Australia 모드는 항상 표시
     
-    // PRACTICE / FEEDBACK 버튼 개별 표시
+    // AUSTRALIA / PRACTICE / FEEDBACK 버튼 개별 표시
+    if (btnAustralia) btnAustralia.style.display = hasAustralia ? '' : 'none';
     if (btnPractice) btnPractice.style.display = hasPractice ? '' : 'none';
     if (btnFeedback) btnFeedback.style.display = hasCorrection ? '' : 'none';
     
-    // 세그먼트 컨트롤: 정규코스만 있으면 숨김
-    if (!hasPractice && !hasCorrection) {
+    // 세그먼트 컨트롤: 정규코스만 있으면 숨김 (호주가 있으면 표시)
+    if (!hasPractice && !hasCorrection && !hasAustralia) {
         segmentWrap.style.display = 'none';
         if (window.courseMode !== 'regular') {
             setCourseMode('regular');
@@ -619,6 +856,7 @@ function _initSegmentControl() {
     var mode = window.courseMode || 'regular';
     if (mode === 'practice' && !hasPractice) mode = 'regular';
     if (mode === 'correction' && !hasCorrection) mode = 'regular';
+    if (mode === 'australia' && !hasAustralia) mode = 'regular';
     if (mode !== window.courseMode) setCourseMode(mode);
     
     // active 클래스 동기화
@@ -630,6 +868,14 @@ function _initSegmentControl() {
             setCourseMode('regular');
             _syncSegmentActive('regular');
             _renderRegularMode();
+        };
+    }
+    if (btnAustralia) {
+        btnAustralia.onclick = function() {
+            if (window.courseMode === 'australia') return;
+            setCourseMode('australia');
+            _syncSegmentActive('australia');
+            _renderAustraliaMode();
         };
     }
     if (btnPractice) {
@@ -653,9 +899,11 @@ function _initSegmentControl() {
 /** 세그먼트 버튼 active 상태 동기화 */
 function _syncSegmentActive(mode) {
     var btnRegular = document.getElementById('segBtnRegular');
+    var btnAustralia = document.getElementById('segBtnAustralia');
     var btnPractice = document.getElementById('segBtnPractice');
     var btnFeedback = document.getElementById('segBtnFeedback');
     if (btnRegular) btnRegular.classList.toggle('seg-active', mode === 'regular');
+    if (btnAustralia) btnAustralia.classList.toggle('seg-active', mode === 'australia');
     if (btnPractice) btnPractice.classList.toggle('seg-active', mode === 'practice');
     if (btnFeedback) btnFeedback.classList.toggle('seg-active', mode === 'correction');
 }

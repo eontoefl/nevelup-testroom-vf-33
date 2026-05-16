@@ -4,7 +4,7 @@
  * 남은 항목:
  * - currentTest: 현재 진행 중인 과제 상태 (전역)
  * - currentPractice: 연습코스 현재 위치 (전역)
- * - courseMode: 현재 코스 모드 ('regular' | 'practice')
+ * - courseMode: 현재 코스 모드 ('regular' | 'practice' | 'australia')
  * - daysOfWeek: 요일 목록 (스케줄 렌더링용)
  */
 
@@ -21,14 +21,14 @@ let currentPractice = {
 };
 window.currentPractice = currentPractice;
 
-// 코스 모드 ('regular' | 'practice')
+// 코스 모드 ('regular' | 'practice' | 'australia')
 // sessionStorage에서 복원, 없으면 'regular' 기본
 let courseMode = sessionStorage.getItem('courseMode') || 'regular';
 window.courseMode = courseMode;
 
 /**
  * 코스 모드 변경
- * @param {string} mode - 'regular' | 'practice'
+ * @param {string} mode - 'regular' | 'practice' | 'australia'
  */
 function setCourseMode(mode) {
     courseMode = mode;
