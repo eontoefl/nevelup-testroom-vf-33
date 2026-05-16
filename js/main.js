@@ -301,7 +301,7 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
             if (taskName.includes('내벨업보카')) {
                 icon = 'fas fa-spell-check';
                 description = '단어 시험';
-            } else if (taskName.includes('입문서') || taskName.includes('일문서')) {
+            } else if (taskName.includes('입문서')) {
                 icon = 'fas fa-book-reader';
                 description = 'PDF 읽기';
             } else if (taskName.includes('리딩')) {
