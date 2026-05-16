@@ -401,11 +401,11 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
         };
     }
     
-    // 다시풀기 버튼
-    var retryBtn = document.getElementById('ausSelectBtnRetry');
-    if (retryBtn) {
-        retryBtn.onclick = function() {
-            console.log('[Australia] 다시풀기 선택: ' + taskName);
+    // 다시보기 버튼
+    var reviewBtn = document.getElementById('ausSelectBtnReview');
+    if (reviewBtn) {
+        reviewBtn.onclick = function() {
+            console.log('[Australia] 다시보기 선택: ' + taskName);
             _showAusPreparing();
         };
     }

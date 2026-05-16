@@ -205,16 +205,16 @@
     line-height: 1;
 }
 
-/* 다시풀기 아이콘 */
+/* 실전풀이 아이콘 (왼쪽) */
 .aus-split-left .aus-split-icon {
-    background-color: #f0fdf4;
-    color: #22c55e;
-}
-
-/* 실전풀이 아이콘 */
-.aus-split-right .aus-split-icon {
     background-color: #eef2ff;
     color: #6366f1;
+}
+
+/* 다시보기 아이콘 (오른쪽) */
+.aus-split-right .aus-split-icon {
+    background-color: #f0fdf4;
+    color: #22c55e;
 }
 
 /* 분할 라벨 */
