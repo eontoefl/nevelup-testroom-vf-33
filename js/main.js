@@ -347,14 +347,346 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
 
 /**
  * Australia 과제가 선택 화면(문제풀기/해설보기) 대상인지 판별
- * 리딩, 리스닝, 통스, 토라(통라)만 대상
+ * 리딩, 리스닝, 통스, 토라(통라), 브레인스토밍 대상
+ * 내벨업보카, 입문서는 제외
  */
 function _isAusSelectableTask(taskName) {
     if (taskName.includes('리딩')) return true;
     if (taskName.includes('리스닝')) return true;
     if (taskName.includes('통스')) return true;
     if (taskName.includes('토라') || taskName.includes('통라')) return true;
+    if (taskName.includes('브레인스토밍')) return true;
     return false;
+}
+
+// ─── Australia 리딩 외부 링크 매핑 ───
+var AUS_READING_LINKS = {
+    1:  { solve: 'https://test618.com/toefl/read/search?title=warm&lang=en',            review: 'https://test618.com/toefl/read/580.html' },
+    2:  { solve: 'https://test618.com/toefl/read/search?title=bantu&lang=en',            review: 'https://test618.com/toefl/read/741.html' },
+    3:  { solve: 'https://test618.com/toefl/read/search?title=sculpture&lang=en',        review: 'https://test618.com/toefl/read/588.html' },
+    4:  { solve: 'https://test618.com/toefl/read/search?title=rome&lang=en',             review: 'https://test618.com/toefl/read/740.html' },
+    5:  { solve: 'https://test618.com/toefl/read/search?title=signal&lang=en',           review: 'https://test618.com/toefl/read/658.html' },
+    6:  { solve: 'https://test618.com/toefl/read/search?title=architecture&lang=en',     review: 'https://test618.com/toefl/read/519.html' },
+    7:  { solve: 'https://test618.com/toefl/read/search?title=nestlings&lang=en',        review: 'https://test618.com/toefl/read/727.html' },
+    8:  { solve: 'https://test618.com/toefl/read/search?title=clocks&lang=en',           review: 'https://test618.com/toefl/read/1205.html' },
+    9:  { solve: 'https://test618.com/toefl/read/search?title=cave%20art&lang=en',       review: 'https://test618.com/toefl/read/633.html' },
+    10: { solve: 'https://test618.com/toefl/read/search?title=children&lang=en',         review: 'https://test618.com/toefl/read/681.html' },
+    11: { solve: 'https://test618.com/toefl/read/search?title=Conizing&lang=en',         review: 'https://test618.com/toefl/read/603.html' },
+    12: { solve: 'https://test618.com/toefl/read/search?title=deer&lang=en',             review: 'https://test618.com/toefl/read/627.html' },
+    13: { solve: 'https://test618.com/toefl/read/search?title=aquifer&lang=en',          review: 'https://test618.com/toefl/read/525.html' },
+    14: { solve: 'https://test618.com/toefl/read/search?title=desert%20formation&lang=en', review: 'https://test618.com/toefl/read/561.html' },
+    15: { solve: 'https://test618.com/toefl/read/search?title=early%20cinema&lang=en',   review: 'https://test618.com/toefl/read/582.html' },
+    16: { solve: 'https://test618.com/toefl/read/search?title=planets&lang=en',          review: 'https://test618.com/toefl/read/1028.html' },
+    17: { solve: 'https://test618.com/toefl/read/search?title=dealing&lang=en',          review: 'https://test618.com/toefl/read/61710.html' }
+};
+
+/**
+ * 과제명에서 리딩 번호 추출
+ * "리딩1" → 1, "리딩17" → 17, "리스닝3" → null
+ * @param {string} taskName
+ * @returns {number|null}
+ */
+function _getAusReadingNumber(taskName) {
+    var match = taskName.match(/^리딩\s*(\d+)$/);
+    return match ? parseInt(match[1]) : null;
+}
+
+// ─── Australia 리스닝 외부 링크 매핑 ───
+var AUS_LISTENING_LINKS = {
+    1:  { solve: 'https://test618.com/toefl/listening/exercise?id=1305',  review: 'https://test618.com/toefl/listening/1305.html' },
+    2:  { solve: 'https://test618.com/toefl/listening/exercise?id=1079',  review: 'https://test618.com/toefl/listening/1079.html' },
+    3:  { solve: 'https://test618.com/toefl/listening/exercise?id=1306',  review: 'https://test618.com/toefl/listening/1306.html' },
+    4:  { solve: 'https://test618.com/toefl/listening/exercise?id=1407',  review: 'https://test618.com/toefl/listening/1407.html' },
+    5:  { solve: 'https://test618.com/toefl/listening/exercise?id=1413',  review: 'https://test618.com/toefl/listening/1413.html' },
+    6:  { solve: 'https://test618.com/toefl/listening/exercise?id=1427',  review: 'https://test618.com/toefl/listening/1427.html' },
+    7:  { solve: 'https://test618.com/toefl/listening/exercise?id=1432',  review: 'https://test618.com/toefl/listening/1432.html' },
+    8:  { solve: 'https://test618.com/toefl/listening/exercise?id=1436',  review: 'https://test618.com/toefl/listening/1436.html' },
+    9:  { solve: 'https://test618.com/toefl/listening/exercise?id=7553',  review: 'https://test618.com/toefl/listening/7553.html' },
+    10: { solve: 'https://test618.com/toefl/listening/exercise?id=45821', review: 'https://test618.com/toefl/listening/45821.html' },
+    11: { solve: 'https://test618.com/toefl/listening/exercise?id=2696',  review: 'https://test618.com/toefl/listening/2696.html' },
+    12: { solve: 'https://test618.com/toefl/listening/exercise?id=7548',  review: 'https://test618.com/toefl/listening/7548.html' },
+    13: { solve: 'https://test618.com/toefl/listening/exercise?id=45820', review: 'https://test618.com/toefl/listening/45820.html' },
+    14: { solve: 'https://test618.com/toefl/listening/exercise?id=1004',  review: 'https://test618.com/toefl/listening/1004.html' },
+    15: { solve: 'https://test618.com/toefl/listening/exercise?id=1309',  review: 'https://test618.com/toefl/listening/1309.html' },
+    16: { solve: 'https://test618.com/toefl/listening/exercise?id=1125',  review: 'https://test618.com/toefl/listening/1125.html' },
+    17: { solve: 'https://test618.com/toefl/listening/exercise?id=1001',  review: 'https://test618.com/toefl/listening/1001.html' },
+    18: { solve: 'https://test618.com/toefl/listening/exercise?id=1002',  review: 'https://test618.com/toefl/listening/1002.html' },
+    19: { solve: 'https://test618.com/toefl/listening/exercise?id=1126',  review: 'https://test618.com/toefl/listening/1126.html' },
+    20: { solve: 'https://test618.com/toefl/listening/exercise?id=1003',  review: 'https://test618.com/toefl/listening/1003.html' },
+    21: { solve: 'https://test618.com/toefl/listening/exercise?id=1128',  review: 'https://test618.com/toefl/listening/1128.html' },
+    22: { solve: 'https://test618.com/toefl/listening/exercise?id=1005',  review: 'https://test618.com/toefl/listening/1005.html' },
+    23: { solve: 'https://test618.com/toefl/listening/exercise?id=1008',  review: 'https://test618.com/toefl/listening/1008.html' },
+    24: { solve: 'https://test618.com/toefl/listening/exercise?id=1136',  review: 'https://test618.com/toefl/listening/1136.html' },
+    25: { solve: 'https://test618.com/toefl/listening/exercise?id=1011',  review: 'https://test618.com/toefl/listening/1011.html' },
+    26: { solve: 'https://test618.com/toefl/listening/exercise?id=1046',  review: 'https://test618.com/toefl/listening/1046.html' },
+    27: { solve: 'https://test618.com/toefl/listening/exercise?id=1013',  review: 'https://test618.com/toefl/listening/1013.html' },
+    28: { solve: 'https://test618.com/toefl/listening/exercise?id=1021',  review: 'https://test618.com/toefl/listening/1021.html' },
+    29: { solve: 'https://test618.com/toefl/listening/exercise?id=1080',  review: 'https://test618.com/toefl/listening/1080.html' },
+    30: { solve: 'https://test618.com/toefl/listening/exercise?id=1025',  review: 'https://test618.com/toefl/listening/1025.html' },
+    31: { solve: 'https://test618.com/toefl/listening/exercise?id=1049',  review: 'https://test618.com/toefl/listening/1049.html' },
+    32: { solve: 'https://test618.com/toefl/listening/exercise?id=1123',  review: 'https://test618.com/toefl/listening/1123.html' },
+    33: { solve: 'https://test618.com/toefl/listening/exercise?id=1130',  review: 'https://test618.com/toefl/listening/1130.html' },
+    34: { solve: 'https://test618.com/toefl/listening/exercise?id=1250',  review: 'https://test618.com/toefl/listening/1250.html' },
+    35: { solve: 'https://test618.com/toefl/listening/exercise?id=1170',  review: 'https://test618.com/toefl/listening/1170.html' }
+};
+
+/**
+ * 과제명에서 리스닝 번호 추출
+ * "리스닝1" → 1, "리스닝35" → 35, "리딩3" → null
+ */
+function _getAusListeningNumber(taskName) {
+    var match = taskName.match(/^리스닝\s*(\d+)$/);
+    return match ? parseInt(match[1]) : null;
+}
+
+// ─── Australia 과제별 안내 모달 데이터 ───
+var AUS_GUIDE_DATA = {
+    '리딩': {
+        emoji: '📖',
+        title: '리딩 문제 푸는 방법',
+        steps: [
+            '<strong>실전풀이 바로가기</strong>를 눌러 실제 리딩 기출문제를 풀어주세요. 제한시간은 <strong>20분</strong>입니다.',
+            '문제를 풀 때는 반드시 <strong>정답을 메모지에 기록</strong>해 주세요. 외부 사이트에서는 답안이 저장되거나 채점되지 않습니다.',
+            '실전풀이를 모두 완료한 뒤 <strong>다시보기</strong>를 눌러 지문, 문제, 정답을 확인하고 <strong>채점</strong>해 주세요.',
+            '채점을 완료한 뒤 <strong>해설보기</strong> 버튼을 눌러 해당 지문에 대한 해설을 보고 <strong>오답 정리</strong>를 진행해 주세요.'
+        ]
+    },
+    '리스닝': {
+        emoji: '🎧',
+        title: '리스닝 문제 푸는 방법',
+        sections: [
+            {
+                icon: '🔇',
+                heading: '오디오가 자동 재생되지 않나요?',
+                description: '최근 Chrome 업데이트로 자동 오디오 재생이 차단될 수 있어요. 아래 설정을 한 번만 해주시면 이후부터 정상 재생됩니다.',
+                steps: [
+                    '주소창에 <strong>chrome://settings/content/sound</strong> 를 입력 후 엔터를 눌러주세요.',
+                    '\"소리 재생이 허용됨\" 항목에서 <strong>추가</strong> 버튼을 클릭해 주세요.',
+                    '<strong>https://test618.com</strong> 을 입력하고 추가해 주세요.',
+                    '설정 완료 후 문제 풀이 페이지를 <strong>새로고침</strong>하면 자동 재생이 정상 작동합니다.'
+                ]
+            },
+            {
+                icon: '🎧',
+                heading: '리스닝 문제 푸는 방법',
+                steps: [
+                    '<strong>실전풀이 바로가기</strong>를 눌러 실제 리스닝 기출문제를 풀어주세요. 제한시간은 <strong>20분</strong>입니다.',
+                    '문제를 풀 때는 반드시 <strong>정답을 메모지에 기록</strong>해 주세요. 외부 사이트에서는 답안이 저장되거나 채점되지 않습니다.',
+                    '실전풀이를 모두 완료한 뒤 <strong>다시보기</strong>를 눌러 지문, 문제, 정답을 확인하고 <strong>채점</strong>해 주세요.',
+                    '채점을 완료한 뒤 <strong>해설보기</strong> 버튼을 눌러 해당 지문에 대한 해설을 보고 <strong>오답 정리</strong>를 진행해 주세요.'
+                ]
+            }
+        ]
+    },
+    '통스': {
+        emoji: '🎤',
+        title: '통스 문제 푸는 방법',
+        steps: [
+            '통스 과제 안내는 준비 중입니다.',
+            '곧 상세한 풀이 방법이 업데이트될 예정이에요.',
+            '업데이트 전까지는 자유롭게 학습해 주세요.',
+            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        ]
+    },
+    '토라': {
+        emoji: '✏️',
+        title: '토라 문제 푸는 방법',
+        steps: [
+            '토라 과제 안내는 준비 중입니다.',
+            '곧 상세한 풀이 방법이 업데이트될 예정이에요.',
+            '업데이트 전까지는 자유롭게 학습해 주세요.',
+            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        ]
+    },
+    '브레인스토밍': {
+        emoji: '🧠',
+        title: '브레인스토밍 진행 방법',
+        steps: [
+            '브레인스토밍 과제 안내는 준비 중입니다.',
+            '곧 상세한 진행 방법이 업데이트될 예정이에요.',
+            '업데이트 전까지는 자유롭게 학습해 주세요.',
+            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        ]
+    }
+};
+
+// ─── 과제별 안내 모달 확인 여부 추적 ───
+// 키: 과제 카테고리 (리딩, 리스닝 등), 값: true/false
+window._ausGuideChecked = {};
+
+/**
+ * 과제명에서 카테고리 추출
+ * @param {string} taskName
+ * @returns {string|null}
+ */
+function _getAusTaskCategory(taskName) {
+    if (taskName.includes('리딩')) return '리딩';
+    if (taskName.includes('리스닝')) return '리스닝';
+    if (taskName.includes('통스')) return '통스';
+    if (taskName.includes('토라') || taskName.includes('통라')) return '토라';
+    if (taskName.includes('브레인스토밍')) return '브레인스토밍';
+    return null;
+}
+
+/**
+ * 과제가 해당 카테고리의 "첫 번째"인지 판별
+ * 리딩1, 리스닝1, 통스1, 토라1, 브레인스토밍 Day 1
+ * @param {string} taskName
+ * @returns {boolean}
+ */
+function _isAusFirstTask(taskName) {
+    // 리딩1, 리스닝1, 통스1, 토라1 (숫자 1만 매칭)
+    if (/^리딩\s*1$/.test(taskName.trim())) return true;
+    if (/^리스닝\s*1$/.test(taskName.trim())) return true;
+    if (/^통스\s*1$/.test(taskName.trim())) return true;
+    if (/^토라\s*1$/.test(taskName.trim())) return true;
+    if (/^통라\s*1$/.test(taskName.trim())) return true;
+    if (/브레인스토밍\s*Day\s*1$/i.test(taskName.trim())) return true;
+    // 통스 TOPIC 1, 토라 1 형태도 첫 번째로 취급하지 않음 (번호가 있는 기본형만)
+    return false;
+}
+
+/**
+ * 안내 모달을 봐야 하는 강제 조건 체크
+ * 첫 번째 과제이고, 아직 안내를 안 본 경우에만 true
+ * @param {string} taskName
+ * @returns {boolean}
+ */
+function _ausGuideRequired(taskName) {
+    var category = _getAusTaskCategory(taskName);
+    if (!category) return false;
+    if (!_isAusFirstTask(taskName)) return false;
+    return !window._ausGuideChecked[category];
+}
+
+/**
+ * "먼저 문제 푸는 방법을 확인해주세요" 알림 팝업
+ */
+function _showAusGuideRequiredAlert() {
+    var existing = document.getElementById('ausGuideAlertOverlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'ausGuideAlertOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99999;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:16px;padding:32px 28px;text-align:center;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);';
+    box.innerHTML =
+        '<div style="font-size:40px;margin-bottom:14px;">📋</div>' +
+        '<h3 style="margin:0 0 10px;font-size:17px;color:#1a1a2e;font-weight:700;">안내를 먼저 확인해 주세요</h3>' +
+        '<p style="margin:0 0 22px;font-size:14px;color:#666;line-height:1.7;">' +
+            '처음 진행하는 과제예요!<br>' +
+            '위쪽의 <strong style="color:#5B4A9E;">"문제 푸는 방법 확인하기"</strong> 버튼을<br>먼저 눌러 진행 방법을 확인해 주세요.' +
+        '</p>' +
+        '<button id="ausGuideAlertCloseBtn" style="' +
+            'background:#9480c5;color:#fff;border:none;border-radius:10px;' +
+            'padding:12px 36px;font-size:15px;font-weight:600;cursor:pointer;' +
+            'transition:background 0.2s;' +
+        '">확인</button>';
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    document.getElementById('ausGuideAlertCloseBtn').onclick = function() {
+        overlay.remove();
+    };
+    overlay.onclick = function(e) {
+        if (e.target === overlay) overlay.remove();
+    };
+}
+
+/**
+ * 과제 안내 모달 열기
+ * @param {string} category - 과제 카테고리 (리딩, 리스닝 등)
+ */
+function _openAusGuideModal(category) {
+    var data = AUS_GUIDE_DATA[category];
+    if (!data) return;
+
+    // 기존 모달 제거
+    var existing = document.getElementById('ausGuideModalOverlay');
+    if (existing) existing.remove();
+
+    // 본문 HTML 생성 — sections 배열이 있으면 섹션별, 없으면 단순 steps
+    var bodyHtml = '';
+    
+    if (data.sections && data.sections.length > 0) {
+        // ── 멀티 섹션 모드 ──
+        for (var s = 0; s < data.sections.length; s++) {
+            var sec = data.sections[s];
+            bodyHtml += '<div class="aus-guide-section">';
+            // 섹션 헤더
+            bodyHtml += '<div class="aus-guide-section-header">';
+            if (sec.icon) bodyHtml += '<span class="aus-guide-section-icon">' + sec.icon + '</span>';
+            bodyHtml += '<span class="aus-guide-section-heading">' + sec.heading + '</span>';
+            bodyHtml += '</div>';
+            // 섹션 설명 (선택)
+            if (sec.description) {
+                bodyHtml += '<p class="aus-guide-section-desc">' + sec.description + '</p>';
+            }
+            // 섹션 스텝
+            bodyHtml += '<ol class="aus-guide-modal-steps">';
+            for (var i = 0; i < sec.steps.length; i++) {
+                bodyHtml += '<li class="aus-guide-step">';
+                bodyHtml += '<span class="aus-guide-step-num">' + (i + 1) + '</span>';
+                bodyHtml += '<span class="aus-guide-step-text">' + sec.steps[i] + '</span>';
+                bodyHtml += '</li>';
+            }
+            bodyHtml += '</ol>';
+            bodyHtml += '</div>';
+        }
+    } else if (data.steps) {
+        // ── 단순 스텝 모드 ──
+        bodyHtml += '<ol class="aus-guide-modal-steps">';
+        for (var i = 0; i < data.steps.length; i++) {
+            bodyHtml += '<li class="aus-guide-step">';
+            bodyHtml += '<span class="aus-guide-step-num">' + (i + 1) + '</span>';
+            bodyHtml += '<span class="aus-guide-step-text">' + data.steps[i] + '</span>';
+            bodyHtml += '</li>';
+        }
+        bodyHtml += '</ol>';
+    }
+
+    // 모달 HTML
+    var overlay = document.createElement('div');
+    overlay.id = 'ausGuideModalOverlay';
+    overlay.className = 'aus-guide-modal-overlay';
+
+    var modal = document.createElement('div');
+    modal.className = 'aus-guide-modal';
+    modal.innerHTML =
+        '<div class="aus-guide-modal-header">' +
+            '<div class="aus-guide-modal-header-left">' +
+                '<span class="aus-guide-modal-emoji">' + data.emoji + '</span>' +
+                '<h3 class="aus-guide-modal-title">' + data.title + '</h3>' +
+            '</div>' +
+            '<button class="aus-guide-modal-close" id="ausGuideModalCloseBtn">' +
+                '<i class="fa-solid fa-xmark"></i>' +
+            '</button>' +
+        '</div>' +
+        '<div class="aus-guide-modal-body">' + bodyHtml + '</div>' +
+        '<div class="aus-guide-modal-footer">' +
+            '<button class="aus-guide-modal-confirm-btn" id="ausGuideModalConfirmBtn">확인했습니다</button>' +
+        '</div>';
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // 확인 완료 처리
+    function closeAndMark() {
+        window._ausGuideChecked[category] = true;
+        overlay.remove();
+        // 안내 버튼 체크 표시
+        var guideBtn = document.getElementById('ausGuideBtn');
+        if (guideBtn) guideBtn.classList.add('aus-guide-checked');
+    }
+
+    document.getElementById('ausGuideModalConfirmBtn').onclick = closeAndMark;
+    document.getElementById('ausGuideModalCloseBtn').onclick = closeAndMark;
+    overlay.onclick = function(e) {
+        if (e.target === overlay) closeAndMark();
+    };
 }
 
 /**
@@ -370,6 +702,10 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     else if (taskName.includes('리스닝')) iconEmoji = '🎧';
     else if (taskName.includes('통스')) iconEmoji = '🎤';
     else if (taskName.includes('토라') || taskName.includes('통라')) iconEmoji = '✏️';
+    else if (taskName.includes('브레인스토밍')) iconEmoji = '🧠';
+    
+    // 과제 카테고리 파악
+    var category = _getAusTaskCategory(taskName);
     
     // 요일 영문 매핑
     var dayEnMap = { '일': 'SUNDAY', '월': 'MONDAY', '화': 'TUESDAY', '수': 'WEDNESDAY', '목': 'THURSDAY', '금': 'FRIDAY', '토': 'SATURDAY' };
@@ -384,6 +720,23 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     if (titleEl) titleEl.textContent = taskName;
     if (subtitleEl) subtitleEl.textContent = 'Week ' + week + ' - ' + dayEn;
     
+    // ── 안내 버튼 상태 초기화 ──
+    var guideBtn = document.getElementById('ausGuideBtn');
+    if (guideBtn) {
+        // 이미 이 카테고리를 확인한 적 있으면 체크 표시
+        if (category && window._ausGuideChecked[category]) {
+            guideBtn.classList.add('aus-guide-checked');
+        } else {
+            guideBtn.classList.remove('aus-guide-checked');
+        }
+        // 안내 버튼 클릭 → 모달 열기
+        guideBtn.onclick = function() {
+            if (category) {
+                _openAusGuideModal(category);
+            }
+        };
+    }
+    
     // 뒤로가기 → 과제 목록(taskListScreen)으로 복귀
     var backBtn = document.getElementById('ausSelectBackBtn');
     if (backBtn) {
@@ -392,12 +745,38 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
         };
     }
     
+    // ── 3개 버튼에 강제 확인 가드 적용 ──
+    function _guardedAction(actionFn) {
+        if (_ausGuideRequired(taskName)) {
+            _showAusGuideRequiredAlert();
+            return;
+        }
+        actionFn();
+    }
+    
+    // ── 외부 링크 확인 (리딩 / 리스닝) ──
+    var externalLinks = null;
+    var readingNum = _getAusReadingNumber(taskName);
+    if (readingNum && AUS_READING_LINKS[readingNum]) {
+        externalLinks = AUS_READING_LINKS[readingNum];
+    }
+    var listeningNum = _getAusListeningNumber(taskName);
+    if (listeningNum && AUS_LISTENING_LINKS[listeningNum]) {
+        externalLinks = AUS_LISTENING_LINKS[listeningNum];
+    }
+    
     // 실전풀이 바로가기 버튼
     var solveBtn = document.getElementById('ausSelectBtnSolve');
     if (solveBtn) {
         solveBtn.onclick = function() {
-            console.log('[Australia] 실전풀이 바로가기 선택: ' + taskName);
-            _showAusPreparing();
+            _guardedAction(function() {
+                console.log('[Australia] 실전풀이 바로가기 선택: ' + taskName);
+                if (externalLinks && externalLinks.solve) {
+                    window.open(externalLinks.solve, '_blank');
+                } else {
+                    _showAusPreparing();
+                }
+            });
         };
     }
     
@@ -405,8 +784,14 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     var reviewBtn = document.getElementById('ausSelectBtnReview');
     if (reviewBtn) {
         reviewBtn.onclick = function() {
-            console.log('[Australia] 다시보기 선택: ' + taskName);
-            _showAusPreparing();
+            _guardedAction(function() {
+                console.log('[Australia] 다시보기 선택: ' + taskName);
+                if (externalLinks && externalLinks.review) {
+                    window.open(externalLinks.review, '_blank');
+                } else {
+                    _showAusPreparing();
+                }
+            });
         };
     }
     
@@ -414,8 +799,10 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     var explainBtn = document.getElementById('ausSelectBtnExplain');
     if (explainBtn) {
         explainBtn.onclick = function() {
-            console.log('[Australia] 해설보기 선택: ' + taskName);
-            _showAusPreparing();
+            _guardedAction(function() {
+                console.log('[Australia] 해설보기 선택: ' + taskName);
+                _showAusPreparing();
+            });
         };
     }
     
