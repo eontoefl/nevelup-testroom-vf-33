@@ -322,7 +322,14 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
             }
             
             card.onclick = function() {
-                _showAusPreparing();
+                if (taskName.includes('내벨업보카')) {
+                    // 내벨업보카는 정규과정과 동일 — 그대로 실행
+                    if (!currentTest.currentWeek) currentTest.currentWeek = week;
+                    if (!currentTest.currentDay) currentTest.currentDay = dayKr;
+                    executeTask(taskName);
+                } else {
+                    _showAusPreparing();
+                }
             };
             
             card.innerHTML =
