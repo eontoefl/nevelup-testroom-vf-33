@@ -243,6 +243,8 @@ async function openIntroBookGuide(params) {
             + '&week=' + week
             + '&day=' + encodeURIComponent(day);
         if (deadlinePassed) url += '&deadline=passed';
+        // Australia 모드면 mode 파라미터 추가 → book-viewer.js가 Australia 입문서 로드
+        if (window.courseMode === 'australia') url += '&mode=australia';
         window.location.href = url;
     };
 }

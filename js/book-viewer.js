@@ -214,9 +214,18 @@ async function init() {
 async function loadBookData() {
     console.log('📖 [BookViewer] 책 정보 로드');
 
+    // Australia 모드면 sort_order=1 (Australia 입문서), 아니면 sort_order=0 (정규 입문서)
+    var params = new URLSearchParams(window.location.search);
+    var mode = params.get('mode');
+    var query = 'is_active=eq.true&order=sort_order.asc&limit=1';
+    if (mode === 'australia') {
+        query = 'is_active=eq.true&sort_order=eq.1&limit=1';
+        console.log('📖 [BookViewer] Australia 모드 — Australia 입문서 로드');
+    }
+
     const books = await supabaseSelect(
         'tr_book_documents',
-        'is_active=eq.true&order=sort_order.asc&limit=1'
+        query
     );
 
     if (!books || books.length === 0) {
