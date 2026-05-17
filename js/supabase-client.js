@@ -230,7 +230,7 @@ async function getStudentProgram(userEmail) {
 // ================================================
 // V3 학습 결과 함수들 (study_results_v3)
 // ================================================
-// 유니크 키: (user_id, section_type, module_number, week, day)
+// 유니크 키: (user_id, section_type, module_number, week, day, course_mode)
 // v3-design-spec.md §3-2 참조
 
 /**
@@ -242,16 +242,19 @@ async function getStudentProgram(userEmail) {
  * @param {number} moduleNumber - 모듈 번호
  * @param {string|number} week - 주차
  * @param {string} day - 요일 ('월', '화' 등)
+ * @param {string} [courseMode='regular'] - 코스 모드 ('regular' | 'australia')
  * @returns {Promise<object|null>} 레코드 또는 null
  */
-async function getStudyResultV3(userId, sectionType, moduleNumber, week, day) {
-    console.log('📖 [V3] 학습 결과 조회:', sectionType, 'M' + moduleNumber, 'W' + week, day);
+async function getStudyResultV3(userId, sectionType, moduleNumber, week, day, courseMode) {
+    var mode = courseMode || 'regular';
+    console.log('📖 [V3] 학습 결과 조회:', sectionType, 'M' + moduleNumber, 'W' + week, day, '(' + mode + ')');
     
     var query = 'user_id=eq.' + userId
         + '&section_type=eq.' + encodeURIComponent(sectionType)
         + '&module_number=eq.' + moduleNumber
         + '&week=eq.' + encodeURIComponent(String(week))
         + '&day=eq.' + encodeURIComponent(day)
+        + '&course_mode=eq.' + encodeURIComponent(mode)
         + '&limit=1';
     
     var rows = await supabaseSelect('study_results_v3', query);
@@ -276,13 +279,15 @@ async function getStudyResultV3(userId, sectionType, moduleNumber, week, day) {
  * @param {string} day
  * @param {object} recordJson - 채점 결과 JSON
  * @param {object} extras - 추가 컬럼 (initial_level, writing_email_text 등)
+ * @param {string} [courseMode='regular'] - 코스 모드 ('regular' | 'australia')
  * @returns {Promise<object|null>} 저장된 레코드
  */
-async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day, recordJson, extras) {
-    console.log('💾 [V3] initial_record 저장:', sectionType, 'M' + moduleNumber);
+async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day, recordJson, extras, courseMode) {
+    var mode = courseMode || 'regular';
+    console.log('💾 [V3] initial_record 저장:', sectionType, 'M' + moduleNumber, '(' + mode + ')');
     
     // 기존 레코드 확인 — initial_record가 이미 있으면 저장하지 않음
-    var existing = await getStudyResultV3(userId, sectionType, moduleNumber, week, day);
+    var existing = await getStudyResultV3(userId, sectionType, moduleNumber, week, day, mode);
     if (existing && existing.initial_record != null) {
         console.log('⚠️ [V3] initial_record 이미 존재 — 덮어쓰기 방지 (불변 원칙)');
         return existing;
@@ -294,6 +299,7 @@ async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day,
         module_number: moduleNumber,
         week: String(week),
         day: day,
+        course_mode: mode,
         initial_record: recordJson,
         completed_at: new Date().toISOString()
     };
@@ -306,7 +312,7 @@ async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day,
     var result = await supabaseUpsert(
         'study_results_v3',
         data,
-        'user_id,section_type,module_number,week,day'
+        'user_id,section_type,module_number,week,day,course_mode'
     );
     
     if (result) {
@@ -327,8 +333,9 @@ async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day,
  * @param {object} recordJson - 채점 결과 JSON
  * @returns {Promise<object|null>} 저장된 레코드
  */
-async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day, recordJson) {
-    console.log('💾 [V3] current_record 저장:', sectionType, 'M' + moduleNumber);
+async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day, recordJson, courseMode) {
+    var mode = courseMode || 'regular';
+    console.log('💾 [V3] current_record 저장:', sectionType, 'M' + moduleNumber, '(' + mode + ')');
     
     var data = {
         user_id: userId,
@@ -336,13 +343,14 @@ async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day,
         module_number: moduleNumber,
         week: String(week),
         day: day,
+        course_mode: mode,
         current_record: recordJson
     };
     
     var result = await supabaseUpsert(
         'study_results_v3',
         data,
-        'user_id,section_type,module_number,week,day'
+        'user_id,section_type,module_number,week,day,course_mode'
     );
     
     if (result) {
@@ -355,8 +363,9 @@ async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day,
  * V3 rewrite_record 저장 (해설 화면에서 다시 쓰기)
  * 매번 덮어쓰기 — 최신 결과로 대체
  */
-async function upsertRewriteRecord(userId, sectionType, moduleNumber, week, day, rewriteJson) {
-    console.log('💾 [V3] rewrite_record 저장:', sectionType, 'M' + moduleNumber);
+async function upsertRewriteRecord(userId, sectionType, moduleNumber, week, day, rewriteJson, courseMode) {
+    var mode = courseMode || 'regular';
+    console.log('💾 [V3] rewrite_record 저장:', sectionType, 'M' + moduleNumber, '(' + mode + ')');
 
     var data = {
         user_id: userId,
@@ -364,13 +373,14 @@ async function upsertRewriteRecord(userId, sectionType, moduleNumber, week, day,
         module_number: moduleNumber,
         week: String(week),
         day: day,
+        course_mode: mode,
         rewrite_record: rewriteJson
     };
 
     var result = await supabaseUpsert(
         'study_results_v3',
         data,
-        'user_id,section_type,module_number,week,day'
+        'user_id,section_type,module_number,week,day,course_mode'
     );
 
     if (result) {
