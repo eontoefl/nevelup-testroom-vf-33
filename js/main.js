@@ -322,8 +322,8 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
             }
             
             card.onclick = function() {
-                if (taskName.includes('내벨업보카')) {
-                    // 내벨업보카는 정규과정과 동일 — 그대로 실행
+                if (taskName.includes('내벨업보카') || taskName.includes('입문서')) {
+                    // 내벨업보카·입문서는 정규과정과 동일 — executeTask가 유형별 분기 처리
                     if (!currentTest.currentWeek) currentTest.currentWeek = week;
                     if (!currentTest.currentDay) currentTest.currentDay = dayKr;
                     executeTask(taskName);
