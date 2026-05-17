@@ -164,7 +164,7 @@ function renderAustraliaSchedule(program) {
     container.innerHTML = '';
     
     // 프로그램 타입 결정
-    var programType = program === '내벨업챌린지 - Standard' ? 'standard' : 'fast';
+    var programType = program.includes('Fast') ? 'fast' : 'standard';
     var totalWeeks = programType === 'standard' ? 8 : 4;
     
     console.log('[Australia] schedule render: ' + programType + ', weeks=' + totalWeeks);
@@ -250,7 +250,7 @@ function selectAustraliaDay(week, dayKr, dayEn) {
     currentTest.currentDay = dayKr;
     
     var program = currentUser.program;
-    var programType = program === '내벨업챌린지 - Standard' ? 'standard' : 'fast';
+    var programType = program.includes('Fast') ? 'fast' : 'standard';
     var tasks = getAusDayTasks(programType, week, dayEn);
     
     if (tasks.length === 0) return;
@@ -852,7 +852,7 @@ function renderSchedule(program) {
     container.innerHTML = '';
     
     // 프로그램 타입 결정
-    const programType = program === '내벨업챌린지 - Standard' ? 'standard' : 'fast';
+    const programType = program.includes('Fast') ? 'fast' : 'standard';
     const totalWeeks = programType === 'standard' ? 8 : 4;
     
     console.log(`📅 [스케줄 렌더링] program: ${program}, programType: ${programType}, totalWeeks: ${totalWeeks}`);
@@ -959,7 +959,7 @@ function selectDay(week, dayKr, dayEn) {
     
     // 프로그램 타입 결정
     const program = currentUser.program;
-    const programType = program === '내벨업챌린지 - Standard' ? 'standard' : 'fast';
+    const programType = program.includes('Fast') ? 'fast' : 'standard';
     
     // 해당 날짜의 과제 목록 가져오기
     const tasks = getDayTasks(programType, week, dayEn);
@@ -1314,30 +1314,35 @@ function _initSegmentControl() {
     
     var hasPractice = currentUser && currentUser.practiceEnabled;
     var hasCorrection = currentUser && (currentUser.correctionEnabled || window.__isAdmin);
-    var hasAustralia = true; // Australia 모드는 항상 표시
+    var hasAustralia = currentUser && currentUser.program && currentUser.program.includes('Australia');
     
-    // AUSTRALIA / PRACTICE / FEEDBACK 버튼 개별 표시
+    // 호주과정 학생: TESTROOM 숨김 / 정규 학생: AUSTRALIA 숨김
+    if (btnRegular) btnRegular.style.display = hasAustralia ? 'none' : '';
     if (btnAustralia) btnAustralia.style.display = hasAustralia ? '' : 'none';
     if (btnPractice) btnPractice.style.display = hasPractice ? '' : 'none';
     if (btnFeedback) btnFeedback.style.display = hasCorrection ? '' : 'none';
     
-    // 세그먼트 컨트롤: 정규코스만 있으면 숨김 (호주가 있으면 표시)
-    if (!hasPractice && !hasCorrection && !hasAustralia) {
+    // 세그먼트 컨트롤: 탭이 하나뿐이면 숨김
+    var visibleTabs = (hasAustralia ? 1 : 1) + (hasPractice ? 1 : 0) + (hasCorrection ? 1 : 0);
+    if (visibleTabs <= 1) {
         segmentWrap.style.display = 'none';
-        if (window.courseMode !== 'regular') {
-            setCourseMode('regular');
-            _renderRegularMode();
+        var defaultMode = hasAustralia ? 'australia' : 'regular';
+        if (window.courseMode !== defaultMode) {
+            setCourseMode(defaultMode);
+            if (hasAustralia) _renderAustraliaMode(); else _renderRegularMode();
         }
         return;
     }
     
     segmentWrap.style.display = '';
     
-    // 현재 모드 유효성 검증
-    var mode = window.courseMode || 'regular';
-    if (mode === 'practice' && !hasPractice) mode = 'regular';
-    if (mode === 'correction' && !hasCorrection) mode = 'regular';
+    // 현재 모드 유효성 검증 — 호주 학생 기본은 australia, 정규 학생 기본은 regular
+    var defaultMode = hasAustralia ? 'australia' : 'regular';
+    var mode = window.courseMode || defaultMode;
+    if (mode === 'regular' && hasAustralia) mode = 'australia';
     if (mode === 'australia' && !hasAustralia) mode = 'regular';
+    if (mode === 'practice' && !hasPractice) mode = defaultMode;
+    if (mode === 'correction' && !hasCorrection) mode = defaultMode;
     if (mode !== window.courseMode) setCourseMode(mode);
     
     // active 클래스 동기화
