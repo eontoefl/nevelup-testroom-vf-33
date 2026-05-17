@@ -1102,19 +1102,21 @@ function parseTaskParams() {
         return;
     }
 
+    var mode = params.get('mode');
+    BookViewer.isAustralia = (mode === 'australia');
+    BookViewer.sectionType = BookViewer.isAustralia ? 'intro-book-aus' : 'intro-book';
+
     BookViewer.taskParams = {
         current: current,
         total: total,
         week: params.get('week') || '1',
         day: params.get('day') || '월',
         deadline: params.get('deadline') || null,
-        mode: params.get('mode') || null
+        mode: mode || null
     };
     BookViewer.requiredMemos = current * 2;
-    // courseMode: URL에 mode=australia가 있으면 'australia', 아니면 'regular'
-    BookViewer.courseMode = (BookViewer.taskParams.mode === 'australia') ? 'australia' : 'regular';
 
-    console.log('📖 [TaskBar] 과제 모드:', current + '/' + total + '일차, 필요 메모:', BookViewer.requiredMemos, '(' + BookViewer.courseMode + ')');
+    console.log('📖 [TaskBar] 과제 모드:', current + '/' + total + '일차, 필요 메모:', BookViewer.requiredMemos, '/ sectionType:', BookViewer.sectionType);
 }
 
 /**
@@ -1134,7 +1136,7 @@ async function initTaskBar() {
     try {
         if (BookViewer.userId && BookViewer.userId !== 'dev-user-001' && typeof getStudyResultV3 === 'function') {
             var tp = BookViewer.taskParams;
-            var result = await getStudyResultV3(BookViewer.userId, 'intro-book', tp.current, tp.week, tp.day, BookViewer.courseMode);
+            var result = await getStudyResultV3(BookViewer.userId, BookViewer.sectionType, tp.current, tp.week, tp.day);
             if (result && result.locked_auth_rate === 100) {
                 BookViewer.isCertified = true;
                 console.log('📖 [TaskBar] 이미 인증 완료');
@@ -1215,13 +1217,12 @@ async function checkAndCertify() {
         if (typeof upsertInitialRecord === 'function') {
             await upsertInitialRecord(
                 BookViewer.userId,
-                'intro-book',
+                BookViewer.sectionType,
                 tp.current,
                 tp.week,
                 tp.day,
                 { memo_count: memoCount, completedAt: new Date().toISOString() },
-                { locked_auth_rate: 100 },
-                BookViewer.courseMode
+                { locked_auth_rate: 100 }
             );
             console.log('✅ [TaskBar] study_results_v3 저장 완료');
         }

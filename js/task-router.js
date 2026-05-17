@@ -140,8 +140,9 @@ async function openIntroBookGuide(params) {
         window._deadlinePassedMode = false;
     }
 
-    // ── 코스 모드 판별 ──
-    var courseMode = (window.courseMode === 'australia') ? 'australia' : 'regular';
+    // ── 호주/정규 모드 판별 ──
+    var isAus = (window.courseMode === 'australia');
+    var sectionType = isAus ? 'intro-book-aus' : 'intro-book';
 
     // ── 인증 여부 + 누적 메모 수 확인 (DB 조회) ──
     var alreadyCertified = false;
@@ -149,14 +150,14 @@ async function openIntroBookGuide(params) {
     try {
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
         if (user && user.id && user.id !== 'dev-user-001') {
-            // 인증 여부 (courseMode로 정규/호주 구분)
-            var result = await getStudyResultV3(user.id, 'intro-book', current, week, day, courseMode);
+            // 인증 여부 — 호주 모드면 'intro-book-aus'로 조회
+            var result = await getStudyResultV3(user.id, sectionType, current, week, day);
             if (result && result.locked_auth_rate === 100) {
                 alreadyCertified = true;
             }
-            // 누적 메모 수 조회 (Australia면 sort_order=1 입문서의 메모)
+            // 누적 메모 수 조회 — 호주 모드면 sort_order=1 (호주 입문서)
             if (typeof supabaseSelect === 'function') {
-                var bookQuery = (courseMode === 'australia')
+                var bookQuery = isAus
                     ? 'is_active=eq.true&sort_order=eq.1&limit=1'
                     : 'is_active=eq.true&order=sort_order.asc&limit=1';
                 var bookRows = await supabaseSelect('tr_book_documents', bookQuery);
@@ -168,7 +169,7 @@ async function openIntroBookGuide(params) {
                     currentMemoCount = (memoRows && memoRows.length) ? memoRows.length : 0;
                 }
             }
-            console.log('📖 [IntroBook] 누적 메모:', currentMemoCount, '/ 오늘 기준:', requiredMemos, '(' + courseMode + ')');
+            console.log('📖 [IntroBook] 누적 메모:', currentMemoCount, '/ 오늘 기준:', requiredMemos, '/ 모드:', sectionType);
         }
     } catch (e) {
         console.warn('📖 [IntroBook] 인증/메모 조회 실패:', e);
