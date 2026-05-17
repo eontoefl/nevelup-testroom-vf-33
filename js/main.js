@@ -169,8 +169,12 @@ function renderAustraliaSchedule(program) {
     
     console.log('[Australia] schedule render: ' + programType + ', weeks=' + totalWeeks);
     
-    // startDate 기반 날짜 계산
-    var startDate = currentUser && currentUser.startDate ? new Date(currentUser.startDate + 'T00:00:00') : null;
+    // 호주과정 전용 시작일 사용 (없으면 정규 시작일 fallback)
+    var ausDate = currentUser && currentUser.australiaStartDate ? currentUser.australiaStartDate : null;
+    var fallbackDate = currentUser && currentUser.startDate ? currentUser.startDate : null;
+    var startDateStr = ausDate || fallbackDate;
+    var startDate = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
+    console.log('[Australia] startDate:', startDateStr, ausDate ? '(호주전용)' : '(정규 fallback)');
     var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     
     for (var week = 1; week <= totalWeeks; week++) {

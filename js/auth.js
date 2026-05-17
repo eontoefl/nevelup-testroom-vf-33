@@ -105,6 +105,7 @@ async function handleLogin(event) {
             programType: programType,  // 'fast' = 4주, 'standard' = 8주
             applicationId: programInfo.applicationId,
             startDate: programInfo.startDate,
+            australiaStartDate: programInfo.australiaStartDate || null,  // 호주과정 시작일 (별도)
             practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부
             correctionEnabled: !!programInfo.correctionEnabled  // 첨삭(FEEDBACK) 활성화 여부
         };
@@ -300,12 +301,15 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
         // startDate 최신값 동기화 (DB 변경 반영)
         if (currentUser.applicationId) {
-            supabaseSelect('applications', `id=eq.${currentUser.applicationId}&select=schedule_start`)
+            supabaseSelect('applications', `id=eq.${currentUser.applicationId}&select=schedule_start,australia_schedule_start`)
                 .then(rows => {
-                    if (rows && rows[0] && rows[0].schedule_start) {
-                        currentUser.startDate = rows[0].schedule_start;
+                    if (rows && rows[0]) {
+                        if (rows[0].schedule_start) {
+                            currentUser.startDate = rows[0].schedule_start;
+                        }
+                        currentUser.australiaStartDate = rows[0].australia_schedule_start || null;
                         sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                        console.log('📋 startDate 동기화 완료:', currentUser.startDate);
+                        console.log('📋 startDate 동기화 완료:', currentUser.startDate, '/ australia:', currentUser.australiaStartDate);
                     }
                 });
         }
