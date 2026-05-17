@@ -55,7 +55,16 @@ function isTaskDeadlinePassed() {
     }
 
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-    if (!user || !user.startDate) {
+    if (!user) {
+        console.log('⏰ [마감] 사용자 정보 없음 — 체크 생략');
+        return false;
+    }
+
+    // 호주 모드면 호주 시작일 사용, 없으면 정규 시작일 fallback
+    var effectiveStartDate = (window.courseMode === 'australia' && user.australiaStartDate)
+        ? user.australiaStartDate
+        : user.startDate;
+    if (!effectiveStartDate) {
         console.log('⏰ [마감] startDate 없음 — 체크 생략');
         return false;
     }
@@ -67,7 +76,7 @@ function isTaskDeadlinePassed() {
         return false;
     }
 
-    var startDate = new Date(user.startDate + 'T00:00:00');
+    var startDate = new Date(effectiveStartDate + 'T00:00:00');
     if (isNaN(startDate.getTime())) {
         console.log('⏰ [마감] 날짜 파싱 실패:', user.startDate);
         return false;
@@ -96,7 +105,7 @@ function isTaskDeadlinePassed() {
     var passed = now > deadline;
     
     console.log('⏰ [마감]', 
-        'start:', user.startDate,
+        'start:', effectiveStartDate,
         'week:', ct.currentWeek, 'day:', ct.currentDay,
         '→ taskDate:', taskDate.toLocaleDateString(),
         '→ deadline:', deadline.toLocaleString(),
