@@ -198,7 +198,7 @@ async function getStudentProgram(userEmail) {
     // applications 테이블에서 가장 최근 신청서 조회 (입금확인 포함)
     const apps = await supabaseSelect(
         'applications',
-        `email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1&select=id,preferred_program,assigned_program,preferred_start_date,schedule_start,australia_schedule_start,current_step,status,deposit_confirmed_by_admin,practice_enabled,correction_enabled`
+        `email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1&select=id,preferred_program,assigned_program,preferred_start_date,schedule_start,australia_schedule_start,current_step,status,deposit_confirmed_by_admin,practice_enabled,correction_enabled,correction_start_date`
     );
 
     if (!apps || apps.length === 0) {
@@ -224,7 +224,8 @@ async function getStudentProgram(userEmail) {
         currentStep: app.current_step,
         status: app.status,
         practiceEnabled: !!app.practice_enabled,
-        correctionEnabled: !!app.correction_enabled
+        correctionEnabled: !!app.correction_enabled,
+        correctionStartDate: app.correction_start_date || null
     };
 }
 

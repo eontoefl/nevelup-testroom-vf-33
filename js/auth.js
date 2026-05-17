@@ -13,6 +13,25 @@
 // 현재 로그인한 사용자 정보
 let currentUser = null;
 
+// 첨삭 D-1 새벽 4시 기준 활성화 판정 (공식 웹사이트와 동일 로직)
+function isCorrectionActiveNow(programInfo) {
+    if (!programInfo.correctionEnabled) return false;
+    if (!programInfo.correctionStartDate) return false;
+
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const kstHour = kstNow.getUTCHours();
+    let y = kstNow.getUTCFullYear();
+    let m = kstNow.getUTCMonth();
+    let d = kstNow.getUTCDate();
+    if (kstHour < 4) d -= 1;
+    const effectiveToday = new Date(Date.UTC(y, m, d));
+
+    const start = new Date(programInfo.correctionStartDate);
+    start.setDate(start.getDate() - 1);
+    return effectiveToday >= start;
+}
+
 // 로그인 처리
 async function handleLogin(event) {
     event.preventDefault();
@@ -107,7 +126,7 @@ async function handleLogin(event) {
             startDate: programInfo.startDate,
             australiaStartDate: programInfo.australiaStartDate || null,  // 호주과정 시작일 (별도)
             practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부
-            correctionEnabled: !!programInfo.correctionEnabled  // 첨삭(FEEDBACK) 활성화 여부
+            correctionEnabled: isCorrectionActiveNow(programInfo)  // 첨삭(FEEDBACK): D-1 새벽4시부터 활성화
         };
         
         // 세션에 저장 (새로고침 시에도 유지)
