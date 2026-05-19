@@ -24,8 +24,9 @@
  * @param {object} session - CORRECTION_SCHEDULE 항목
  * @param {object} submission - correction_submissions 전체 행 (feedback 포함)
  */
-// 인터뷰 질문 텍스트 캐시 (openCorrectionDetail에서 로드)
+// 문제 데이터 캐시 (openCorrectionDetail에서 로드)
 var _corrDetailInterviewData = null;
+var _corrDetailQuestionData = null;
 
 async function openCorrectionDetail(taskType, session, submission) {
     console.log('📋 [Correction Detail] 열기:', taskType, 'Session', session.session);
@@ -40,11 +41,18 @@ async function openCorrectionDetail(taskType, session, submission) {
         if (fullSub) submission = fullSub;
     }
 
-    // Speaking일 때 인터뷰 질문 텍스트 로드
+    // 문제 데이터 로드 (문제 보기 아코디언 + Speaking 그리드용)
     _corrDetailInterviewData = null;
+    _corrDetailQuestionData = null;
     if (taskType === 'speaking' && typeof _loadCorrectionInterviewSet === 'function') {
         var setNum = session.speaking.number;
         _corrDetailInterviewData = await _loadCorrectionInterviewSet(setNum);
+    } else if (taskType === 'writing') {
+        if (session.writing.type === 'email' && typeof _loadCorrectionEmailSet === 'function') {
+            _corrDetailQuestionData = await _loadCorrectionEmailSet(session.writing.number);
+        } else if (session.writing.type === 'discussion' && typeof _loadCorrectionDiscussionSet === 'function') {
+            _corrDetailQuestionData = await _loadCorrectionDiscussionSet(session.writing.number);
+        }
     }
 
     showScreen('correctionDetailScreen');
@@ -71,6 +79,12 @@ async function openCorrectionDetail(taskType, session, submission) {
     // --- Section: failed 에러 메시지 ---
     if (status === 'feedback1_failed' || status === 'feedback2_failed') {
         _addAccordionItem(accordionEl, '⚠️ 첨삭 오류', _renderFailedMessage(status), true, 'error');
+    }
+
+    // --- Section 0: 문제 보기 ---
+    var questionHtml = _renderQuestionPreview(isWriting, session);
+    if (questionHtml) {
+        _addAccordionItem(accordionEl, '<i class="fas fa-book-open" style="margin-right:6px; font-size:13px;"></i>문제 보기', questionHtml, false, 'question');
     }
 
     // --- Section 1: Draft 1 ---
@@ -122,6 +136,99 @@ async function openCorrectionDetail(taskType, session, submission) {
     if (accordionEl.children.length === 0) {
         accordionEl.innerHTML = '<div style="text-align:center; padding:40px; color:#888;">과제 정보가 없습니다.</div>';
     }
+}
+
+// ============================================================
+// 1-B. 문제 보기 렌더링
+// ============================================================
+
+function _renderQuestionPreview(isWriting, session) {
+    if (isWriting) {
+        var data = _corrDetailQuestionData;
+        if (!data) return '';
+
+        if (session.writing.type === 'email') {
+            return _renderEmailQuestionPreview(data);
+        } else {
+            return _renderDiscussionQuestionPreview(data);
+        }
+    } else {
+        var data = _corrDetailInterviewData;
+        if (!data) return '';
+        return _renderSpeakingQuestionPreview(data);
+    }
+}
+
+function _renderEmailQuestionPreview(data) {
+    var html = '<div class="corr-question-preview">';
+    html += '<p class="corr-qp-situation">' + _escapeAndNl2br(data.scenario) + '</p>';
+    html += '<p class="corr-qp-task">' + _escapeAndNl2br(data.task) + '</p>';
+    html += '<ul class="corr-qp-instructions">';
+    if (data.instruction1) html += '<li>' + _escapeAndNl2br(data.instruction1) + '</li>';
+    if (data.instruction2) html += '<li>' + _escapeAndNl2br(data.instruction2) + '</li>';
+    if (data.instruction3) html += '<li>' + _escapeAndNl2br(data.instruction3) + '</li>';
+    html += '</ul>';
+    html += '<p class="corr-qp-note">Write as much as you can and in complete sentences.</p>';
+    html += '<div class="corr-qp-email-meta">';
+    html += '<p><strong>To:</strong> ' + _escapeAndNl2br(data.to) + '</p>';
+    html += '<p><strong>Subject:</strong> ' + _escapeAndNl2br(data.subject) + '</p>';
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
+function _renderDiscussionQuestionPreview(data) {
+    var replaceName = function(text) {
+        if (!text) return '';
+        return text.replace(/\{name1\}/g, 'Claire').replace(/\{name2\}/g, 'Andrew');
+    };
+
+    var html = '<div class="corr-question-preview">';
+    html += '<p class="corr-qp-situation">' + _escapeAndNl2br(data.classContext) + '</p>';
+    html += '<div class="corr-qp-disc-instruction">';
+    html += '<p class="corr-qp-disc-instruction-title">In your response, you should do the following.</p>';
+    html += '<ul><li>Express and support your opinion.</li>';
+    html += '<li>Make a contribution to the discussion in your own words.</li></ul>';
+    html += '<p class="corr-qp-note">An effective response will contain at least 100 words.</p>';
+    html += '</div>';
+    html += '<div class="corr-qp-disc-topic">';
+    html += '<p class="corr-qp-disc-topic-label">Professor:</p>';
+    html += '<p>' + _escapeAndNl2br(data.topic) + '</p>';
+    html += '</div>';
+    html += '<div class="corr-qp-disc-opinions">';
+    html += '<div class="corr-qp-disc-opinion">';
+    html += '<span class="corr-qp-disc-name">Claire</span>';
+    html += '<p>' + _escapeAndNl2br(replaceName(data.student1Opinion)) + '</p>';
+    html += '</div>';
+    html += '<div class="corr-qp-disc-opinion">';
+    html += '<span class="corr-qp-disc-name">Andrew</span>';
+    html += '<p>' + _escapeAndNl2br(replaceName(data.student2Opinion)) + '</p>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
+function _renderSpeakingQuestionPreview(data) {
+    var html = '<div class="corr-question-preview">';
+    if (data.contextText) {
+        html += '<div class="corr-qp-spk-context">';
+        html += '<p class="corr-qp-disc-topic-label">Interview Context</p>';
+        html += '<p>' + _escapeAndNl2br(data.contextText) + '</p>';
+        html += '</div>';
+    }
+    html += '<div class="corr-qp-spk-questions">';
+    for (var q = 0; q < data.videos.length; q++) {
+        var script = data.videos[q].script;
+        if (!script) continue;
+        html += '<div class="corr-qp-spk-q">';
+        html += '<span class="corr-qp-spk-badge">Q' + (q + 1) + '</span>';
+        html += '<p>' + _escapeAndNl2br(script) + '</p>';
+        html += '</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+    return html;
 }
 
 // ============================================================

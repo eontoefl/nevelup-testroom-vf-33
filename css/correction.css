@@ -383,6 +383,169 @@
     padding: 0 20px 20px;
 }
 
+/* 문제 보기 아코디언 — 참고 자료 톤 구분 */
+.corr-accordion-item[data-section="question"] {
+    background: #fffdf5;
+    border: 1px solid rgba(200, 180, 100, 0.18);
+    margin-bottom: 4px;
+}
+
+.corr-accordion-item[data-section="question"] .corr-accordion-header {
+    color: #8a7a3a;
+    font-size: 14px;
+}
+
+.corr-accordion-item[data-section="question"] .corr-accordion-header:hover {
+    background: rgba(200, 180, 100, 0.08);
+}
+
+/* ================================================
+   과제 상세 — 문제 보기
+   ================================================ */
+
+.corr-question-preview {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-color, #1a1a1a);
+}
+
+.corr-qp-situation {
+    margin: 0 0 12px;
+}
+
+.corr-qp-task {
+    font-weight: 600;
+    margin: 0 0 8px;
+}
+
+.corr-qp-instructions {
+    margin: 0 0 12px;
+    padding-left: 20px;
+}
+
+.corr-qp-instructions li {
+    margin-bottom: 4px;
+}
+
+.corr-qp-note {
+    font-size: 13px;
+    color: #888;
+    font-style: italic;
+    margin: 0 0 12px;
+}
+
+.corr-qp-email-meta {
+    background: #f9f7fc;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.corr-qp-email-meta p {
+    margin: 2px 0;
+    font-size: 13px;
+}
+
+/* Discussion */
+.corr-qp-disc-instruction {
+    margin-bottom: 16px;
+}
+
+.corr-qp-disc-instruction-title {
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+
+.corr-qp-disc-instruction ul {
+    margin: 4px 0 8px;
+    padding-left: 20px;
+}
+
+.corr-qp-disc-topic {
+    background: #f9f7fc;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.corr-qp-disc-topic-label {
+    font-weight: 700;
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: var(--primary-color, #6c5ce7);
+}
+
+.corr-qp-disc-opinions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.corr-qp-disc-opinion {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.corr-qp-disc-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--primary-color, #6c5ce7);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.corr-qp-disc-opinion p {
+    margin: 0;
+}
+
+/* Speaking */
+.corr-qp-spk-context {
+    background: #f9f7fc;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.corr-qp-spk-context p {
+    margin: 0;
+}
+
+.corr-qp-spk-context .corr-qp-disc-topic-label {
+    margin-bottom: 6px;
+}
+
+.corr-qp-spk-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.corr-qp-spk-q {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+.corr-qp-spk-badge {
+    flex-shrink: 0;
+    background: var(--primary-color, #6c5ce7);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-top: 2px;
+}
+
+.corr-qp-spk-q p {
+    margin: 0;
+}
+
 /* ================================================
    과제 상세 — Draft 텍스트 / 메타
    ================================================ */
