@@ -505,11 +505,30 @@ var AUS_GUIDE_DATA = {
     '브레인스토밍': {
         emoji: '🧠',
         title: '브레인스토밍 진행 방법',
-        steps: [
-            '브레인스토밍 과제 안내는 준비 중입니다.',
-            '곧 상세한 진행 방법이 업데이트될 예정이에요.',
-            '업데이트 전까지는 자유롭게 학습해 주세요.',
-            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        sections: [
+            {
+                icon: '💡',
+                heading: '브레인스토밍이란?',
+                description: '독스(TOEFL Speaking)와 달리, 브레인스토밍은 답변을 녹음·업로드하는 과제가 아닙니다. <strong>15초 안에 아이디어를 떠올리고, 45초 동안 답변해 보는 연습</strong>입니다. 문법이나 구성을 깊게 고민하기보다, <strong>15초 안에 아이디어를 생각해내는 것</strong>이 최우선 과제예요.'
+            },
+            {
+                icon: '📝',
+                heading: '진행 방법',
+                steps: [
+                    '시작하기 전에 반드시 <strong>노트테이킹 용지를 펼쳐 준비</strong>해 주세요.',
+                    '<strong>브레인스토밍 시작하기</strong>를 눌러 진행합니다. 주제가 나오면 <strong>15초</strong> 안에 떠오르는 아이디어를 노트테이킹합니다.',
+                    '이어서 <strong>45초</strong> 동안 노트를 바탕으로 답변을 말해 보세요. 배운 내용을 활용하되, 너무 완벽하게 하려 하지 않아도 괜찮아요.',
+                    '<strong>시간을 엄수하는 것이 정말 중요합니다.</strong> 타이머가 끝나면 바로 멈추세요.'
+                ]
+            },
+            {
+                icon: '📸',
+                heading: '완료 후 할 일',
+                steps: [
+                    '녹음본을 업로드할 필요는 없습니다. 대신 <strong>15초 동안 노트테이킹한 모습을 사진 찍어 업로드</strong>해 주세요.',
+                    '완료 후 <strong>해설보기</strong>를 눌러 올바른 답변 방향을 확인하고 배워 보세요.'
+                ]
+            }
         ]
     }
 };
@@ -630,14 +649,16 @@ function _openAusGuideModal(category) {
                 bodyHtml += '<p class="aus-guide-section-desc">' + sec.description + '</p>';
             }
             // 섹션 스텝
-            bodyHtml += '<ol class="aus-guide-modal-steps">';
-            for (var i = 0; i < sec.steps.length; i++) {
-                bodyHtml += '<li class="aus-guide-step">';
-                bodyHtml += '<span class="aus-guide-step-num">' + (i + 1) + '</span>';
-                bodyHtml += '<span class="aus-guide-step-text">' + sec.steps[i] + '</span>';
-                bodyHtml += '</li>';
+            if (sec.steps && sec.steps.length > 0) {
+                bodyHtml += '<ol class="aus-guide-modal-steps">';
+                for (var i = 0; i < sec.steps.length; i++) {
+                    bodyHtml += '<li class="aus-guide-step">';
+                    bodyHtml += '<span class="aus-guide-step-num">' + (i + 1) + '</span>';
+                    bodyHtml += '<span class="aus-guide-step-text">' + sec.steps[i] + '</span>';
+                    bodyHtml += '</li>';
+                }
+                bodyHtml += '</ol>';
             }
-            bodyHtml += '</ol>';
             bodyHtml += '</div>';
         }
     } else if (data.steps) {
@@ -770,12 +791,37 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     }
     
     // 실전풀이 바로가기 버튼
+    var brainstormDay = (typeof _getAusBrainstormDay === 'function') ? _getAusBrainstormDay(taskName) : null;
+    var splitBtn = document.querySelector('.aus-select-btn--split');
     var solveBtn = document.getElementById('ausSelectBtnSolve');
+    var divider = document.querySelector('.aus-split-divider');
+    var reviewBtnInSplit = document.getElementById('ausSelectBtnReview');
+
+    if (brainstormDay) {
+        // 브레인스토밍: 분할 해제 → 통 버튼으로 변경
+        if (divider) divider.style.display = 'none';
+        if (reviewBtnInSplit) reviewBtnInSplit.style.display = 'none';
+        if (solveBtn) {
+            solveBtn.style.flex = '1';
+            solveBtn.querySelector('.aus-split-label').innerHTML = '브레인스토밍<br>시작하기';
+        }
+    } else {
+        // 일반 과제: 분할 원복
+        if (divider) divider.style.display = '';
+        if (reviewBtnInSplit) reviewBtnInSplit.style.display = '';
+        if (solveBtn) {
+            solveBtn.style.flex = '';
+            solveBtn.querySelector('.aus-split-label').innerHTML = '실전풀이<br>바로가기';
+        }
+    }
+
     if (solveBtn) {
         solveBtn.onclick = function() {
             _guardedAction(function() {
                 console.log('[Australia] 실전풀이 바로가기 선택: ' + taskName);
-                if (externalLinks && externalLinks.solve) {
+                if (brainstormDay) {
+                    startBrainstormModule(brainstormDay);
+                } else if (externalLinks && externalLinks.solve) {
                     window.open(externalLinks.solve, '_blank');
                 } else {
                     _showAusPreparing();
