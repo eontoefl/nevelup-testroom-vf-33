@@ -43,9 +43,9 @@ function initScheduleScreen() {
     }
     
     if (programBadgeElement) {
-        programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 - ', '');
+        programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 Australia - ', 'AUS - ').replace('내벨업챌린지 - ', '');
     }
-    
+
     // 코스 모드에 따라 적절한 렌더링
     var mode = window.courseMode || 'regular';
     if (mode === 'correction') {
@@ -275,9 +275,9 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
         var userNameElement = document.getElementById('currentUserName');
         var programBadgeElement = document.getElementById('currentUserProgramBadge');
         if (userNameElement) userNameElement.textContent = currentUser.name;
-        if (programBadgeElement) programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 - ', '');
+        if (programBadgeElement) programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 Australia - ', 'AUS - ').replace('내벨업챌린지 - ', '');
     }
-    
+
     var welcomeHeader = document.querySelector('#taskListScreen .welcome-header h1');
     var subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
     
@@ -1227,10 +1227,10 @@ function showTaskListScreen(week, dayKr, tasks) {
         }
         
         if (programBadgeElement) {
-            programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 - ', '');
+            programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 Australia - ', 'AUS - ').replace('내벨업챌린지 - ', '');
         }
     }
-    
+
     // 헤더 변경
     const welcomeHeader = document.querySelector('#taskListScreen .welcome-header h1');
     const subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
