@@ -11,7 +11,7 @@
 // 오디오 URL
 // ============================================================
 var BRAINSTORM_AUDIO = {
-    introNarration: 'https://eontoefl.github.io/toefl-audio/toefl-audio/australia/audio/intro_audio/indspk_brainstorm_intro.mp3',
+    introNarration: 'https://eontoefl.github.io/toefl-audio/australia/audio/intro_audio/indspk_brainstorm_intro.mp3',
     prepareBeep: 'https://eontoefl.github.io/toefl-audio/australia/audio/fixed_audio/prepare_beep.mp3',
     speakBeep: 'https://eontoefl.github.io/toefl-audio/australia/audio/fixed_audio/begin_beep.mp3'
 };
