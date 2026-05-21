@@ -11,9 +11,9 @@
 // 오디오 URL
 // ============================================================
 var BRAINSTORM_AUDIO = {
-    introNarration: 'https://eontoefl.github.io/toefl-audio/australia/brainstorming/fixed_audio/brainstorming_intro.mp3',
-    prepareBeep: 'https://eontoefl.github.io/toefl-audio/australia/brainstorming/fixed_audio/prepare_beep.mp3',
-    speakBeep: 'https://eontoefl.github.io/toefl-audio/australia/brainstorming/fixed_audio/begin_beep.mp3'
+    introNarration: 'https://eontoefl.github.io/toefl-audio/toefl-audio/australia/audio/intro_audio/indspk_brainstorm_intro.mp3',
+    prepareBeep: 'https://eontoefl.github.io/toefl-audio/australia/audio/fixed_audio/prepare_beep.mp3',
+    speakBeep: 'https://eontoefl.github.io/toefl-audio/australia/audio/fixed_audio/begin_beep.mp3'
 };
 
 // ============================================================
@@ -215,10 +215,8 @@ function _startPreparePhase(dayData, topicIndex) {
 
     mod.audioPlayer.play(BRAINSTORM_AUDIO.prepareBeep, function() {
         if (mod._destroyed) return;
-        _playBeepTone(mod, function() {
-            _runCountdown(15, function() {
-                _startSpeakPhase(dayData, topicIndex);
-            });
+        _runCountdown(15, function() {
+            _startSpeakPhase(dayData, topicIndex);
         });
     });
 }
@@ -242,10 +240,8 @@ function _startSpeakPhase(dayData, topicIndex) {
 
     mod.audioPlayer.play(BRAINSTORM_AUDIO.speakBeep, function() {
         if (mod._destroyed) return;
-        _playBeepTone(mod, function() {
-            _runCountdown(45, function() {
-                _onTopicComplete(dayData, topicIndex);
-            });
+        _runCountdown(45, function() {
+            _onTopicComplete(dayData, topicIndex);
         });
     });
 }
@@ -383,40 +379,6 @@ function cleanupBrainstormModule() {
 
     window.currentBrainstormModule = null;
     console.log('[Brainstorm] cleanup 완료');
-}
-
-// ============================================================
-// Beep 톤 (RepeatComponent 동일 — OscillatorNode)
-// ============================================================
-
-function _playBeepTone(mod, onDone) {
-    try {
-        var audioContext = (mod.audioPlayer && mod.audioPlayer.audioCtx)
-            ? mod.audioPlayer.audioCtx
-            : new (window.AudioContext || window.webkitAudioContext)();
-
-        var oscillator = audioContext.createOscillator();
-        var gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.frequency.value = 1200;
-        oscillator.type = 'square';
-
-        gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
-
-        setTimeout(function() {
-            if (onDone) onDone();
-        }, 600);
-    } catch (e) {
-        console.error('[Brainstorm] beep 재생 실패:', e);
-        if (onDone) onDone();
-    }
 }
 
 // ============================================================
