@@ -89,8 +89,9 @@ function _showBrainstormIntroScreen() {
 
     var continueBtn = document.getElementById('brainstormContinueBtn');
     continueBtn.style.display = 'inline-block';
-    continueBtn.disabled = true;
-    continueBtn.style.opacity = '0.4';
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = '1';
+    continueBtn.style.cursor = 'pointer';
     continueBtn.onclick = function() {
         _startTopicPhase();
     };

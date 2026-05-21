@@ -395,6 +395,18 @@ function _getAusReadingNumber(taskName) {
     return match ? parseInt(match[1]) : null;
 }
 
+// ─── Australia 통스 외부 링크 매핑 ───
+var AUS_INTSPK_LINKS = {
+    1: { review: 'https://test618.com/toefl/speaking/35656.html' },
+    2: { review: 'https://test618.com/toefl/speaking/35608.html' },
+    3: { review: 'https://test618.com/toefl/speaking/35657.html' },
+    4: { review: 'https://test618.com/toefl/speaking/35717.html' },
+    5: { review: 'https://test618.com/toefl/speaking/35429.html' },
+    6: { review: 'https://test618.com/toefl/speaking/35611.html' },
+    7: { review: 'https://test618.com/toefl/speaking/35609.html' },
+    8: { review: 'https://test618.com/toefl/speaking/35617.html' }
+};
+
 // ─── Australia 리스닝 외부 링크 매핑 ───
 var AUS_LISTENING_LINKS = {
     1:  { solve: 'https://test618.com/toefl/listening/exercise?id=1305',  review: 'https://test618.com/toefl/listening/1305.html' },
@@ -565,7 +577,7 @@ function _isAusFirstTask(taskName) {
     if (/^토라\s*1$/.test(taskName.trim())) return true;
     if (/^통라\s*1$/.test(taskName.trim())) return true;
     if (/브레인스토밍\s*Day\s*1$/i.test(taskName.trim())) return true;
-    // 통스 TOPIC 1, 토라 1 형태도 첫 번째로 취급하지 않음 (번호가 있는 기본형만)
+    // 독스 TOPIC 1, 토라 1 형태도 첫 번째로 취급하지 않음 (번호가 있는 기본형만)
     return false;
 }
 
@@ -779,7 +791,11 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
         actionFn();
     }
     
-    // ── 외부 링크 확인 (리딩 / 리스닝) ──
+    // ── 유형 감지 ──
+    var brainstormDay = (typeof _getAusBrainstormDay === 'function') ? _getAusBrainstormDay(taskName) : null;
+    var intspkNumber = (typeof _getAusIntspkNumber === 'function') ? _getAusIntspkNumber(taskName) : null;
+
+    // ── 외부 링크 확인 (리딩 / 리스닝 / 통스) ──
     var externalLinks = null;
     var readingNum = _getAusReadingNumber(taskName);
     if (readingNum && AUS_READING_LINKS[readingNum]) {
@@ -789,9 +805,9 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     if (listeningNum && AUS_LISTENING_LINKS[listeningNum]) {
         externalLinks = AUS_LISTENING_LINKS[listeningNum];
     }
-    
-    // 실전풀이 바로가기 버튼
-    var brainstormDay = (typeof _getAusBrainstormDay === 'function') ? _getAusBrainstormDay(taskName) : null;
+    if (intspkNumber && AUS_INTSPK_LINKS[intspkNumber]) {
+        externalLinks = AUS_INTSPK_LINKS[intspkNumber];
+    }
     var splitBtn = document.querySelector('.aus-select-btn--split');
     var solveBtn = document.getElementById('ausSelectBtnSolve');
     var divider = document.querySelector('.aus-split-divider');
@@ -806,12 +822,16 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
             solveBtn.querySelector('.aus-split-label').innerHTML = '브레인스토밍<br>시작하기';
         }
     } else {
-        // 일반 과제: 분할 원복
+        // 일반 과제 + 통스: 분할 원복
         if (divider) divider.style.display = '';
         if (reviewBtnInSplit) reviewBtnInSplit.style.display = '';
         if (solveBtn) {
             solveBtn.style.flex = '';
-            solveBtn.querySelector('.aus-split-label').innerHTML = '실전풀이<br>바로가기';
+            if (intspkNumber) {
+                solveBtn.querySelector('.aus-split-label').innerHTML = '통스<br>시작하기';
+            } else {
+                solveBtn.querySelector('.aus-split-label').innerHTML = '실전풀이<br>바로가기';
+            }
         }
     }
 
@@ -821,6 +841,8 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
                 console.log('[Australia] 실전풀이 바로가기 선택: ' + taskName);
                 if (brainstormDay) {
                     startBrainstormModule(brainstormDay);
+                } else if (intspkNumber) {
+                    startIntspkModule(intspkNumber);
                 } else if (externalLinks && externalLinks.solve) {
                     window.open(externalLinks.solve, '_blank');
                 } else {
