@@ -77,6 +77,7 @@
     <link rel="stylesheet" href="css/speaking-interview-result.css?v=003">
     <link rel="stylesheet" href="css/brainstorming.css?v=001">
     <link rel="stylesheet" href="css/intspk.css?v=001">
+    <link rel="stylesheet" href="css/intwrt.css?v=001">
     <link rel="stylesheet" href="css/ind-spk.css?v=001">
     <link rel="stylesheet" href="css/vocab-test-v3.css?v=20250209-icon-buttons">
     <link rel="stylesheet" href="css/vocab-test-result-v4.css?v=20250209-clean-layout">
@@ -2656,6 +2657,23 @@
         </div>
     </div>
 
+    <!-- ============================= -->
+    <!-- [Australia] 통합 라이팅 (통라) -->
+    <!-- ============================= -->
+    <div id="intwrtScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="cleanupIntwrtModule(); _backFromIntwrt();" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span class="test-title" id="intwrtTitle">Integrated Writing</span>
+            <button class="btn-continue" id="intwrtNextBtn" style="display:none;">
+                Next
+            </button>
+        </div>
+        <div class="test-content" id="intwrtContent">
+        </div>
+    </div>
+
     <!-- 내벨업보카 시험 섹션 -->
     <div id="vocabTestScreen" class="screen">
         <div class="test-header">
@@ -2865,6 +2883,8 @@
     <!-- Integrated Speaking (Australia) -->
     <script src="js/intspk/intspk-loader.js?v=001"></script>
     <script src="js/intspk/intspk-component.js?v=001"></script>
+    <script src="js/intwrt/intwrt-loader.js?v=001"></script>
+    <script src="js/intwrt/intwrt-component.js?v=001"></script>
     <!-- Independent Speaking (Australia) -->
     <script src="js/ind-spk/ind-spk-loader.js?v=001"></script>
     <script src="js/ind-spk/ind-spk-component.js?v=001"></script>

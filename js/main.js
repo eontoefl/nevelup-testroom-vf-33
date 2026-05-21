@@ -361,7 +361,8 @@ function _isAusSelectableTask(taskName) {
     if (taskName.includes('리딩')) return true;
     if (taskName.includes('리스닝')) return true;
     if (taskName.includes('통스')) return true;
-    if (taskName.includes('토라') || taskName.includes('통라')) return true;
+    if (taskName.includes('통라')) return true;
+    if (taskName.includes('토라')) return true;
     if (taskName.includes('브레인스토밍')) return true;
     if (taskName.includes('독스')) return true;
     return false;
@@ -528,6 +529,16 @@ var AUS_GUIDE_DATA = {
             '궁금한 점은 담당 선생님께 문의해 주세요.'
         ]
     },
+    '통라': {
+        emoji: '✍️',
+        title: '통라 문제 푸는 방법',
+        steps: [
+            '통라 과제 안내는 준비 중입니다.',
+            '곧 상세한 풀이 방법이 업데이트될 예정이에요.',
+            '업데이트 전까지는 자유롭게 학습해 주세요.',
+            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        ]
+    },
     '브레인스토밍': {
         emoji: '🧠',
         title: '브레인스토밍 진행 방법',
@@ -572,7 +583,8 @@ function _getAusTaskCategory(taskName) {
     if (taskName.includes('리딩')) return '리딩';
     if (taskName.includes('리스닝')) return '리스닝';
     if (taskName.includes('통스')) return '통스';
-    if (taskName.includes('토라') || taskName.includes('통라')) return '토라';
+    if (taskName.includes('통라')) return '통라';
+    if (taskName.includes('토라')) return '토라';
     if (taskName.includes('브레인스토밍')) return '브레인스토밍';
     if (taskName.includes('독스')) return '독스';
     return null;
@@ -753,7 +765,8 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     if (taskName.includes('리딩')) iconEmoji = '📖';
     else if (taskName.includes('리스닝')) iconEmoji = '🎧';
     else if (taskName.includes('통스')) iconEmoji = '🎤';
-    else if (taskName.includes('토라') || taskName.includes('통라')) iconEmoji = '✏️';
+    else if (taskName.includes('통라')) iconEmoji = '✍️';
+    else if (taskName.includes('토라')) iconEmoji = '✏️';
     else if (taskName.includes('브레인스토밍')) iconEmoji = '🧠';
     else if (taskName.includes('독스')) iconEmoji = '🎙️';
 
@@ -811,6 +824,7 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     var brainstormDay = (typeof _getAusBrainstormDay === 'function') ? _getAusBrainstormDay(taskName) : null;
     var intspkNumber = (typeof _getAusIntspkNumber === 'function') ? _getAusIntspkNumber(taskName) : null;
     var indSpkNumber = (typeof _getAusIndSpkNumber === 'function') ? _getAusIndSpkNumber(taskName) : null;
+    var intwrtNumber = (typeof _getAusIntwrtNumber === 'function') ? _getAusIntwrtNumber(taskName) : null;
 
     // ── 외부 링크 확인 (리딩 / 리스닝 / 통스) ──
     var externalLinks = null;
@@ -830,14 +844,16 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     var divider = document.querySelector('.aus-split-divider');
     var reviewBtnInSplit = document.getElementById('ausSelectBtnReview');
 
-    if (brainstormDay || indSpkNumber) {
-        // 브레인스토밍 / 독스: 분할 해제 → 통 버튼으로 변경
+    if (brainstormDay || indSpkNumber || intwrtNumber) {
+        // 브레인스토밍 / 독스 / 통라: 분할 해제 → 통 버튼으로 변경
         if (divider) divider.style.display = 'none';
         if (reviewBtnInSplit) reviewBtnInSplit.style.display = 'none';
         if (solveBtn) {
             solveBtn.style.flex = '1';
             if (brainstormDay) {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '브레인스토밍<br>시작하기';
+            } else if (intwrtNumber) {
+                solveBtn.querySelector('.aus-split-label').innerHTML = '통라<br>시작하기';
             } else {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '독스<br>시작하기';
             }
@@ -862,6 +878,8 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
                 console.log('[Australia] 실전풀이 바로가기 선택: ' + taskName);
                 if (brainstormDay) {
                     startBrainstormModule(brainstormDay);
+                } else if (intwrtNumber) {
+                    startIntwrtModule(intwrtNumber);
                 } else if (indSpkNumber) {
                     startIndSpkModule(indSpkNumber);
                 } else if (intspkNumber) {
