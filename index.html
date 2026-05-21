@@ -77,6 +77,7 @@
     <link rel="stylesheet" href="css/speaking-interview-result.css?v=003">
     <link rel="stylesheet" href="css/brainstorming.css?v=001">
     <link rel="stylesheet" href="css/intspk.css?v=001">
+    <link rel="stylesheet" href="css/ind-spk.css?v=001">
     <link rel="stylesheet" href="css/vocab-test-v3.css?v=20250209-icon-buttons">
     <link rel="stylesheet" href="css/vocab-test-result-v4.css?v=20250209-clean-layout">
     <link rel="stylesheet" href="css/intro-book-modal.css?v=001">
@@ -2622,6 +2623,23 @@
     </div>
 
     <!-- ============================= -->
+    <!-- [Australia] 독립형 스피킹 (독스) -->
+    <!-- ============================= -->
+    <div id="indSpkScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="cleanupIndSpkModule(); backToAusTaskSelect();" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span class="test-title" id="indSpkTitle">Independent Speaking</span>
+            <button class="btn-continue" id="indSpkContinueBtn" disabled style="display:none;opacity:0.4;">
+                Continue
+            </button>
+        </div>
+        <div class="test-content" id="indSpkContent">
+        </div>
+    </div>
+
+    <!-- ============================= -->
     <!-- [Australia] 통합 스피킹 (통스) -->
     <!-- ============================= -->
     <div id="intspkScreen" class="screen" style="display:none;">
@@ -2847,6 +2865,9 @@
     <!-- Integrated Speaking (Australia) -->
     <script src="js/intspk/intspk-loader.js?v=001"></script>
     <script src="js/intspk/intspk-component.js?v=001"></script>
+    <!-- Independent Speaking (Australia) -->
+    <script src="js/ind-spk/ind-spk-loader.js?v=001"></script>
+    <script src="js/ind-spk/ind-spk-component.js?v=001"></script>
 <script src="js/vocab-test-logic-v2.js?v=20260223_stats"></script>
 
     <!-- ===== Correction (FEEDBACK) ===== -->

@@ -1,0 +1,242 @@
+/* ============================================================
+   Independent Speaking (Australia)
+   Brainstorming 스타일 기반 — Design System 적용
+   ============================================================ */
+
+/* ── 인트로 화면 ── */
+.ids-intro-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px);
+    background: #f7fafc;
+}
+.ids-intro-card {
+    max-width: 700px;
+    text-align: center;
+    background: #ffffff;
+    padding: 60px 50px;
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(25, 28, 29, 0.05);
+}
+.ids-intro-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 30px;
+    background: linear-gradient(135deg, #006688, #50c9ff);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ids-intro-icon i {
+    font-size: 32px;
+    color: #fff;
+}
+.ids-intro-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #191c1d;
+    margin-bottom: 10px;
+    letter-spacing: -0.02em;
+}
+.ids-intro-type-badge {
+    display: inline-block;
+    background: #edf2f7;
+    color: #3e484f;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 16px;
+    border-radius: 20px;
+    margin-bottom: 25px;
+    letter-spacing: 0.5px;
+}
+.ids-intro-text {
+    font-size: 18px;
+    line-height: 1.8;
+    color: #3e484f;
+    margin-bottom: 30px;
+}
+.ids-intro-text p {
+    margin: 0 0 15px 0;
+}
+.ids-intro-text p:last-child {
+    margin-bottom: 0;
+}
+.ids-intro-note {
+    padding: 15px 25px;
+    background: #edf2f7;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+/* ── 주제 화면 ── */
+.ids-topic-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 56px);
+    padding: 60px 24px 20px;
+    text-align: center;
+}
+.ids-topic-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #3e484f;
+    margin-bottom: 28px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.ids-topic-text {
+    font-size: 22px;
+    font-weight: 500;
+    color: #191c1d;
+    line-height: 1.8;
+    max-width: 700px;
+    margin-bottom: 40px;
+}
+
+/* ── 타이머 섹션 ── */
+.ids-timer-section {
+    width: 100%;
+    max-width: 500px;
+}
+.ids-timer-display {
+    width: 100%;
+    background: #5a5f6b;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.ids-timer-phase-label {
+    background: #5a5f6b;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    padding: 12px 20px;
+    text-align: center;
+    letter-spacing: 1.5px;
+}
+.ids-timer-content {
+    background: #ffffff;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.ids-timer-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* 원형 프로그레스 */
+.ids-progress-circle {
+    width: 50px;
+    height: 50px;
+    position: relative;
+    flex-shrink: 0;
+}
+.ids-progress-circle > svg:first-child {
+    transform: rotate(-90deg);
+}
+.ids-progress-circle-bg {
+    fill: none;
+    stroke: #e0e0e0;
+    stroke-width: 4;
+}
+.ids-progress-circle-fill {
+    fill: none;
+    stroke: #8b5cf6;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+}
+.ids-mic-icon {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    color: #8b5cf6;
+}
+.ids-timer-text {
+    font-size: 32px;
+    font-weight: 600;
+    color: #2d3748;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: center;
+}
+
+/* ── 완료 화면 ── */
+.ids-complete-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px);
+    background: #f7fafc;
+}
+.ids-complete-card {
+    max-width: 460px;
+    width: 90%;
+    text-align: center;
+    background: #ffffff;
+    padding: 50px 40px;
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(25, 28, 29, 0.05);
+}
+.ids-complete-check {
+    margin-bottom: 24px;
+}
+.ids-complete-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #191c1d;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.02em;
+}
+.ids-complete-desc {
+    font-size: 16px;
+    color: #3e484f;
+    margin: 0 0 32px 0;
+    line-height: 1.6;
+}
+.ids-complete-btn {
+    background: linear-gradient(135deg, #006688, #50c9ff);
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 12px 40px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.25s;
+}
+.ids-complete-btn:active {
+    opacity: 0.8;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+    .ids-intro-card {
+        padding: 40px 30px;
+    }
+    .ids-intro-title {
+        font-size: 28px;
+    }
+    .ids-intro-text {
+        font-size: 16px;
+    }
+    .ids-topic-text {
+        font-size: 18px;
+    }
+    .ids-complete-card {
+        padding: 40px 28px;
+    }
+}
