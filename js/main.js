@@ -825,6 +825,7 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     var intspkNumber = (typeof _getAusIntspkNumber === 'function') ? _getAusIntspkNumber(taskName) : null;
     var indSpkNumber = (typeof _getAusIndSpkNumber === 'function') ? _getAusIndSpkNumber(taskName) : null;
     var intwrtNumber = (typeof _getAusIntwrtNumber === 'function') ? _getAusIntwrtNumber(taskName) : null;
+    var toraNumber = (typeof _getAusToraNumber === 'function') ? _getAusToraNumber(taskName) : null;
 
     // ── 외부 링크 확인 (리딩 / 리스닝 / 통스) ──
     var externalLinks = null;
@@ -844,7 +845,7 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     var divider = document.querySelector('.aus-split-divider');
     var reviewBtnInSplit = document.getElementById('ausSelectBtnReview');
 
-    if (brainstormDay || indSpkNumber || intwrtNumber) {
+    if (brainstormDay || indSpkNumber || intwrtNumber || toraNumber) {
         // 브레인스토밍 / 독스 / 통라: 분할 해제 → 통 버튼으로 변경
         if (divider) divider.style.display = 'none';
         if (reviewBtnInSplit) reviewBtnInSplit.style.display = 'none';
@@ -854,6 +855,8 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '브레인스토밍<br>시작하기';
             } else if (intwrtNumber) {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '통라<br>시작하기';
+            } else if (toraNumber) {
+                solveBtn.querySelector('.aus-split-label').innerHTML = '토라<br>시작하기';
             } else {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '독스<br>시작하기';
             }
@@ -880,6 +883,8 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
                     startBrainstormModule(brainstormDay);
                 } else if (intwrtNumber) {
                     startIntwrtModule(intwrtNumber);
+                } else if (toraNumber) {
+                    startAusDiscussionModule(toraNumber);
                 } else if (indSpkNumber) {
                     startIndSpkModule(indSpkNumber);
                 } else if (intspkNumber) {

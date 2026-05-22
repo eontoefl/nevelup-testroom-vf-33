@@ -2674,6 +2674,29 @@
         </div>
     </div>
 
+    <!-- ============================= -->
+    <!-- [Australia] 토론형 라이팅 (토라) -->
+    <!-- ============================= -->
+    <div id="ausDiscussionScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="cleanupAusDiscModule(); _backFromAusDisc();" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="test-title">
+                <i class="fas fa-comments"></i>
+                <span id="ausDiscTitle">Writing for an Academic Discussion</span>
+            </div>
+            <div class="test-header-right" id="ausDiscHeaderRight">
+                <span class="timer" id="ausDiscTimer"><i class="fas fa-clock"></i> 10:00</span>
+                <button id="ausDiscNextBtn" class="btn btn-success" onclick="_adFinish()">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+        <div class="test-content" id="ausDiscContent" style="display: flex; flex-direction: column; height: calc(100vh - 80px); overflow: hidden; padding: 0;">
+        </div>
+    </div>
+
     <!-- 내벨업보카 시험 섹션 -->
     <div id="vocabTestScreen" class="screen">
         <div class="test-header">
@@ -2886,6 +2909,9 @@
     <script src="js/intspk/intspk-component.js?v=001"></script>
     <script src="js/intwrt/intwrt-loader.js?v=001"></script>
     <script src="js/intwrt/intwrt-component.js?v=001"></script>
+    <!-- Discussion Writing (Australia) -->
+    <script src="js/aus-discussion/aus-discussion-loader.js?v=001"></script>
+    <script src="js/aus-discussion/aus-discussion-component.js?v=001"></script>
     <!-- Independent Speaking (Australia) -->
     <script src="js/ind-spk/ind-spk-loader.js?v=001"></script>
     <script src="js/ind-spk/ind-spk-component.js?v=001"></script>
