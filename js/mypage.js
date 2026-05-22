@@ -113,15 +113,15 @@ function renderDeadlineExtensionBanner() {
     const dayKrNames = ['일', '월', '화', '수', '목', '금', '토'];
     const activeExtensions = [];
 
+    const tz = getUserTimezone();
+
     mpDeadlineExtensions.forEach(ext => {
         const origDate = new Date(ext.original_date + 'T00:00:00');
         if (isNaN(origDate.getTime())) return;
 
-        // 연장된 마감 계산 (task-router.js와 동일)
-        let extDeadline = new Date(origDate);
-        extDeadline.setDate(extDeadline.getDate() + 1);
-        extDeadline.setHours(4, 0, 0, 0);
-        extDeadline.setDate(extDeadline.getDate() + (ext.extra_days || 1));
+        // 연장된 마감 계산 (타임존 기반)
+        let extDeadline = getTaskDeadline(ext.original_date, tz);
+        extDeadline = new Date(extDeadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
 
         if (now < extDeadline) {
             activeExtensions.push({
@@ -175,13 +175,11 @@ function renderDeadlineExtensionBanner() {
 // 시작 전 여부 판별
 // ================================================
 function isBeforeStart() {
-    if (!mpUser.startDate) return false; // 시작일 정보 없으면 진행중으로 간주
+    if (!mpUser.startDate) return false;
     const start = new Date(mpUser.startDate);
     start.setHours(0, 0, 0, 0);
-    const now = new Date();
-    if (now.getHours() < 4) now.setDate(now.getDate() - 1);
-    now.setHours(0, 0, 0, 0);
-    return now < start;
+    const effective = getEffectiveToday(getUserTimezone());
+    return effective < start;
 }
 
 // 등급/환급 산정 전 여부: 시작일 다음날부터 산정 (시작일 당일 포함 = 산정 전)
@@ -189,20 +187,16 @@ function isGradeBeforeStart() {
     if (!mpUser.startDate) return false;
     const start = new Date(mpUser.startDate);
     start.setHours(0, 0, 0, 0);
-    const now = new Date();
-    if (now.getHours() < 4) now.setDate(now.getDate() - 1);
-    now.setHours(0, 0, 0, 0);
-    return now <= start; // 당일 포함
+    const effective = getEffectiveToday(getUserTimezone());
+    return effective <= start;
 }
 
 function getDaysUntilStart() {
     if (!mpUser.startDate) return 0;
     const start = new Date(mpUser.startDate);
     start.setHours(0, 0, 0, 0);
-    const now = new Date();
-    if (now.getHours() < 4) now.setDate(now.getDate() - 1);
-    now.setHours(0, 0, 0, 0);
-    return Math.ceil((start - now) / (1000 * 60 * 60 * 24));
+    const effective = getEffectiveToday(getUserTimezone());
+    return Math.ceil((start - effective) / (1000 * 60 * 60 * 24));
 }
 
 function formatStartDate(dateStr) {
@@ -246,11 +240,8 @@ function renderTodayTasks() {
         return;
     }
 
-    // 오늘 날짜 계산 (새벽 4시 기준)
-    const now = new Date();
-    const effectiveToday = new Date(now);
-    if (now.getHours() < 4) effectiveToday.setDate(effectiveToday.getDate() - 1);
-    effectiveToday.setHours(0, 0, 0, 0);
+    // 오늘 날짜 계산 (학생 타임존 기준 새벽 4시)
+    const effectiveToday = getEffectiveToday(getUserTimezone());
 
     const startDate = new Date(mpUser.startDate + 'T00:00:00');
     if (isNaN(startDate.getTime())) {
@@ -324,9 +315,7 @@ function renderSummaryCards() {
     // ── 경과일 / 잔여일 / 전체일 계산 ──
     const startDate = new Date(mpUser.startDate);
     startDate.setHours(0, 0, 0, 0);
-    const today = new Date();
-    if (today.getHours() < 4) today.setDate(today.getDate() - 1);
-    today.setHours(0, 0, 0, 0);
+    const today = getEffectiveToday(getUserTimezone());
 
     const beforeStart = isBeforeStart();
 
@@ -436,14 +425,9 @@ function countTasksDueToday(programType, totalWeeks) {
     const startDate = new Date(mpUser.startDate + 'T00:00:00');
     if (isNaN(startDate.getTime())) return { due: 0, completed: 0 };
 
+    const tz = getUserTimezone();
     const now = new Date();
-
-    // 새벽 4시 기준: 4시 이전이면 "오늘"은 어제
-    const effectiveToday = new Date(now);
-    if (now.getHours() < 4) {
-        effectiveToday.setDate(effectiveToday.getDate() - 1);
-    }
-    effectiveToday.setHours(0, 0, 0, 0);
+    const effectiveToday = getEffectiveToday(tz);
 
     let totalTasks = 0;
 
@@ -461,11 +445,9 @@ function countTasksDueToday(programType, totalWeeks) {
             
             // 연장된 과제: 연장된 마감이 아직 안 지났으면 분모에서 제외
             if (ext) {
-                let extDeadline = new Date(taskDate);
-                extDeadline.setDate(extDeadline.getDate() + 1);
-                extDeadline.setHours(4, 0, 0, 0);
-                extDeadline.setDate(extDeadline.getDate() + (ext.extra_days || 1));
-                if (now < extDeadline) continue; // 연장 마감 전 → 분모 제외
+                let extDeadline = getTaskDeadline(taskDate, tz);
+                extDeadline = new Date(extDeadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+                if (now < extDeadline) continue;
             }
 
             // 과제 날짜가 오늘(effective) 이하면 분모에 포함
@@ -593,11 +575,7 @@ function getDeadlineForDayNum(dayNum) {
     const taskDate = new Date(startDate);
     taskDate.setDate(taskDate.getDate() + calendarDays);
 
-    // 마감 = 다음 날 새벽 4시
-    const deadline = new Date(taskDate);
-    deadline.setDate(deadline.getDate() + 1);
-    deadline.setHours(4, 0, 0, 0);
-    return deadline;
+    return getTaskDeadline(taskDate, getUserTimezone());
 }
 
 /**
@@ -617,11 +595,9 @@ function buildExtendedDeadlineMap() {
         const origDate = new Date(ext.original_date + 'T00:00:00');
         if (isNaN(origDate.getTime())) return;
 
-        // 연장된 마감 계산 (task-router.js와 동일한 순서)
-        let extDeadline = new Date(origDate);
-        extDeadline.setDate(extDeadline.getDate() + 1);
-        extDeadline.setHours(4, 0, 0, 0);
-        extDeadline.setDate(extDeadline.getDate() + (ext.extra_days || 1));
+        // 연장된 마감 계산 (타임존 기반)
+        let extDeadline = getTaskDeadline(ext.original_date, getUserTimezone());
+        extDeadline = new Date(extDeadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
 
         // 아직 마감 전이면 → dayNum 계산해서 맵에 추가
         if (now < extDeadline) {

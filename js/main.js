@@ -1546,9 +1546,8 @@ function _renderDeadlineBanner(week, dayKr) {
     var taskDate = new Date(startDate);
     taskDate.setDate(taskDate.getDate() + (week - 1) * 7 + dayOffset);
 
-    var deadline = new Date(taskDate);
-    deadline.setDate(deadline.getDate() + 1);
-    deadline.setHours(4, 0, 0, 0);
+    var tz = getUserTimezone();
+    var deadline = getTaskDeadline(taskDate, tz);
 
     // 연장 체크
     var taskDateStr = taskDate.getFullYear() + '-' +
@@ -1557,7 +1556,7 @@ function _renderDeadlineBanner(week, dayKr) {
     var extensions = window._deadlineExtensions || [];
     var ext = extensions.find(function(e) { return e.original_date === taskDateStr; });
     if (ext) {
-        deadline.setDate(deadline.getDate() + (ext.extra_days || 1));
+        deadline = new Date(deadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
     }
 
     var now = new Date();

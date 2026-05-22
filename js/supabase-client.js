@@ -148,7 +148,7 @@ async function loginWithCredentials(email, password) {
     console.log('🔐 [Supabase] 로그인 시도:', email);
 
     // users 테이블에서 이메일로 조회
-    const users = await supabaseSelect('users', `email=eq.${encodeURIComponent(email)}&select=id,name,email,phone,role,blocked`);
+    const users = await supabaseSelect('users', `email=eq.${encodeURIComponent(email)}&select=id,name,email,phone,role,blocked,timezone`);
 
     if (!users || users.length === 0) {
         console.log('❌ [Supabase] 사용자를 찾을 수 없음');

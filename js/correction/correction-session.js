@@ -209,32 +209,34 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
 // ============================================================
 
 /**
- * 1차 Draft 데드라인: sessionDate 다음날 04:00
+ * 1차 Draft 데드라인: sessionDate 다음날 04:00 (학생 타임존 기준)
  */
 function getCorrDraft1Deadline(startDate, dayOffset, extendedHours) {
-    var base = new Date(startDate + 'T00:00:00');
-    base.setDate(base.getDate() + dayOffset + 1);
-    base.setHours(4, 0, 0, 0);
-    if (extendedHours) base.setHours(base.getHours() + extendedHours);
+    var tz = getUserTimezone();
+    // sessionDate = startDate + dayOffset
+    var sessionDate = new Date(startDate + 'T00:00:00');
+    sessionDate.setDate(sessionDate.getDate() + dayOffset);
+    var base = getTaskDeadline(sessionDate, tz);
+    if (extendedHours) base = new Date(base.getTime() + extendedHours * 60 * 60 * 1000);
     return base;
 }
 
 /**
  * 2차 Draft 데드라인: max(스케줄상 마감, feedback_1_at + 24시간)
- * 스케줄상 2차: dayOffset+1일의 다음날 04:00
+ * 스케줄상 2차: sessionDate+1일의 다음날 04:00
  */
 function getCorrDraft2Deadline(startDate, dayOffset, feedback1At, extendedHours) {
-    // 스케줄 기반
-    var base = new Date(startDate + 'T00:00:00');
-    base.setDate(base.getDate() + dayOffset + 2);
-    base.setHours(4, 0, 0, 0);
-    if (extendedHours) base.setHours(base.getHours() + extendedHours);
+    var tz = getUserTimezone();
+    // 스케줄 기반: sessionDate+1일 → 그 다음날 04:00
+    var sessionDatePlus1 = new Date(startDate + 'T00:00:00');
+    sessionDatePlus1.setDate(sessionDatePlus1.getDate() + dayOffset + 1);
+    var base = getTaskDeadline(sessionDatePlus1, tz);
+    if (extendedHours) base = new Date(base.getTime() + extendedHours * 60 * 60 * 1000);
 
     // feedback_1_at + 24시간
     if (feedback1At) {
-        var fbDeadline = new Date(feedback1At);
-        fbDeadline.setHours(fbDeadline.getHours() + 24);
-        if (extendedHours) fbDeadline.setHours(fbDeadline.getHours() + extendedHours);
+        var fbDeadline = new Date(new Date(feedback1At).getTime() + 24 * 60 * 60 * 1000);
+        if (extendedHours) fbDeadline = new Date(fbDeadline.getTime() + extendedHours * 60 * 60 * 1000);
         if (fbDeadline > base) return fbDeadline;
     }
     return base;

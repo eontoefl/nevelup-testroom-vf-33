@@ -85,9 +85,8 @@ function isTaskDeadlinePassed() {
     var taskDate = new Date(startDate);
     taskDate.setDate(taskDate.getDate() + (ct.currentWeek - 1) * 7 + dayOffset);
 
-    var deadline = new Date(taskDate);
-    deadline.setDate(deadline.getDate() + 1);
-    deadline.setHours(4, 0, 0, 0);
+    var tz = getUserTimezone();
+    var deadline = getTaskDeadline(taskDate, tz);
 
     // ★ tr_deadline_extensions 연장 체크
     var taskDateStr = taskDate.getFullYear() + '-' +
@@ -97,7 +96,7 @@ function isTaskDeadlinePassed() {
     var ext = extensions.find(function(e) { return e.original_date === taskDateStr; });
     if (ext) {
         var extraDays = ext.extra_days || 1;
-        deadline.setDate(deadline.getDate() + extraDays);
+        deadline = new Date(deadline.getTime() + extraDays * 24 * 60 * 60 * 1000);
         console.log('📅 [연장] ' + taskDateStr + ' → +' + extraDays + '일 → 새 마감:', deadline.toLocaleString());
     }
 
