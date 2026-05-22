@@ -919,7 +919,14 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
         explainBtn.onclick = function() {
             _guardedAction(function() {
                 console.log('[Australia] 해설보기 선택: ' + taskName);
-                _showAusPreparing();
+                if (category) {
+                    var url = 'commentary.html?category=' + encodeURIComponent(category)
+                        + '&week=' + encodeURIComponent(week)
+                        + '&day=' + encodeURIComponent(dayKr);
+                    window.location.href = url;
+                } else {
+                    _showAusPreparing();
+                }
             });
         };
     }

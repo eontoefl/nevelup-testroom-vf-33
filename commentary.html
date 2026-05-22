@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes" />
+  <title>해설 – 내벨업 테스트룸</title>
+  <script
+    src="https://js.sentry-cdn.com/9808cf61ad1ab17e40cf6249d4030b9b.min.js"
+    crossorigin="anonymous"
+  ></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <link rel="stylesheet" href="css/book-viewer.css?v=003_taskbar" />
+</head>
+<body class="book-viewer-page">
+
+  <!-- 1. 상단바 -->
+  <header class="book-topbar">
+    <button class="book-topbar-btn book-btn-back" id="btnBack" title="뒤로가기">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <h1 class="book-topbar-title" id="bookTitle">해설</h1>
+    <div class="book-topbar-actions">
+      <button class="book-topbar-btn book-btn-sidebar" id="btnSidebar" title="목차">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. 읽기 진행률 바 -->
+  <div class="book-progress-bar" id="progressBar">
+    <div class="book-progress-fill" id="progressFill" style="width: 0%"></div>
+  </div>
+
+  <!-- 3. 사이드바 (목차) -->
+  <div class="book-sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="book-sidebar" id="sidebar">
+    <div class="book-sidebar-tabs">
+      <button class="book-sidebar-tab active" data-tab="toc">
+        <i class="fa-solid fa-list-ul"></i> 목차
+      </button>
+    </div>
+    <div class="book-sidebar-content" id="tabToc">
+      <ul class="book-toc-list" id="tocList"></ul>
+    </div>
+  </aside>
+
+  <!-- 4. PDF 뷰어 본문 -->
+  <main class="book-viewer" id="bookViewer">
+    <div class="book-loading" id="bookLoading">
+      <div class="book-spinner"></div>
+      <p>해설을 불러오는 중...</p>
+    </div>
+
+    <div class="book-canvas-wrapper" id="canvasWrapper">
+      <canvas class="book-canvas" id="pdfCanvas"></canvas>
+    </div>
+
+    <button class="book-page-btn book-page-prev" id="btnPrevPage" title="이전 페이지">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <button class="book-page-btn book-page-next" id="btnNextPage" title="다음 페이지">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </main>
+
+  <!-- 4. 하단 툴바 -->
+  <footer class="book-toolbar" id="bookToolbar">
+    <div class="book-toolbar-left">
+      <button class="book-toolbar-btn" id="btnPageJump" title="페이지 이동">
+        <i class="fa-regular fa-file-lines"></i>
+        <span class="book-page-indicator">
+          <span id="currentPage">1</span> / <span id="totalPages">1</span>
+        </span>
+      </button>
+    </div>
+
+    <div class="book-toolbar-center">
+      <button class="book-toolbar-btn" id="btnZoomOut" title="축소">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+      <span class="book-zoom-level" id="zoomLevel">100%</span>
+      <button class="book-toolbar-btn" id="btnZoomIn" title="확대">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+
+    <div class="book-toolbar-right">
+      <button class="book-toolbar-btn book-btn-fullscreen" id="btnFullscreen" title="전체화면">
+        <i class="fa-solid fa-expand"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- 5. 페이지 이동 모달 -->
+  <div class="book-modal-overlay hidden" id="pageJumpOverlay">
+    <div class="book-modal" id="pageJumpModal">
+      <h3 class="book-modal-title">페이지 이동</h3>
+      <div class="book-modal-body">
+        <input
+          type="number"
+          class="book-modal-input"
+          id="pageJumpInput"
+          min="1"
+          placeholder="0"
+        />
+        <p class="book-modal-hint">
+          현재 탐색 가능 범위: 1 ~ <span id="pageJumpMax">1</span>
+        </p>
+      </div>
+      <div class="book-modal-actions">
+        <button class="book-modal-btn book-modal-btn-cancel" id="btnPageJumpCancel">취소</button>
+        <button class="book-modal-btn book-modal-btn-confirm" id="btnPageJumpConfirm">이동하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/commentary-viewer.js"></script>
+
+</body>
+</html>

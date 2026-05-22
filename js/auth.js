@@ -208,7 +208,7 @@ function hideLoginMessage() {
 
 // 페이지 로드 시 세션 확인
 window.addEventListener('DOMContentLoaded', async () => {
-    const isBookPage = window.location.pathname.includes('book.html');
+    const isBookPage = window.location.pathname.includes('book.html') || window.location.pathname.includes('commentary.html');
 
     // ── 수정 1: book.html + auth_token 파라미터 → 토큰 기반 자동 인증 ──
     if (isBookPage) {
