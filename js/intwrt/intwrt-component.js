@@ -31,7 +31,8 @@ async function startIntwrtModule(itemNumber) {
         _wordCountHidden: false,
         _undoStack: [],
         _redoStack: [],
-        _lastText: ''
+        _lastText: '',
+        _savedAnswer: ''
     };
 
     var titleEl = document.getElementById('intwrtTitle');
@@ -408,6 +409,9 @@ function _showIntwrtTransition() {
     var mod = window.currentIntwrtModule;
     if (!mod || mod._destroyed) return;
 
+    var textarea = document.getElementById('iwTextarea');
+    if (textarea) mod._savedAnswer = textarea.value;
+
     var nextBtn = document.getElementById('intwrtNextBtn');
     if (nextBtn) nextBtn.style.display = 'none';
 
@@ -439,7 +443,12 @@ function _showIntwrtComplete() {
                 '</div>' +
                 '<h2 class="iw-complete-title">통라 ' + mod.itemNumber + ' 완료!</h2>' +
                 '<p class="iw-complete-desc">통합형 라이팅 연습을 마쳤습니다.</p>' +
-                '<button class="iw-complete-btn" id="iwCompleteBtn">확인</button>' +
+                '<div style="display:flex;gap:12px;justify-content:center;">' +
+                    '<button onclick="_iwDownloadTxt()" style="background:#f7fafc;color:#4A90D9;border:1px solid #e2e8f0;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;">' +
+                        '<i class="fas fa-download"></i> 답안 저장' +
+                    '</button>' +
+                    '<button class="iw-complete-btn" id="iwCompleteBtn">확인</button>' +
+                '</div>' +
             '</div>' +
         '</div>';
 
@@ -447,6 +456,56 @@ function _showIntwrtComplete() {
         cleanupIntwrtModule();
         _backFromIntwrt();
     };
+}
+
+// ============================================================
+// TXT 다운로드
+// ============================================================
+
+function _iwDownloadTxt() {
+    var mod = window.currentIntwrtModule;
+    if (!mod || !mod.item) return;
+
+    var item = mod.item;
+    var userAnswer = mod._savedAnswer || '';
+    var wordCount = userAnswer.trim() ? userAnswer.trim().split(/\s+/).length : 0;
+
+    var now = new Date();
+    var dateStr = now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') + '_' +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0') +
+        String(now.getSeconds()).padStart(2, '0');
+
+    var filename = 'AUS_Integrated_' + mod.itemNumber + '_' + dateStr + '.txt';
+
+    var content = '='.repeat(60) + '\n';
+    content += '통합형 라이팅 (통라 ' + mod.itemNumber + ')\n';
+    content += '='.repeat(60) + '\n\n';
+    content += '작성일시: ' + now.toLocaleString('ko-KR') + '\n';
+    content += '단어 수: ' + wordCount + '\n\n';
+    content += '-'.repeat(60) + '\n';
+    content += 'Reading Passage\n';
+    content += '-'.repeat(60) + '\n';
+    content += item.passage + '\n\n';
+    content += '-'.repeat(60) + '\n';
+    content += '내 답안\n';
+    content += '-'.repeat(60) + '\n';
+    content += userAnswer + '\n\n';
+    content += '='.repeat(60) + '\n';
+
+    var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log('[IntWrt] 파일 다운로드: ' + filename);
 }
 
 // ============================================================
@@ -513,5 +572,6 @@ window._iwPaste = _iwPaste;
 window._iwUndo = _iwUndo;
 window._iwRedo = _iwRedo;
 window._iwToggleWordCount = _iwToggleWordCount;
+window._iwDownloadTxt = _iwDownloadTxt;
 
 console.log('[IntWrt] intwrt-component.js 로드 완료');
