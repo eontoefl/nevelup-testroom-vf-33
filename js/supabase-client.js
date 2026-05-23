@@ -230,10 +230,17 @@ async function getStudentProgram(userEmail) {
 }
 
 // ================================================
-// V3 학습 결과 함수들 (study_results_v3)
+// V3 학습 결과 함수들 (study_results_v3 / aus_study_results)
 // ================================================
 // 유니크 키: (user_id, section_type, module_number, week, day)
 // v3-design-spec.md §3-2 참조
+
+function _getV3Table(sectionType) {
+    if (window.courseMode === 'australia' && (sectionType === 'intro-book-aus' || sectionType === 'vocab')) {
+        return 'aus_study_results';
+    }
+    return 'study_results_v3';
+}
 
 /**
  * V3 학습 결과 단일 레코드 조회
@@ -256,13 +263,13 @@ async function getStudyResultV3(userId, sectionType, moduleNumber, week, day) {
         + '&day=eq.' + encodeURIComponent(day)
         + '&limit=1';
     
-    var rows = await supabaseSelect('study_results_v3', query);
-    
+    var rows = await supabaseSelect(_getV3Table(sectionType), query);
+
     if (!rows || rows.length === 0) {
         console.log('📖 [V3] 결과 없음 (첫 풀이)');
         return null;
     }
-    
+
     console.log('📖 [V3] 결과 발견:', rows[0].id);
     return rows[0];
 }
@@ -306,11 +313,11 @@ async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day,
     }
     
     var result = await supabaseUpsert(
-        'study_results_v3',
+        _getV3Table(sectionType),
         data,
         'user_id,section_type,module_number,week,day'
     );
-    
+
     if (result) {
         console.log('✅ [V3] initial_record 저장 완료:', result.id);
     }
@@ -342,11 +349,11 @@ async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day,
     };
     
     var result = await supabaseUpsert(
-        'study_results_v3',
+        _getV3Table(sectionType),
         data,
         'user_id,section_type,module_number,week,day'
     );
-    
+
     if (result) {
         console.log('✅ [V3] current_record 저장 완료:', result.id);
     }
@@ -391,11 +398,15 @@ async function upsertRewriteRecord(userId, sectionType, moduleNumber, week, day,
 async function getCompletedTasksV3(userId) {
     console.log('📊 [V3] 완료 과제 목록 조회:', userId);
     
+    var table = (window.courseMode === 'australia') ? 'aus_study_results' : 'study_results_v3';
+    var select = (table === 'aus_study_results')
+        ? 'id,section_type,module_number,week,day'
+        : 'id,section_type,module_number,week,day,error_note_submitted';
+
     var query = 'user_id=eq.' + userId
         + '&initial_record=not.is.null'
-        + '&select=id,section_type,module_number,week,day,error_note_submitted';
-    
-    var rows = await supabaseSelect('study_results_v3', query);
+        + '&select=' + select;
+    var rows = await supabaseSelect(table, query);
     console.log('📊 [V3] 완료 과제:', (rows ? rows.length : 0) + '건');
     return rows || [];
 }
