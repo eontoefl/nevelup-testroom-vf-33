@@ -967,3 +967,90 @@ body {
   .g-head { font-size: 0.6rem; }
   .grass-legend { margin-left: 40px; }
 }
+
+
+/* ══════════════════════════════════════════
+   공부인증 현황 (호주과정 마이페이지)
+══════════════════════════════════════════ */
+
+/* 건수 뱃지 */
+.cert-count-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--signature);
+  background: var(--signature-light);
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* 아이템 — section-card 스타일 참고 */
+a.cert-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg-body);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  margin-top: 8px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+a.cert-item:hover {
+  transform: translateY(-3px);
+  border-color: var(--signature);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+a.cert-item:active {
+  transform: translateY(0);
+}
+
+/* 제목 (왼쪽) */
+.cert-subject {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 날짜 (오른쪽) */
+.cert-date {
+  flex-shrink: 0;
+}
+.cert-date-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 빈 상태 */
+.cert-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* 리스트 영역 */
+.cert-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+.cert-list::-webkit-scrollbar { width: 5px; }
+.cert-list::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 10px; }
+
+@media (max-width: 600px) {
+  a.cert-item {
+    gap: 8px;
+    padding: 12px 12px;
+  }
+}

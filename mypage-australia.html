@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>마이페이지 – 호주과정</title>
+  <script
+    src="https://js.sentry-cdn.com/9808cf61ad1ab17e40cf6249d4030b9b.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/mypage-style.css?v=aus_001" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/notification.css" />
+</head>
+<body>
+
+  <!-- ───────────── TOP BAR ───────────── -->
+  <nav class="mp-topbar">
+    <button class="btn-back" onclick="goBackToTestroom()" title="뒤로가기">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <span class="mp-topbar-title">마이페이지</span>
+  </nav>
+
+  <!-- ───────────── LOADING ───────────── -->
+  <div class="mp-loading" id="loadingScreen">
+    <div class="mp-spinner"></div>
+    <p>학습 데이터를 불러오는 중...</p>
+  </div>
+
+  <!-- ───────────── NOT LOGGED IN ───────────── -->
+  <div class="mp-not-logged" id="notLoggedScreen" style="display:none;">
+    <i class="fa-solid fa-lock" style="font-size:3rem; color:var(--signature); margin-bottom:16px;"></i>
+    <h2>로그인이 필요합니다</h2>
+    <p>테스트룸에서 먼저 로그인해주세요.</p>
+    <button class="mp-cta-btn" onclick="goBackToTestroom()">
+      <i class="fa-solid fa-arrow-right"></i> 테스트룸으로 이동
+    </button>
+  </div>
+
+  <!-- ───────────── MAIN ───────────── -->
+  <main class="page-wrap" id="mainContent" style="display:none;">
+
+    <!-- 사용자 정보 -->
+    <div class="user-info-card">
+      <i class="fas fa-user-circle"></i>
+      <div class="user-info-text">
+        <span class="user-greeting"><strong id="userName">-</strong>님, 반갑습니다</span>
+        <span class="program-badge" id="programBadge">-</span>
+      </div>
+    </div>
+
+    <!-- ① 학습 현황 요약 카드 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-chart-line"></i> 학습 현황 요약
+      </h2>
+
+      <div class="summary-grid">
+
+        <!-- 1칸: 오늘의 과제 -->
+        <div class="summary-card card-green">
+          <div class="sc-icon"><i class="fa-solid fa-list-check"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">📝 오늘의 과제</p>
+            <div id="todayTaskList" class="today-task-list">
+              <p class="sc-sub">로딩 중...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2칸: 챌린지 현황 -->
+        <div class="summary-card card-blue">
+          <div class="sc-icon"><i class="fa-solid fa-calendar-check"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">📅 챌린지 현황</p>
+            <p class="sc-value"><span id="challengeStatus">-</span></p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="challengeBar" style="width: 0%;"></div>
+            </div>
+            <p class="sc-sub" id="challengeSub">로딩 중...</p>
+            <p class="sc-hint" id="challengeStartDate"></p>
+          </div>
+        </div>
+
+        <!-- 3칸: 인증률 -->
+        <div class="summary-card card-purple">
+          <div class="sc-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">🎯 인증률</p>
+            <p class="sc-value"><span id="authRate">-</span><span class="sc-total" id="authRateUnit"></span></p>
+            <p class="sc-sub" id="authSub">추후 공개</p>
+          </div>
+        </div>
+
+        <!-- 4칸: 등급 & 환급 예상 -->
+        <div class="summary-card card-orange">
+          <div class="sc-icon"><i class="fa-solid fa-trophy"></i></div>
+          <div class="sc-body">
+            <p class="sc-label">🏆 등급 & 환급</p>
+            <p class="sc-value grade-badge" id="currentGrade">-</p>
+            <p class="sc-sub" id="gradeRefund">추후 공개</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ② 공부인증 현황 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-camera"></i> 공부인증 현황
+        <span class="cert-count-badge" id="certCountBadge"></span>
+      </h2>
+      <div class="cert-list" id="certificationList">
+        <p class="sc-sub">로딩 중...</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/timezone-utils.js?v=001"></script>
+  <script src="js/australia-schedule-data.js?v=001"></script>
+  <script src="js/mypage-australia.js?v=001"></script>
+</body>
+</html>

@@ -1528,6 +1528,8 @@ function backToSchedule() {
 function goToMyPage() {
     if (typeof isPracticeMode === 'function' && isPracticeMode()) {
         window.location.href = 'mypage-practice.html';
+    } else if (window.courseMode === 'australia') {
+        window.location.href = 'mypage-australia.html';
     } else {
         window.location.href = 'mypage.html';
     }
