@@ -289,7 +289,9 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
     if (subtitle) {
         subtitle.textContent = tasks.length + '개의 과제가 있습니다';
     }
-    
+
+    _renderDeadlineBanner(week, dayKr);
+
     var sectionsGrid = document.querySelector('#taskListScreen .sections-grid');
     if (sectionsGrid) {
         sectionsGrid.innerHTML = '';
