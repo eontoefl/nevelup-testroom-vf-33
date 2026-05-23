@@ -973,6 +973,22 @@ body {
    공부인증 현황 (호주과정 마이페이지)
 ══════════════════════════════════════════ */
 
+/* 글쓰기 버튼 */
+.cert-write-btn {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary);
+  padding: 5px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.cert-write-btn:hover { background: var(--primary-dark, #1565c0); }
+.cert-write-btn i { color: #fff !important; display: inline !important; font-size: 0.75rem; margin-right: 2px; }
+
 /* 건수 뱃지 */
 .cert-count-badge {
   display: inline-block;
