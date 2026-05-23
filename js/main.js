@@ -504,41 +504,98 @@ var AUS_GUIDE_DATA = {
     '통스': {
         emoji: '🎤',
         title: '통스 문제 푸는 방법',
-        steps: [
-            '통스 과제 안내는 준비 중입니다.',
-            '곧 상세한 풀이 방법이 업데이트될 예정이에요.',
-            '업데이트 전까지는 자유롭게 학습해 주세요.',
-            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        sections: [
+            {
+                icon: '📝',
+                heading: '진행 방법',
+                steps: [
+                    '<strong>통스 시작하기</strong>를 눌러 화면의 안내에 맞게 과제를 진행해 주세요.',
+                    '과제를 진행하면서 반드시 <strong>휴대폰 기본 녹음 앱</strong>으로 본인의 답변을 <strong>녹음</strong>해 주세요. (1차 녹음)',
+                    '1차 녹음을 완료한 뒤 <strong>다시보기</strong>를 눌러 지문과 문제를 다시 확인하고, <strong>해설보기</strong>를 통해 모범 답변과 비교하며 공부해 주세요.',
+                    '해설을 충분히 학습한 뒤, 개선된 답변을 다시 녹음해 주세요. (2차 녹음)'
+                ]
+            },
+            {
+                icon: '📸',
+                heading: '완료 후 할 일',
+                steps: [
+                    '<strong>1차 녹음본과 2차 녹음본</strong>을 함께 <strong>공부인증 게시판</strong>에 업로드해 주세요.',
+                    '완료 후 <strong>해설보기</strong>를 눌러 올바른 답변 방향을 확인하고 배워 보세요.'
+                ]
+            }
         ]
     },
     '독스': {
         emoji: '🎙️',
         title: '독스 문제 푸는 방법',
-        steps: [
-            '독스 과제 안내는 준비 중입니다.',
-            '곧 상세한 풀이 방법이 업데이트될 예정이에요.',
-            '업데이트 전까지는 자유롭게 학습해 주세요.',
-            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        sections: [
+            {
+                icon: '📝',
+                heading: '진행 방법',
+                steps: [
+                    '시작하기 전에 반드시 <strong>노트테이킹 용지를 펼쳐 준비</strong>해 주세요.',
+                    '<strong>독스 시작하기</strong>를 눌러 진행합니다. 주제가 나오면 <strong>15초</strong> 안에 떠오르는 아이디어를 노트테이킹합니다.',
+                    '이어서 <strong>45초</strong> 동안 노트를 바탕으로 답변을 말해 보세요. 배운 내용을 활용하되, 너무 완벽하게 하려 하지 않아도 괜찮아요.',
+                    '<strong>시간을 엄수하는 것이 정말 중요합니다.</strong> 타이머가 끝나면 바로 멈추세요.',
+                    '반드시 <strong>휴대폰 기본 녹음 앱</strong>으로 본인의 답변을 <strong>녹음</strong>해 주세요.'
+                ]
+            },
+            {
+                icon: '📸',
+                heading: '완료 후 할 일',
+                steps: [
+                    '<strong>녹음본</strong>을 <strong>공부인증 게시판</strong>에 업로드해 주세요.',
+                    '완료 후 <strong>해설보기</strong>를 눌러 올바른 답변 방향을 확인하고 배워 보세요.'
+                ]
+            }
         ]
     },
     '토라': {
         emoji: '✏️',
         title: '토라 문제 푸는 방법',
-        steps: [
-            '토라 과제 안내는 준비 중입니다.',
-            '곧 상세한 풀이 방법이 업데이트될 예정이에요.',
-            '업데이트 전까지는 자유롭게 학습해 주세요.',
-            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        sections: [
+            {
+                icon: '📝',
+                heading: '진행 방법',
+                steps: [
+                    '<strong>토라 시작하기</strong>를 눌러 과제를 진행해 주세요.',
+                    '<strong>10분</strong> 제한시간 내에 배운 내용을 토대로 최선의 답변을 작성하여 <strong>제출</strong>해 주세요.',
+                    '제출 후 <strong>답안 저장</strong>을 눌러 본인의 답안을 저장해 주세요.'
+                ]
+            },
+            {
+                icon: '📸',
+                heading: '완료 후 할 일',
+                steps: [
+                    '저장한 <strong>1차 답안</strong>을 <strong>공부인증 게시판</strong>에 업로드해 주세요.',
+                    '반드시 <strong>해설보기</strong>를 눌러 모범 답변을 확인하고, 이를 참고하여 개선한 <strong>2차 답변</strong>을 작성해 주세요.',
+                    '<strong>1차 답안과 2차 답변</strong>을 함께 <strong>공부인증 게시판</strong>에 업로드해 주세요.'
+                ]
+            }
         ]
     },
     '통라': {
         emoji: '✍️',
         title: '통라 문제 푸는 방법',
-        steps: [
-            '통라 과제 안내는 준비 중입니다.',
-            '곧 상세한 풀이 방법이 업데이트될 예정이에요.',
-            '업데이트 전까지는 자유롭게 학습해 주세요.',
-            '궁금한 점은 담당 선생님께 문의해 주세요.'
+        sections: [
+            {
+                icon: '📝',
+                heading: '진행 방법',
+                steps: [
+                    '<strong>통라 시작하기</strong>를 눌러 실전 답안을 작성해 주세요.',
+                    '답안 작성이 완료되면 <strong>답안 저장</strong>을 눌러 본인의 답안을 저장해 주세요.',
+                    '<strong>다시보기</strong>를 눌러 지문과 오디오를 다시 확인하며 복습해 주세요.',
+                    '<strong>해설보기</strong>를 눌러 모범 답안을 확인하고 본인의 답안과 비교해 보세요.'
+                ]
+            },
+            {
+                icon: '📸',
+                heading: '완료 후 할 일',
+                steps: [
+                    '해설을 참고하여 개선한 <strong>2차 답안</strong>을 작성해 주세요.',
+                    '<strong>1차 답안과 2차 답안</strong>을 함께 <strong>공부인증 게시판</strong>에 업로드해 주세요.'
+                ]
+            }
         ]
     },
     '브레인스토밍': {
@@ -847,16 +904,14 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     var divider = document.querySelector('.aus-split-divider');
     var reviewBtnInSplit = document.getElementById('ausSelectBtnReview');
 
-    if (brainstormDay || indSpkNumber || intwrtNumber || toraNumber) {
-        // 브레인스토밍 / 독스 / 통라: 분할 해제 → 통 버튼으로 변경
+    if (brainstormDay || indSpkNumber || toraNumber) {
+        // 브레인스토밍 / 독스 / 토라: 분할 해제 → 통 버튼으로 변경
         if (divider) divider.style.display = 'none';
         if (reviewBtnInSplit) reviewBtnInSplit.style.display = 'none';
         if (solveBtn) {
             solveBtn.style.flex = '1';
             if (brainstormDay) {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '브레인스토밍<br>시작하기';
-            } else if (intwrtNumber) {
-                solveBtn.querySelector('.aus-split-label').innerHTML = '통라<br>시작하기';
             } else if (toraNumber) {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '토라<br>시작하기';
             } else {
@@ -864,12 +919,14 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
             }
         }
     } else {
-        // 일반 과제 + 통스: 분할 원복
+        // 일반 과제 + 통스 + 통라: 분할 원복
         if (divider) divider.style.display = '';
         if (reviewBtnInSplit) reviewBtnInSplit.style.display = '';
         if (solveBtn) {
             solveBtn.style.flex = '';
-            if (intspkNumber) {
+            if (intwrtNumber) {
+                solveBtn.querySelector('.aus-split-label').innerHTML = '통라<br>시작하기';
+            } else if (intspkNumber) {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '통스<br>시작하기';
             } else {
                 solveBtn.querySelector('.aus-split-label').innerHTML = '실전풀이<br>바로가기';
@@ -901,12 +958,24 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
     }
     
     // 다시보기 버튼
+    var intwrtReviewLinks = {
+        1: 'https://test618.com/toefl/writing/720.html',
+        2: 'https://test618.com/toefl/writing/636.html',
+        3: 'https://test618.com/toefl/writing/1022.html',
+        4: 'https://test618.com/toefl/writing/577.html',
+        5: 'https://test618.com/toefl/writing/1016.html',
+        6: 'https://test618.com/toefl/writing/776.html',
+        7: 'https://test618.com/toefl/writing/913.html',
+        8: 'https://test618.com/toefl/writing/1060.html'
+    };
     var reviewBtn = document.getElementById('ausSelectBtnReview');
     if (reviewBtn) {
         reviewBtn.onclick = function() {
             _guardedAction(function() {
                 console.log('[Australia] 다시보기 선택: ' + taskName);
-                if (externalLinks && externalLinks.review) {
+                if (intwrtNumber && intwrtReviewLinks[intwrtNumber]) {
+                    window.open(intwrtReviewLinks[intwrtNumber], '_blank');
+                } else if (externalLinks && externalLinks.review) {
                     window.open(externalLinks.review, '_blank');
                 } else {
                     _showAusPreparing();
