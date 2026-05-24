@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <!-- PDF 뷰어 전용 스타일 -->
-  <link rel="stylesheet" href="css/book-viewer.css?v=003_taskbar" />
+  <link rel="stylesheet" href="css/book-viewer.css?v=004_memolist" />
 </head>
 <body class="book-viewer-page">
 
@@ -69,6 +69,9 @@
       <button class="book-sidebar-tab active" data-tab="toc">
         <i class="fa-solid fa-list-ul"></i> 목차
       </button>
+      <button class="book-sidebar-tab" data-tab="memos">
+        <i class="fa-regular fa-comment-dots"></i> 메모
+      </button>
       <button class="book-sidebar-tab" data-tab="bookmarks">
         <i class="fa-solid fa-bookmark"></i> 북마크
       </button>
@@ -79,6 +82,16 @@
       <ul class="book-toc-list" id="tocList">
         <!-- JS에서 동적 생성 -->
       </ul>
+    </div>
+
+    <!-- 탭 내용: 메모 목록 -->
+    <div class="book-sidebar-content hidden" id="tabMemos">
+      <ul class="book-memo-list" id="memoListSidebar">
+        <!-- JS에서 동적 생성 -->
+      </ul>
+      <p class="book-memo-list-empty hidden" id="memoListEmpty">
+        메모가 없습니다
+      </p>
     </div>
 
     <!-- 탭 내용: 북마크 목록 -->

@@ -330,6 +330,86 @@
   font-size: 0.9rem;
 }
 
+/* ── 메모 목록 (사이드바 탭) ── */
+.book-memo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.book-memo-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: var(--bv-radius-md);
+  cursor: pointer;
+  transition: var(--bv-transition);
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.book-memo-list-item:hover {
+  background: var(--bv-surface);
+  transform: translateX(-4px);
+}
+
+.book-memo-list-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.book-memo-list-icon {
+  color: var(--bv-primary);
+  opacity: 0.6;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.book-memo-list-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.book-memo-list-page {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--bv-text-main);
+}
+
+.book-memo-list-preview {
+  font-size: 0.8rem;
+  color: var(--bv-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-memo-list-remove {
+  color: #cbd5e1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.book-memo-list-remove:hover {
+  color: #f87171;
+}
+
+.book-memo-list-empty {
+  text-align: center;
+  color: var(--bv-text-muted);
+  padding: 40px 0;
+  font-size: 0.9rem;
+}
+
 
 /* ================================================
  * 4. PDF Viewer Main Area

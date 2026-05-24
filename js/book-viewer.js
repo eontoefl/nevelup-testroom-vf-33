@@ -103,6 +103,9 @@ function cacheDom() {
     DOM.tocList = document.getElementById('tocList');
     DOM.bookmarkList = document.getElementById('bookmarkList');
     DOM.bookmarkEmpty = document.getElementById('bookmarkEmpty');
+    DOM.memoListSidebar = document.getElementById('memoListSidebar');
+    DOM.memoListEmpty = document.getElementById('memoListEmpty');
+    DOM.tabMemos = document.getElementById('tabMemos');
     DOM.sidebarTabs = document.querySelectorAll('.book-sidebar-tab');
     DOM.tabToc = document.getElementById('tabToc');
     DOM.tabBookmarks = document.getElementById('tabBookmarks');
@@ -595,6 +598,62 @@ function renderBookmarkList() {
     });
 }
 
+// ── 메모 목록 (사이드바 탭) ──
+function renderMemoList() {
+    var pages = Object.keys(BookViewer.memos).map(Number).sort(function(a, b) { return a - b; });
+    DOM.memoListSidebar.innerHTML = '';
+
+    if (pages.length === 0) {
+        DOM.memoListEmpty.classList.remove('hidden');
+        return;
+    }
+
+    DOM.memoListEmpty.classList.add('hidden');
+
+    pages.forEach(function(page) {
+        var memo = BookViewer.memos[page];
+        var preview = memo.content.length > 30 ? memo.content.substring(0, 30) + '…' : memo.content;
+
+        var li = document.createElement('li');
+        li.className = 'book-memo-list-item';
+        li.innerHTML =
+            '<div class="book-memo-list-item-left">' +
+                '<i class="fa-regular fa-comment-dots book-memo-list-icon"></i>' +
+                '<div class="book-memo-list-info">' +
+                    '<span class="book-memo-list-page">' + page + '페이지</span>' +
+                    '<span class="book-memo-list-preview">' + preview + '</span>' +
+                '</div>' +
+            '</div>';
+
+        li.addEventListener('click', function() {
+            goToPage(page);
+            closeSidebar();
+            setTimeout(function() { openMemoSidebar(); }, 400);
+        });
+
+        DOM.memoListSidebar.appendChild(li);
+    });
+}
+
+async function deleteMemoFromList(page) {
+    var existing = BookViewer.memos[page];
+    if (!existing) return;
+    if (!confirm(page + '페이지 메모를 삭제하시겠습니까?')) return;
+
+    var endpoint = '/rest/v1/tr_book_memos?id=eq.' + existing.id;
+    var result = await supabaseRequest(endpoint, { method: 'DELETE' });
+
+    if (result !== null) {
+        delete BookViewer.memos[page];
+        updateMemoDot();
+        updateTaskBar();
+        renderMemoList();
+        showToast('메모가 삭제되었습니다.');
+    } else {
+        showToast('삭제 실패. 다시 시도해주세요.', true);
+    }
+}
+
 async function removeBookmark(page) {
     let bookmarks = getBookmarks().filter(p => p !== page);
     const result = await supabaseUpdate(
@@ -754,6 +813,7 @@ async function saveMemo() {
         BookViewer.memos[page] = result;
         updateMemoDot();
         updateTaskBar();
+        renderMemoList();
         closeMemoSidebar();
         showToast('메모가 저장되었습니다.');
 
@@ -784,6 +844,7 @@ async function deleteMemo() {
         delete BookViewer.memos[page];
         updateMemoDot();
         updateTaskBar();
+        renderMemoList();
         closeMemoSidebar();
         showToast('메모가 삭제되었습니다.');
     } else {
@@ -799,6 +860,7 @@ function openSidebar() {
     DOM.sidebarOverlay.classList.add('active');
     updateTocActive();
     renderBookmarkList();
+    renderMemoList();
 }
 
 function closeSidebar() {
@@ -811,7 +873,10 @@ function switchSidebarTab(tabName) {
         tab.classList.toggle('active', tab.dataset.tab === tabName);
     });
     DOM.tabToc.classList.toggle('hidden', tabName !== 'toc');
+    DOM.tabMemos.classList.toggle('hidden', tabName !== 'memos');
     DOM.tabBookmarks.classList.toggle('hidden', tabName !== 'bookmarks');
+
+    if (tabName === 'memos') renderMemoList();
 }
 
 // ================================================
