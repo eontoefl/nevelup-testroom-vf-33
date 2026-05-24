@@ -674,10 +674,7 @@ function _isAusFirstTask(taskName) {
  * @returns {boolean}
  */
 function _ausGuideRequired(taskName) {
-    var category = _getAusTaskCategory(taskName);
-    if (!category) return false;
-    if (!_isAusFirstTask(taskName)) return false;
-    return !window._ausGuideChecked[category];
+    return false;
 }
 
 /**
