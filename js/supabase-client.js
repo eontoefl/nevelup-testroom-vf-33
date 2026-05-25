@@ -236,7 +236,7 @@ async function getStudentProgram(userEmail) {
 // v3-design-spec.md §3-2 참조
 
 function _getV3Table(sectionType) {
-    if (window.courseMode === 'australia' && (sectionType === 'intro-book-aus' || sectionType === 'vocab')) {
+    if (window.courseMode === 'australia' && (sectionType === 'intro-book-aus' || sectionType === 'vocab' || sectionType === 'reading' || sectionType === 'listening')) {
         return 'aus_study_results';
     }
     return 'study_results_v3';

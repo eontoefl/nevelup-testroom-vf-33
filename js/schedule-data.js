@@ -494,7 +494,7 @@ function parseTaskName(taskName) {
         }
     }
 
-    // 리딩 Module
+    // 리딩 Module (정규과정)
     if (taskName.startsWith('리딩 Module')) {
         const match = taskName.match(/리딩 Module\s+(\d+)/);
         if (match) {
@@ -505,9 +505,31 @@ function parseTaskName(taskName) {
         }
     }
 
-    // 리스닝 Module
+    // 리딩 (호주과정: "리딩1", "리딩17")
+    if (/^리딩\s*\d+$/.test(taskName)) {
+        const match = taskName.match(/^리딩\s*(\d+)$/);
+        if (match) {
+            return {
+                type: 'reading',
+                params: { module: parseInt(match[1]) }
+            };
+        }
+    }
+
+    // 리스닝 Module (정규과정)
     if (taskName.startsWith('리스닝 Module')) {
         const match = taskName.match(/리스닝 Module\s+(\d+)/);
+        if (match) {
+            return {
+                type: 'listening',
+                params: { module: parseInt(match[1]) }
+            };
+        }
+    }
+
+    // 리스닝 (호주과정: "리스닝1", "리스닝35")
+    if (/^리스닝\s*\d+$/.test(taskName)) {
+        const match = taskName.match(/^리스닝\s*(\d+)$/);
         if (match) {
             return {
                 type: 'listening',

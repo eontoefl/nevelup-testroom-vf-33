@@ -208,7 +208,6 @@ const AUS_SCHEDULE_DATA = {
                 "브레인스토밍 Day 29"
             ],
             friday: [
-                "리딩17",
                 "독스 TOPIC 15",
                 "통스8",
                 "통라8",
@@ -284,7 +283,7 @@ const AUS_SCHEDULE_DATA = {
             saturday: []
         },
         week8: {
-            sunday: ["내벨업보카 48, 49, 50pg", "리딩17", "토라2", "브레인스토밍 Day 25"],
+            sunday: ["내벨업보카 48, 49, 50pg", "토라2", "브레인스토밍 Day 25"],
             monday: ["내벨업보카 51, 52pg", "독스 TOPIC 12", "토라3", "브레인스토밍 Day 26"],
             tuesday: ["내벨업보카 53, 54, 55pg", "리스닝34", "리스닝35", "토라4", "브레인스토밍 Day 27"],
             wednesday: ["내벨업보카 56, 57pg", "독스 TOPIC 13", "토라5", "브레인스토밍 Day 28"],

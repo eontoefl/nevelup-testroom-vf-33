@@ -261,12 +261,16 @@ function selectAustraliaDay(week, dayKr, dayEn) {
 /** Australia 과제 목록 화면 (TESTROOM showTaskListScreen 복제, 클릭 시 준비중 팝업) */
 function showAustraliaTaskListScreen(week, dayKr, tasks) {
     console.log('[Australia] task list: Week ' + week + ' ' + dayKr + ' tasks=' + tasks.length);
-    
+
     document.querySelectorAll('.screen').forEach(function(screen) {
         screen.classList.remove('active');
         screen.style.display = 'none';
     });
-    
+
+    // 기존 OMR 섹션 제거
+    var oldOmr = document.querySelector('#taskListScreen .omr-section-area');
+    if (oldOmr) oldOmr.remove();
+
     var taskListScreenEl = document.getElementById('taskListScreen');
     taskListScreenEl.classList.add('active');
     taskListScreenEl.style.display = 'block';
@@ -280,11 +284,9 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
 
     var welcomeHeader = document.querySelector('#taskListScreen .welcome-header h1');
     var subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
-    
+
     if (welcomeHeader) {
-        var dayEnMap = { '일': 'SUNDAY', '월': 'MONDAY', '화': 'TUESDAY', '수': 'WEDNESDAY', '목': 'THURSDAY', '금': 'FRIDAY', '토': 'SATURDAY' };
-        var dayEn = dayEnMap[dayKr] || dayKr;
-        welcomeHeader.textContent = 'Week ' + week + ' - ' + dayEn;
+        _renderDayNavHeader(welcomeHeader, week, dayKr, true);
     }
     if (subtitle) {
         subtitle.textContent = tasks.length + '개의 과제가 있습니다';
@@ -348,11 +350,214 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
                 '<div class="card-icon"><i class="' + icon + '"></i></div>' +
                 '<h3>' + taskName + '</h3>' +
                 '<p>' + description + '</p>';
-            
+
             sectionsGrid.appendChild(card);
         });
+
+        // ── OMR 채점 섹션 렌더링 ──
+        _renderOmrSection(sectionsGrid, tasks, week, dayKr);
     }
 }
+
+/**
+ * 과제 목록 화면 하단에 OMR 채점 섹션 추가
+ * 리딩: 개별 OMR, 리스닝: 하루 통합 OMR
+ */
+function _renderOmrSection(container, tasks, week, dayKr) {
+    var readingTasks = [];
+    var listeningTasks = [];
+
+    tasks.forEach(function(t) {
+        var rMatch = t.match(/^리딩\s*(\d+)$/);
+        var lMatch = t.match(/^리스닝\s*(\d+)$/);
+        if (rMatch) readingTasks.push(parseInt(rMatch[1]));
+        if (lMatch) listeningTasks.push(parseInt(lMatch[1]));
+    });
+
+    if (readingTasks.length === 0 && listeningTasks.length === 0) return;
+
+    var section = document.createElement('div');
+    section.className = 'omr-section-area';
+    section.innerHTML = '<div class="omr-section-divider"><span>OMR 채점</span></div>';
+
+    var userId = (currentUser && currentUser.id) ? currentUser.id : '';
+
+    // 리딩 OMR 카드 (개별)
+    readingTasks.forEach(function(num) {
+        var card = _createOmrCard({
+            icon: '📖',
+            label: '리딩' + num + ' OMR 카드',
+            type: 'reading',
+            modules: [num],
+            week: week,
+            day: dayKr,
+            userId: userId
+        });
+        section.appendChild(card);
+    });
+
+    // 리스닝 OMR 카드 (하루 통합)
+    if (listeningTasks.length > 0) {
+        var label = listeningTasks.length === 1
+            ? '리스닝' + listeningTasks[0] + ' OMR 카드'
+            : '리스닝 OMR 카드 (리스닝' + listeningTasks[0] + '~' + listeningTasks[listeningTasks.length - 1] + ')';
+
+        var card = _createOmrCard({
+            icon: '🎧',
+            label: label,
+            type: 'listening',
+            modules: listeningTasks,
+            week: week,
+            day: dayKr,
+            userId: userId
+        });
+        section.appendChild(card);
+    }
+
+    container.parentNode.appendChild(section);
+
+    // 제출 상태 비동기 업데이트
+    _updateOmrSubmitStatus(section, week, dayKr, readingTasks, listeningTasks, userId);
+}
+
+function _createOmrCard(opts) {
+    var card = document.createElement('div');
+    card.className = 'omr-card';
+    card.setAttribute('data-type', opts.type);
+    card.setAttribute('data-modules', opts.modules.join(','));
+
+    card.innerHTML =
+        '<div class="omr-card-left">' +
+            '<span class="omr-card-icon">' + opts.icon + '</span>' +
+            '<div class="omr-card-info">' +
+                '<span class="omr-card-label">' + opts.label + '</span>' +
+                '<span class="omr-card-status" data-status-key="' + opts.type + '_' + opts.modules.join(',') + '">확인 중...</span>' +
+            '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right omr-card-arrow"></i>';
+
+    card.onclick = function() {
+        var statusEl = card.querySelector('.omr-card-status');
+        if (statusEl && statusEl.getAttribute('data-submitted') === 'true') {
+            _showOmrAlreadyPopup();
+            return;
+        }
+        var url = 'omr-card.html?type=' + opts.type
+            + '&modules=' + opts.modules.join(',')
+            + '&week=' + encodeURIComponent(opts.week)
+            + '&day=' + encodeURIComponent(opts.day)
+            + '&userId=' + encodeURIComponent(opts.userId);
+        window.open(url, 'omrCard', 'width=700,height=800,scrollbars=yes,resizable=yes');
+    };
+
+    return card;
+}
+
+function _showOmrAlreadyPopup() {
+    var overlay = document.createElement('div');
+    overlay.className = 'omr-confirm-overlay';
+    overlay.innerHTML =
+        '<div class="omr-confirm-box">' +
+            '<div class="omr-confirm-icon"><i class="fas fa-check-circle" style="color:#22c55e;font-size:40px;"></i></div>' +
+            '<div class="omr-confirm-title">이미 제출 완료</div>' +
+            '<div class="omr-confirm-desc">OMR 카드는 실전 풀이 기록만 수집되므로,<br>다시 풀거나 답을 수정할 수 없습니다.</div>' +
+            '<div class="omr-confirm-buttons">' +
+                '<button class="omr-confirm-ok" id="omrAlreadyClose">확인</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    document.getElementById('omrAlreadyClose').onclick = function() { overlay.remove(); };
+}
+
+async function _updateOmrSubmitStatus(section, week, dayKr, readingTasks, listeningTasks, userId) {
+    if (!userId) return;
+
+    async function checkSubmitted(type, mod) {
+        var q = 'user_id=eq.' + userId
+            + '&section_type=eq.' + type
+            + '&module_number=eq.' + mod
+            + '&week=eq.' + encodeURIComponent(String(week))
+            + '&day=eq.' + encodeURIComponent(dayKr)
+            + '&initial_record=not.is.null'
+            + '&select=initial_record'
+            + '&limit=1';
+        var rows = await supabaseSelect('aus_study_results', q);
+        return rows && rows.length > 0 ? rows[0] : null;
+    }
+
+    // 리딩 상태
+    for (var i = 0; i < readingTasks.length; i++) {
+        var num = readingTasks[i];
+        var rec = await checkSubmitted('reading', num);
+        var statusEl = section.querySelector('[data-status-key="reading_' + num + '"]');
+        if (statusEl) {
+            if (rec && rec.initial_record) {
+                var record = typeof rec.initial_record === 'string' ? JSON.parse(rec.initial_record) : rec.initial_record;
+                statusEl.textContent = '제출 완료 (' + (record.score || 0) + '점)';
+                statusEl.classList.add('omr-status-done');
+                statusEl.setAttribute('data-submitted', 'true');
+                statusEl.closest('.omr-card').classList.add('omr-card-done');
+            } else {
+                statusEl.textContent = '미제출';
+                statusEl.classList.add('omr-status-pending');
+            }
+        }
+    }
+
+    // 리스닝 상태 (첫 번째 모듈로 확인)
+    if (listeningTasks.length > 0) {
+        var rec = await checkSubmitted('listening', listeningTasks[0]);
+        var statusEl = section.querySelector('[data-status-key="listening_' + listeningTasks.join(',') + '"]');
+        if (statusEl) {
+            if (rec && rec.initial_record) {
+                var record = typeof rec.initial_record === 'string' ? JSON.parse(rec.initial_record) : rec.initial_record;
+                var scoreText = record.score !== undefined ? record.score + '점' : (record.total_correct + '/' + record.total_questions);
+                statusEl.textContent = '제출 완료 (' + scoreText + ')';
+                statusEl.classList.add('omr-status-done');
+                statusEl.setAttribute('data-submitted', 'true');
+                statusEl.closest('.omr-card').classList.add('omr-card-done');
+            } else {
+                statusEl.textContent = '미제출';
+                statusEl.classList.add('omr-status-pending');
+            }
+        }
+    }
+}
+
+// OMR 제출 완료 메시지 수신 → 상태 갱신
+window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'omr-submitted') {
+        // ProgressTracker 캐시 업데이트
+        if (typeof ProgressTracker !== 'undefined') {
+            (e.data.modules || []).forEach(function(mod) {
+                ProgressTracker.markCompleted(e.data.omrType, mod);
+            });
+            ProgressTracker.updateTaskCards();
+        }
+        // OMR 카드 상태 업데이트 (페이지 새로고침 없이)
+        var omrCards = document.querySelectorAll('.omr-card');
+        omrCards.forEach(function(card) {
+            var type = card.getAttribute('data-type');
+            var mods = card.getAttribute('data-modules');
+            if (type === e.data.omrType) {
+                var submittedMods = (e.data.modules || []).map(String);
+                var cardMods = mods.split(',');
+                var match = cardMods.some(function(m) { return submittedMods.indexOf(m) >= 0; });
+                if (match) {
+                    var statusEl = card.querySelector('.omr-card-status');
+                    if (statusEl) {
+                        statusEl.textContent = '제출 완료';
+                        statusEl.classList.remove('omr-status-pending');
+                        statusEl.classList.add('omr-status-done');
+                        statusEl.setAttribute('data-submitted', 'true');
+                    }
+                    card.classList.add('omr-card-done');
+                }
+            }
+        });
+    }
+});
 
 /**
  * Australia 과제가 선택 화면(문제풀기/해설보기) 대상인지 판별
@@ -387,8 +592,7 @@ var AUS_READING_LINKS = {
     13: { solve: 'https://test618.com/toefl/read/search?title=aquifer&lang=en',          review: 'https://test618.com/toefl/read/525.html' },
     14: { solve: 'https://test618.com/toefl/read/search?title=desert%20formation&lang=en', review: 'https://test618.com/toefl/read/561.html' },
     15: { solve: 'https://test618.com/toefl/read/search?title=early%20cinema&lang=en',   review: 'https://test618.com/toefl/read/582.html' },
-    16: { solve: 'https://test618.com/toefl/read/search?title=planets&lang=en',          review: 'https://test618.com/toefl/read/1028.html' },
-    17: { solve: 'https://test618.com/toefl/read/search?title=dealing&lang=en',          review: 'https://test618.com/toefl/read/61710.html' }
+    16: { solve: 'https://test618.com/toefl/read/search?title=dealing&lang=en',          review: 'https://test618.com/toefl/read/61710.html' }
 };
 
 /**
@@ -1389,6 +1593,82 @@ function showPracticeTaskListScreen(practiceNumber, tasks) {
     }
 }
 
+// ─── 태스크 리스트 요일 네비게이션 ───
+var _DAY_NAV_ORDER = ['일', '월', '화', '수', '목', '금'];
+var _DAY_EN_MAP = { '일': 'SUNDAY', '월': 'MONDAY', '화': 'TUESDAY', '수': 'WEDNESDAY', '목': 'THURSDAY', '금': 'FRIDAY', '토': 'SATURDAY' };
+var _DAY_EN_SHORT = { '일': 'SUN', '월': 'MON', '화': 'TUE', '수': 'WED', '목': 'THU', '금': 'FRI' };
+
+function _findAdjacentDay(week, dayKr, direction, isAustralia) {
+    if (!currentUser) return null;
+    var programType = currentUser.program.includes('Fast') ? 'fast' : 'standard';
+    var totalWeeks = programType === 'standard' ? 8 : 4;
+    var idx = _DAY_NAV_ORDER.indexOf(dayKr);
+    if (idx === -1) return null;
+
+    var w = week;
+    var d = idx;
+    var getTasksFn = isAustralia ? getAusDayTasks : getDayTasks;
+    var dayEnKeys = { '일': 'sunday', '월': 'monday', '화': 'tuesday', '수': 'wednesday', '목': 'thursday', '금': 'friday' };
+
+    while (true) {
+        if (direction === 'prev') {
+            d--;
+            if (d < 0) { w--; d = _DAY_NAV_ORDER.length - 1; }
+        } else {
+            d++;
+            if (d >= _DAY_NAV_ORDER.length) { w++; d = 0; }
+        }
+        if (w < 1 || w > totalWeeks) return null;
+        var nextDayKr = _DAY_NAV_ORDER[d];
+        var tasks = getTasksFn(programType, w, dayEnKeys[nextDayKr]);
+        if (tasks && tasks.length > 0) {
+            return { week: w, dayKr: nextDayKr };
+        }
+    }
+}
+
+function _renderDayNavHeader(headerEl, week, dayKr, isAustralia) {
+    var dayEn = _DAY_EN_MAP[dayKr] || dayKr;
+    var prev = _findAdjacentDay(week, dayKr, 'prev', isAustralia);
+    var next = _findAdjacentDay(week, dayKr, 'next', isAustralia);
+
+    var prevHtml = '';
+    if (prev) {
+        var prevLabel = prev.week !== week
+            ? 'W' + prev.week + ' ' + _DAY_EN_SHORT[prev.dayKr]
+            : _DAY_EN_SHORT[prev.dayKr];
+        prevHtml = '<button class="day-nav-btn day-nav-prev" data-week="' + prev.week + '" data-day="' + prev.dayKr + '">' +
+            '<i class="fas fa-chevron-left day-nav-arrow"></i>' +
+            '<span class="day-nav-label">' + prevLabel + '</span>' +
+            '</button>';
+    }
+
+    var nextHtml = '';
+    if (next) {
+        var nextLabel = next.week !== week
+            ? 'W' + next.week + ' ' + _DAY_EN_SHORT[next.dayKr]
+            : _DAY_EN_SHORT[next.dayKr];
+        nextHtml = '<button class="day-nav-btn day-nav-next" data-week="' + next.week + '" data-day="' + next.dayKr + '">' +
+            '<i class="fas fa-chevron-right day-nav-arrow"></i>' +
+            '<span class="day-nav-label">' + nextLabel + '</span>' +
+            '</button>';
+    }
+
+    headerEl.innerHTML = prevHtml +
+        '<span class="day-nav-title">Week ' + week + ' - ' + dayEn + '</span>' +
+        nextHtml;
+
+    var selectFn = isAustralia ? selectAustraliaDay : selectDay;
+    var dayEnKeys = { '일': 'sunday', '월': 'monday', '화': 'tuesday', '수': 'wednesday', '목': 'thursday', '금': 'friday' };
+    headerEl.querySelectorAll('.day-nav-btn').forEach(function(btn) {
+        btn.onclick = function() {
+            var w = parseInt(btn.dataset.week);
+            var dk = btn.dataset.day;
+            selectFn(w, dk, dayEnKeys[dk]);
+        };
+    });
+}
+
 /**
  * 과제 목록 화면 표시 (V3 스케줄 시스템)
  */
@@ -1423,16 +1703,14 @@ function showTaskListScreen(week, dayKr, tasks) {
     // 헤더 변경
     const welcomeHeader = document.querySelector('#taskListScreen .welcome-header h1');
     const subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
-    
+
     if (welcomeHeader) {
-        var dayEnMap = { '일': 'SUNDAY', '월': 'MONDAY', '화': 'TUESDAY', '수': 'WEDNESDAY', '목': 'THURSDAY', '금': 'FRIDAY', '토': 'SATURDAY' };
-        var dayEn = dayEnMap[dayKr] || dayKr;
-        welcomeHeader.textContent = `Week ${week} - ${dayEn}`;
+        _renderDayNavHeader(welcomeHeader, week, dayKr, false);
     }
     if (subtitle) {
         subtitle.textContent = `${tasks.length}개의 과제가 있습니다`;
     }
-    
+
     // 마감 배너 표시
     _renderDeadlineBanner(week, dayKr);
     

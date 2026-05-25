@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMR 카드</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f3ff;
+            color: #1a1a2e;
+            min-height: 100vh;
+        }
+
+        /* ── 헤더 ── */
+        .omr-header {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 18px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .omr-header-icon { font-size: 24px; }
+        .omr-header-title { font-size: 18px; font-weight: 700; }
+        .omr-header-sub { font-size: 13px; color: #6b7280; margin-left: 8px; }
+
+        /* ── OMR 본문 ── */
+        .omr-body {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 24px 16px 100px;
+        }
+
+        /* ── 섹션 구분 (리스닝 통합 시) ── */
+        .omr-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 28px 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #9480c5;
+        }
+        .omr-section-header:first-child { margin-top: 0; }
+        .omr-section-label {
+            font-size: 15px;
+            font-weight: 700;
+            color: #5B4A9E;
+        }
+
+        /* ── 문제 행 ── */
+        .omr-question {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            transition: box-shadow 0.2s;
+        }
+        .omr-question:hover { box-shadow: 0 2px 8px rgba(148,128,197,0.12); }
+        .omr-question-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #9480c5;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .omr-question-choices {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .omr-question-hint {
+            font-size: 11px;
+            color: #9480c5;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* ── 라디오/체크박스 숨기고 커스텀 ── */
+        .omr-choice { display: none; }
+        .omr-choice-label {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .omr-choice-label:hover {
+            border-color: #9480c5;
+            color: #9480c5;
+            background: #f5f3ff;
+        }
+        .omr-choice:checked + .omr-choice-label {
+            background: #9480c5;
+            border-color: #9480c5;
+            color: #fff;
+        }
+
+        /* ── 표 문제 ── */
+        .omr-table-wrap {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .omr-table-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .omr-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .omr-table th {
+            padding: 8px 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5B4A9E;
+            text-align: center;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .omr-table td {
+            padding: 10px 6px;
+            text-align: center;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .omr-table td:first-child {
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+        .omr-table .omr-choice:checked + .omr-choice-label {
+            background: #9480c5;
+            border-color: #9480c5;
+            color: #fff;
+        }
+
+        /* ── 제출 버튼 ── */
+        .omr-submit-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #e5e7eb;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: center;
+            z-index: 10;
+        }
+        .omr-submit-btn {
+            width: 100%;
+            max-width: 600px;
+            padding: 16px;
+            background: #9480c5;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .omr-submit-btn:hover { background: #7b67b0; }
+        .omr-submit-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        /* ── 확인 팝업 ── */
+        .omr-confirm-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .omr-confirm-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 28px;
+            text-align: center;
+            max-width: 340px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .omr-confirm-icon { font-size: 40px; margin-bottom: 14px; }
+        .omr-confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+        .omr-confirm-desc { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 22px; }
+        .omr-confirm-buttons { display: flex; gap: 10px; }
+        .omr-confirm-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+            transition: background 0.2s;
+        }
+        .omr-confirm-cancel { background: #f3f4f6; color: #374151; }
+        .omr-confirm-cancel:hover { background: #e5e7eb; }
+        .omr-confirm-ok { background: #9480c5; color: #fff; }
+        .omr-confirm-ok:hover { background: #7b67b0; }
+
+        /* ── 결과 화면 ── */
+        .omr-result { display: none; }
+        .omr-result-score {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(148,128,197,0.1);
+        }
+        .omr-result-emoji { font-size: 48px; margin-bottom: 12px; }
+        .omr-result-scaled {
+            font-size: 36px;
+            font-weight: 800;
+            color: #5B4A9E;
+        }
+        .omr-result-scaled-sub {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        .omr-result-raw {
+            font-size: 15px;
+            color: #374151;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        /* ── 결과 뱃지 ── */
+        .omr-result-badges {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(148,128,197,0.1);
+        }
+        .omr-result-badges-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 14px;
+        }
+        .omr-result-section-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #5B4A9E;
+            margin: 16px 0 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .omr-result-section-label:first-child { margin-top: 0; }
+        .omr-badges-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .omr-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .omr-badge-correct {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .omr-badge-wrong {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ── 결과 닫기 버튼 ── */
+        .omr-result-close {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .omr-result-close-btn {
+            padding: 14px 48px;
+            background: #9480c5;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .omr-result-close-btn:hover { background: #7b67b0; }
+
+        /* ── 이미 제출됨 ── */
+        .omr-already-submitted {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .omr-already-submitted i {
+            font-size: 48px;
+            color: #9480c5;
+            margin-bottom: 16px;
+        }
+        .omr-already-submitted h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        .omr-already-submitted p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        /* ── 로딩 ── */
+        .omr-loading {
+            text-align: center;
+            padding: 80px 20px;
+            color: #6b7280;
+        }
+        .omr-loading-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #9480c5;
+            border-radius: 50%;
+            animation: omrSpin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes omrSpin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 480px) {
+            .omr-body { padding: 16px 12px 100px; }
+            .omr-choice-label { width: 36px; height: 36px; font-size: 13px; }
+            .omr-question { padding: 12px 14px; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="omr-header">
+        <span class="omr-header-icon" id="omrHeaderIcon">📖</span>
+        <span class="omr-header-title" id="omrHeaderTitle">OMR 카드</span>
+        <span class="omr-header-sub" id="omrHeaderSub"></span>
+    </div>
+
+    <div class="omr-body">
+        <div class="omr-loading" id="omrLoading">
+            <div class="omr-loading-spinner"></div>
+            <p>OMR 카드를 불러오는 중...</p>
+        </div>
+
+        <div id="omrForm" style="display:none;"></div>
+
+        <div class="omr-result" id="omrResult"></div>
+
+        <div class="omr-already-submitted" id="omrAlready" style="display:none;">
+            <i class="fas fa-check-circle"></i>
+            <h2>이미 제출되었습니다</h2>
+            <p>이 과제의 OMR은 이미 제출되었습니다.</p>
+        </div>
+    </div>
+
+    <div class="omr-submit-area" id="omrSubmitArea" style="display:none;">
+        <button class="omr-submit-btn" id="omrSubmitBtn" onclick="handleSubmit()">제출하기</button>
+    </div>
+
+    <script>
+    // ── Supabase 설정 ──
+    var SUPABASE_URL = 'https://qpqjevecjejvbeuogtbx.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwcWpldmVjamVqdmJldW9ndGJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDAxNDEsImV4cCI6MjA4Njk3NjE0MX0.pJvY4u9oHQYa7IvAjWluHMow_4WIkONDBBasnXxF5Gc';
+
+    async function sbFetch(endpoint, options) {
+        options = options || {};
+        var headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json'
+        };
+        if (options.headers) {
+            Object.keys(options.headers).forEach(function(k) { headers[k] = options.headers[k]; });
+        }
+        options.headers = headers;
+        var res = await fetch(SUPABASE_URL + endpoint, options);
+        if (!res.ok) return null;
+        var text = await res.text();
+        return text ? JSON.parse(text) : null;
+    }
+
+    // ── URL 파라미터 파싱 ──
+    var params = new URLSearchParams(window.location.search);
+    var omrType = params.get('type');           // 'reading' or 'listening'
+    var moduleNumbers = params.get('modules');   // '1' or '4,5' (쉼표 구분)
+    var week = params.get('week');
+    var day = params.get('day');
+    var userId = params.get('userId');
+
+    var modules = moduleNumbers ? moduleNumbers.split(',').map(Number) : [];
+    var answerData = {};   // { moduleNumber: { questions: [...] } }
+    var isListening = omrType === 'listening';
+
+    // ── 초기화 ──
+    init();
+
+    async function init() {
+        // 헤더 설정
+        if (isListening) {
+            document.getElementById('omrHeaderIcon').textContent = '🎧';
+            document.getElementById('omrHeaderTitle').textContent = '리스닝 OMR 카드';
+            if (modules.length > 1) {
+                document.getElementById('omrHeaderSub').textContent = '리스닝' + modules[0] + ' ~ 리스닝' + modules[modules.length - 1];
+            } else {
+                document.getElementById('omrHeaderSub').textContent = '리스닝' + modules[0];
+            }
+        } else {
+            document.getElementById('omrHeaderIcon').textContent = '📖';
+            document.getElementById('omrHeaderTitle').textContent = '리딩 OMR 카드';
+            document.getElementById('omrHeaderSub').textContent = '리딩' + modules[0];
+        }
+
+        // 이미 제출했는지 확인
+        var alreadySubmitted = await checkAlreadySubmitted();
+        if (alreadySubmitted) {
+            document.getElementById('omrLoading').style.display = 'none';
+            document.getElementById('omrAlready').style.display = 'block';
+            return;
+        }
+
+        // 정답 데이터 로드
+        var loaded = await loadAnswerData();
+        if (!loaded) {
+            document.getElementById('omrLoading').innerHTML = '<p>정답 데이터를 불러올 수 없습니다.<br>관리자에게 문의해 주세요.</p>';
+            return;
+        }
+
+        // OMR 폼 렌더링
+        renderOMRForm();
+        document.getElementById('omrLoading').style.display = 'none';
+        document.getElementById('omrForm').style.display = 'block';
+        document.getElementById('omrSubmitArea').style.display = 'flex';
+    }
+
+    async function checkAlreadySubmitted() {
+        if (!userId) return false;
+        for (var i = 0; i < modules.length; i++) {
+            var q = 'user_id=eq.' + userId
+                + '&section_type=eq.' + omrType
+                + '&module_number=eq.' + modules[i]
+                + '&week=eq.' + encodeURIComponent(String(week))
+                + '&day=eq.' + encodeURIComponent(day)
+                + '&initial_record=not.is.null'
+                + '&limit=1';
+            var rows = await sbFetch('/rest/v1/aus_study_results?' + q);
+            if (rows && rows.length > 0) return true;
+        }
+        return false;
+    }
+
+    async function loadAnswerData() {
+        for (var i = 0; i < modules.length; i++) {
+            var mod = modules[i];
+            var q = 'section_type=eq.' + omrType + '&module_number=eq.' + mod + '&limit=1';
+            var rows = await sbFetch('/rest/v1/aus_omr_answers?' + q + '&select=*');
+            if (!rows || rows.length === 0) return false;
+            answerData[mod] = rows[0];
+        }
+        return true;
+    }
+
+    // ── OMR 폼 렌더링 ──
+    function renderOMRForm() {
+        var html = '';
+        var globalQNum = 0;
+
+        modules.forEach(function(mod) {
+            var data = answerData[mod];
+            var questions = typeof data.questions === 'string' ? JSON.parse(data.questions) : data.questions;
+            answerData[mod]._parsed = questions;
+
+            if (modules.length > 1) {
+                var label = isListening ? '리스닝' + mod : '리딩' + mod;
+                html += '<div class="omr-section-header"><span class="omr-section-label">' + label + ' (' + questions.length + '문제)</span></div>';
+            }
+
+            questions.forEach(function(q, idx) {
+                globalQNum++;
+                var qId = 'q_' + mod + '_' + q.no;
+
+                if (q.type === 'table') {
+                    html += renderTableQuestion(q, mod, globalQNum);
+                } else if (q.type === 'multi' || (q.type === 'pick3')) {
+                    html += renderMultiQuestion(q, mod, globalQNum);
+                } else {
+                    html += renderSingleQuestion(q, mod, globalQNum);
+                }
+            });
+        });
+
+        document.getElementById('omrForm').innerHTML = html;
+    }
+
+    function renderSingleQuestion(q, mod, gNum) {
+        var choices = ['A', 'B', 'C', 'D'];
+        var name = 'q_' + mod + '_' + q.no;
+        var h = '<div class="omr-question">';
+        h += '<div class="omr-question-num">' + q.no + '</div>';
+        h += '<div class="omr-question-choices">';
+        choices.forEach(function(c) {
+            h += '<input type="radio" class="omr-choice" name="' + name + '" value="' + c + '" id="' + name + '_' + c + '">';
+            h += '<label class="omr-choice-label" for="' + name + '_' + c + '">' + c + '</label>';
+        });
+        h += '</div></div>';
+        return h;
+    }
+
+    function renderMultiQuestion(q, mod, gNum) {
+        var count = q.count || 2;
+        var choices = count === 3 ? ['A', 'B', 'C', 'D', 'E', 'F'] : ['A', 'B', 'C', 'D'];
+        var name = 'q_' + mod + '_' + q.no;
+        var h = '<div class="omr-question">';
+        h += '<div class="omr-question-num">' + q.no + '</div>';
+        h += '<div class="omr-question-choices">';
+        choices.forEach(function(c) {
+            h += '<input type="checkbox" class="omr-choice" name="' + name + '" value="' + c + '" id="' + name + '_' + c + '" data-max="' + count + '" onchange="limitCheck(this)">';
+            h += '<label class="omr-choice-label" for="' + name + '_' + c + '">' + c + '</label>';
+        });
+        h += '</div>';
+        h += '<span class="omr-question-hint">' + count + '개 선택</span>';
+        h += '</div>';
+        return h;
+    }
+
+    function renderTableQuestion(q, mod, gNum) {
+        var rows = q.rows || 4;
+        var cols = q.cols || 2;
+        var colLabels = [];
+        for (var c = 0; c < cols; c++) colLabels.push(String.fromCharCode(65 + c));
+
+        var h = '<div class="omr-table-wrap">';
+        h += '<div class="omr-table-title">';
+        h += '<div class="omr-question-num">' + q.no + '</div>';
+        h += '<span style="font-size:14px;font-weight:600;color:#374151;">표 문제 (' + rows + '행 ' + cols + '열)</span>';
+        h += '<span class="omr-question-hint">2점</span>';
+        h += '</div>';
+        h += '<table class="omr-table"><thead><tr><th></th>';
+        colLabels.forEach(function(cl) { h += '<th>' + cl + '</th>'; });
+        h += '</tr></thead><tbody>';
+
+        for (var r = 1; r <= rows; r++) {
+            var name = 'q_' + mod + '_' + q.no + '_r' + r;
+            h += '<tr><td>' + r + '</td>';
+            colLabels.forEach(function(cl) {
+                h += '<td>';
+                h += '<input type="radio" class="omr-choice" name="' + name + '" value="' + cl + '" id="' + name + '_' + cl + '">';
+                h += '<label class="omr-choice-label" for="' + name + '_' + cl + '">' + cl + '</label>';
+                h += '</td>';
+            });
+            h += '</tr>';
+        }
+
+        h += '</tbody></table></div>';
+        return h;
+    }
+
+    function limitCheck(el) {
+        var max = parseInt(el.getAttribute('data-max'));
+        var name = el.getAttribute('name');
+        var checked = document.querySelectorAll('input[name="' + name + '"]:checked');
+        if (checked.length > max) {
+            el.checked = false;
+        }
+    }
+
+    // ── 제출 ──
+    function handleSubmit() {
+        showConfirm();
+    }
+
+    function showConfirm() {
+        var overlay = document.createElement('div');
+        overlay.className = 'omr-confirm-overlay';
+        overlay.innerHTML =
+            '<div class="omr-confirm-box">' +
+                '<div class="omr-confirm-icon">📋</div>' +
+                '<div class="omr-confirm-title">제출하시겠습니까?</div>' +
+                '<div class="omr-confirm-desc">제출하면 바로 기록됩니다.<br>제출 후에는 수정할 수 없습니다.</div>' +
+                '<div class="omr-confirm-buttons">' +
+                    '<button class="omr-confirm-cancel" id="omrConfirmCancel">취소</button>' +
+                    '<button class="omr-confirm-ok" id="omrConfirmOk">확인</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+
+        document.getElementById('omrConfirmCancel').onclick = function() { overlay.remove(); };
+        document.getElementById('omrConfirmOk').onclick = function() {
+            overlay.remove();
+            doSubmit();
+        };
+    }
+
+    async function doSubmit() {
+        document.getElementById('omrSubmitBtn').disabled = true;
+        document.getElementById('omrSubmitBtn').textContent = '채점 중...';
+
+        var result = gradeAll();
+        await saveResults(result);
+
+        showResult(result);
+    }
+
+    // ── 채점 ──
+    function gradeAll() {
+        var totalRaw = 0;
+        var maxRaw = 0;
+        var totalCorrect = 0;
+        var totalQuestions = 0;
+        var moduleResults = {};
+
+        modules.forEach(function(mod) {
+            var data = answerData[mod];
+            var questions = data._parsed;
+            var qResults = [];
+
+            questions.forEach(function(q) {
+                var res = gradeQuestion(q, mod);
+                qResults.push(res);
+                totalRaw += res.points;
+                maxRaw += res.maxPoints;
+                totalQuestions++;
+                if (res.correct) totalCorrect++;
+            });
+
+            moduleResults[mod] = qResults;
+        });
+
+        var scaledScore;
+        var scoreType;
+
+        if (isListening) {
+            scaledScore = maxRaw > 0 ? Math.round((totalRaw / maxRaw) * 30) : 0;
+            scoreType = 'listening';
+        } else {
+            scaledScore = calcReadingScore(moduleResults);
+            scoreType = 'reading';
+        }
+
+        return {
+            scoreType: scoreType,
+            scaledScore: scaledScore,
+            totalRaw: totalRaw,
+            maxRaw: maxRaw,
+            totalCorrect: totalCorrect,
+            totalQuestions: totalQuestions,
+            moduleResults: moduleResults
+        };
+    }
+
+    function gradeQuestion(q, mod) {
+        if (q.type === 'table') {
+            return gradeTable(q, mod);
+        } else if (q.type === 'multi' || q.type === 'pick3') {
+            return gradeMulti(q, mod);
+        } else {
+            return gradeSingle(q, mod);
+        }
+    }
+
+    function gradeSingle(q, mod) {
+        var name = 'q_' + mod + '_' + q.no;
+        var selected = document.querySelector('input[name="' + name + '"]:checked');
+        var answer = selected ? selected.value : '';
+        var correct = answer === q.answer;
+        var pts = isListening ? 1 : 0;
+        return { no: q.no, type: 'single', answer: answer, correctAnswer: q.answer, correct: correct, points: correct ? (isListening ? 1 : 1) : 0, maxPoints: isListening ? 1 : 1 };
+    }
+
+    function gradeMulti(q, mod) {
+        var name = 'q_' + mod + '_' + q.no;
+        var checked = document.querySelectorAll('input[name="' + name + '"]:checked');
+        var selected = [];
+        checked.forEach(function(el) { selected.push(el.value); });
+        selected.sort();
+        var correctArr = (q.answer || []).slice().sort();
+
+        if (q.type === 'pick3' || q.count === 3) {
+            // 마지막 문제 (3개 고르기) - 리딩 전용 부분 점수
+            var matchCount = 0;
+            selected.forEach(function(s) { if (correctArr.indexOf(s) >= 0) matchCount++; });
+
+            if (!isListening) {
+                return { no: q.no, type: 'pick3', answer: selected, correctAnswer: correctArr, correct: matchCount === 3, matchCount: matchCount, points: matchCount, maxPoints: 3 };
+            } else {
+                var correct = matchCount === selected.length && matchCount === correctArr.length;
+                return { no: q.no, type: 'multi', answer: selected, correctAnswer: correctArr, correct: correct, points: correct ? 1 : 0, maxPoints: 1 };
+            }
+        } else {
+            var correct = selected.length === correctArr.length && selected.join(',') === correctArr.join(',');
+            return { no: q.no, type: 'multi', answer: selected, correctAnswer: correctArr, correct: correct, points: correct ? 1 : 0, maxPoints: 1 };
+        }
+    }
+
+    function gradeTable(q, mod) {
+        var rows = q.rows || 4;
+        var allCorrect = true;
+        var rowResults = [];
+
+        for (var r = 1; r <= rows; r++) {
+            var name = 'q_' + mod + '_' + q.no + '_r' + r;
+            var selected = document.querySelector('input[name="' + name + '"]:checked');
+            var answer = selected ? selected.value : '';
+            var correctVal = q.answer[String(r)] || q.answer[r];
+            var rowCorrect = answer === correctVal;
+            if (!rowCorrect) allCorrect = false;
+            rowResults.push({ row: r, answer: answer, correctAnswer: correctVal, correct: rowCorrect });
+        }
+
+        return { no: q.no, type: 'table', rowResults: rowResults, correct: allCorrect, points: allCorrect ? 2 : 0, maxPoints: 2 };
+    }
+
+    function calcReadingScore(moduleResults) {
+        var mod = modules[0];
+        var data = answerData[mod];
+        var questions = data._parsed;
+        var totalQ = questions.length;
+        var qResults = moduleResults[mod];
+
+        var perQ, lastFull;
+        if (totalQ === 12) { perQ = 30 / 13; lastFull = perQ * 2; }
+        else if (totalQ === 13) { perQ = 30 / 14; lastFull = perQ * 2; }
+        else { perQ = 2; lastFull = 4; }
+
+        var score = 0;
+        for (var i = 0; i < qResults.length; i++) {
+            var r = qResults[i];
+            if (i === qResults.length - 1 && r.type === 'pick3') {
+                if (r.matchCount <= 1) score += 0;
+                else if (r.matchCount === 2) score += perQ;
+                else if (r.matchCount === 3) score += lastFull;
+            } else {
+                if (r.correct) score += perQ;
+            }
+        }
+
+        score = Math.round(score);
+        if (score === 29) score = 30;
+        return score;
+    }
+
+    // ── 결과 저장 ──
+    async function saveResults(result) {
+        for (var i = 0; i < modules.length; i++) {
+            var mod = modules[i];
+            var qResults = result.moduleResults[mod];
+            var answers = {};
+            var wrongNumbers = [];
+
+            qResults.forEach(function(r) {
+                if (r.type === 'table') {
+                    answers[r.no] = r.rowResults.map(function(rr) { return rr.answer; });
+                } else if (r.type === 'multi' || r.type === 'pick3') {
+                    answers[r.no] = r.answer;
+                } else {
+                    answers[r.no] = r.answer;
+                }
+                if (!r.correct) wrongNumbers.push(r.no);
+            });
+
+            var record = {
+                answers: answers,
+                wrong_numbers: wrongNumbers,
+                score: result.scaledScore,
+                raw: result.totalRaw,
+                max_raw: result.maxRaw,
+                total_correct: result.totalCorrect,
+                total_questions: result.totalQuestions
+            };
+
+            if (isListening && modules.length > 1) {
+                record.combined_modules = modules;
+            }
+
+            var data = {
+                user_id: userId,
+                section_type: omrType,
+                module_number: mod,
+                week: String(week),
+                day: day,
+                initial_record: record,
+                completed_at: new Date().toISOString()
+            };
+
+            await sbFetch('/rest/v1/aus_study_results', {
+                method: 'POST',
+                headers: {
+                    'Prefer': 'resolution=merge-duplicates,return=representation'
+                },
+                body: JSON.stringify(data)
+            });
+        }
+
+        // 부모 창에 완료 알림
+        if (window.opener) {
+            try { window.opener.postMessage({ type: 'omr-submitted', modules: modules, omrType: omrType }, '*'); } catch(e) {}
+        }
+    }
+
+    // ── 결과 화면 ──
+    function showResult(result) {
+        document.getElementById('omrForm').style.display = 'none';
+        document.getElementById('omrSubmitArea').style.display = 'none';
+
+        var isSingleListening = isListening && modules.length === 1 && isStandardW2Single();
+
+        var html = '<div class="omr-result-score">';
+        html += '<div class="omr-result-emoji">🎯</div>';
+
+        if (isSingleListening) {
+            html += '<div class="omr-result-scaled">' + result.totalCorrect + ' / ' + result.totalQuestions + '</div>';
+            html += '<div class="omr-result-scaled-sub">맞은 문제 수</div>';
+        } else {
+            html += '<div class="omr-result-scaled">' + result.scaledScore + '점</div>';
+            html += '<div class="omr-result-scaled-sub">가채점 (30점 만점)</div>';
+            if (isListening) {
+                html += '<div class="omr-result-raw">Raw: ' + result.totalRaw + ' / ' + result.maxRaw + '</div>';
+            } else {
+                html += '<div class="omr-result-raw">정답: ' + result.totalCorrect + ' / ' + result.totalQuestions + '</div>';
+            }
+        }
+        html += '</div>';
+
+        // 뱃지
+        html += '<div class="omr-result-badges">';
+        html += '<div class="omr-result-badges-title">문제별 정오답</div>';
+
+        modules.forEach(function(mod) {
+            var qResults = result.moduleResults[mod];
+            if (modules.length > 1) {
+                var label = isListening ? '리스닝' + mod : '리딩' + mod;
+                html += '<div class="omr-result-section-label">' + label + '</div>';
+            }
+            html += '<div class="omr-badges-grid">';
+            qResults.forEach(function(r) {
+                var cls = r.correct ? 'omr-badge-correct' : 'omr-badge-wrong';
+                html += '<div class="omr-badge ' + cls + '">' + r.no + '</div>';
+            });
+            html += '</div>';
+        });
+
+        html += '</div>';
+
+        html += '<div class="omr-result-close">';
+        html += '<button class="omr-result-close-btn" onclick="window.close()">창 닫기</button>';
+        html += '</div>';
+
+        var resultEl = document.getElementById('omrResult');
+        resultEl.innerHTML = html;
+        resultEl.style.display = 'block';
+    }
+
+    function isStandardW2Single() {
+        // Standard W2: 리스닝 1개만 있는 날 (모듈 1, 2, 3만 해당)
+        if (modules.length !== 1) return false;
+        var m = modules[0];
+        return m >= 1 && m <= 3;
+    }
+    </script>
+</body>
+</html>

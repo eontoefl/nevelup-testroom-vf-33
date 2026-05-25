@@ -3459,6 +3459,70 @@ body {
     font-weight: 800;
     letter-spacing: -0.5px;
     margin-bottom: 8px;
+    position: relative;
+    text-align: center;
+}
+
+.day-nav-title {
+    white-space: nowrap;
+}
+
+.day-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.7);
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    transition: all 0.25s;
+    color: var(--primary-color);
+    flex-shrink: 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.8;
+}
+
+.day-nav-prev {
+    right: calc(50% + 280px);
+}
+
+.day-nav-next {
+    left: calc(50% + 280px);
+}
+
+.day-nav-btn:hover {
+    opacity: 1;
+    background: rgba(148, 128, 197, 0.15);
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.2);
+}
+
+.day-nav-btn:active {
+    transform: translateY(-50%) scale(0.92);
+}
+
+#taskListScreen .welcome-header .day-nav-btn i.day-nav-arrow {
+    font-size: 0.8rem;
+    line-height: 1;
+    color: inherit;
+    margin: 0;
+}
+
+.day-nav-label {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 #taskListScreen .welcome-header .subtitle {
@@ -3639,6 +3703,14 @@ body {
 
     #taskListScreen .welcome-header h1 {
         font-size: 1.8rem;
+    }
+
+    .day-nav-btn {
+        padding: 4px;
+    }
+
+    .day-nav-label {
+        font-size: 0.55rem;
     }
 }
 

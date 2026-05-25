@@ -197,7 +197,11 @@ var ProgressTracker = {
                 task = key ? ProgressTracker._completedTasks[key] : null;
                 if (task) {
                     completed++;
-                    if (task.errorNoteSubmitted) done++;
+                    if (window.courseMode === 'australia' && (type === 'reading' || type === 'listening')) {
+                        done++;
+                    } else if (task.errorNoteSubmitted) {
+                        done++;
+                    }
                 }
             }
         });
@@ -231,6 +235,8 @@ var ProgressTracker = {
         var task = this._completedTasks[key];
         // vocab, intro-book은 오답노트 없으므로 바로 done
         if (type === 'vocab' || type === 'intro-book') return 'done';
+        // 호주과정 리딩/리스닝(OMR)은 오답노트 없으므로 바로 done
+        if (window.courseMode === 'australia' && (type === 'reading' || type === 'listening')) return 'done';
         return task.errorNoteSubmitted ? 'done' : 'pending';
     },
 
