@@ -348,6 +348,87 @@
             font-size: 14px;
         }
 
+        /* ── 읽기 전용 리뷰 모드 ── */
+        .omr-review-banner {
+            background: #f0f4ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #4338ca;
+            font-weight: 600;
+        }
+        .omr-review-banner i { font-size: 18px; }
+        .omr-review-mode .omr-choice-label {
+            cursor: default;
+            pointer-events: none;
+            opacity: 0.9;
+        }
+        .omr-review-mode .omr-choice:checked + .omr-choice-label.is-correct {
+            background: #c8e1cc;
+            border-color: #c8e1cc;
+            color: #1a5c2a;
+        }
+        .omr-review-mode .omr-choice:checked + .omr-choice-label.is-wrong {
+            background: #fdaaaa;
+            border-color: #fdaaaa;
+            color: #7c1d1d;
+        }
+        .omr-review-mode .omr-question-num.q-correct {
+            background: #c8e1cc;
+            color: #1a5c2a;
+        }
+        .omr-review-mode .omr-question-num.q-wrong {
+            background: #fdaaaa;
+            color: #7c1d1d;
+        }
+        .omr-review-scores {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .omr-review-score-item {
+            flex: 1;
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 18px;
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .omr-review-score-label {
+            display: block;
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .omr-review-score-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5B4A9E;
+        }
+        .omr-review-close {
+            text-align: center;
+            margin-top: 24px;
+            padding-bottom: 20px;
+        }
+        .omr-review-close-btn {
+            padding: 14px 48px;
+            background: #9480c5;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .omr-review-close-btn:hover { background: #7b67b0; }
+
         /* ── 로딩 ── */
         .omr-loading {
             text-align: center;
@@ -452,18 +533,21 @@
             document.getElementById('omrHeaderSub').textContent = '리딩' + modules[0];
         }
 
-        // 이미 제출했는지 확인
-        var alreadySubmitted = await checkAlreadySubmitted();
-        if (alreadySubmitted) {
-            document.getElementById('omrLoading').style.display = 'none';
-            document.getElementById('omrAlready').style.display = 'block';
+        // 제출 데이터 + 정답 데이터 병렬 로드
+        var results = await Promise.all([checkAlreadySubmitted(), loadAnswerData()]);
+        var submittedData = results[0];
+        var loaded = results[1];
+        if (!loaded) {
+            document.getElementById('omrLoading').innerHTML = '<p>정답 데이터를 불러올 수 없습니다.<br>관리자에게 문의해 주세요.</p>';
             return;
         }
 
-        // 정답 데이터 로드
-        var loaded = await loadAnswerData();
-        if (!loaded) {
-            document.getElementById('omrLoading').innerHTML = '<p>정답 데이터를 불러올 수 없습니다.<br>관리자에게 문의해 주세요.</p>';
+        if (submittedData) {
+            renderOMRForm();
+            applyReviewMode(submittedData);
+            document.getElementById('omrLoading').style.display = 'none';
+            document.getElementById('omrForm').style.display = 'block';
+            document.querySelector('.omr-body').style.paddingBottom = '24px';
             return;
         }
 
@@ -475,29 +559,31 @@
     }
 
     async function checkAlreadySubmitted() {
-        if (!userId) return false;
-        for (var i = 0; i < modules.length; i++) {
-            var q = 'user_id=eq.' + userId
-                + '&section_type=eq.' + omrType
-                + '&module_number=eq.' + modules[i]
-                + '&week=eq.' + encodeURIComponent(String(week))
-                + '&day=eq.' + encodeURIComponent(day)
-                + '&initial_record=not.is.null'
-                + '&limit=1';
-            var rows = await sbFetch('/rest/v1/aus_study_results?' + q);
-            if (rows && rows.length > 0) return true;
-        }
-        return false;
+        if (!userId) return null;
+        var q = 'user_id=eq.' + userId
+            + '&section_type=eq.' + omrType
+            + '&module_number=in.(' + modules.join(',') + ')'
+            + '&week=eq.' + encodeURIComponent(String(week))
+            + '&day=eq.' + encodeURIComponent(day)
+            + '&initial_record=not.is.null'
+            + '&select=module_number,initial_record';
+        var rows = await sbFetch('/rest/v1/aus_study_results?' + q);
+        if (!rows || rows.length === 0) return null;
+        var submitted = {};
+        rows.forEach(function(row) {
+            var rec = typeof row.initial_record === 'string' ? JSON.parse(row.initial_record) : row.initial_record;
+            submitted[row.module_number] = rec;
+        });
+        return submitted;
     }
 
     async function loadAnswerData() {
-        for (var i = 0; i < modules.length; i++) {
-            var mod = modules[i];
-            var q = 'section_type=eq.' + omrType + '&module_number=eq.' + mod + '&limit=1';
-            var rows = await sbFetch('/rest/v1/aus_omr_answers?' + q + '&select=*');
-            if (!rows || rows.length === 0) return false;
-            answerData[mod] = rows[0];
-        }
+        var q = 'section_type=eq.' + omrType
+            + '&module_number=in.(' + modules.join(',') + ')'
+            + '&select=module_number,questions';
+        var rows = await sbFetch('/rest/v1/aus_omr_answers?' + q);
+        if (!rows || rows.length === 0) return false;
+        rows.forEach(function(row) { answerData[row.module_number] = row; });
         return true;
     }
 
@@ -892,10 +978,100 @@
     }
 
     function isStandardW2Single() {
-        // Standard W2: 리스닝 1개만 있는 날 (모듈 1, 2, 3만 해당)
         if (modules.length !== 1) return false;
         var m = modules[0];
         return m >= 1 && m <= 3;
+    }
+
+    function applyReviewMode(submittedData) {
+        var form = document.getElementById('omrForm');
+        form.classList.add('omr-review-mode');
+
+        var firstRec = submittedData[modules[0]];
+        var score = firstRec.score;
+        var totalCorrect = firstRec.total_correct;
+        var totalQuestions = firstRec.total_questions;
+
+        var bannerHtml = '<div class="omr-review-banner">' +
+            '<i class="fas fa-lock"></i>' +
+            '이미 제출되어 수정할 수 없습니다.' +
+            '</div>' +
+            '<div class="omr-review-scores">' +
+            '<div class="omr-review-score-item"><span class="omr-review-score-label">점수</span><span class="omr-review-score-value">' + score + ' / 30</span></div>' +
+            '<div class="omr-review-score-item"><span class="omr-review-score-label">Raw Score</span><span class="omr-review-score-value">' + totalCorrect + ' / ' + totalQuestions + '</span></div>' +
+            '</div>';
+        form.insertAdjacentHTML('afterbegin', bannerHtml);
+
+        modules.forEach(function(mod) {
+            var rec = submittedData[mod];
+            if (!rec) return;
+            var answers = rec.answers || {};
+            var wrongSet = new Set((rec.wrong_numbers || []).map(Number));
+            var data = answerData[mod];
+            var questions = data._parsed;
+
+            questions.forEach(function(q) {
+                var isWrong = wrongSet.has(q.no);
+
+                if (q.type === 'table') {
+                    var saved = answers[q.no] || [];
+                    var correctAnswers = q.answer;
+                    for (var r = 1; r <= (q.rows || 4); r++) {
+                        var name = 'q_' + mod + '_' + q.no + '_r' + r;
+                        var val = saved[r - 1] || '';
+                        if (val) {
+                            var input = document.getElementById(name + '_' + val);
+                            if (input) {
+                                input.checked = true;
+                                var correctVal = correctAnswers[String(r)] || correctAnswers[r];
+                                var label = input.nextElementSibling;
+                                if (label) label.classList.add(val === correctVal ? 'is-correct' : 'is-wrong');
+                            }
+                        }
+                    }
+                } else if (q.type === 'multi' || q.type === 'pick3') {
+                    var saved = answers[q.no] || [];
+                    if (!Array.isArray(saved)) saved = [saved];
+                    var correctArr = (q.answer || []).slice().sort();
+                    saved.forEach(function(val) {
+                        var input = document.getElementById('q_' + mod + '_' + q.no + '_' + val);
+                        if (input) {
+                            input.checked = true;
+                            var label = input.nextElementSibling;
+                            if (label) label.classList.add(correctArr.indexOf(val) >= 0 ? 'is-correct' : 'is-wrong');
+                        }
+                    });
+                } else {
+                    var val = answers[q.no] || '';
+                    if (val) {
+                        var input = document.getElementById('q_' + mod + '_' + q.no + '_' + val);
+                        if (input) {
+                            input.checked = true;
+                            var label = input.nextElementSibling;
+                            if (label) label.classList.add(isWrong ? 'is-wrong' : 'is-correct');
+                        }
+                    }
+                }
+
+                var numEl = document.querySelector('input[name="q_' + mod + '_' + q.no + '"]');
+                if (numEl) {
+                    var questionRow = numEl.closest('.omr-question') || numEl.closest('.omr-table-wrap');
+                    if (questionRow) {
+                        var numBadge = questionRow.querySelector('.omr-question-num');
+                        if (numBadge) numBadge.classList.add(isWrong ? 'q-wrong' : 'q-correct');
+                    }
+                }
+            });
+        });
+
+        form.querySelectorAll('.omr-choice').forEach(function(input) {
+            input.disabled = true;
+        });
+
+        var closeHtml = '<div class="omr-review-close">' +
+            '<button class="omr-review-close-btn" onclick="window.close()">닫기</button>' +
+            '</div>';
+        form.insertAdjacentHTML('beforeend', closeHtml);
     }
     </script>
 </body>

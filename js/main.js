@@ -267,12 +267,12 @@ function showAustraliaTaskListScreen(week, dayKr, tasks) {
         screen.style.display = 'none';
     });
 
-    // 기존 OMR 섹션 제거
-    var oldOmr = document.querySelector('#taskListScreen .omr-section-area');
-    if (oldOmr) oldOmr.remove();
+    // 기존 OMR 사이드 영역 초기화
+    var omrSide = document.getElementById('omrSideArea');
+    if (omrSide) { omrSide.innerHTML = ''; omrSide.style.display = 'none'; }
 
     var taskListScreenEl = document.getElementById('taskListScreen');
-    taskListScreenEl.classList.add('active');
+    taskListScreenEl.classList.add('active', 'aus-mode');
     taskListScreenEl.style.display = 'block';
     
     if (currentUser) {
@@ -376,16 +376,17 @@ function _renderOmrSection(container, tasks, week, dayKr) {
 
     if (readingTasks.length === 0 && listeningTasks.length === 0) return;
 
-    var section = document.createElement('div');
-    section.className = 'omr-section-area';
-    section.innerHTML = '<div class="omr-section-divider"><span>OMR 채점</span></div>';
+    var omrSideArea = document.getElementById('omrSideArea');
+    if (!omrSideArea) return;
+    omrSideArea.innerHTML = '<div class="omr-side-title"><i class="fas fa-pencil-alt"></i> OMR 채점</div>';
+    omrSideArea.style.display = '';
 
     var userId = (currentUser && currentUser.id) ? currentUser.id : '';
 
     // 리딩 OMR 카드 (개별)
     readingTasks.forEach(function(num) {
         var card = _createOmrCard({
-            icon: '📖',
+            icon: '<i class="fas fa-book-open"></i>',
             label: '리딩' + num + ' OMR 카드',
             type: 'reading',
             modules: [num],
@@ -393,17 +394,17 @@ function _renderOmrSection(container, tasks, week, dayKr) {
             day: dayKr,
             userId: userId
         });
-        section.appendChild(card);
+        omrSideArea.appendChild(card);
     });
 
     // 리스닝 OMR 카드 (하루 통합)
     if (listeningTasks.length > 0) {
         var label = listeningTasks.length === 1
             ? '리스닝' + listeningTasks[0] + ' OMR 카드'
-            : '리스닝 OMR 카드 (리스닝' + listeningTasks[0] + '~' + listeningTasks[listeningTasks.length - 1] + ')';
+            : '리스닝 OMR 카드 <span class="omr-card-sub">(리스닝' + listeningTasks[0] + '~' + listeningTasks[listeningTasks.length - 1] + ')</span>';
 
         var card = _createOmrCard({
-            icon: '🎧',
+            icon: '<i class="fas fa-headphones"></i>',
             label: label,
             type: 'listening',
             modules: listeningTasks,
@@ -411,13 +412,11 @@ function _renderOmrSection(container, tasks, week, dayKr) {
             day: dayKr,
             userId: userId
         });
-        section.appendChild(card);
+        omrSideArea.appendChild(card);
     }
 
-    container.parentNode.appendChild(section);
-
     // 제출 상태 비동기 업데이트
-    _updateOmrSubmitStatus(section, week, dayKr, readingTasks, listeningTasks, userId);
+    _updateOmrSubmitStatus(omrSideArea, week, dayKr, readingTasks, listeningTasks, userId);
 }
 
 function _createOmrCard(opts) {
@@ -437,11 +436,6 @@ function _createOmrCard(opts) {
         '<i class="fas fa-chevron-right omr-card-arrow"></i>';
 
     card.onclick = function() {
-        var statusEl = card.querySelector('.omr-card-status');
-        if (statusEl && statusEl.getAttribute('data-submitted') === 'true') {
-            _showOmrAlreadyPopup();
-            return;
-        }
         var url = 'omr-card.html?type=' + opts.type
             + '&modules=' + opts.modules.join(',')
             + '&week=' + encodeURIComponent(opts.week)
@@ -1683,8 +1677,11 @@ function showTaskListScreen(week, dayKr, tasks) {
     
     // taskListScreen 표시
     const taskListScreenEl = document.getElementById('taskListScreen');
+    taskListScreenEl.classList.remove('aus-mode');
     taskListScreenEl.classList.add('active');
     taskListScreenEl.style.display = 'block';
+    var omrSide = document.getElementById('omrSideArea');
+    if (omrSide) { omrSide.innerHTML = ''; omrSide.style.display = 'none'; }
     
     // 사용자 정보 표시
     if (currentUser) {

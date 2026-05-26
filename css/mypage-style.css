@@ -677,6 +677,141 @@ body {
 .score-chart-empty i { font-size: 3rem; opacity: 0.5; }
 .score-chart-empty p { font-size: 0.88rem; font-weight: 500; }
 
+/* OMR Detail Panel (점수 상세 패널) */
+.omr-detail-panel {
+  margin-top: 16px;
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  animation: omrPanelSlideIn 0.25s ease-out;
+}
+@keyframes omrPanelSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.omr-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.omr-detail-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+.omr-detail-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--on-surface-variant);
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.omr-detail-close:hover { background: var(--surface-container-low); }
+.omr-detail-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+}
+.omr-detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.omr-detail-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.omr-detail-stat-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+.omr-detail-wrong {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.omr-detail-wrong-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.omr-q-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 8px;
+}
+.omr-q-badge.is-correct {
+  background: rgba(34, 197, 94, 0.08);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.15);
+}
+.omr-q-badge.is-wrong {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+.omr-module-label {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  margin-top: 8px;
+}
+.omr-module-label:first-child { margin-top: 0; }
+
+/* Perfect score celebration */
+.omr-detail-panel.is-perfect {
+  border-color: #a78bfa;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.06), rgba(251, 191, 36, 0.06));
+}
+.omr-perfect-banner {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #7c3aed;
+  padding: 10px 0;
+  border-radius: 10px;
+  background: rgba(167, 139, 250, 0.1);
+  animation: omrPerfectPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes omrPerfectPop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.omr-perfect-confetti { font-size: 1.2rem; }
+
+/* Point pulse animation */
+@keyframes omrPointPulse {
+  0%   { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.8); opacity: 0.4; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.omr-point-pulse {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #9480c5;
+  pointer-events: none;
+  animation: omrPointPulse 0.5s ease-out forwards;
+}
+
 
 /* ══════════════════════════════════════════
    ③ Record Table (C1~C4)

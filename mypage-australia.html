@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/mypage-style.css?v=aus_001" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/notification.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -108,7 +109,60 @@
       </div>
     </section>
 
-    <!-- ② 공부인증 현황 -->
+    <!-- ② OMR 성적 추이 -->
+    <section class="section-block">
+      <h2 class="section-title">
+        <i class="fa-solid fa-chart-line"></i> OMR 가채점 추이
+      </h2>
+      <p class="section-desc">리딩과 리스닝의 OMR 가채점 점수를 추적합니다. 객관식인 리딩과 리스닝만 제공됩니다.</p>
+
+      <div class="score-tabs">
+        <button class="score-tab active" data-tab="reading">
+          <i class="fa-solid fa-book-open"></i> Reading
+        </button>
+        <button class="score-tab" data-tab="listening">
+          <i class="fa-solid fa-headphones"></i> Listening
+        </button>
+      </div>
+
+      <div class="score-chart-wrap" id="scoreChartWrap">
+        <canvas id="scoreChart" height="300"></canvas>
+        <div class="score-chart-empty" id="scoreChartEmpty" style="display:none;">
+          <i class="fa-solid fa-chart-line"></i>
+          <p>아직 OMR 채점 기록이 없습니다</p>
+        </div>
+      </div>
+
+      <!-- 상세 패널 (포인트 클릭 시 표시) -->
+      <div class="omr-detail-panel" id="omrDetailPanel" style="display:none;">
+        <div class="omr-detail-header">
+          <span class="omr-detail-label" id="omrDetailLabel">-</span>
+          <button class="omr-detail-close" id="omrDetailClose" title="닫기">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="omr-detail-body">
+          <div class="omr-detail-stat">
+            <span class="omr-detail-stat-label">점수</span>
+            <span class="omr-detail-stat-value" id="omrDetailScore">-</span>
+          </div>
+          <div class="omr-detail-stat">
+            <span class="omr-detail-stat-label">Raw Score</span>
+            <span class="omr-detail-stat-value" id="omrDetailRaw">-</span>
+          </div>
+          <div class="omr-detail-stat">
+            <span class="omr-detail-stat-label">제출일</span>
+            <span class="omr-detail-stat-value" id="omrDetailDate">-</span>
+          </div>
+          <div class="omr-detail-wrong" id="omrDetailWrongWrap" style="display:none;">
+            <span class="omr-detail-stat-label">문항별 결과</span>
+            <div class="omr-detail-wrong-badges" id="omrDetailWrongBadges"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ③ 공부인증 현황 -->
     <section class="section-block">
       <h2 class="section-title">
         <i class="fa-solid fa-camera"></i> 공부인증 현황

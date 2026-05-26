@@ -630,20 +630,27 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
+    background: #FFFFFF;
     border-radius: 14px;
     padding: 16px 20px;
     margin-bottom: 10px;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1.5px solid transparent;
+}
+
+.omr-card-sub {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: #9ca3af;
 }
 
 .omr-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(148, 128, 197, 0.12);
-    border-color: #d4cce8;
+    border-color: transparent;
 }
 
 .omr-card:active {
@@ -651,15 +658,15 @@
 }
 
 .omr-card-done {
-    background: #f0fdf4;
-    border-color: #a7d7b8;
+    background: #FFFFFF;
+    border-color: transparent;
     cursor: default;
 }
 
 .omr-card-done:hover {
-    transform: none;
-    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.06);
-    border-color: #a7d7b8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(148, 128, 197, 0.12);
+    border-color: transparent;
 }
 
 .omr-card-left {
@@ -669,7 +676,8 @@
 }
 
 .omr-card-icon {
-    font-size: 24px;
+    font-size: 16px;
+    color: #5C5C5C;
     line-height: 1;
 }
 
@@ -682,7 +690,7 @@
 .omr-card-label {
     font-size: 15px;
     font-weight: 600;
-    color: #2d3748;
+    color: #5C5C5C;
 }
 
 .omr-card-status {
@@ -691,7 +699,7 @@
 }
 
 .omr-status-pending {
-    color: #f59e0b;
+    color: #FFCBCB;
     font-weight: 600;
 }
 
@@ -701,16 +709,28 @@
 }
 
 .omr-card-arrow {
-    color: #d1d5db;
+    color: #EBEBEB;
     font-size: 14px;
 }
 
 .omr-card-done .omr-card-arrow {
-    color: #22c55e;
+    color: #EBEBEB;
+}
+
+.omr-card-done .omr-card-icon {
+    color: #5C5C5C;
 }
 
 .omr-card-done .omr-card-label {
-    color: #166534;
+    color: #5C5C5C;
+}
+
+.omr-card-done .omr-status-done {
+    color: #b8d8be;
+}
+
+.omr-card-done .omr-card-sub {
+    color: #5C5C5C;
 }
 
 @media (max-width: 768px) {
