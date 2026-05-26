@@ -681,9 +681,10 @@ body {
 .omr-detail-panel {
   margin-top: 16px;
   background: var(--surface-container-lowest);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 16px;
   padding: 20px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   animation: omrPanelSlideIn 0.25s ease-out;
 }
 @keyframes omrPanelSlideIn {
@@ -776,8 +777,8 @@ body {
 
 /* Perfect score celebration */
 .omr-detail-panel.is-perfect {
-  border-color: #a78bfa;
   background: linear-gradient(135deg, rgba(167, 139, 250, 0.06), rgba(251, 191, 36, 0.06));
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.15);
 }
 .omr-perfect-banner {
   flex-basis: 100%;

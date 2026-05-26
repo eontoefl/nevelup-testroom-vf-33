@@ -3445,7 +3445,7 @@ body {
 
 /* ── 웰컴 헤더 ── */
 #taskListScreen .welcome-header {
-    margin-bottom: 48px;
+    margin-bottom: 16px;
 }
 
 #taskListScreen .welcome-header i.fa-graduation-cap {
@@ -3714,7 +3714,7 @@ body {
     justify-content: center;
     gap: 6px;
     width: fit-content;
-    margin: 20px auto;
+    margin: 0 auto 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 8px 18px;
     border-radius: 20px;
