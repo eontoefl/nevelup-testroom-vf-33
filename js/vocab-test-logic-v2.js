@@ -67,23 +67,31 @@ async function _loadVocabFromSupabase(pages) {
     if (typeof USE_SUPABASE !== 'undefined' && !USE_SUPABASE) return null;
     if (typeof supabaseSelect !== 'function') return null;
     
+    // 시험 대상 페이지가 없으면 조회 자체를 생략
+    if (!pages || pages.length === 0) {
+        console.warn('⚠️ [Vocab] 조회할 페이지 없음');
+        return null;
+    }
+
     try {
-        console.log('📥 [Vocab] Supabase에서 데이터 로드...');
-        const rows = await supabaseSelect('tr_vocab', 'select=*&order=page.asc,id.asc');
-        
+        console.log('📥 [Vocab] Supabase에서 데이터 로드... (페이지:', pages.join(', '), ')');
+        // 🎯 필요한 페이지만 서버에서 직접 필터링 → 전체 행(1000개 제한) 조회 방지
+        const pageFilter = `page=in.(${pages.join(',')})`;
+        const rows = await supabaseSelect('tr_vocab', `select=*&${pageFilter}&order=page.asc,id.asc`);
+
         if (!rows || rows.length === 0) {
             console.warn('⚠️ [Vocab] Supabase 데이터 없음');
             return null;
         }
-        
+
         console.log(`✅ [Vocab] Supabase에서 ${rows.length}개 행 로드`);
-        
-        // 해당 페이지의 단어만 필터링
+
+        // 단어 가공 (페이지 필터는 서버에서 이미 적용됨)
         const filtered = [];
         rows.forEach(row => {
             const page = parseInt(row.page);
             const headword = (row.headword || '').trim();
-            
+
             if (pages.includes(page) && headword) {
                 const synonyms = [];
                 for (let j = 1; j <= 8; j++) {
