@@ -1434,34 +1434,44 @@ function setupBookOnlyUI() {
     // book_only 전용 스타일 주입
     injectBookOnlyStyles();
 
-    // 3-g: 신청 유도 플로팅 CTA (이 뷰어에만 노출)
+    // 3-g: 신청 유도 바 (이 뷰어에만 노출)
     setupBookOnlyCTA();
 }
 
 /**
- * 3-g: 신청 유도 플로팅 CTA (book_only 전용)
- * - 하단 툴바 위에 떠 있는 고정 버튼
+ * 3-g: 신청 유도 바 (book_only 전용)
+ * - 하단 툴바 바로 위에 자리를 차지하는 바(플렉스 흐름) → 본문을 가리지 않음
  * - 정규/호주 과정에는 노출되지 않음 (setupBookOnlyUI 안에서만 호출)
  */
 function setupBookOnlyCTA() {
     const APPLY_URL = 'https://eonfl.com/application-form.html';
 
-    const cta = document.createElement('div');
-    cta.className = 'book-only-cta';
-    cta.id = 'bookOnlyCta';
-    cta.innerHTML =
-        '<span class="book-only-cta-lead">이 입문서를 소화할 \'간절함\'이 있다면 —</span>' +
+    const bar = document.createElement('div');
+    bar.className = 'book-only-cta-bar';
+    bar.id = 'bookOnlyCta';
+    bar.innerHTML =
+        '<p class="book-only-cta-copy">' +
+            '홈페이지에 신청 버튼을 아예 없애버린 이유가 바로 이겁니다. ' +
+            '이 입문서를 소화할 <span class="book-only-cta-accent">\'간절함\'</span>조차 없는 분은 애초에 받지 않습니다.' +
+        '</p>' +
         '<a class="book-only-cta-btn" href="' + APPLY_URL + '">👉 내벨업챌린지 신청하기</a>';
 
     // 진도 저장 후 신청 페이지로 이동 (읽던 위치 보존)
-    cta.querySelector('.book-only-cta-btn').addEventListener('click', (e) => {
+    bar.querySelector('.book-only-cta-btn').addEventListener('click', (e) => {
         e.preventDefault();
         saveProgress().then(() => {
             window.location.href = APPLY_URL;
         });
     });
 
-    document.body.appendChild(cta);
+    // 하단 툴바 바로 위(플렉스 흐름)에 삽입 → 뷰어 영역이 줄어들어 본문과 겹치지 않음
+    // setupBookOnlyUI는 loadPdf/첫 렌더보다 먼저 호출되므로, 첫 렌더부터 줄어든 높이가 반영됨
+    const toolbar = document.getElementById('bookToolbar');
+    if (toolbar && toolbar.parentNode) {
+        toolbar.parentNode.insertBefore(bar, toolbar);
+    } else {
+        document.body.appendChild(bar);
+    }
 }
 
 /**
@@ -1581,37 +1591,35 @@ function injectBookOnlyStyles() {
             background: #e2e8f0;
         }
 
-        /* ── 신청 유도 플로팅 CTA (하단 툴바 위) ── */
-        .book-only-cta {
-            position: fixed;
-            left: 50%;
-            bottom: 84px;            /* 툴바 72px + 여백 */
-            transform: translateX(-50%);
-            z-index: 47;             /* 본문 위, 툴바(50)/사이드바/모달 아래 */
+        /* ── 신청 유도 바 (하단 툴바 위, 본문 안 가림) ── */
+        /* position:fixed가 아니라 플렉스 흐름에 자리를 차지 → 뷰어 영역이 그만큼 줄어 본문을 가리지 않음 */
+        .book-only-cta-bar {
+            flex: 0 0 auto;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 8px;
-            max-width: calc(100% - 32px);
-            padding: 12px 18px;
-            /* 라인 없이 톤으로 분리 — 글래스 표면 */
-            background: rgba(255, 255, 255, 0.72);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(148, 128, 197, 0.18);
-            animation: bookOnlyCtaIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+            justify-content: space-between;
+            gap: 18px;
+            padding: 14px 24px;
+            /* 라인 없이 톤 전환으로 분리 (DESIGN.md) */
+            background: linear-gradient(180deg, #faf9fd 0%, #f1ebfb 100%);
+            box-shadow: 0 -8px 24px rgba(148, 128, 197, 0.10);  /* 위로 번지는 소프트 글로우 */
+            animation: bookOnlyCtaIn 0.45s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
-        .book-only-cta-lead {
-            font-size: 12.5px;
+        .book-only-cta-copy {
+            margin: 0;
+            font-size: 13px;
             font-weight: 600;
-            color: #6b6480;
+            color: #5b5470;
+            line-height: 1.55;
             letter-spacing: -0.01em;
-            text-align: center;
             word-break: keep-all;
-            line-height: 1.4;
+        }
+        .book-only-cta-copy .book-only-cta-accent {
+            color: var(--bv-primary);
+            font-weight: 700;
         }
         .book-only-cta-btn {
+            flex-shrink: 0;
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -1637,14 +1645,20 @@ function injectBookOnlyStyles() {
             transform: scale(0.97);
         }
         @keyframes bookOnlyCtaIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        @media (max-width: 480px) {
-            .book-only-cta { bottom: 80px; padding: 10px 14px; }
-            .book-only-cta-lead { font-size: 11.5px; }
-            .book-only-cta-btn { padding: 11px 20px; font-size: 14px; }
+        @media (max-width: 640px) {
+            .book-only-cta-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding: 12px 16px;
+                text-align: center;
+            }
+            .book-only-cta-copy { font-size: 12px; }
+            .book-only-cta-btn { width: 100%; justify-content: center; padding: 12px 20px; }
         }
 
         @media (max-width: 420px) {
