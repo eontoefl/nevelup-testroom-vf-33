@@ -1446,17 +1446,23 @@ function setupBookOnlyUI() {
 function setupBookOnlyCTA() {
     const APPLY_URL = 'https://eonfl.com/application-form.html';
 
-    const btn = document.createElement('a');
-    btn.className = 'book-topbar-apply';
-    btn.id = 'bookOnlyApply';
-    btn.href = APPLY_URL;
-    btn.innerHTML =
-        '<span aria-hidden="true">👉</span>' +
-        '<span class="book-only-cta-label-full">내벨업챌린지 신청하기</span>' +
-        '<span class="book-only-cta-label-short">신청하기</span>';
+    const wrap = document.createElement('div');
+    wrap.className = 'book-only-apply-wrap';
+    wrap.id = 'bookOnlyApplyWrap';
+    wrap.innerHTML =
+        '<span class="book-only-cta-teaser">신청 버튼을 숨겨둔 이유 →</span>' +
+        '<a class="book-topbar-apply" id="bookOnlyApply" href="' + APPLY_URL + '">' +
+            '<span aria-hidden="true">👉</span>' +
+            '<span class="book-only-cta-label-full">내벨업챌린지 신청하기</span>' +
+            '<span class="book-only-cta-label-short">신청하기</span>' +
+        '</a>' +
+        '<span class="book-only-cta-tip" role="tooltip">' +
+            '홈페이지에 신청 버튼을 아예 없애버린 이유가 바로 이겁니다. ' +
+            '이 입문서를 소화할 <span class="book-only-cta-accent">\'간절함\'</span>조차 없는 분은 애초에 받지 않습니다.' +
+        '</span>';
 
     // 진도 저장 후 신청 페이지로 이동 (읽던 위치 보존)
-    btn.addEventListener('click', (e) => {
+    wrap.querySelector('.book-topbar-apply').addEventListener('click', (e) => {
         e.preventDefault();
         saveProgress().then(() => {
             window.location.href = APPLY_URL;
@@ -1466,9 +1472,9 @@ function setupBookOnlyCTA() {
     // 헤더 우측 액션 영역의 맨 앞(북마크/목차 아이콘 왼쪽)에 삽입
     const actions = document.querySelector('.book-topbar-actions');
     if (actions) {
-        actions.insertBefore(btn, actions.firstChild);
+        actions.insertBefore(wrap, actions.firstChild);
     } else {
-        document.body.appendChild(btn);
+        document.body.appendChild(wrap);
     }
 }
 
@@ -1623,12 +1629,79 @@ function injectBookOnlyStyles() {
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* 버튼 왼쪽 후킹 문구 + hover/포커스 시 전체 카피 툴팁 */
+        .book-only-apply-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .book-only-cta-teaser {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--bv-text-muted);
+            white-space: nowrap;
+            letter-spacing: -0.01em;
+            cursor: default;
+        }
+        .book-only-cta-tip {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: max-content;
+            max-width: 320px;
+            padding: 12px 14px;
+            /* 글래스 표면 (DESIGN.md) */
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 14px;
+            box-shadow: 0 16px 40px rgba(25, 28, 29, 0.10);
+            font-size: 12.5px;
+            font-weight: 600;
+            line-height: 1.6;
+            color: #5b5470;
+            letter-spacing: -0.01em;
+            word-break: keep-all;
+            white-space: normal;
+            text-align: left;
+            opacity: 0;
+            transform: translateY(-4px);
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 60;
+        }
+        .book-only-cta-tip .book-only-cta-accent {
+            color: var(--bv-primary);
+            font-weight: 700;
+        }
+        .book-only-cta-tip::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: 28px;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.92);
+            transform: rotate(45deg);
+        }
+        .book-only-apply-wrap:hover .book-only-cta-tip,
+        .book-only-apply-wrap:focus-within .book-only-cta-tip {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .book-only-cta-teaser { display: none; }
+        }
+
         @media (max-width: 640px) {
             .book-topbar-apply { height: 36px; padding: 0 12px; font-size: 12.5px; }
             .book-only-cta-label-full { display: none; }
             .book-only-cta-label-short { display: inline; }
             /* 우측 버튼이 늘어나므로 가운데 제목 폭을 줄여 겹침 방지 (book_only 전용 주입 스타일) */
             .book-topbar-title { max-width: 32%; }
+            .book-only-cta-tip { max-width: 240px; }
         }
 
         @media (max-width: 420px) {
