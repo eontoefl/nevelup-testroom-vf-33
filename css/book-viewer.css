@@ -422,6 +422,7 @@
 }
 
 .book-canvas-wrapper {
+  position: relative;
   margin: auto;
   background: #fff;
   box-shadow: var(--bv-shadow-deep);
@@ -432,6 +433,30 @@
 
 .book-canvas {
   display: block;
+}
+
+/* PDF 외부 링크 오버레이 — 캔버스 위에 정확히 겹침 */
+.book-link-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* 빈 영역은 통과(스와이프/팬 유지), 링크 박스만 클릭 가능 */
+  pointer-events: none;
+}
+
+.book-link-annotation {
+  position: absolute;
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
+  /* 시각적으로는 투명 — PDF 그림 그대로 보이게 */
+  background: transparent;
+  border-radius: 2px;
+  transition: background 0.12s ease;
+}
+
+.book-link-annotation:hover {
+  background: rgba(56, 132, 255, 0.18);
 }
 
 /* 로딩 스피너 */

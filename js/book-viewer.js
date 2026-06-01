@@ -115,6 +115,7 @@ function cacheDom() {
     DOM.bookLoading = document.getElementById('bookLoading');
     DOM.canvasWrapper = document.getElementById('canvasWrapper');
     DOM.pdfCanvas = document.getElementById('pdfCanvas');
+    DOM.linkLayer = document.getElementById('linkLayer');
     DOM.btnPrevPage = document.getElementById('btnPrevPage');
     DOM.btnNextPage = document.getElementById('btnNextPage');
 
@@ -324,10 +325,16 @@ async function renderPage(pageNum) {
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+        // 새 페이지 렌더 시작 — 이전 페이지의 링크 오버레이 제거
+        clearLinkLayer();
+
         await page.render({
             canvasContext: ctx,
             viewport: viewport
         }).promise;
+
+        // PDF 외부 링크를 캔버스 위에 클릭 가능한 오버레이로 생성
+        await renderLinkLayer(page, viewport);
 
     } catch (err) {
         console.error('❌ [BookViewer] 페이지 렌더링 실패:', err);
@@ -339,6 +346,72 @@ async function renderPage(pageNum) {
         const next = BookViewer.pendingPage;
         BookViewer.pendingPage = null;
         renderPage(next);
+    }
+}
+
+// ================================================
+// 5-1. PDF 외부 링크 오버레이
+// ================================================
+function clearLinkLayer() {
+    if (DOM.linkLayer) DOM.linkLayer.innerHTML = '';
+}
+
+async function renderLinkLayer(page, viewport) {
+    const layer = DOM.linkLayer;
+    if (!layer) return;
+
+    layer.innerHTML = '';
+    // 레이어를 캔버스 CSS 크기와 정확히 일치시킴 (HiDPI/줌 무관, viewport는 CSS px 기준)
+    layer.style.width = viewport.width + 'px';
+    layer.style.height = viewport.height + 'px';
+
+    let annotations;
+    try {
+        annotations = await page.getAnnotations();
+    } catch (err) {
+        console.warn('⚠️ [BookViewer] 주석 로드 실패:', err);
+        return;
+    }
+    if (!annotations || !annotations.length) return;
+
+    let count = 0;
+    annotations.forEach(function (ann) {
+        // 외부 URL 링크만 처리 (내부 GoTo 점프는 추후 구현)
+        if (ann.subtype !== 'Link') return;
+        const url = ann.url || ann.unsafeUrl;
+        if (!url) return;
+        if (!/^https?:\/\//i.test(url)) return;
+
+        // PDF 좌표 → 뷰포트(CSS px) 좌표 변환
+        const r = viewport.convertToViewportRectangle(ann.rect);
+        const left = Math.min(r[0], r[2]);
+        const top = Math.min(r[1], r[3]);
+        const width = Math.abs(r[0] - r[2]);
+        const height = Math.abs(r[1] - r[3]);
+        if (width <= 0 || height <= 0) return;
+
+        const a = document.createElement('a');
+        a.className = 'book-link-annotation';
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.title = url;
+        a.style.left = left + 'px';
+        a.style.top = top + 'px';
+        a.style.width = width + 'px';
+        a.style.height = height + 'px';
+        // 스와이프 제스처가 링크 탭을 페이지 넘김으로 오인하지 않도록 터치 전파 차단
+        // (canvasWrapper의 touchstart/move/end 핸들러로 버블링되는 것을 막음)
+        a.addEventListener('touchstart', function (e) { e.stopPropagation(); }, { passive: true });
+        a.addEventListener('touchmove', function (e) { e.stopPropagation(); }, { passive: true });
+        a.addEventListener('touchend', function (e) { e.stopPropagation(); }, { passive: true });
+
+        layer.appendChild(a);
+        count++;
+    });
+
+    if (count > 0) {
+        console.log('🔗 [BookViewer] 외부 링크 ' + count + '개 활성화 (p.' + page.pageNumber + ')');
     }
 }
 

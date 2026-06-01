@@ -19,7 +19,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <!-- PDF 뷰어 전용 스타일 -->
-  <link rel="stylesheet" href="css/book-viewer.css?v=004_memolist" />
+  <link rel="stylesheet" href="css/book-viewer.css?v=005_links" />
 </head>
 <body class="book-viewer-page">
 
@@ -120,6 +120,8 @@
     <!-- PDF 캔버스 영역 -->
     <div class="book-canvas-wrapper" id="canvasWrapper">
       <canvas class="book-canvas" id="pdfCanvas"></canvas>
+      <!-- PDF 외부 링크 오버레이 (클릭 시 새 탭) -->
+      <div class="book-link-layer" id="linkLayer"></div>
     </div>
 
     <!-- 페이지 넘기기 버튼 -->
@@ -267,7 +269,7 @@
   <script src="js/app-state.js?v=001"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/book-viewer.js?v=004_book_only"></script>
+  <script src="js/book-viewer.js?v=005_links"></script>
 
 </body>
 </html>
