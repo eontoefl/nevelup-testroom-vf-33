@@ -1433,6 +1433,35 @@ function setupBookOnlyUI() {
 
     // book_only 전용 스타일 주입
     injectBookOnlyStyles();
+
+    // 3-g: 신청 유도 플로팅 CTA (이 뷰어에만 노출)
+    setupBookOnlyCTA();
+}
+
+/**
+ * 3-g: 신청 유도 플로팅 CTA (book_only 전용)
+ * - 하단 툴바 위에 떠 있는 고정 버튼
+ * - 정규/호주 과정에는 노출되지 않음 (setupBookOnlyUI 안에서만 호출)
+ */
+function setupBookOnlyCTA() {
+    const APPLY_URL = 'https://eonfl.com/application-form.html';
+
+    const cta = document.createElement('div');
+    cta.className = 'book-only-cta';
+    cta.id = 'bookOnlyCta';
+    cta.innerHTML =
+        '<span class="book-only-cta-lead">이 입문서를 소화할 \'간절함\'이 있다면 —</span>' +
+        '<a class="book-only-cta-btn" href="' + APPLY_URL + '">👉 내벨업챌린지 신청하기</a>';
+
+    // 진도 저장 후 신청 페이지로 이동 (읽던 위치 보존)
+    cta.querySelector('.book-only-cta-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        saveProgress().then(() => {
+            window.location.href = APPLY_URL;
+        });
+    });
+
+    document.body.appendChild(cta);
 }
 
 /**
@@ -1550,6 +1579,72 @@ function injectBookOnlyStyles() {
         }
         .book-only-popup-btn-secondary:hover {
             background: #e2e8f0;
+        }
+
+        /* ── 신청 유도 플로팅 CTA (하단 툴바 위) ── */
+        .book-only-cta {
+            position: fixed;
+            left: 50%;
+            bottom: 84px;            /* 툴바 72px + 여백 */
+            transform: translateX(-50%);
+            z-index: 47;             /* 본문 위, 툴바(50)/사이드바/모달 아래 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            max-width: calc(100% - 32px);
+            padding: 12px 18px;
+            /* 라인 없이 톤으로 분리 — 글래스 표면 */
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(148, 128, 197, 0.18);
+            animation: bookOnlyCtaIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        .book-only-cta-lead {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #6b6480;
+            letter-spacing: -0.01em;
+            text-align: center;
+            word-break: keep-all;
+            line-height: 1.4;
+        }
+        .book-only-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 13px 26px;
+            border-radius: 999px;
+            /* 시그니처 그라데이션 (primary → 라이트 톤) */
+            background: linear-gradient(135deg, #9480c5 0%, #b29be0 100%);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: 0 6px 18px rgba(148, 128, 197, 0.45);
+            transition: transform 0.15s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .book-only-cta-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 26px rgba(148, 128, 197, 0.55);
+        }
+        .book-only-cta-btn:active {
+            transform: scale(0.97);
+        }
+        @keyframes bookOnlyCtaIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .book-only-cta { bottom: 80px; padding: 10px 14px; }
+            .book-only-cta-lead { font-size: 11.5px; }
+            .book-only-cta-btn { padding: 11px 20px; font-size: 14px; }
         }
 
         @media (max-width: 420px) {
