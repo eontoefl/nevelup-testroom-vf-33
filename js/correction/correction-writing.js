@@ -133,7 +133,11 @@ function _getCorrRandomProfiles() {
     var profGender = Math.random() < 0.5 ? 'male' : 'female';
     var f = CORR_FEMALE_STUDENTS[Math.floor(Math.random() * CORR_FEMALE_STUDENTS.length)];
     var m = CORR_MALE_STUDENTS[Math.floor(Math.random() * CORR_MALE_STUDENTS.length)];
-    var students = [f, m]; // student1 = 여학생, student2 = 남학생 고정
+    // 이미지는 성별 풀에서 랜덤, 이름은 Claire/Andrew 고정 (detail 화면과 일치)
+    var students = [
+        { name: 'Claire', image: f.image },
+        { name: 'Andrew', image: m.image }
+    ]; // student1 = 여학생(Claire), student2 = 남학생(Andrew)
     return {
         professor: {
             image: CORR_PROFESSOR_PROFILES[profGender],

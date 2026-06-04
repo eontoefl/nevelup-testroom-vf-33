@@ -142,12 +142,15 @@ class DiscussionComponent {
         const professorImage = this.PROFESSOR_PROFILES[professorGender];
         const professorName = professorGender === 'male' ? 'Dr. Gupta' : 'Dr. Samantha';
         
-        // 학생 2명 (남/녀 조합)
+        // 학생 2명 (남/녀 조합) — 이미지는 성별 풀에서 랜덤, 이름은 Claire/Andrew 고정
         const femaleStudent = this.FEMALE_STUDENT_PROFILES[Math.floor(Math.random() * this.FEMALE_STUDENT_PROFILES.length)];
         const maleStudent = this.MALE_STUDENT_PROFILES[Math.floor(Math.random() * this.MALE_STUDENT_PROFILES.length)];
-        
-        // student1 = 여학생, student2 = 남학생 고정
-        const students = [femaleStudent, maleStudent];
+
+        // student1 = 여학생(Claire 고정), student2 = 남학생(Andrew 고정)
+        const students = [
+            { name: 'Claire', image: femaleStudent.image },
+            { name: 'Andrew', image: maleStudent.image }
+        ];
         
         return {
             professor: { image: professorImage, name: professorName },
