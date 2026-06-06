@@ -849,6 +849,14 @@
     border-bottom: 2px solid #9480c5;
 }
 
+/* ── daily2 전용: 해설의 보라색 hover 단어와 구별되도록 풀이화면과 같은 하늘색으로 [2026-06-06] ──
+   (3클래스 = academic 보라 규칙(2클래스)보다 우선. academic 해설엔 영향 없음) */
+.d2-highlight-word.ac-res-highlight-word.ac-res-highlight-active {
+    background-color: rgba(80, 201, 255, 0.45);
+    color: #191c1d;
+    border-bottom: none;
+}
+
 /* ── simplification 활성화 ── */
 .ac-res-simplification.ac-res-simplification-active {
     background-color: rgba(80, 201, 255, 0.2);
