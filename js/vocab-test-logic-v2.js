@@ -441,8 +441,10 @@ async function showVocabTestResult() {
         const synonymResults = [];
         let allCorrect = true;
         
-        // 정답 배열 (소문자)
-        const correctAnswers = item.synonyms.map(s => s.trim().toLowerCase());
+        // 정답 배열 (소문자) — 각 칸은 '|'로 구분된 허용 답안 배열 (정오표/과도기 복수정답 지원)
+        const correctAnswers = item.synonyms.map(s =>
+            s.trim().toLowerCase().split('|').map(x => x.trim()).filter(Boolean)
+        );
         
         // 순서 무관 채점 (중복 방지)
         const usedCorrectIndices = new Set();
@@ -454,7 +456,7 @@ async function showVocabTestResult() {
             // 이 칸의 답이 아직 매칭 안 된 정답 중 하나와 일치하는지 확인
             let isCorrect = false;
             for (let cIdx = 0; cIdx < correctAnswers.length; cIdx++) {
-                if (!usedCorrectIndices.has(cIdx) && userLower === correctAnswers[cIdx]) {
+                if (!usedCorrectIndices.has(cIdx) && correctAnswers[cIdx].includes(userLower)) {
                     usedCorrectIndices.add(cIdx);
                     isCorrect = true;
                     break;
@@ -465,9 +467,17 @@ async function showVocabTestResult() {
                 allCorrect = false;
             }
             
+            // 정답란 표시: 맞혔으면 학생이 매칭한 답을, 틀렸으면 주 정답(첫 번째)을 보여줌
+            const variants = correctSynonym.split('|').map(x => x.trim()).filter(Boolean);
+            let displayCorrect = variants[0] || correctSynonym.trim();
+            if (isCorrect) {
+                const matched = variants.find(v => v.toLowerCase() === userLower);
+                if (matched) displayCorrect = matched;
+            }
+
             synonymResults.push({
                 userAnswer: userAnswer[synIndex] || '',
-                correctAnswer: correctSynonym,
+                correctAnswer: displayCorrect,
                 isCorrect: isCorrect
             });
         });
