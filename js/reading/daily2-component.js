@@ -127,12 +127,32 @@ class Daily2Component {
         // ## = 단락구분 (빈 줄), #||# = 줄바꿈, #|# = 이어붙이기 (공백)
         // 순서 중요: #||# → #|# → ## (긴 것부터 먼저 치환)
         const formattedContent = (passage.content || '')
+            // 어휘(하이라이트) 마커: <<단어|문제번호>> 또는 <<단어>>(번호 없으면 모든 어휘문제에 표시)
+            .replace(/<<([^|>]+)\|(\d+)>>/g, '<span class="ac-highlight-word" data-q="$2">$1</span>')
+            .replace(/<<([^>]+)>>/g, '<span class="ac-highlight-word" data-q="0">$1</span>')
             .replace(/#\|\|#/g, '\n')
             .replace(/#\|#/g, ' ')
             .replace(/##/g, '\n\n')
             .replace(/\\n/g, '\n')
             .replace(/\n/g, '<br>');
         document.getElementById(this.passageContentId).innerHTML = formattedContent;
+    }
+
+    /**
+     * 지문 어휘(하이라이트) 색칠 토글
+     * - 현재 문제가 어휘 유형이면 그 문제 번호(data-q)에 해당하는 단어만 색칠
+     * - data-q="0"(번호 없는 마커)은 어휘 문제라면 항상 색칠
+     */
+    updatePassageHighlight(question, questionIndex) {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
+        const isHighlight = (question.questionType || 'normal') === 'highlight';
+        const qNum = String(questionIndex + 1);
+        contentEl.querySelectorAll('.ac-highlight-word').forEach(el => {
+            const dq = el.getAttribute('data-q');
+            const match = isHighlight && (dq === qNum || dq === '0');
+            el.classList.toggle('ac-highlight-active', match);
+        });
     }
     
     /**
@@ -146,9 +166,12 @@ class Daily2Component {
         
         // 1. 문제 텍스트 표시
         document.getElementById(this.questionId).textContent = question.question;
-        
+
         // 2. 보기 렌더링
         this.renderOptions(question, questionIndex);
+
+        // 3. 어휘 문제면 지문에서 해당 단어 색칠 (academic과 동일)
+        this.updatePassageHighlight(question, questionIndex);
     }
     
     /**
@@ -283,6 +306,7 @@ class Daily2Component {
                 questionNum: question.questionNum || `Q${index + 1}`,
                 question: question.question,
                 questionTranslation: question.questionTranslation || '',
+                questionType: question.questionType || 'normal',
                 options: question.options || [],
                 userAnswer: userAnswer,
                 correctAnswer: question.correctAnswer,

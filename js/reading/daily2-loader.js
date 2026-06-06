@@ -86,7 +86,12 @@ function parseDaily2QuestionData(questionStr) {
         return null;
     }
     
-    const questionNum = parts[0].trim();
+    // 유형 태그 파싱: Q2[highlight] → questionNum='Q2', questionType='highlight'
+    // 태그가 없으면 'normal' (일반 문제)
+    const rawNum = parts[0].trim();
+    const typeMatch = rawNum.match(/^(.+?)(?:\[(\w+)\])?$/);
+    const questionNum = typeMatch ? typeMatch[1] : rawNum;
+    const questionType = typeMatch && typeMatch[2] ? typeMatch[2] : 'normal';
     const questionText = parts[1].trim();
     const questionTranslation = parts[2].trim();
     const correctAnswer = parseInt(parts[3].trim());
@@ -139,6 +144,7 @@ function parseDaily2QuestionData(questionStr) {
         questionNum,
         question: questionText,
         questionTranslation,
+        questionType,
         correctAnswer,
         options
     };
