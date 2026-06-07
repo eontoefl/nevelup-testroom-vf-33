@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0" />
+  <title>입문서 – 내벨업 테스트룸</title>
+
+  <!-- Pretendard -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+
+  <link rel="stylesheet" href="css/book-v2-viewer.css" />
+</head>
+<body class="bookv2-body">
+
+  <header class="bookv2-top">
+    <button class="bookv2-icon" id="btnBack" title="뒤로"><i class="fa-solid fa-arrow-left"></i></button>
+    <h1 class="bookv2-title" id="bookTitle">입문서</h1>
+    <button class="bookv2-icon" id="btnBookmark" title="이 페이지 북마크"><i class="fa-regular fa-bookmark"></i></button>
+    <button class="bookv2-icon" id="btnMemo" title="이 페이지 메모"><i class="fa-regular fa-comment-dots"></i><span class="bookv2-memo-dot" id="memoDot"></span></button>
+    <button class="bookv2-icon" id="btnSidebar" title="북마크 목록"><i class="fa-solid fa-list-ul"></i></button>
+    <div class="bookv2-zoom">
+      <button class="bookv2-icon sm" id="btnZoomOut" title="축소"><i class="fa-solid fa-minus"></i></button>
+      <span class="bookv2-zoom-level" id="zoomLevel">100%</span>
+      <button class="bookv2-icon sm" id="btnZoomIn" title="확대"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    <button class="bookv2-page-ind" id="btnPageJump" title="페이지 이동">
+      <span id="curPage">1</span> <span class="sep">/</span> <span id="totPage">1</span>
+    </button>
+  </header>
+
+  <div class="bookv2-progress"><div class="bookv2-progress-fill" id="progressFill"></div></div>
+
+  <main class="bookv2-stage">
+    <button class="bookv2-nav prev" id="btnPrev" title="이전"><i class="fa-solid fa-chevron-left"></i></button>
+
+    <div class="bookv2-paper" id="paper">
+      <div class="bookv2-watermark" id="watermark" aria-hidden="true"></div>
+      <article class="bookv2-content" id="content"></article>
+    </div>
+
+    <button class="bookv2-nav next" id="btnNext" title="다음"><i class="fa-solid fa-chevron-right"></i></button>
+  </main>
+
+  <!-- 북마크 사이드바 -->
+  <div class="bookv2-overlay" id="sidebarOverlay"></div>
+  <aside class="bookv2-sidebar" id="sidebar">
+    <div class="bookv2-sidebar-head">
+      <div class="bookv2-tabs">
+        <button class="bookv2-tab active" data-tab="toc"><i class="fa-solid fa-list-ul"></i> 목차</button>
+        <button class="bookv2-tab" data-tab="bm"><i class="fa-solid fa-bookmark"></i> 북마크</button>
+        <button class="bookv2-tab" data-tab="memo"><i class="fa-regular fa-comment-dots"></i> 메모</button>
+      </div>
+      <button class="bookv2-icon" id="btnSidebarClose" title="닫기"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="bookv2-tab-panel" id="tabToc">
+      <div class="bookv2-bm-list" id="tocList"></div>
+      <p class="bookv2-bm-empty" id="tocEmpty">목차가 없어요.<br>편집기에서 대제목을 넣으면 자동으로 생겨요.</p>
+    </div>
+
+    <div class="bookv2-tab-panel hidden" id="tabBm">
+      <div class="bookv2-bm-list" id="bmList"></div>
+      <p class="bookv2-bm-empty" id="bmEmpty">아직 북마크가 없어요.<br>상단 <i class="fa-regular fa-bookmark"></i> 버튼으로 추가하세요.</p>
+    </div>
+
+    <div class="bookv2-tab-panel hidden" id="tabMemo">
+      <div class="bookv2-bm-list" id="memoList"></div>
+      <p class="bookv2-bm-empty" id="memoEmpty">아직 메모가 없어요.<br>상단 <i class="fa-regular fa-comment-dots"></i> 버튼으로 작성하세요.</p>
+    </div>
+  </aside>
+
+  <!-- 메모 패널 (왼쪽) -->
+  <aside class="bookv2-memo-panel" id="memoPanel">
+    <div class="bookv2-memo-head">
+      <h3><i class="fa-regular fa-comment-dots"></i> <span id="memoPageLabel">메모</span></h3>
+      <button class="bookv2-icon" id="btnMemoClose" title="닫기"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="bookv2-memo-body">
+      <textarea id="memoText" maxlength="1000" placeholder="이 페이지에 대한 메모를 남겨보세요..."></textarea>
+      <div class="bookv2-memo-count"><span id="memoCount">0</span> / 1000</div>
+    </div>
+    <div class="bookv2-memo-foot">
+      <button class="bookv2-memo-del" id="btnMemoDelete"><i class="fa-regular fa-trash-can"></i> 삭제</button>
+      <button class="bookv2-memo-save" id="btnMemoSave"><i class="fa-regular fa-floppy-disk"></i> 저장</button>
+    </div>
+  </aside>
+
+  <!-- 페이지 이동 모달 -->
+  <div class="bookv2-modal-overlay" id="jumpOverlay">
+    <div class="bookv2-modal">
+      <h3>페이지 이동</h3>
+      <input type="number" id="jumpInput" min="1" placeholder="0" />
+      <p class="bookv2-modal-hint">1 ~ <span id="jumpMax">1</span> 페이지</p>
+      <div class="bookv2-modal-actions">
+        <button class="bookv2-btn-cancel" id="jumpCancel">취소</button>
+        <button class="bookv2-btn-confirm" id="jumpConfirm">이동</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 숨김(수정 중) 안내 -->
+  <div class="bookv2-maint" id="maintOverlay">
+    <div class="bookv2-maint-box">
+      <div class="bookv2-maint-icon">🛠️</div>
+      <h2>지금 입문서를 손보고 있어요</h2>
+      <p>더 좋은 내용으로 업데이트하는 중이라<br>잠깐 닫아뒀어요.<br><b>조금 이따 다시 들어와 주세요!</b></p>
+      <button class="bookv2-maint-btn" id="maintBack">돌아가기</button>
+    </div>
+  </div>
+
+  <!-- 완독 축하 모달 -->
+  <div class="bookv2-modal-overlay" id="doneOverlay">
+    <div class="bookv2-modal bookv2-done">
+      <div class="bookv2-done-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <h3>입문서 완독!</h3>
+      <p class="bookv2-done-desc">끝까지 다 읽으셨어요. 수고하셨습니다! 🎉</p>
+      <div class="bookv2-modal-actions">
+        <button class="bookv2-btn-confirm" id="doneClose">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 보안 띠 (사전 억제 + 추적 경고) -->
+  <div class="bookv2-guard" id="guardBar">
+    <i class="fa-solid fa-shield-halved"></i>
+    <span id="guardText"></span>
+  </div>
+
+  <div class="bookv2-loading" id="loading">
+    <div class="bookv2-spinner"></div>
+    <p>입문서를 불러오는 중...</p>
+  </div>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/book-v2-viewer.js"></script>
+</body>
+</html>
