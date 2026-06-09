@@ -1134,7 +1134,7 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
             _guardedAction(function() {
                 console.log('[Australia] 실전풀이 바로가기 선택: ' + taskName);
                 if (brainstormDay) {
-                    startBrainstormModule(brainstormDay);
+                    startBrainstormModule(brainstormDay, week, dayKr);
                 } else if (intwrtNumber) {
                     startIntwrtModule(intwrtNumber);
                 } else if (toraNumber) {

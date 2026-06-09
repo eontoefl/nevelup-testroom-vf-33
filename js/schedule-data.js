@@ -560,6 +560,17 @@ function parseTaskName(taskName) {
         }
     }
 
+    // 브레인스토밍 (호주과정: "브레인스토밍 Day 1")
+    if (taskName.startsWith('브레인스토밍')) {
+        const match = taskName.match(/브레인스토밍\s*Day\s*(\d+)/i);
+        if (match) {
+            return {
+                type: 'brainstorming',
+                params: { day: parseInt(match[1]) }
+            };
+        }
+    }
+
     return { type: 'unknown', params: {} };
 }
 
