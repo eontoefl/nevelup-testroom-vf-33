@@ -40,15 +40,27 @@ window.currentAusDiscModule = null;
 // 진입점
 // ============================================================
 
-async function startAusDiscussionModule(itemNumber) {
+async function startAusDiscussionModule(itemNumber, week, day) {
     console.log('\n============================');
-    console.log('AusDisc ' + itemNumber + ' 시작');
+    console.log('AusDisc ' + itemNumber + ' 시작 (W' + week + ' ' + day + ')');
     console.log('============================\n');
 
     var profGender = Math.random() < 0.5 ? 'male' : 'female';
 
+    var collect = (typeof isAusCollectEnabled === 'function') && isAusCollectEnabled();
+
+    // 마감 판정을 위해 스케줄 정보 세팅 (리딩/리스닝과 동일 패턴)
+    if (week && day) {
+        window.currentTest = window.currentTest || {};
+        window.currentTest.currentWeek = week;
+        window.currentTest.currentDay = day;
+    }
+
     window.currentAusDiscModule = {
         itemNumber: itemNumber,
+        week: week || null,
+        day: day || null,
+        collect: collect,
         data: null,
         item: null,
         professor: AUS_DISC_PROFESSORS[profGender],
@@ -58,7 +70,10 @@ async function startAusDiscussionModule(itemNumber) {
         _undoStack: [],
         _redoStack: [],
         _lastText: '',
-        _savedAnswer: ''
+        _savedAnswer: '',
+        _autoSubmit: false,
+        _certResult: null,
+        _hasInitial: false
     };
 
     var titleEl = document.getElementById('ausDiscTitle');
@@ -87,7 +102,28 @@ async function startAusDiscussionModule(itemNumber) {
         return;
     }
 
+    // 이미 실전 제출했는지 확인 — 그렇다면 이번 시도는 다운로드 전용
+    if (collect) {
+        await _adLoadStatus();
+    }
+
     _showAusDiscScreen();
+}
+
+// 이미 initial_record(실전 제출)가 있는지 조회
+async function _adLoadStatus() {
+    var mod = window.currentAusDiscModule;
+    if (!mod || !mod.collect) return;
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (!user || !user.id || user.id === 'dev-user-001') return;
+    if (typeof getStudyResultV3 !== 'function') return;
+    try {
+        var rec = await getStudyResultV3(user.id, 'aus-discussion', mod.itemNumber, mod.week, mod.day);
+        mod._hasInitial = !!(rec && rec.initial_record != null);
+        console.log('[AusDisc] 기존 제출 여부:', mod._hasInitial);
+    } catch (e) {
+        console.warn('[AusDisc] 제출 여부 조회 실패:', e);
+    }
 }
 
 // ============================================================
@@ -206,7 +242,7 @@ function _runAusDiscCountdown(seconds) {
 
         if (timeLeft <= 0) {
             _clearAusDiscTimer();
-            _adFinish();
+            _adFinish(true); // 시간 종료 → 자동 제출
         }
     }, 1000);
 }
@@ -347,9 +383,56 @@ function _adReplaceNames(text) {
 // 완료 흐름
 // ============================================================
 
-function _adFinish() {
+function _adCountWords(text) {
+    var t = (text || '').trim();
+    return t ? t.split(/\s+/).length : 0;
+}
+
+// 수동 제출: 빈 답안이면 경고 팝업 (마감 전 + 첫 제출일 때만)
+function _adTrySubmit() {
+    var mod = window.currentAusDiscModule;
+    if (!mod) return;
+    var ta = document.getElementById('adTextarea');
+    var text = ta ? ta.value : '';
+    var passed = (typeof isTaskDeadlinePassed === 'function') ? isTaskDeadlinePassed() : false;
+    if (mod.collect && !passed && !mod._hasInitial && text.trim().length === 0) {
+        _adShowBlankWarning(function() { _adFinish(false); });
+        return;
+    }
+    _adFinish(false);
+}
+
+function _adShowBlankWarning(onConfirm) {
+    var existing = document.getElementById('adBlankWarnOverlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'adBlankWarnOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML =
+        '<div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:360px;width:88%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="font-size:32px;margin-bottom:10px;">✍️</div>' +
+            '<h3 style="margin:0 0 10px;font-size:16px;color:#1a1a1a;">답안이 비어 있어요</h3>' +
+            '<p style="font-size:13.5px;color:#666;line-height:1.6;margin:0 0 20px;">아무것도 작성하지 않았어요.<br>지금 제출하면 인증되지 않습니다.</p>' +
+            '<div style="display:flex;gap:10px;">' +
+                '<button id="adBlankWriteMoreBtn" style="flex:1;padding:12px;border-radius:10px;border:none;background:#4A90D9;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">더 쓸게요</button>' +
+                '<button id="adBlankEndBtn" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;color:#888;font-size:14px;font-weight:600;cursor:pointer;">그래도 제출</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    document.getElementById('adBlankWriteMoreBtn').onclick = function() { overlay.remove(); };
+    document.getElementById('adBlankEndBtn').onclick = function() {
+        overlay.remove();
+        if (onConfirm) onConfirm();
+    };
+}
+
+function _adFinish(isAuto) {
     var mod = window.currentAusDiscModule;
     if (!mod || mod._destroyed) return;
+
+    mod._autoSubmit = !!isAuto;
 
     var textarea = document.getElementById('adTextarea');
     if (textarea) mod._savedAnswer = textarea.value;
@@ -373,15 +456,81 @@ function _showAusDiscTransition() {
             '<div style="width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#4A90D9;border-radius:50%;animation:adSpin 0.8s linear infinite;"></div>' +
         '</div>';
 
-    setTimeout(function() {
+    // 서버 저장·인증 판정 후 완료 화면
+    _adSaveAnswer().then(function() {
         if (mod._destroyed) return;
         _showAusDiscComplete();
-    }, 1500);
+    });
+}
+
+// 제출 답안 저장 (호주 라이팅 최종 모델 — 통라와 동일)
+//  - DB 저장(initial 박제)은 "마감 전 + 답안 있음 + 첫 제출" 한 경우뿐 → 그게 곧 인증.
+//  - 마감 후 / 빈 답안 / 재시도는 DB 저장 안 함 → 답안저장(다운로드)만. current_record 안 씀.
+async function _adSaveAnswer() {
+    var mod = window.currentAusDiscModule;
+    if (!mod) return;
+    mod._certResult = null;
+
+    var text = mod._savedAnswer || '';
+    mod._submitWordCount = _adCountWords(text);
+
+    if (!mod.collect) return;
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (!user || !user.id || user.id === 'dev-user-001') return;
+    if (typeof upsertInitialRecord !== 'function') return;
+
+    // 마감 후 → 저장 안 함 (제출 이력과 무관하게 마감 안내 우선)
+    var passed = (typeof isTaskDeadlinePassed === 'function') ? isTaskDeadlinePassed() : false;
+    if (passed) {
+        mod._certResult = 'deadline';
+        console.log('[AusDisc] 마감 후 — 저장 안 함, 다운로드만');
+        return;
+    }
+    // 마감 전인데 이미 제출됨 → 재시도는 DB 저장 안 함
+    if (mod._hasInitial) {
+        mod._certResult = 'redo';
+        console.log('[AusDisc] 이미 제출됨 — 재시도는 다운로드 전용');
+        return;
+    }
+    if (text.trim().length === 0) {
+        mod._certResult = 'blank';
+        console.log('[AusDisc] 빈 답안 — 저장 안 함');
+        return;
+    }
+
+    var recordJson = { answer: text, wordCount: mod._submitWordCount, completedAt: new Date().toISOString() };
+    try {
+        await upsertInitialRecord(user.id, 'aus-discussion', mod.itemNumber, mod.week, mod.day, recordJson, {
+            locked_auth_rate: 100
+        });
+        mod._hasInitial = true;
+        mod._certResult = 'certified';
+        if (typeof ProgressTracker !== 'undefined' && ProgressTracker.markCompleted) ProgressTracker.markCompleted('aus-discussion', mod.itemNumber);
+        console.log('[AusDisc] 박제 완료: certified ' + mod._submitWordCount + '단어');
+    } catch (e) {
+        console.error('[AusDisc] 저장 실패:', e);
+    }
 }
 
 function _showAusDiscComplete() {
     var mod = window.currentAusDiscModule;
     if (!mod || mod._destroyed) return;
+
+    var wc = mod._submitWordCount || 0;
+    var r = mod._certResult;
+    var baseStyle = 'margin:0 0 24px;font-size:14px;color:#718096;line-height:1.6;';
+    var descHtml;
+    if (!mod.collect || !r) {
+        descHtml = '<p style="' + baseStyle + '">토론형 라이팅 연습을 마쳤습니다.</p>';
+    } else if (r === 'certified') {
+        descHtml = '<p style="margin:0 0 24px;font-size:14px;color:#16a34a;font-weight:600;line-height:1.6;">🎉 토라 ' + mod.itemNumber + ' 인증 완료! (' + wc + '단어 제출)</p>';
+    } else if (r === 'redo') {
+        descHtml = '<p style="' + baseStyle + '">이미 제출한 과제예요. 다시 쓴 답안은 저장되지 않으니<br>필요하면 아래 \'답안 저장\'으로 받으세요.</p>';
+    } else if (r === 'deadline') {
+        descHtml = '<p style="' + baseStyle + '">마감이 지난 과제예요.<br>작성한 답안은 아래 \'답안 저장\'으로 받으세요.</p>';
+    } else { // blank
+        descHtml = '<p style="' + baseStyle + '">답안이 비어 있어 인증되지 않았어요. 다시 제출할 수 있어요.</p>';
+    }
 
     var container = document.getElementById('ausDiscContent');
     container.innerHTML =
@@ -394,7 +543,7 @@ function _showAusDiscComplete() {
                     '</svg>' +
                 '</div>' +
                 '<h2 style="margin:0 0 8px;font-size:20px;color:#2d3748;">토라 ' + mod.itemNumber + ' 완료!</h2>' +
-                '<p style="margin:0 0 24px;font-size:14px;color:#718096;">토론형 라이팅 연습을 마쳤습니다.</p>' +
+                descHtml +
                 '<div style="display:flex;gap:12px;justify-content:center;">' +
                     '<button onclick="_adDownloadTxt()" style="background:#f7fafc;color:#4A90D9;border:1px solid #e2e8f0;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;">' +
                         '<i class="fas fa-download"></i> 답안 저장' +
@@ -528,6 +677,7 @@ window.cleanupAusDiscModule = cleanupAusDiscModule;
 window._getAusToraNumber = _getAusToraNumber;
 window._backFromAusDisc = _backFromAusDisc;
 window._adFinish = _adFinish;
+window._adTrySubmit = _adTrySubmit;
 window._adOnInput = _adOnInput;
 window._adCut = _adCut;
 window._adPaste = _adPaste;

@@ -1138,7 +1138,7 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
                 } else if (intwrtNumber) {
                     startIntwrtModule(intwrtNumber, week, dayKr, intwrtReviewLinks[intwrtNumber]);
                 } else if (toraNumber) {
-                    startAusDiscussionModule(toraNumber);
+                    startAusDiscussionModule(toraNumber, week, dayKr);
                 } else if (indSpkNumber) {
                     startIndSpkModule(indSpkNumber);
                 } else if (intspkNumber) {

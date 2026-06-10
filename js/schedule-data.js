@@ -582,6 +582,17 @@ function parseTaskName(taskName) {
         }
     }
 
+    // 토라 (호주과정 토론형 라이팅: "토라1")
+    if (/^토라\s*\d+$/.test(taskName)) {
+        const match = taskName.match(/^토라\s*(\d+)$/);
+        if (match) {
+            return {
+                type: 'aus-discussion',
+                params: { number: parseInt(match[1]) }
+            };
+        }
+    }
+
     return { type: 'unknown', params: {} };
 }
 
