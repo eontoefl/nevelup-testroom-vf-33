@@ -195,12 +195,14 @@ var ProgressTracker = {
                     key = type + '_' + parsed.params.number;
                 } else if (type === 'brainstorming') {
                     key = 'brainstorming_' + parsed.params.day;
+                } else if (type === 'intwrt') {
+                    key = 'intwrt_' + parsed.params.number;
                 }
                 task = key ? ProgressTracker._completedTasks[key] : null;
                 if (task) {
                     completed++;
-                    if (type === 'brainstorming' || (window.courseMode === 'australia' && (type === 'reading' || type === 'listening'))) {
-                        // 브레인스토밍·호주 OMR은 오답노트 없이 바로 done
+                    if (type === 'brainstorming' || type === 'intwrt' || (window.courseMode === 'australia' && (type === 'reading' || type === 'listening'))) {
+                        // 브레인스토밍·통라·호주 OMR은 오답노트 없이 바로 done
                         done++;
                     } else if (task.errorNoteSubmitted) {
                         done++;
@@ -228,6 +230,8 @@ var ProgressTracker = {
             key = type + '_' + parsed.params.number;
         } else if (type === 'brainstorming') {
             key = 'brainstorming_' + parsed.params.day;
+        } else if (type === 'intwrt') {
+            key = 'intwrt_' + parsed.params.number;
         } else if (type === 'vocab' || type === 'intro-book') {
             var ct = window.currentTest;
             if (ct && ct.currentWeek && ct.currentDay) {
@@ -240,8 +244,8 @@ var ProgressTracker = {
         var task = this._completedTasks[key];
         // vocab, intro-book은 오답노트 없으므로 바로 done
         if (type === 'vocab' || type === 'intro-book') return 'done';
-        // 브레인스토밍(메모)도 오답노트 없으므로 바로 done
-        if (type === 'brainstorming') return 'done';
+        // 브레인스토밍(메모)·통라(라이팅)도 오답노트 없으므로 바로 done
+        if (type === 'brainstorming' || type === 'intwrt') return 'done';
         // 호주과정 리딩/리스닝(OMR)은 오답노트 없으므로 바로 done
         if (window.courseMode === 'australia' && (type === 'reading' || type === 'listening')) return 'done';
         return task.errorNoteSubmitted ? 'done' : 'pending';

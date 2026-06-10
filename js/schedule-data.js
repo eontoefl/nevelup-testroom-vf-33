@@ -571,6 +571,17 @@ function parseTaskName(taskName) {
         }
     }
 
+    // 통라 (호주과정 통합형 라이팅: "통라1")
+    if (/^통라\s*\d+$/.test(taskName)) {
+        const match = taskName.match(/^통라\s*(\d+)$/);
+        if (match) {
+            return {
+                type: 'intwrt',
+                params: { number: parseInt(match[1]) }
+            };
+        }
+    }
+
     return { type: 'unknown', params: {} };
 }
 

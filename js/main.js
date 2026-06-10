@@ -1136,7 +1136,7 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
                 if (brainstormDay) {
                     startBrainstormModule(brainstormDay, week, dayKr);
                 } else if (intwrtNumber) {
-                    startIntwrtModule(intwrtNumber);
+                    startIntwrtModule(intwrtNumber, week, dayKr, intwrtReviewLinks[intwrtNumber]);
                 } else if (toraNumber) {
                     startAusDiscussionModule(toraNumber);
                 } else if (indSpkNumber) {
