@@ -593,6 +593,28 @@ function parseTaskName(taskName) {
         }
     }
 
+    // 독스 (호주과정 독립형 스피킹: "독스 TOPIC 1")
+    if (taskName.startsWith('독스')) {
+        const match = taskName.match(/독스\s*(?:TOPIC\s*)?(\d+)/i);
+        if (match) {
+            return {
+                type: 'ind-spk',
+                params: { number: parseInt(match[1]) }
+            };
+        }
+    }
+
+    // 통스 (호주과정 통합형 스피킹: "통스1")
+    if (/^통스\s*\d+$/.test(taskName)) {
+        const match = taskName.match(/^통스\s*(\d+)$/);
+        if (match) {
+            return {
+                type: 'intspk',
+                params: { number: parseInt(match[1]) }
+            };
+        }
+    }
+
     return { type: 'unknown', params: {} };
 }
 

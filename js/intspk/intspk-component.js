@@ -24,21 +24,36 @@ window.currentIntspkModule = null;
 // 진입점
 // ============================================================
 
-async function startIntspkModule(itemNumber) {
+async function startIntspkModule(itemNumber, week, day) {
     console.log('\n============================');
-    console.log('IntSpk ' + itemNumber + ' 시작');
+    console.log('IntSpk ' + itemNumber + ' 시작 (W' + week + ' ' + day + ')');
     console.log('============================\n');
 
     var audioPlayer = new AudioPlayer();
 
+    var collect = (typeof isAusCollectEnabled === 'function') && isAusCollectEnabled();
+
+    if (week && day) {
+        window.currentTest = window.currentTest || {};
+        window.currentTest.currentWeek = week;
+        window.currentTest.currentDay = day;
+    }
+
     window.currentIntspkModule = {
         itemNumber: itemNumber,
+        week: week || null,
+        day: day || null,
+        collect: collect,
         audioPlayer: audioPlayer,
         data: null,
         item: null,
         timer: null,
         _progressTimer: null,
-        _destroyed: false
+        _destroyed: false,
+        _selectedFile: null,
+        _certResult: null,
+        _hasInitial: false,
+        _submitFileName: ''
     };
 
     var titleEl = document.getElementById('intspkTitle');
@@ -64,8 +79,29 @@ async function startIntspkModule(itemNumber) {
         return;
     }
 
+    // 이미 실전 제출(녹음 박제)했는지 확인
+    if (collect) {
+        await _isLoadStatus();
+    }
+
     _showIntspkIntroScreen();
     _playIntspkIntroNarration();
+}
+
+// 이미 initial_record(실전 제출)가 있는지 조회
+async function _isLoadStatus() {
+    var mod = window.currentIntspkModule;
+    if (!mod || !mod.collect) return;
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (!user || !user.id || user.id === 'dev-user-001') return;
+    if (typeof getStudyResultV3 !== 'function') return;
+    try {
+        var rec = await getStudyResultV3(user.id, 'intspk', mod.itemNumber, mod.week, mod.day);
+        mod._hasInitial = !!(rec && rec.initial_record != null);
+        console.log('[IntSpk] 기존 제출 여부:', mod._hasInitial);
+    } catch (e) {
+        console.warn('[IntSpk] 제출 여부 조회 실패:', e);
+    }
 }
 
 function _showIntspkLoading() {
@@ -443,9 +479,36 @@ function _startIntspkSpeakPhase() {
     mod.audioPlayer.play(INTSPK_AUDIO.speakBeep, function() {
         if (mod._destroyed) return;
         _runIntspkCountdown(speakTime, function() {
-            _showIntspkComplete();
+            _afterIntspkSpeak();
         });
     });
+}
+
+// 말하기 종료 후 분기 (독스와 동일)
+//  - 수집 코호트 + 마감 전 + 첫 제출 → 녹음 업로드 화면
+//  - 마감 후 / 이미 제출 → 업로드 건너뛰고 바로 완료 안내
+function _afterIntspkSpeak() {
+    var mod = window.currentIntspkModule;
+    if (!mod || mod._destroyed) return;
+
+    if (!mod.collect) {
+        _showIntspkComplete();
+        return;
+    }
+
+    var passed = (typeof isTaskDeadlinePassed === 'function') ? isTaskDeadlinePassed() : false;
+    if (passed) {
+        mod._certResult = 'deadline';
+        _showIntspkComplete();
+        return;
+    }
+    if (mod._hasInitial) {
+        mod._certResult = 'redo';
+        _showIntspkComplete();
+        return;
+    }
+
+    _showIntspkUpload();
 }
 
 // ============================================================
@@ -487,12 +550,192 @@ function _runIntspkCountdown(seconds, onDone) {
 }
 
 // ============================================================
+// 녹음 업로드 (수집 코호트)
+// ============================================================
+
+function _showIntspkUpload() {
+    var mod = window.currentIntspkModule;
+    if (!mod || mod._destroyed) return;
+    mod._selectedFile = null;
+
+    var continueBtn = document.getElementById('intspkContinueBtn');
+    if (continueBtn) continueBtn.style.display = 'none';
+
+    var container = document.getElementById('intspkContent');
+    container.innerHTML =
+        '<div style="max-width:520px;margin:0 auto;padding:36px 20px;text-align:center;">' +
+            '<div style="font-size:42px;margin-bottom:12px;">🎙️</div>' +
+            '<h2 style="margin:0 0 8px;font-size:19px;color:#1a1a1a;">녹음 파일 업로드</h2>' +
+            '<p style="font-size:14px;color:#666;line-height:1.7;margin:0 0 26px;">방금 말한 답변 녹음 파일을 올려주세요.<br>업로드하면 오늘 과제가 인증됩니다.</p>' +
+            '<input type="file" accept="audio/*" id="isFileInput" style="display:none;">' +
+            '<button id="isPickBtn" style="display:inline-block;padding:13px 26px;border-radius:10px;border:1.5px dashed #5B4A9E;background:#f4f3fb;color:#5B4A9E;font-size:15px;font-weight:600;cursor:pointer;">📁 파일 선택</button>' +
+            '<div id="isFileName" style="display:none;margin:14px auto 0;font-size:14px;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;max-width:90%;word-break:break-all;"></div>' +
+            '<div style="margin-top:28px;">' +
+                '<button id="isSubmitBtn" style="width:100%;max-width:320px;padding:14px;border-radius:10px;border:none;background:#5B4A9E;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">제출</button>' +
+            '</div>' +
+        '</div>';
+
+    var input = document.getElementById('isFileInput');
+    var pickBtn = document.getElementById('isPickBtn');
+    var nameEl = document.getElementById('isFileName');
+    var submitBtn = document.getElementById('isSubmitBtn');
+
+    pickBtn.onclick = function() { input.click(); };
+    input.onchange = function() {
+        if (input.files && input.files[0]) {
+            mod._selectedFile = input.files[0];
+            nameEl.textContent = '📎 ' + mod._selectedFile.name;
+            nameEl.style.display = 'block';
+            pickBtn.textContent = '📁 다른 파일 선택';
+        }
+    };
+    submitBtn.onclick = function() { _isTrySubmit(); };
+}
+
+function _isTrySubmit() {
+    var mod = window.currentIntspkModule;
+    if (!mod) return;
+    if (!mod._selectedFile) {
+        _isShowNoFileWarning(function() { _isDoSubmit(); });
+        return;
+    }
+    _isShowConfirm(mod._selectedFile, function() { _isDoSubmit(); });
+}
+
+// 제출 확인 팝업 (파일명 + 미리듣기 + 박제 경고)
+function _isShowConfirm(file, onConfirm) {
+    var existing = document.getElementById('isConfirmOverlay');
+    if (existing) existing.remove();
+
+    var objUrl = URL.createObjectURL(file);
+    var overlay = document.createElement('div');
+    overlay.id = 'isConfirmOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML =
+        '<div style="background:#fff;border-radius:16px;padding:26px 22px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="font-size:30px;margin-bottom:6px;">🎙️</div>' +
+            '<h3 style="margin:0 0 12px;font-size:16px;color:#1a1a1a;">이 파일로 제출할까요?</h3>' +
+            '<div style="font-size:13px;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin:0 0 10px;word-break:break-all;">📎 ' + _isEscapeHtml(file.name) + '</div>' +
+            '<audio controls src="' + objUrl + '" style="width:100%;margin:0 0 12px;"></audio>' +
+            '<p style="font-size:12.5px;color:#ef4444;line-height:1.5;margin:0 0 18px;">제출 후에는 <strong>수정할 수 없어요.</strong> 한 번 들어보고 올려주세요.</p>' +
+            '<div style="display:flex;gap:10px;">' +
+                '<button id="isConfirmCancel" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;color:#666;font-size:14px;font-weight:600;cursor:pointer;">다시 고르기</button>' +
+                '<button id="isConfirmOk" style="flex:1;padding:12px;border-radius:10px;border:none;background:#5B4A9E;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">제출</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    document.getElementById('isConfirmCancel').onclick = function() { URL.revokeObjectURL(objUrl); overlay.remove(); };
+    document.getElementById('isConfirmOk').onclick = function() { URL.revokeObjectURL(objUrl); overlay.remove(); if (onConfirm) onConfirm(); };
+}
+
+// 파일 없이 제출 시 경고 팝업
+function _isShowNoFileWarning(onConfirm) {
+    var existing = document.getElementById('isNoFileOverlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'isNoFileOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML =
+        '<div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:360px;width:88%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="font-size:32px;margin-bottom:10px;">🎙️</div>' +
+            '<h3 style="margin:0 0 10px;font-size:16px;color:#1a1a1a;">녹음 파일이 없어요</h3>' +
+            '<p style="font-size:13.5px;color:#666;line-height:1.6;margin:0 0 20px;">파일을 올리지 않았어요.<br>지금 제출하면 인증되지 않습니다.</p>' +
+            '<div style="display:flex;gap:10px;">' +
+                '<button id="isNoFilePickBtn" style="flex:1;padding:12px;border-radius:10px;border:none;background:#5B4A9E;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">파일 올리기</button>' +
+                '<button id="isNoFileSubmitBtn" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;color:#888;font-size:14px;font-weight:600;cursor:pointer;">그래도 제출</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    document.getElementById('isNoFilePickBtn').onclick = function() { overlay.remove(); };
+    document.getElementById('isNoFileSubmitBtn').onclick = function() { overlay.remove(); if (onConfirm) onConfirm(); };
+}
+
+function _isDoSubmit() {
+    var mod = window.currentIntspkModule;
+    if (!mod || mod._destroyed) return;
+
+    var container = document.getElementById('intspkContent');
+    container.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:320px;gap:14px;">' +
+            '<style>@keyframes isSpin{to{transform:rotate(360deg)}}</style>' +
+            '<div style="width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#5B4A9E;border-radius:50%;animation:isSpin 0.8s linear infinite;"></div>' +
+            '<p style="font-size:14px;color:#718096;">처리 중...</p>' +
+        '</div>';
+
+    _isSaveAnswer().then(function() {
+        if (mod._destroyed) return;
+        _showIntspkComplete();
+    });
+}
+
+// 녹음 저장 (독스와 동일 모델)
+async function _isSaveAnswer() {
+    var mod = window.currentIntspkModule;
+    if (!mod) return;
+    mod._certResult = null;
+
+    if (!mod.collect) return;
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (!user || !user.id || user.id === 'dev-user-001') return;
+    if (typeof upsertInitialRecord !== 'function') return;
+
+    var passed = (typeof isTaskDeadlinePassed === 'function') ? isTaskDeadlinePassed() : false;
+    if (passed) { mod._certResult = 'deadline'; console.log('[IntSpk] 마감 후 — 저장 안 함'); return; }
+    if (mod._hasInitial) { mod._certResult = 'redo'; console.log('[IntSpk] 이미 제출됨 — 저장 안 함'); return; }
+    if (!mod._selectedFile) { mod._certResult = 'blank'; console.log('[IntSpk] 파일 없음 — 저장 안 함'); return; }
+
+    try {
+        var file = mod._selectedFile;
+        var rawExt = file.name.indexOf('.') >= 0 ? file.name.split('.').pop().toLowerCase() : '';
+        var ext = (/^[a-z0-9]+$/.test(rawExt)) ? rawExt : 'bin';
+        var storagePath = user.id + '/aus_intspk_' + mod.itemNumber + '_' + Date.now() + '.' + ext;
+
+        var filePath = (typeof supabaseStorageUpload === 'function')
+            ? await supabaseStorageUpload('speaking-files', storagePath, file)
+            : null;
+        if (!filePath) { mod._certResult = 'error'; console.error('[IntSpk] 파일 업로드 실패'); return; }
+
+        mod._submitFileName = file.name;
+        var recordJson = { audioPath: filePath, fileName: file.name, completedAt: new Date().toISOString() };
+        await upsertInitialRecord(user.id, 'intspk', mod.itemNumber, mod.week, mod.day, recordJson, {
+            locked_auth_rate: 100
+        });
+        mod._hasInitial = true;
+        mod._certResult = 'certified';
+        if (typeof ProgressTracker !== 'undefined' && ProgressTracker.markCompleted) ProgressTracker.markCompleted('intspk', mod.itemNumber);
+        console.log('[IntSpk] 박제 완료: certified ' + file.name);
+    } catch (e) {
+        console.error('[IntSpk] 저장 실패:', e);
+        mod._certResult = 'error';
+    }
+}
+
+// ============================================================
 // 완료 화면
 // ============================================================
 
 function _showIntspkComplete() {
     var mod = window.currentIntspkModule;
     if (!mod || mod._destroyed) return;
+
+    var r = mod._certResult;
+    var descHtml;
+    if (!mod.collect || !r) {
+        descHtml = '<p class="is-complete-desc">통합형 스피킹 연습을 마쳤습니다.</p>';
+    } else if (r === 'certified') {
+        descHtml = '<p class="is-complete-desc" style="color:#16a34a;font-weight:600;">🎉 통스 ' + mod.itemNumber + ' 인증 완료! 녹음이 제출됐어요.</p>';
+    } else if (r === 'redo') {
+        descHtml = '<p class="is-complete-desc">이미 제출한 과제예요. 다시 한 건 저장되지 않아요.</p>';
+    } else if (r === 'deadline') {
+        descHtml = '<p class="is-complete-desc">마감이 지난 과제예요. 인증에는 반영되지 않습니다.</p>';
+    } else if (r === 'error') {
+        descHtml = '<p class="is-complete-desc" style="color:#ef4444;">업로드 중 문제가 생겼어요. 다시 시도해 주세요.</p>';
+    } else { // blank
+        descHtml = '<p class="is-complete-desc">녹음 파일이 없어 인증되지 않았어요. 다시 제출할 수 있어요.</p>';
+    }
 
     var container = document.getElementById('intspkContent');
     container.innerHTML =
@@ -505,7 +748,7 @@ function _showIntspkComplete() {
                     '</svg>' +
                 '</div>' +
                 '<h2 class="is-complete-title">통스 ' + mod.itemNumber + ' 완료!</h2>' +
-                '<p class="is-complete-desc">통합형 스피킹 연습을 마쳤습니다.</p>' +
+                descHtml +
                 '<button class="is-complete-btn" id="isCompleteBtn">확인</button>' +
             '</div>' +
         '</div>';

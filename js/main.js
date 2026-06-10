@@ -1140,9 +1140,9 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
                 } else if (toraNumber) {
                     startAusDiscussionModule(toraNumber, week, dayKr);
                 } else if (indSpkNumber) {
-                    startIndSpkModule(indSpkNumber);
+                    startIndSpkModule(indSpkNumber, week, dayKr);
                 } else if (intspkNumber) {
-                    startIntspkModule(intspkNumber);
+                    startIntspkModule(intspkNumber, week, dayKr);
                 } else if (externalLinks && externalLinks.solve) {
                     window.open(externalLinks.solve, '_blank');
                 } else {
