@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('userName').textContent = mpUser.name;
     document.getElementById('programBadge').textContent = mpUser.program || '내벨업챌린지';
 
+    // 자기주도 학생: 프로그램 뱃지 옆 칩 + 완료기한 안내 라인 (표시 전용)
+    if (mpUser.selfPaced) renderSelfPacedBadge();
+
     // 플랜 탭 - 유저의 프로그램에 맞춰 활성화
     setupPlanTabs();
 
@@ -290,6 +293,29 @@ function renderSelfPacedNextTasks(container, programType, totalWeeks) {
     html += '</ul>';
     html += '<p class="today-task-count">다음 할 과제 ' + next.length + '건</p>';
     container.innerHTML = html;
+}
+
+// 자기주도 학생: 프로그램 뱃지 옆 칩 + "마감 없음 · 완료기한" 안내 라인 (표시 전용)
+function renderSelfPacedBadge() {
+    const badge = document.getElementById('programBadge');
+    if (!badge || document.getElementById('selfPacedChip')) return;
+
+    const chip = document.createElement('span');
+    chip.id = 'selfPacedChip';
+    chip.textContent = '🎯 자기주도';
+    chip.style.cssText = 'display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;background:#6c5ce7;color:#fff;font-size:0.78rem;font-weight:700;vertical-align:middle;';
+    badge.insertAdjacentElement('afterend', chip);
+
+    let deadlineText = '';
+    if (typeof getSelfPacedExpiry === 'function') {
+        const exp = getSelfPacedExpiry(mpUser);
+        if (exp) deadlineText = ' · 완료 기한 ' + formatStartDate(exp);
+    }
+    const note = document.createElement('span');
+    note.id = 'selfPacedNote';
+    note.textContent = '⏳ 마감 없이 내 페이스로' + deadlineText;
+    note.style.cssText = 'display:block;margin-top:4px;font-size:0.8rem;color:#6c5ce7;font-weight:600;';
+    badge.parentNode.appendChild(note);
 }
 
 // ================================================
