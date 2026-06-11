@@ -44,6 +44,18 @@ function initScheduleScreen() {
     
     if (programBadgeElement) {
         programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 Australia - ', 'AUS - ').replace('내벨업챌린지 - ', '');
+
+        // 자기주도 학생: 프로그램 뱃지 옆 '🎯 자기주도' 칩 (표시 전용)
+        var spChip = document.getElementById('selfPacedChipSchedule');
+        if (currentUser.selfPaced && !spChip) {
+            spChip = document.createElement('span');
+            spChip.id = 'selfPacedChipSchedule';
+            spChip.textContent = '🎯 자기주도';
+            spChip.style.cssText = 'display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;background:#6c5ce7;color:#fff;font-size:0.78rem;font-weight:700;vertical-align:middle;';
+            programBadgeElement.insertAdjacentElement('afterend', spChip);
+        } else if (!currentUser.selfPaced && spChip) {
+            spChip.remove();
+        }
     }
 
     // 코스 모드에 따라 적절한 렌더링
