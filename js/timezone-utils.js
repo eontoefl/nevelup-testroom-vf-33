@@ -169,6 +169,36 @@ function isDeadlinePassed(deadline) {
 }
 
 /**
+ * 자기주도(self-paced) 학생의 완료 기한(만료) 시점 계산
+ * 만료 = 시작일 + N주(self_paced_weeks). 마지막날 다음날 04:00 기준(과제 마감과 동일 규칙).
+ * @param {object} user - selfPaced / selfPacedWeeks / startDate 보유한 유저 객체
+ * @param {string} [timezone] - IANA timezone
+ * @returns {Date|null} 만료 시점, 자기주도 아니거나 정보 부족 시 null
+ */
+function getSelfPacedExpiry(user, timezone) {
+    if (!user || !user.selfPaced || !user.selfPacedWeeks || !user.startDate) return null;
+    var tz = timezone || getUserTimezone();
+    var start = new Date(user.startDate + 'T00:00:00');
+    if (isNaN(start.getTime())) return null;
+    // 시작일 + (N주 - 1일) 의 다음날 04:00 = 총 N*7일의 학습 기간
+    var lastDay = new Date(start);
+    lastDay.setDate(lastDay.getDate() + (user.selfPacedWeeks * 7) - 1);
+    return getTaskDeadline(lastDay, tz);
+}
+
+/**
+ * 자기주도 학생의 완료 기한이 지났는지 판정 (만료 후 = 인증 마감, 복습만 가능)
+ * @param {object} user
+ * @param {string} [timezone]
+ * @returns {boolean}
+ */
+function isSelfPacedExpired(user, timezone) {
+    var expiry = getSelfPacedExpiry(user, timezone);
+    if (!expiry) return false;
+    return new Date() >= expiry;
+}
+
+/**
  * 첨삭 활성화 판정용: 유효한 오늘이 특정 날짜 이후인지 확인
  * @param {string} targetDateStr - 비교 날짜 (YYYY-MM-DD)
  * @param {string} [timezone] - IANA timezone

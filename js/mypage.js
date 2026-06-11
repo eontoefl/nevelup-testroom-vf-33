@@ -218,6 +218,81 @@ function formatFullDate(dateStr) {
 }
 
 // ================================================
+// 자기주도: 완료 과제 집합 / 과제키 / 다음 할 과제 렌더링
+// ================================================
+// mpV3Results로부터 완료된 과제 키 집합 생성
+//  - reading/listening/writing/speaking → type_모듈번호
+//  - vocab/intro-book → type_w주차_요일(한글)
+function _spBuildCompletedSet() {
+    const set = new Set();
+    const skill = { reading: 1, listening: 1, writing: 1, speaking: 1 };
+    (mpV3Results || []).forEach(function(r) {
+        if (!r.section_type || r.initial_record == null) return;
+        if (skill[r.section_type]) {
+            set.add(r.section_type + '_' + r.module_number);
+        } else {
+            set.add(r.section_type + '_w' + r.week + '_' + r.day);
+        }
+    });
+    return set;
+}
+
+// 스케줄 과제(파싱결과) → 완료 집합과 비교할 키
+function _spTaskKey(parsed, week, dayKr) {
+    const t = parsed.type;
+    if (t === 'reading' || t === 'listening') return t + '_' + (parsed.params && parsed.params.module);
+    if (t === 'writing' || t === 'speaking') return t + '_' + (parsed.params && parsed.params.number);
+    if (t === 'vocab') return 'vocab_w' + week + '_' + dayKr;
+    if (t === 'intro-book') return 'intro-book_w' + week + '_' + dayKr;
+    return null;
+}
+
+// 자기주도 학생: 아직 안 한 과제를 순서대로 N건 표시
+function renderSelfPacedNextTasks(container, programType, totalWeeks) {
+    if (typeof isSelfPacedExpired === 'function' && isSelfPacedExpired(mpUser)) {
+        container.innerHTML = '<p class="today-task-empty">학습 기한이 종료되었어요 (복습은 가능) 😊</p>';
+        return;
+    }
+    const completed = _spBuildCompletedSet();
+    const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const dayEnToKr = { sunday: '일', monday: '월', tuesday: '화', wednesday: '수', thursday: '목', friday: '금' };
+    const taskLabels = { reading: '📖 Reading', listening: '🎧 Listening', writing: '✍️ Writing', speaking: '🎤 Speaking', vocab: '📝 Vocab', 'intro-book': '📚 입문서' };
+    const LIMIT = 5;
+    const next = [];
+    for (let w = 1; w <= totalWeeks && next.length < LIMIT; w++) {
+        for (let di = 0; di < dayOrder.length && next.length < LIMIT; di++) {
+            const dayEn = dayOrder[di];
+            const dayKr = dayEnToKr[dayEn];
+            const tasks = getDayTasks(programType, w, dayEn) || [];
+            for (let ti = 0; ti < tasks.length && next.length < LIMIT; ti++) {
+                const parsed = (typeof parseTaskName === 'function') ? parseTaskName(tasks[ti]) : null;
+                if (!parsed || parsed.type === 'unknown') continue;
+                const key = _spTaskKey(parsed, w, dayKr);
+                if (key && completed.has(key)) continue;
+                const base = taskLabels[parsed.type] || parsed.type;
+                let label = base;
+                if (parsed.type !== 'vocab' && parsed.type !== 'intro-book') {
+                    const modNum = parsed.params ? (parsed.params.module || parsed.params.number || '') : '';
+                    label = base + ' M' + modNum;
+                }
+                next.push({ label: label, week: w });
+            }
+        }
+    }
+    if (next.length === 0) {
+        container.innerHTML = '<p class="today-task-empty">모든 과제를 완료했어요 🎉</p>';
+        return;
+    }
+    let html = '<ul class="today-task-ul">';
+    next.forEach(function(item) {
+        html += '<li class="today-task-item">' + item.label + ' <span style="opacity:.45;font-size:.85em">(W' + item.week + ')</span></li>';
+    });
+    html += '</ul>';
+    html += '<p class="today-task-count">다음 할 과제 ' + next.length + '건</p>';
+    container.innerHTML = html;
+}
+
+// ================================================
 // 오늘의 과제 리스트 렌더링
 // ================================================
 function renderTodayTasks() {
@@ -237,6 +312,12 @@ function renderTodayTasks() {
     if (isBeforeStart()) {
         const startStr = formatStartDate(mpUser.startDate);
         container.innerHTML = `<p class="today-task-empty">📅 ${startStr}부터 시작됩니다!</p>`;
+        return;
+    }
+
+    // 자기주도: 캘린더상 '오늘' 대신 아직 안 한 과제를 순서대로 표시
+    if (mpUser.selfPaced) {
+        renderSelfPacedNextTasks(container, programType, totalWeeks);
         return;
     }
 
@@ -327,6 +408,19 @@ function renderSummaryCards() {
         document.getElementById('challengeBar').style.width = '0%';
         document.getElementById('challengeSub').textContent = `${startStr} 시작 예정`;
         document.getElementById('challengeStartDate').textContent = `시작일: ${formatFullDate(mpUser.startDate)}`;
+    } else if (mpUser.selfPaced) {
+        // 자기주도: 캘린더 D+ 대신 완료율 기반 표시
+        const totalTasksC = countTotalTasks(programType, totalWeeks);
+        const completedC = totalTasksC > 0 ? Math.min(mpV3Results.length, totalTasksC) : mpV3Results.length;
+        const remainingC = Math.max(0, totalTasksC - completedC);
+        const completePct = totalTasksC > 0 ? Math.round((completedC / totalTasksC) * 100) : 0;
+        const spExpiry = (typeof getSelfPacedExpiry === 'function') ? getSelfPacedExpiry(mpUser) : null;
+        document.getElementById('challengeStatus').textContent = `완료 ${completedC} / ${totalTasksC}개`;
+        document.getElementById('challengeBar').style.width = `${completePct}%`;
+        document.getElementById('challengeSub').textContent = remainingC > 0 ? `${remainingC}개 남음` : `전체 완료 🎉`;
+        document.getElementById('challengeStartDate').textContent = spExpiry
+            ? `완료 기한: ${formatFullDate(spExpiry)}`
+            : `시작일: ${formatFullDate(mpUser.startDate)}`;
     } else {
         const dplus = Math.min(Math.floor((today - startDate) / (1000 * 60 * 60 * 24)), totalCalendarDays);
         const remainingDays = Math.max(0, totalCalendarDays - dplus);
@@ -363,19 +457,24 @@ function renderSummaryCards() {
     });
 
     // 분모 결정
-    const authDenominator = tasksDueToday > 0 ? tasksDueToday : mpV3Results.length;
-
-    let authRatePct, authSubText;
-    if (authDenominator > 0) {
-        authRatePct = Math.round(authRateSum / authDenominator);
-        if (tasksDueToday === 0) {
-            authSubText = `시작 전`;
-        } else {
-            authSubText = `오늘까지 할당된 과제 ${tasksDueToday}건 기준`;
-        }
+    // 자기주도(self-paced): 캘린더 무관 → 전체 과제 대비(B). "전체 N개 중 M개 진행"
+    let authDenominator, authRatePct, authSubText;
+    if (mpUser.selfPaced) {
+        const totalTasks = countTotalTasks(programType, totalWeeks);
+        authDenominator = totalTasks > 0 ? totalTasks : mpV3Results.length;
+        authRatePct = authDenominator > 0 ? Math.round(authRateSum / authDenominator) : 0;
+        authSubText = totalTasks > 0
+            ? `전체 ${totalTasks}개 중 ${mpV3Results.length}개 진행`
+            : '데이터 없음';
     } else {
-        authRatePct = 0;
-        authSubText = '데이터 없음';
+        authDenominator = tasksDueToday > 0 ? tasksDueToday : mpV3Results.length;
+        if (authDenominator > 0) {
+            authRatePct = Math.round(authRateSum / authDenominator);
+            authSubText = tasksDueToday === 0 ? `시작 전` : `오늘까지 할당된 과제 ${tasksDueToday}건 기준`;
+        } else {
+            authRatePct = 0;
+            authSubText = '데이터 없음';
+        }
     }
 
     // 인증률 카드
@@ -385,10 +484,20 @@ function renderSummaryCards() {
     document.getElementById('authSub').textContent = authSubText;
 
     // ── 등급 & 환급 계산 (tr_grade_rules 테이블 연동) ──
+    // 자기주도: 완료(전체 인증) 또는 기한 만료 전에는 등급을 가리고 "완료 시 산정"으로 표시
+    //  → 띄엄띄엄 하는 학생에게 초반부터 'F·0원'을 보여주지 않기 위함
+    const spTotalForGrade = mpUser.selfPaced ? countTotalTasks(programType, totalWeeks) : 0;
+    const spExpiredForGrade = mpUser.selfPaced && (typeof isSelfPacedExpired === 'function') && isSelfPacedExpired(mpUser);
+    const spCompleteForGrade = mpUser.selfPaced && spTotalForGrade > 0 && mpV3Results.length >= spTotalForGrade;
+    const spGradeFinalized = spExpiredForGrade || spCompleteForGrade;
+
     // 시작 전이면 무조건 등급 미산정
     if (isGradeBeforeStart()) {
         document.getElementById('currentGrade').textContent = '-';
         document.getElementById('gradeRefund').textContent = '시작 후 산정';
+    } else if (mpUser.selfPaced && !spGradeFinalized) {
+        document.getElementById('currentGrade').textContent = '-';
+        document.getElementById('gradeRefund').textContent = '완료 시 산정';
     } else {
         const grade = getGradeFromRules(authRatePct);
         const gradeEl = document.getElementById('currentGrade');
@@ -470,6 +579,27 @@ function countTasksDueToday(programType, totalWeeks) {
 }
 
 /**
+ * 전체 과제 수 계산 (날짜 무관, 자기주도 인증률/완료율 분모용)
+ * countTasksDueToday와 동일한 과제 집합(parseTaskName이 인식하는 것)을 세되 날짜 게이트 없음
+ */
+function countTotalTasks(programType, totalWeeks) {
+    if (typeof getDayTasks !== 'function') return 0;
+    const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    let total = 0;
+    for (let w = 1; w <= totalWeeks; w++) {
+        for (let d = 0; d < dayOrder.length; d++) {
+            const tasks = getDayTasks(programType, w, dayOrder[d]) || [];
+            tasks.forEach(function(taskName) {
+                const parsed = (typeof parseTaskName === 'function') ? parseTaskName(taskName) : null;
+                if (!parsed || parsed.type === 'unknown') return;
+                total++;
+            });
+        }
+    }
+    return total;
+}
+
+/**
  * tr_grade_rules 테이블에서 등급 판정
  * @param {number} authRatePct - 인증률 (0~100)
  * @returns {object} { letter, refundRate, deposit, color }
@@ -539,7 +669,8 @@ function renderGrass() {
 
         // ★ 이 칸의 마감 시각 계산 (연장이 있으면 연장 마감, 없으면 기본 마감)
         const deadline = extDeadline || getDeadlineForDayNum(dayNum);
-        const isPastDeadline = deadline && now >= deadline;
+        // 자기주도 학생은 과제별 마감이 없으므로 '마감 지남 → 빨간칸'을 적용하지 않음
+        const isPastDeadline = !mpUser.selfPaced && deadline && now >= deadline;
 
         const level = completedMap.get(key);
 

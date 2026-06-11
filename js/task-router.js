@@ -60,6 +60,14 @@ function isTaskDeadlinePassed() {
         return false;
     }
 
+    // 자기주도 학생: 과제별 마감 없음. 단, 완료 기한(만료) 후에는 인증 마감(복습만 가능).
+    // → 만료 전 false(자유 진행), 만료 후 true(기존 '마감 지남' 동작 재사용)
+    if (user.selfPaced) {
+        var spExpired = (typeof isSelfPacedExpired === 'function') && isSelfPacedExpired(user);
+        console.log('⏰ [마감] 자기주도 학생 — 만료여부:', spExpired);
+        return spExpired;
+    }
+
     // 호주 모드면 호주 시작일 사용, 없으면 정규 시작일 fallback
     var effectiveStartDate = (window.courseMode === 'australia' && user.australiaStartDate)
         ? user.australiaStartDate

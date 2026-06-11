@@ -124,6 +124,8 @@ async function handleLogin(event) {
             australiaStartDate: programInfo.australiaStartDate || null,  // 호주과정 시작일 (별도)
             practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부
             correctionEnabled: isCorrectionActiveNow(programInfo, userTimezone),  // 첨삭(FEEDBACK): D-1 새벽4시부터 활성화
+            selfPaced: !!programInfo.selfPaced,  // 자기주도(날짜무관) 모드 — 마감 없음, 만료일까지 자유 진행
+            selfPacedWeeks: programInfo.selfPacedWeeks || null,  // 완료 기한(주). 시작일+N주 = 만료일
             timezone: userTimezone  // 학생별 타임존 (IANA)
         };
         
@@ -420,6 +422,18 @@ function getCurrentUserId() {
  */
 async function _fillMissingAuthRates(userId) {
     try {
+        // 자기주도 학생: 완료 기한(만료) 전에는 마감이 없으므로 자동 50% 확정을 하지 않음
+        // (에러노트를 나중에 해도 100%로 올라갈 수 있어야 함).
+        // 만료 후에는 정규과정과 동일하게 일괄 확정(인증 마감)되도록 통과시킨다.
+        if (typeof currentUser !== 'undefined' && currentUser && currentUser.selfPaced) {
+            var spExpired = (typeof isSelfPacedExpired === 'function') && isSelfPacedExpired(currentUser);
+            if (!spExpired) {
+                console.log('🔒 [인증률] 자기주도 학생(기한 내) — 자동 확정 생략');
+                return;
+            }
+            console.log('🔒 [인증률] 자기주도 학생(기한 만료) — 일괄 확정 진행');
+        }
+
         var rows = await supabaseSelect(
             'study_results_v3',
             'user_id=eq.' + userId

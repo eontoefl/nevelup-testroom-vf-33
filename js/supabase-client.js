@@ -216,6 +216,17 @@ async function getStudentProgram(userEmail) {
 
     console.log('✅ [Supabase] 프로그램:', app.assigned_program || app.preferred_program);
 
+    // 자기주도(self-paced) 플래그는 컬럼이 아직 없을 수도 있으므로 별도 조회로 안전 처리.
+    // (컬럼 부재 시 supabaseSelect가 []를 반환 → 기본 false. 메인 로그인 쿼리는 절대 깨지지 않음)
+    let selfPaced = false, selfPacedWeeks = null;
+    try {
+        const spRows = await supabaseSelect('applications', `id=eq.${app.id}&select=self_paced,self_paced_weeks`);
+        if (spRows && spRows[0]) {
+            selfPaced = !!spRows[0].self_paced;
+            selfPacedWeeks = spRows[0].self_paced_weeks || null;
+        }
+    } catch (e) { /* 컬럼 미존재 등 → 기본값 유지 */ }
+
     return {
         program: app.assigned_program || app.preferred_program || '내벨업챌린지 - Standard',
         startDate: app.schedule_start || app.preferred_start_date,
@@ -225,7 +236,9 @@ async function getStudentProgram(userEmail) {
         status: app.status,
         practiceEnabled: !!app.practice_enabled,
         correctionEnabled: !!app.correction_enabled,
-        correctionStartDate: app.correction_start_date || null
+        correctionStartDate: app.correction_start_date || null,
+        selfPaced: selfPaced,  // 자기주도(날짜무관) 모드 여부
+        selfPacedWeeks: selfPacedWeeks  // 완료 기한(주). 시작일+N주 = 만료일
     };
 }
 

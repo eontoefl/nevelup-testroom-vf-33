@@ -1295,8 +1295,9 @@ function renderSchedule(program) {
             };
             
             // 날짜 계산: startDate + (week-1)*7 + dayIndex
+            // 자기주도 학생은 실제 진행일이 캘린더와 무관하므로 (실제와 안 맞는) 가짜 날짜를 표시하지 않음
             let dateStr = '';
-            if (startDate) {
+            if (startDate && !(currentUser && currentUser.selfPaced)) {
                 const d = new Date(startDate);
                 d.setDate(d.getDate() + (week - 1) * 7 + dayIndex);
                 dateStr = `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
@@ -1892,6 +1893,9 @@ function _renderDeadlineBanner(week, dayKr) {
 
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
     if (!user || !user.startDate) return;
+
+    // 자기주도 학생은 과제별 마감이 없으므로 마감 배너를 표시하지 않음
+    if (user.selfPaced) return;
 
     var dayMap = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
     var dayOffset = dayMap[dayKr];
