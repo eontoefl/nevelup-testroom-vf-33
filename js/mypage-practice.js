@@ -418,6 +418,9 @@ function renderRecentRecords() {
                 scoreText = `${rec.score} / ${rec.total}`;
             } else if (rec.accuracy != null) {
                 scoreText = `${Math.round(rec.accuracy)}%`;
+            } else if (rec.arrange && rec.arrange.total != null) {
+                // 라이팅: 단어배열(arrange) 정답수로 표시 (이메일/토론은 자동 채점 대상 아님)
+                scoreText = `${rec.arrange.correct || 0} / ${rec.arrange.total}`;
             }
         }
 

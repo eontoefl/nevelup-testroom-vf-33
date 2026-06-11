@@ -71,10 +71,19 @@ async function startWritingModule(moduleNumber) {
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
         if (user && user.id && user.id !== 'dev-user-001') {
             try {
-                var existing = await getStudyResultV3(
-                    user.id, 'writing', moduleNumber,
-                    state.week, state.day
-                );
+                // 연습모드는 week/day가 없으므로 연습 전용 보관함을 조회해야 한다.
+                // (정규모드 함수에 null week/day를 넘기면 항상 첫 풀이로 오인됨)
+                var existing;
+                if (state.isPractice) {
+                    existing = await getStudyResultPractice(
+                        user.id, 'writing', moduleNumber, state.practiceNumber
+                    );
+                } else {
+                    existing = await getStudyResultV3(
+                        user.id, 'writing', moduleNumber,
+                        state.week, state.day
+                    );
+                }
                 if (existing && existing.initial_record != null) {
                     window.currentWritingModule.isRetake = true;
                     console.log('🔄 다시풀기 모드 (initial_record 존재)');
@@ -538,19 +547,21 @@ async function _finishWritingModule() {
         var day = inPractice2 ? null : ct.currentDay;
 
         try {
+            var saveResult;
             if (inPractice2) {
                 var pNum = state2.practiceNumber;
                 if (mod.isRetake) {
-                    await upsertCurrentRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
+                    saveResult = await upsertCurrentRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
+                    console.log('💾 [Practice] current_record 저장 완료');
                 } else {
-                    var pExtras = {
-                        writing_email_text: mod.results.email ? mod.results.email.userAnswer : '',
-                        writing_discussion_text: mod.results.discussion ? mod.results.discussion.userAnswer : ''
-                    };
-                    await upsertInitialRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson, pExtras);
+                    // email/discussion 원문은 recordJson(initial_record)에 이미 포함됨.
+                    // study_results_practice에는 별도 텍스트 컬럼이 없으므로 extras를 넘기지 않는다.
+                    // (없는 컬럼을 전송하면 저장 전체가 거부됨)
+                    saveResult = await upsertInitialRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
+                    console.log('💾 [Practice] initial_record 저장 완료');
                 }
             } else if (mod.isRetake) {
-                await upsertCurrentRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson);
+                saveResult = await upsertCurrentRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson);
                 console.log('💾 current_record 저장 완료');
             } else {
                 // 실전풀이: extras로 email/discussion 텍스트 별도 컬럼 저장
@@ -558,8 +569,14 @@ async function _finishWritingModule() {
                     writing_email_text: mod.results.email ? mod.results.email.userAnswer : '',
                     writing_discussion_text: mod.results.discussion ? mod.results.discussion.userAnswer : ''
                 };
-                await upsertInitialRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson, extras);
+                saveResult = await upsertInitialRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson, extras);
                 console.log('💾 initial_record 저장 완료');
+            }
+
+            // 저장 검증: DB 함수는 실패 시 예외 대신 null을 반환하므로 명시적으로 확인한다.
+            // (이 검증이 없으면 저장 실패가 조용히 묻히고 답안이 사라짐)
+            if (!saveResult) {
+                throw new Error('DB 저장 실패 (응답 없음)');
             }
 
             // ✅ 저장 성공 → 정리 + 대시보드 복귀
