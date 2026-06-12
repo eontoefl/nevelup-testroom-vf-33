@@ -15,6 +15,7 @@
 let mpUser = null;
 let mpCertifications = [];
 let mpOmrResults = [];
+let mpGradeRules = [];
 let scoreChartInstance = null;
 let currentScoreTab = 'reading';
 let selectedPointIndex = -1;
@@ -63,21 +64,26 @@ async function loadAllData() {
 
     const userId = mpUser.id;
 
-    const [certs, omrRows] = await Promise.all([
+    const [certs, omrRows, gradeRules] = await Promise.all([
         supabaseSelect(
             'study_certifications',
             `author_email=eq.${encodeURIComponent(userEmail)}&order=published_at.desc&select=id,subject,published_at`
         ),
         userId ? supabaseSelect(
             'aus_study_results',
-            `user_id=eq.${userId}&initial_record=not.is.null&order=completed_at.asc&select=user_id,section_type,module_number,week,day,initial_record,completed_at`
-        ) : Promise.resolve([])
+            `user_id=eq.${userId}&initial_record=not.is.null&order=completed_at.asc&select=user_id,section_type,module_number,week,day,initial_record,locked_auth_rate,completed_at`
+        ) : Promise.resolve([]),
+        supabaseSelect(
+            'tr_grade_rules',
+            `select=grade,min_rate,refund_rate,deposit&order=min_rate.desc`
+        )
     ]);
 
     mpCertifications = certs || [];
     mpOmrResults = omrRows || [];
+    mpGradeRules = gradeRules || [];
 
-    console.log(`📊 [MyPage-AUS] 인증글 ${mpCertifications.length}건, OMR ${mpOmrResults.length}건 로드`);
+    console.log(`📊 [MyPage-AUS] 인증글 ${mpCertifications.length}건, OMR ${mpOmrResults.length}건, 등급규칙 ${mpGradeRules.length}건 로드`);
 }
 
 // ================================================
@@ -232,14 +238,122 @@ function renderSummaryCards() {
         document.getElementById('challengeStartDate').textContent = `시작일: ${formatFullDate(startDateStr)}`;
     }
 
-    // 인증률 — 고정 텍스트 (추후 구현)
-    document.getElementById('authRate').textContent = '-';
-    document.getElementById('authRateUnit').textContent = '';
-    document.getElementById('authSub').textContent = '추후 공개';
+    // ── 인증률 / 등급 / 환급 ──
+    // 신규 코호트(기준일 이후 시작자)만 표시. 구 코호트는 수집이 안 돼 부정확하므로 "추후 공개" 유지.
+    const cutoff = (typeof AUS_COLLECT_CUTOFF !== 'undefined') ? AUS_COLLECT_CUTOFF : '2026-06-14';
+    const ausStart = startDateStr; // 호주 시작일 = schedule_start (australia_schedule_start는 안 씀)
+    // 수집 게이트와 동일하게: 테스트 모드(AUS_GATE_ENABLED=false)면 전원, 실서비스면 기준일 이후 시작자만
+    const gateOff = (typeof AUS_GATE_ENABLED !== 'undefined' && AUS_GATE_ENABLED === false);
+    const isCollectCohort = gateOff || !!(ausStart && String(ausStart).slice(0, 10) >= cutoff);
 
-    // 등급 & 환급 — 고정 텍스트 (추후 구현)
-    document.getElementById('currentGrade').textContent = '-';
-    document.getElementById('gradeRefund').textContent = '추후 공개';
+    if (!isCollectCohort) {
+        document.getElementById('authRate').textContent = '-';
+        document.getElementById('authRateUnit').textContent = '';
+        document.getElementById('authSub').textContent = '추후 공개';
+        document.getElementById('currentGrade').textContent = '-';
+        document.getElementById('gradeRefund').textContent = '추후 공개';
+        return;
+    }
+
+    // 분자: 과제별 인증 점수 합 (제출=100, 단어만 30% 이하 미인증=0)
+    let authRateSum = 0;
+    (mpOmrResults || []).forEach(function(r) {
+        authRateSum += _ausTaskAuth(r);
+    });
+
+    // 분모: 오늘까지 도래한 과제 수
+    const authDenominator = _countAusTasksDue(programType, totalWeeks, ausStart);
+
+    let authRatePct, authSubText;
+    if (authDenominator > 0) {
+        authRatePct = Math.round(authRateSum / authDenominator);
+        authSubText = `오늘까지 할당된 과제 ${authDenominator}건 기준`;
+    } else {
+        authRatePct = 0;
+        authSubText = beforeStart ? '시작 전' : '데이터 없음';
+    }
+
+    document.getElementById('authRate').textContent = authRatePct;
+    document.getElementById('authRateUnit').textContent = '%';
+    document.getElementById('authSub').textContent = authSubText;
+
+    // 등급 & 환급 (정규 규칙 tr_grade_rules 재활용)
+    if (beforeStart) {
+        document.getElementById('currentGrade').textContent = '-';
+        document.getElementById('gradeRefund').textContent = '시작 후 산정';
+    } else {
+        const grade = _ausGradeFromRules(authRatePct);
+        const gradeEl = document.getElementById('currentGrade');
+        gradeEl.textContent = grade.letter;
+        gradeEl.style.background = grade.color;
+        gradeEl.style.color = '#fff';
+        const refundAmount = Math.round(grade.deposit * grade.refundRate);
+        document.getElementById('gradeRefund').innerHTML =
+            `환급 ${Math.round(grade.refundRate * 100)}% (${refundAmount.toLocaleString()}원)`;
+    }
+}
+
+// ================================================
+// 인증률 계산 헬퍼
+// ================================================
+
+// 과제별 인증 점수 (제출=100 / 단어는 30% 이하면 0)
+function _ausTaskAuth(r) {
+    if (r.section_type === 'vocab') {
+        const score = (r.locked_auth_rate != null) ? Number(r.locked_auth_rate) : 0;
+        return score > 30 ? 100 : 0; // 단어 30% floor (어뷰징 방지)
+    }
+    return 100; // 그 외(리딩·리스닝·라이팅·스피킹·브스·입문서) = 제출=인증
+}
+
+// 오늘까지 도래한 과제 수 (분모). 호주 스케줄·시작일 기준.
+function _countAusTasksDue(programType, totalWeeks, startDateStr) {
+    if (!startDateStr || typeof getAusDayTasks !== 'function') return 0;
+    const startDate = new Date(startDateStr + 'T00:00:00');
+    if (isNaN(startDate.getTime())) return 0;
+
+    const effectiveToday = getEffectiveToday(getUserTimezone());
+    const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']; // 토요일 휴무
+    let total = 0;
+
+    for (let w = 1; w <= totalWeeks; w++) {
+        for (let d = 0; d < dayOrder.length; d++) {
+            const taskDate = new Date(startDate);
+            taskDate.setDate(taskDate.getDate() + (w - 1) * 7 + d);
+            taskDate.setHours(0, 0, 0, 0);
+            // 과제 날짜가 오늘 이하면 분모 포함 (오늘 과제는 마감 전이라도 포함 — 정규와 동일)
+            if (taskDate <= effectiveToday) {
+                const tasks = getAusDayTasks(programType, w, dayOrder[d]) || [];
+                tasks.forEach(function(t) { if (t && t.trim()) total++; });
+            }
+        }
+    }
+    return total;
+}
+
+// tr_grade_rules에서 등급 판정 (정규 getGradeFromRules와 동일)
+function _ausGradeFromRules(authRatePct) {
+    if (mpGradeRules && mpGradeRules.length > 0) {
+        for (const rule of mpGradeRules) {
+            if (authRatePct >= rule.min_rate) {
+                return {
+                    letter: rule.grade,
+                    refundRate: rule.refund_rate,
+                    deposit: rule.deposit || 100000,
+                    color: _ausGradeColor(rule.grade)
+                };
+            }
+        }
+        const last = mpGradeRules[mpGradeRules.length - 1];
+        return { letter: last.grade, refundRate: last.refund_rate, deposit: last.deposit || 100000, color: _ausGradeColor(last.grade) };
+    }
+    console.warn('📊 [MyPage-AUS] tr_grade_rules 로드 실패, 등급 산정 불가');
+    return { letter: '-', refundRate: 0, deposit: 100000, color: '#6b7280' };
+}
+
+function _ausGradeColor(grade) {
+    const colors = { 'A': '#22c55e', 'B': '#3b82f6', 'C': '#f59e0b', 'D': '#f97316', 'F': '#ef4444' };
+    return colors[grade] || '#6b7280';
 }
 
 // ================================================

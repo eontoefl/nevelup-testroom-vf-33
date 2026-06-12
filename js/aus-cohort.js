@@ -34,7 +34,8 @@ function isAusCollectEnabled() {
 
     // 게이트 ON(실서비스): 호주 시작일이 기준일 이후인 학생만
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : (window.currentUser || null);
-    var start = user && user.australiaStartDate;
+    // 호주 시작일 = schedule_start(startDate). australia_schedule_start는 사실상 안 쓰는(항상 null) 컬럼이라 보지 않음.
+    var start = user && user.startDate;
     if (!start) return false; // 시작일 없으면 안전하게 기존 동작
 
     // 'YYYY-MM-DD' 문자열 비교 = 날짜 비교 (시간 성분이 붙어도 앞 10자리로 비교)
