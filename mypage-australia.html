@@ -14,6 +14,28 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/notification.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    .mp-layout { display:flex; gap:20px; align-items:flex-start; }
+    .mp-sidenav { display:flex; flex-direction:column; gap:6px; flex:0 0 148px; position:sticky; top:64px; }
+    .mp-nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:12px 14px; border:none; background:#f4f3fb; color:#555; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; text-align:left; font-family:inherit; }
+    .mp-nav-item.active { background:#5B4A9E; color:#fff; }
+    .mp-content { flex:1 1 auto; min-width:0; }
+    .rec-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .rec-tab { display:flex; align-items:center; gap:6px; padding:8px 16px; border:1.5px solid #e2e8f0; background:#fff; color:#666; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .rec-tab.active { background:#5B4A9E; color:#fff; border-color:#5B4A9E; }
+    .rec-item { background:#fff; border:1px solid #eee; border-radius:12px; padding:16px 18px; margin-bottom:12px; }
+    .rec-item-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; }
+    .rec-item-title { font-size:14px; font-weight:700; color:#5B4A9E; }
+    .rec-item-date { font-size:12px; color:#999; white-space:nowrap; }
+    .rec-item-body { font-size:14px; color:#333; line-height:1.65; white-space:pre-wrap; word-break:break-word; }
+    .rec-memo-block { margin-bottom:8px; padding:10px 12px; background:#f9f9fb; border-radius:8px; font-size:14px; color:#333; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+    .rec-empty { text-align:center; color:#999; padding:44px 0; font-size:14px; }
+    @media (max-width:768px) {
+      .mp-layout { flex-direction:column; gap:14px; }
+      .mp-sidenav { flex-direction:row; flex:none; position:static; overflow-x:auto; }
+      .mp-nav-item { width:auto; white-space:nowrap; justify-content:center; }
+    }
+  </style>
 </head>
 <body>
 
@@ -52,6 +74,17 @@
         <span class="program-badge" id="programBadge">-</span>
       </div>
     </div>
+
+    <!-- ───── 좌측 네비 + 콘텐츠 ───── -->
+    <div class="mp-layout">
+      <aside class="mp-sidenav">
+        <button class="mp-nav-item active" data-view="dashboard"><i class="fa-solid fa-gauge-high"></i> 현황</button>
+        <button class="mp-nav-item" data-view="records"><i class="fa-solid fa-folder-open"></i> 내 기록</button>
+      </aside>
+      <div class="mp-content">
+
+      <!-- ===== 현황 뷰 ===== -->
+      <div id="viewDashboard">
 
     <!-- ① 학습 현황 요약 카드 -->
     <section class="section-block">
@@ -176,12 +209,31 @@
       </div>
     </section>
 
+      </div><!-- /viewDashboard -->
+
+      <!-- ===== 내 기록 뷰 ===== -->
+      <div id="viewRecords" style="display:none;">
+        <section class="section-block">
+          <h2 class="section-title"><i class="fa-solid fa-folder-open"></i> 내 기록</h2>
+          <p class="section-desc">내가 제출한 메모·에세이·녹음을 다시 볼 수 있어요. (읽기 전용)</p>
+          <div class="rec-tabs">
+            <button class="rec-tab active" data-rectab="memo"><i class="fa-solid fa-note-sticky"></i> 메모</button>
+            <button class="rec-tab" data-rectab="essay"><i class="fa-solid fa-pen-nib"></i> 에세이</button>
+            <button class="rec-tab" data-rectab="audio"><i class="fa-solid fa-microphone"></i> 녹음</button>
+          </div>
+          <div id="recordsBody"><p class="sc-sub">로딩 중...</p></div>
+        </section>
+      </div><!-- /viewRecords -->
+
+      </div><!-- /mp-content -->
+    </div><!-- /mp-layout -->
+
   </main>
 
   <script src="js/supabase-client.js"></script>
   <script src="js/timezone-utils.js?v=001"></script>
   <script src="js/australia-schedule-data.js?v=001"></script>
   <script src="js/aus-cohort.js?v=003_startonly"></script>
-  <script src="js/mypage-australia.js?v=004_startonly"></script>
+  <script src="js/mypage-australia.js?v=005_records"></script>
 </body>
 </html>

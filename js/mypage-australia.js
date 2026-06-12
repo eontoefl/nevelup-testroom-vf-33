@@ -71,7 +71,7 @@ async function loadAllData() {
         ),
         userId ? supabaseSelect(
             'aus_study_results',
-            `user_id=eq.${userId}&initial_record=not.is.null&order=completed_at.asc&select=user_id,section_type,module_number,week,day,initial_record,locked_auth_rate,completed_at`
+            `user_id=eq.${userId}&initial_record=not.is.null&order=completed_at.asc&select=user_id,section_type,module_number,week,day,initial_record,current_record,locked_auth_rate,completed_at`
         ) : Promise.resolve([]),
         supabaseSelect(
             'tr_grade_rules',
@@ -94,6 +94,123 @@ function renderAll() {
     renderSummaryCards();
     renderScoreChart();
     renderCertificationList();
+    setupRecordsNav();
+}
+
+// ================================================
+// 내 기록 (좌측 네비 + 유형별 보기)
+// ================================================
+let currentRecTab = 'memo';
+
+function setupRecordsNav() {
+    // 좌측 네비: 현황 / 내 기록 전환
+    document.querySelectorAll('.mp-nav-item').forEach(function(btn) {
+        btn.onclick = function() {
+            document.querySelectorAll('.mp-nav-item').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const view = btn.dataset.view;
+            const dash = document.getElementById('viewDashboard');
+            const rec = document.getElementById('viewRecords');
+            if (dash) dash.style.display = (view === 'dashboard') ? '' : 'none';
+            if (rec) rec.style.display = (view === 'records') ? '' : 'none';
+            if (view === 'records') renderRecords(currentRecTab);
+        };
+    });
+    // 내 기록 안의 유형 탭
+    document.querySelectorAll('.rec-tab').forEach(function(tab) {
+        tab.onclick = function() {
+            document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentRecTab = tab.dataset.rectab;
+            renderRecords(currentRecTab);
+        };
+    });
+}
+
+function _recParse(x) {
+    if (!x) return null;
+    if (typeof x === 'string') { try { return JSON.parse(x); } catch (e) { return null; } }
+    return x;
+}
+function _recDate(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+function _recEsc(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+function _recSortDesc(arr) {
+    return arr.slice().sort((a, b) => String(b.completed_at || '').localeCompare(String(a.completed_at || '')));
+}
+
+function renderRecords(type) {
+    const container = document.getElementById('recordsBody');
+    if (!container) return;
+    const records = mpOmrResults || [];
+
+    if (type === 'memo') {
+        const list = _recSortDesc(records.filter(r => r.section_type === 'brainstorming'));
+        if (!list.length) { container.innerHTML = '<div class="rec-empty">아직 작성한 메모가 없어요.</div>'; return; }
+        let html = '';
+        list.forEach(function(r) {
+            const cr = _recParse(r.current_record) || {};
+            const memos = cr.memos || {};
+            const texts = Object.keys(memos).sort().map(k => memos[k]).filter(t => t && t.trim());
+            html += '<div class="rec-item">';
+            html += `<div class="rec-item-head"><span class="rec-item-title">브레인스토밍 Day ${r.module_number}</span><span class="rec-item-date">${_recDate(r.completed_at)}</span></div>`;
+            if (texts.length) {
+                texts.forEach(function(t, i) {
+                    html += `<div class="rec-memo-block"><div style="font-size:12px;color:#888;margin-bottom:4px;">주제 ${i + 1}</div>${_recEsc(t)}</div>`;
+                });
+            } else {
+                html += '<div class="rec-item-body" style="color:#999;">메모 내용이 없어요.</div>';
+            }
+            html += '</div>';
+        });
+        container.innerHTML = html;
+
+    } else if (type === 'essay') {
+        const list = _recSortDesc(records.filter(r => r.section_type === 'intwrt' || r.section_type === 'aus-discussion'));
+        if (!list.length) { container.innerHTML = '<div class="rec-empty">아직 제출한 에세이가 없어요.</div>'; return; }
+        let html = '';
+        list.forEach(function(r) {
+            const ir = _recParse(r.initial_record) || {};
+            const label = (r.section_type === 'intwrt' ? '통라 ' : '토라 ') + r.module_number;
+            const wc = ir.wordCount ? ` · ${ir.wordCount}단어` : '';
+            html += '<div class="rec-item">';
+            html += `<div class="rec-item-head"><span class="rec-item-title">${label}${wc}</span><span class="rec-item-date">${_recDate(r.completed_at)}</span></div>`;
+            html += `<div class="rec-item-body">${_recEsc(ir.answer || '')}</div>`;
+            html += '</div>';
+        });
+        container.innerHTML = html;
+
+    } else if (type === 'audio') {
+        const list = _recSortDesc(records.filter(r => r.section_type === 'ind-spk' || r.section_type === 'intspk'));
+        if (!list.length) { container.innerHTML = '<div class="rec-empty">아직 제출한 녹음이 없어요.</div>'; return; }
+        let html = '';
+        list.forEach(function(r) {
+            const ir = _recParse(r.initial_record) || {};
+            const label = (r.section_type === 'ind-spk' ? '독스 TOPIC ' : '통스 ') + r.module_number;
+            let url = '';
+            if (ir.audioPath) {
+                url = (String(ir.audioPath).indexOf('http') === 0) ? ir.audioPath
+                    : (typeof supabaseStorageUrl === 'function' ? supabaseStorageUrl('speaking-files', ir.audioPath) : '');
+            }
+            html += '<div class="rec-item">';
+            html += `<div class="rec-item-head"><span class="rec-item-title">${label}</span><span class="rec-item-date">${_recDate(r.completed_at)}</span></div>`;
+            if (url) {
+                html += `<audio controls preload="none" style="width:100%;"><source src="${url}"></audio>`;
+            } else {
+                html += '<div class="rec-item-body" style="color:#999;">녹음 파일을 찾을 수 없어요.</div>';
+            }
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
 }
 
 // ================================================
