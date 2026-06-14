@@ -20,6 +20,8 @@
     .mp-nav-item { display:flex; align-items:center; gap:8px; width:100%; padding:12px 14px; border:none; background:#f4f3fb; color:#555; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; text-align:left; font-family:inherit; }
     .mp-nav-item.active { background:#5B4A9E; color:#fff; }
     .mp-content { flex:1 1 auto; min-width:0; }
+    /* 섹션 간격 복원 (원래 .page-wrap flex gap에서 오던 것) */
+    #viewDashboard, #viewRecords { display:flex; flex-direction:column; gap:32px; }
     .rec-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
     .rec-tab { display:flex; align-items:center; gap:6px; padding:8px 16px; border:1.5px solid #e2e8f0; background:#fff; color:#666; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
     .rec-tab.active { background:#5B4A9E; color:#fff; border-color:#5B4A9E; }
