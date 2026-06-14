@@ -1329,10 +1329,13 @@ function renderSchedule(program) {
                 }
             }
             
+            // 자기주도 학생은 날짜가 없으므로 빈 .day-tasks를 아예 렌더하지 않음
+            // → 버튼이 이미 중앙정렬(center)이라 요일+점이 자동으로 중앙에 옴
+            const dateSpanHtml = (currentUser && currentUser.selfPaced) ? '' : `<span class="day-tasks">${dateStr}</span>`;
             dayButton.innerHTML = `
                 <span class="day-name">${dayEnShort[dayKr]}</span>
                 <div class="progress-dot ${dotClass}"></div>
-                <span class="day-tasks">${dateStr}</span>
+                ${dateSpanHtml}
             `;
             
             // 휴무일인 경우 스타일 변경
