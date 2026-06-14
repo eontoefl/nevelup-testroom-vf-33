@@ -103,7 +103,18 @@ function renderAll() {
 let currentRecTab = 'memo';
 
 function setupRecordsNav() {
-    // 좌측 네비: 현황 / 내 기록 전환
+    // 구 코호트: 좌측 네비·내 기록 숨기고 대시보드만 (공부인증 현황은 그대로 표시)
+    if (!_isAusCollectCohort()) {
+        const sidenav = document.querySelector('.mp-sidenav');
+        if (sidenav) sidenav.style.display = 'none';
+        const rec = document.getElementById('viewRecords');
+        if (rec) rec.style.display = 'none';
+        const dash = document.getElementById('viewDashboard');
+        if (dash) dash.style.display = '';
+        return;
+    }
+
+    // 좌측 네비: 현황 / 내 기록 전환 (신규 코호트만)
     document.querySelectorAll('.mp-nav-item').forEach(function(btn) {
         btn.onclick = function() {
             document.querySelectorAll('.mp-nav-item').forEach(b => b.classList.remove('active'));
@@ -218,6 +229,15 @@ function renderRecords(type) {
 // ================================================
 function getAusStartDate() {
     return mpUser.startDate;
+}
+
+// 신규 코호트(앱 자동 인증 대상)인지 — 수집 게이트와 동일 규칙
+// 테스트 모드(AUS_GATE_ENABLED=false)면 전원, 실서비스면 시작일 >= 기준일
+function _isAusCollectCohort() {
+    if (typeof AUS_GATE_ENABLED !== 'undefined' && AUS_GATE_ENABLED === false) return true;
+    const cutoff = (typeof AUS_COLLECT_CUTOFF !== 'undefined') ? AUS_COLLECT_CUTOFF : '2026-06-14';
+    const start = mpUser && mpUser.startDate;
+    return !!(start && String(start).slice(0, 10) >= cutoff);
 }
 
 function isBeforeStart() {
@@ -357,11 +377,8 @@ function renderSummaryCards() {
 
     // ── 인증률 / 등급 / 환급 ──
     // 신규 코호트(기준일 이후 시작자)만 표시. 구 코호트는 수집이 안 돼 부정확하므로 "추후 공개" 유지.
-    const cutoff = (typeof AUS_COLLECT_CUTOFF !== 'undefined') ? AUS_COLLECT_CUTOFF : '2026-06-14';
     const ausStart = startDateStr; // 호주 시작일 = schedule_start (australia_schedule_start는 안 씀)
-    // 수집 게이트와 동일하게: 테스트 모드(AUS_GATE_ENABLED=false)면 전원, 실서비스면 기준일 이후 시작자만
-    const gateOff = (typeof AUS_GATE_ENABLED !== 'undefined' && AUS_GATE_ENABLED === false);
-    const isCollectCohort = gateOff || !!(ausStart && String(ausStart).slice(0, 10) >= cutoff);
+    const isCollectCohort = _isAusCollectCohort();
 
     if (!isCollectCohort) {
         document.getElementById('authRate').textContent = '-';
@@ -477,6 +494,14 @@ function _ausGradeColor(grade) {
 // 공부인증 현황 — 내가 올린 글 목록
 // ================================================
 function renderCertificationList() {
+    // 신규 코호트는 앱 자동 인증이라 게시판 "공부인증 현황" 칸을 숨긴다 (혼란 방지)
+    const section = document.getElementById('certSection');
+    if (_isAusCollectCohort()) {
+        if (section) section.style.display = 'none';
+        return;
+    }
+    if (section) section.style.display = '';
+
     const container = document.getElementById('certificationList');
     if (!container) return;
 
