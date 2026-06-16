@@ -404,6 +404,23 @@ function _goToNextScreen() {
 // 6. 데이터 추출 (DB recordJson → show 함수 입력 형태)
 // ============================================================
 
+/**
+ * 스피킹 세트 배열에서 모듈 번호에 해당하는 세트를 고른다.
+ * 저장 기록에는 전체 세트가 통째로 들어있고, 각 세트에 이름표(setId)가 있다.
+ * 1순위: 이름표(prefix + NNNN) 매칭, 2순위: 위치 인덱스, 3순위: 0번째.
+ * (풀기 화면의 resolveRepeatSetIndex / resolveInterviewSetIndex와 동일 규칙)
+ */
+function _pickSpeakingSet(sets, prefix, moduleNumber) {
+    var mod = moduleNumber || 1;
+    var targetId = prefix + String(mod).padStart(4, '0');
+    var found = sets.find(function(s) { return s && s.setId === targetId; });
+    if (found) return found;
+    // 폴백: 위치 인덱스 → 범위 벗어나면 0번째
+    var idx = mod - 1;
+    if (idx < 0 || idx >= sets.length) idx = 0;
+    return sets[idx];
+}
+
 function _extractData(def, recordJson, st) {
     switch (def.type) {
         case 'arrange':
@@ -431,18 +448,14 @@ function _extractData(def, recordJson, st) {
             // DB: { sets: [전체 세트], type } → 모듈 번호에 해당하는 세트만 추출
             var repeatSets = recordJson.repeat.data.sets;
             if (!repeatSets || repeatSets.length === 0) return null;
-            var repeatIdx = (st.moduleNumber || 1) - 1;
-            if (repeatIdx < 0 || repeatIdx >= repeatSets.length) repeatIdx = 0;
-            return { set: repeatSets[repeatIdx] };
+            return { set: _pickSpeakingSet(repeatSets, 'repeat_set_', st.moduleNumber) };
 
         case 'interview':
             if (!recordJson.interview || !recordJson.interview.data) return null;
             // DB: { sets: [전체 세트], type } → 모듈 번호에 해당하는 세트만 추출
             var interviewSets = recordJson.interview.data.sets;
             if (!interviewSets || interviewSets.length === 0) return null;
-            var interviewIdx = (st.moduleNumber || 1) - 1;
-            if (interviewIdx < 0 || interviewIdx >= interviewSets.length) interviewIdx = 0;
-            return { set: interviewSets[interviewIdx] };
+            return { set: _pickSpeakingSet(interviewSets, 'interview_set_', st.moduleNumber) };
 
         default:
             var sets = recordJson.sets;

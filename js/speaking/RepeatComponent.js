@@ -73,34 +73,61 @@ class RepeatComponent {
         return null;
     }
     
+    /**
+     * setId(모듈 번호)에 해당하는 세트 인덱스를 찾는다.
+     * sets는 id.asc 순서의 위치 배열이라 모듈 번호와 위치가 항상
+     * 일치하지는 않는다(앞 번호 모듈이 비어 있으면 어긋남).
+     * 1순위: 이름표(repeat_set_NNNN) 매칭, 2순위: 위치 인덱스(기존 동작 호환).
+     * @returns {number} 세트 인덱스 (찾지 못하면 위치 인덱스 폴백)
+     */
+    resolveRepeatSetIndex() {
+        const moduleNumber = this.setId || 1;
+        const data = this.speakingRepeatData;
+        if (data && data.sets) {
+            const targetId = 'repeat_set_' + String(moduleNumber).padStart(4, '0');
+            const idx = data.sets.findIndex(s => s && s.setId === targetId);
+            if (idx !== -1) {
+                console.log(`✅ [Repeat] 세트 발견: ${targetId} (index ${idx})`);
+                return idx;
+            }
+            console.warn(`⚠️ [Repeat] 이름표 매칭 실패(${targetId}) → 위치 인덱스 폴백`);
+        }
+        return moduleNumber - 1;
+    }
+
     // ============================================
     // 인트로 화면 함수 (3개)
     // ============================================
-    
+
     /**
      * 인트로 화면 표시
      */
     showIntroScreen() {
         const timestamp = new Date().toISOString().split('T')[1].substring(0, 12);
         console.log(`📺 [showIntroScreen] 인트로 화면 표시 [${timestamp}]`);
-        
-        // setId(모듈 번호, 1-based)로 세트 인덱스 계산
-        this.currentRepeatSet = (this.setId || 1) - 1;
-        
+
+        // setId(모듈 번호)로 해당 세트 인덱스 해석 (이름표 우선)
+        this.currentRepeatSet = this.resolveRepeatSetIndex();
+
         document.getElementById('repeatIntroScreen').style.display = 'flex';
         document.getElementById('repeatNarrationScreen').style.display = 'none';
-        
+
         setTimeout(() => {
             if (this._destroyed) return;
             const introNarration = 'https://eontoefl.github.io/toefl-audio/speaking/repeat/narration/listen_and_repeat_narration.mp3';
-            
+
             this.playAudio(introNarration, () => {
                 if (this._destroyed) return;
                 console.log('✅ 인트로 나레이션 종료');
                 setTimeout(() => {
                     if (this._destroyed) return;
                     document.getElementById('repeatIntroScreen').style.display = 'none';
-                    this.showContextNarration(this.speakingRepeatData.sets[this.currentRepeatSet]);
+                    const set = this.speakingRepeatData ? this.speakingRepeatData.sets[this.currentRepeatSet] : null;
+                    if (!set) {
+                        console.error(`❌ [Repeat] 세트를 찾을 수 없습니다 (모듈 ${this.setId}) — 데이터 미등록 가능성`);
+                        return;
+                    }
+                    this.showContextNarration(set);
                 }, 2000);
             });
         }, 1000);
@@ -116,7 +143,12 @@ class RepeatComponent {
     showContextNarration(set) {
         const timestamp = new Date().toISOString().split('T')[1].substring(0, 12);
         console.log(`📺 [showContextNarration] 상황 나레이션 화면 표시 [${timestamp}]`);
-        
+
+        if (!set) {
+            console.error('❌ [Repeat] showContextNarration: set이 없습니다');
+            return;
+        }
+
         document.getElementById('repeatNarrationScreen').style.display = 'flex';
         
         // contextText 표시

@@ -81,10 +81,32 @@ class InterviewComponent {
         return null;
     }
     
+    /**
+     * setId(모듈 번호)에 해당하는 세트 인덱스를 찾는다.
+     * sets는 id.asc 순서의 위치 배열이라 모듈 번호와 위치가 항상
+     * 일치하지는 않는다(앞 번호 모듈이 비어 있으면 어긋남).
+     * 1순위: 이름표(interview_set_NNNN) 매칭, 2순위: 위치 인덱스(기존 동작 호환).
+     * @returns {number} 세트 인덱스 (찾지 못하면 위치 인덱스 폴백)
+     */
+    resolveInterviewSetIndex() {
+        const moduleNumber = this.setId || 1;
+        const data = this.speakingInterviewData;
+        if (data && data.sets) {
+            const targetId = 'interview_set_' + String(moduleNumber).padStart(4, '0');
+            const idx = data.sets.findIndex(s => s && s.setId === targetId);
+            if (idx !== -1) {
+                console.log(`✅ [Interview] 세트 발견: ${targetId} (index ${idx})`);
+                return idx;
+            }
+            console.warn(`⚠️ [Interview] 이름표 매칭 실패(${targetId}) → 위치 인덱스 폴백`);
+        }
+        return moduleNumber - 1;
+    }
+
     // ============================================
     // 인트로 화면 함수 (3개)
     // ============================================
-    
+
     /**
      * 인트로 화면 표시
      */
@@ -108,7 +130,7 @@ class InterviewComponent {
                 setTimeout(() => {
                     if (this._destroyed) return;
                     document.getElementById('interviewIntroScreen').style.display = 'none';
-                    this.startInterviewSequence((this.setId || 1) - 1);
+                    this.startInterviewSequence(this.resolveInterviewSetIndex());
                 }, 2000);
             });
         }, 1000);
