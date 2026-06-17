@@ -55,7 +55,7 @@ async function _loadDiscussionFromSupabase() {
         const sets = rows.map(row => {
             // Bullets 배열 구성 (빈 값 제외)
             const bullets = [];
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 8; i++) {
                 const sentence = row[`bullet${i}_sentence`] || '';
                 if (sentence.trim()) {
                     bullets.push({
