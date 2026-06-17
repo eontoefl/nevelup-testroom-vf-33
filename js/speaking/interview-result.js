@@ -168,8 +168,8 @@ function _renderModelAnswerSection(set, index) {
     for (var s = 0; s < segments.length; s++) {
         var segment = segments[s];
         if (segment.isHighlight) {
-            var safeKey = segment.key.replace(/'/g, '&#39;');
-            answerHtml += '<span class="interview-highlight" data-highlight="' + safeKey + '" onclick="showInterviewFeedback(' + index + ', \'' + safeKey + '\')">' + segment.text + '</span>';
+            var safeKey = segment.key.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            answerHtml += '<span class="interview-highlight" data-highlight="' + safeKey + '" onclick="showInterviewFeedback(' + index + ', this)">' + segment.text + '</span>';
         } else {
             answerHtml += segment.text;
         }
@@ -294,19 +294,33 @@ function _clearInterviewTimer() {
  * 한 라인에서 여러 하이라이트를 찾아 세그먼트로 분리
  * @private
  */
+/**
+ * 따옴표처럼 보이는 모든 기호를 곧은 작은따옴표(')로 통일한다.
+ * 본문과 하이라이트 문구의 따옴표 종류가 달라 매칭이 깨지는 것을 방지.
+ * (곧은 ' / 둥근 ' ' / 백틱 ` / 액센트 ´ / modifier ʼ ʹ / prime ′ 등)
+ * 모두 1글자 → 1글자 치환이라 문자열 길이·위치가 그대로 유지된다.
+ * @private
+ */
+function _normalizeQuotes(str) {
+    if (str == null) return str;
+    return String(str).replace(/[‘’‛ʼʹ`´′]/g, "'");
+}
+
 function _parseLineWithHighlights(line, highlights) {
     if (!highlights || typeof highlights !== 'object') {
         return [{ text: line, isHighlight: false }];
     }
-    
+
+    var normLine = _normalizeQuotes(line);
     var keys = Object.keys(highlights).sort(function(a, b) { return b.length - a.length; });
-    
+
     var matches = [];
     for (var k = 0; k < keys.length; k++) {
         var key = keys[k];
-        var idx = line.indexOf(key);
+        var normKey = _normalizeQuotes(key);
+        var idx = normLine.indexOf(normKey);
         if (idx !== -1) {
-            matches.push({ key: key, index: idx, length: key.length });
+            matches.push({ key: key, index: idx, length: normKey.length });
         }
     }
     
@@ -328,7 +342,7 @@ function _parseLineWithHighlights(line, highlights) {
         if (match.index > lastIndex) {
             segments.push({ text: line.substring(lastIndex, match.index), isHighlight: false });
         }
-        segments.push({ text: match.key, key: match.key, isHighlight: true });
+        segments.push({ text: line.substring(match.index, match.index + match.length), key: match.key, isHighlight: true });
         lastIndex = match.index + match.length;
     }
     
@@ -465,23 +479,32 @@ function playInterviewModelAnswerAudio(index) {
 /**
  * 피드백 표시 (하이라이트 클릭 시)
  */
-function showInterviewFeedback(answerIndex, highlightKey) {
+function showInterviewFeedback(answerIndex, highlightKeyOrEl) {
+    // \uC694\uC18C(this)\uB85C \uB118\uC5B4\uC624\uBA74 data-highlight \uC18D\uC131\uC5D0\uC11C \uD0A4\uB97C \uC77D\uACE0, \uBB38\uC790\uC5F4\uC774\uBA74 \uADF8\uB300\uB85C \uC0AC\uC6A9
+    var highlightKey = (highlightKeyOrEl && highlightKeyOrEl.getAttribute)
+        ? highlightKeyOrEl.getAttribute('data-highlight')
+        : highlightKeyOrEl;
     if (!highlightKey || !_interviewResultData) return;
-    
+
     var set = _interviewResultData.set;
     var video = set.videos[answerIndex];
     var highlights = video.highlights;
-    
+    if (!highlights) return;
+
+    // 1) \uC815\uD655\uD788 \uC77C\uCE58\uD558\uB294 \uD0A4 \uC6B0\uC120
     var feedback = highlights[highlightKey];
+    // 2) \uBABB \uCC3E\uC73C\uBA74 \uB530\uC634\uD45C \uC885\uB958\uB97C \uD1B5\uC77C\uD574\uC11C \uBE44\uAD50
     if (!feedback) {
-        var altKey = highlightKey.replace(/'/g, '\u02BC');
-        feedback = highlights[altKey];
+        var normTarget = _normalizeQuotes(highlightKey);
+        var hkeys = Object.keys(highlights);
+        for (var i = 0; i < hkeys.length; i++) {
+            if (_normalizeQuotes(hkeys[i]) === normTarget) {
+                feedback = highlights[hkeys[i]];
+                break;
+            }
+        }
     }
-    if (!feedback) {
-        var altKey2 = highlightKey.replace(/\u02BC/g, "'");
-        feedback = highlights[altKey2];
-    }
-    if (!highlights || !feedback) return;
+    if (!feedback) return;
     
     var feedbackDiv = document.getElementById('answer' + answerIndex + 'Feedback');
     if (!feedbackDiv) return;
