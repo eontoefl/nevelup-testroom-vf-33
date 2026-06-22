@@ -232,8 +232,8 @@ async function _readingModuleNext() {
     var comp = mod.components[mod.currentIndex];
 
     if (seq.type === 'fillblanks') {
-        // 빈칸채우기: Next = 세트 전체 제출 → 다음 세트
-        comp.submit();
+        // 빈칸채우기: Next = 다음 세트로 이동 (채점은 최종 제출 시 일괄 처리)
+        // ※ 여기서 채점/확정하지 않음 → 나중에 돌아와 수정한 답도 반영됨
         if (mod.currentIndex < mod.sequence.length - 1) {
             await _goToSet(mod.currentIndex + 1);
         }
@@ -241,8 +241,8 @@ async function _readingModuleNext() {
         // Daily1/Daily2/Academic: 세트 내부 다음 문제 시도
         var moved = comp.nextQuestion();
         if (!moved) {
-            // 세트 마지막 → 제출 후 다음 세트
-            comp.submit();
+            // 세트 마지막 → 다음 세트로 이동 (채점은 최종 제출 시 일괄 처리)
+            // ※ 여기서 채점/확정하지 않음 → 나중에 돌아와 수정한 답도 반영됨
             if (mod.currentIndex < mod.sequence.length - 1) {
                 await _goToSet(mod.currentIndex + 1);
                 return; // _goToSet 내부에서 progress/buttons 업데이트 완료
@@ -321,31 +321,27 @@ function _readingModuleSubmit() {
 
     console.log('📤 리딩 모듈 전체 제출');
 
-    // 현재 세트 먼저 제출 (아직 안 했을 수 있음)
-    var comp = mod.components[mod.currentIndex];
-    var currentKey = mod.sequence[mod.currentIndex].type + '_set' + mod.sequence[mod.currentIndex].setNum;
-    if (comp && !mod.answers[currentKey] && comp.currentSet != null) {
-        comp.submit();
-    }
-
-    // 모든 미제출 세트 일괄 제출
-    // ※ init()되지 않은 세트(문제 데이터 없음)는 건너뛰고 0점 처리
+    // 모든 세트를 "지금 메모리에 들어있는 최신 답안" 기준으로 일괄 채점한다.
+    // ※ 학생이 한 번이라도 연 세트(currentSet != null)는 무조건 다시 채점 →
+    //    review/Back으로 돌아가 수정한 답이 항상 최종 결과에 반영됨.
+    // ※ 한 번도 열지 않은 세트(데이터 없음)는 0점 처리.
     mod.sequence.forEach(function(seq, i) {
         var key = seq.type + '_set' + seq.setNum;
-        if (!mod.answers[key] && mod.components[i]) {
-            // 문제 데이터가 있는지 확인 (init 완료 여부)
-            var hasData = mod.components[i].currentSet != null;
-            if (hasData) {
-                mod.components[i].submit();
-            } else {
-                // 데이터 없음 → 빈 결과(0점)로 기록
-                console.log('⚠️ [' + seq.label + '] 문제 데이터 없음 — 0점 처리');
-                mod.answers[key] = {
-                    type: seq.type,
-                    setNumber: seq.setNum,
-                    answers: []
-                };
-            }
+        var comp = mod.components[i];
+        if (!comp) return;
+
+        var hasData = comp.currentSet != null;
+        if (hasData) {
+            // 최신 답안으로 (재)채점: submit → onComplete → mod.answers[key] 덮어쓰기
+            comp.submit();
+        } else {
+            // 한 번도 열지 않은 세트 → 빈 결과(0점)로 기록
+            console.log('⚠️ [' + seq.label + '] 문제 데이터 없음 — 0점 처리');
+            mod.answers[key] = {
+                type: seq.type,
+                setNumber: seq.setNum,
+                answers: []
+            };
         }
     });
 
