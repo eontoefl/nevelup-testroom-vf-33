@@ -115,7 +115,7 @@ async function startCorrectionSpeaking(session, scheduleData, submission) {
     var headerEl = document.getElementById('corrSpkHeader');
     if (headerEl) {
         headerEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0') +
-            ' · Interview ' + session.session + (isDraft2 ? ' (2차)' : '');
+            ' · Interview' + (isDraft2 ? ' (2차)' : '');
     }
 
     if (isDraft2) {
@@ -548,6 +548,9 @@ async function submitCorrectionSpeaking() {
             user_name: user.name,
             user_email: user.email,
             session_number: state.session.session,
+            // 해당 세션이 속한 학기의 기준 시작일 (n8n 마감 계산용)
+            //   1학기(phase 1): start_date / 2학기(phase 2): extension_start_date
+            session_start_date: getCorrSessionStartDate(state.scheduleData, state.session),
             task_type: taskType,
             task_number: state.setNumber,
             audio_paths: audioPaths,

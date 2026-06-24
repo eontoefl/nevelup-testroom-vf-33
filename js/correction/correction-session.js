@@ -52,7 +52,7 @@ function openCorrectionSession(session, scheduleData, submissionMap, extensionMa
     _renderCorrectionTaskCard(
         'corrWritingCard',
         'writing',
-        writingLabel + ' ' + session.session,
+        writingLabel,
         writingSub,
         session
     );
@@ -62,7 +62,7 @@ function openCorrectionSession(session, scheduleData, submissionMap, extensionMa
     _renderCorrectionTaskCard(
         'corrSpeakingCard',
         'speaking',
-        'Interview ' + session.session,
+        'Interview',
         speakingSub,
         session
     );
@@ -92,7 +92,7 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         if (scheduleData) {
             var extMap = state.extensionMap || {};
             var extHours = extMap[session.session + '_' + taskType] || 0;
-            var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
+            var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
             if (new Date() > dl1) {
                 statusInfo = {
                     text: '마감됨 · 제출 불가',
@@ -207,6 +207,22 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
 // ============================================================
 // 데드라인 계산 함수 (전역 — correction-detail.js에서도 사용)
 // ============================================================
+
+/**
+ * 세션의 기준 시작일 반환
+ *   - 1학기(phase 1): scheduleData.start_date
+ *   - 2학기/연장(phase 2): scheduleData.extension_start_date
+ * 연장 시작일이 없으면 안전하게 start_date로 폴백.
+ * @param {object} scheduleData - correction_schedules 행
+ * @param {object} session - CORRECTION_SCHEDULE 항목
+ * @returns {string} 'YYYY-MM-DD'
+ */
+function getCorrSessionStartDate(scheduleData, session) {
+    if (session && session.phase === 2 && scheduleData && scheduleData.extension_start_date) {
+        return scheduleData.extension_start_date;
+    }
+    return scheduleData ? scheduleData.start_date : null;
+}
 
 /**
  * 1차 Draft 데드라인: sessionDate 다음날 04:00 (학생 타임존 기준)
@@ -350,7 +366,7 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
     // --- feedback1_ready + released_1=true (2차 단계) ---
     if (status === 'feedback1_ready' && released1) {
         rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, extHours);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, extHours);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 2차 마감 초과', cls: 'overdue' });
@@ -385,7 +401,7 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
 
     // --- 미제출 (null) ---
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
+        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
@@ -525,7 +541,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
 
     // 미제출 → 1차 마감 카운트다운
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
+        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 1차 마감 초과</div>';
@@ -542,7 +558,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
 
     // feedback1_ready + released_1 → 2차 마감 카운트다운
     if (status === 'feedback1_ready' && released1) {
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, extHours);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, extHours);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             deadlineEl.innerHTML =

@@ -57,6 +57,57 @@
     margin-top: 2px;
 }
 
+/* ================================================
+   연장(2학기) 탭 — 1~12세션 / 13~24세션
+   연장 활성화된 학생에게만 노출
+   ================================================ */
+.correction-tab-bar {
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+    /* 위: 공유 헤더(margin-bottom 48px)와의 과한 간격을 음수 마진으로 당김 / 아래: Week와 좁게 */
+    margin: -24px 0 12px;
+}
+
+.correction-tab {
+    flex: 0 0 auto;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(148, 128, 197, 0.10);
+    color: #999;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.correction-tab:hover {
+    color: var(--primary, #9480c5);
+}
+
+.correction-tab.active {
+    background: var(--primary, #9480c5);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.25);
+}
+
+/* 주차 블록 사이 간격 (한 주차 카드 줄 ↔ 다음 Week 뱃지) — 첨삭 화면 한정 */
+#correctionScheduleContainer .week-block + .week-block {
+    margin-top: 28px;
+}
+
+/* 첨삭 인터뷰 영상·사진 틀 — 둥근 모서리/그림자 제거 (정규과정 인터뷰엔 영향 없음) */
+#correctionSpeakingScreen .interview-image,
+#correctionSpeakingScreen .interview-video {
+    border-radius: 0;
+    box-shadow: none;
+}
+
 /* 세션 카드 상태 아이콘 */
 .correction-session-card .session-status {
     width: 8px;

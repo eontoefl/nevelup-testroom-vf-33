@@ -60,8 +60,8 @@ async function openCorrectionDetail(taskType, session, submission) {
     // 헤더
     var headerEl = document.getElementById('corrDetailHeader');
     var taskLabel = (taskType === 'writing')
-        ? (session.writing.type === 'email' ? 'Email ' : 'Discussion ') + session.session
-        : 'Interview ' + session.session;
+        ? (session.writing.type === 'email' ? 'Email' : 'Discussion')
+        : 'Interview';
     if (headerEl) headerEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0') + ' · ' + taskLabel;
 
     // 데드라인 배너 (과제 상세)
@@ -621,7 +621,7 @@ function onCorrDetailDraft2Click(taskType) {
     if (scheduleData && submission) {
         var extMap = sessionState.extensionMap || {};
         var extHours = extMap[session.session + '_' + taskType] || 0;
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, submission.feedback_1_at, extHours);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, extHours);
         if (new Date() > dl2) {
             alert('2차 수정 마감이 지났습니다.');
             return;
@@ -712,10 +712,10 @@ function _renderCorrDetailDeadlineBanner(session, submission, taskType) {
 
     if (isDraft2Phase) {
         var feedback1At = submission ? submission.feedback_1_at : null;
-        var dl2 = getCorrDraft2Deadline(scheduleData.start_date, session.dayOffset, feedback1At, extHours);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, feedback1At, extHours);
         renderDeadlineBanner(bannerEl, '2차 마감', dl2);
     } else {
-        var dl1 = getCorrDraft1Deadline(scheduleData.start_date, session.dayOffset, extHours);
+        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
         renderDeadlineBanner(bannerEl, '1차 마감', dl1);
     }
 }

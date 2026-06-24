@@ -44,7 +44,6 @@ async function renderCorrectionSchedule() {
         return;
     }
 
-    var startDate = new Date(scheduleData.start_date + 'T00:00:00');
     var durationWeeks = scheduleData.duration_weeks || 4;
 
     // 2. correction_submissions에서 전체 제출 내역 조회
@@ -93,15 +92,90 @@ async function renderCorrectionSchedule() {
 
     console.log('📋 [Correction] 렌더링 시작 — start_date:', scheduleData.start_date, ', sessions:', schedule.length);
 
-    // 3. 주차별 그룹핑
+    // 연장(2학기) 활성화 여부 / 시작 여부
+    var extEnabled = !!(scheduleData.extension_enabled && scheduleData.extension_start_date);
+    var extStarted = false;
+    if (extEnabled) {
+        var extStart = new Date(scheduleData.extension_start_date + 'T00:00:00');
+        extStarted = (new Date() >= extStart);
+    }
+
+    // 렌더 컨텍스트 (주차 렌더 헬퍼에 전달)
+    var ctx = { scheduleData: scheduleData, submissionMap: submissionMap, extensionMap: extensionMap, durationWeeks: durationWeeks };
+
+    if (!extEnabled) {
+        // ── 연장 OFF: 탭 없이 1~12세션만 렌더 (기존 화면 그대로) ──
+        _renderCorrectionPhase(container, 1, ctx);
+        return;
+    }
+
+    // ── 연장 ON: 탭 2개(1~12세션 / 13~24세션) ──
+    var tabBar = document.createElement('div');
+    tabBar.className = 'correction-tab-bar';
+
+    var tab1 = document.createElement('button');
+    tab1.className = 'correction-tab';
+    tab1.textContent = '1~12세션';
+
+    var tab2 = document.createElement('button');
+    tab2.className = 'correction-tab';
+    tab2.textContent = '13~24세션';
+
+    tabBar.appendChild(tab1);
+    tabBar.appendChild(tab2);
+    container.appendChild(tabBar);
+
+    // 각 탭 패널
+    var panel1 = document.createElement('div');
+    panel1.className = 'correction-tab-panel';
+    var panel2 = document.createElement('div');
+    panel2.className = 'correction-tab-panel';
+
+    _renderCorrectionPhase(panel1, 1, ctx);
+    _renderCorrectionPhase(panel2, 2, ctx);
+
+    container.appendChild(panel1);
+    container.appendChild(panel2);
+
+    function activateTab(which) {
+        var isP2 = (which === 2);
+        tab1.classList.toggle('active', !isP2);
+        tab2.classList.toggle('active', isP2);
+        panel1.style.display = isP2 ? 'none' : 'block';
+        panel2.style.display = isP2 ? 'block' : 'none';
+    }
+
+    tab1.onclick = function() { activateTab(1); };
+    tab2.onclick = function() { activateTab(2); };
+
+    // 기본 탭: 연장 시작일이 지났으면 13~24세션, 아니면 1~12세션
+    activateTab(extStarted ? 2 : 1);
+}
+
+/**
+ * 특정 학기(phase)의 주차 블록들을 targetEl에 렌더
+ * @param {HTMLElement} targetEl
+ * @param {number} phase - 1(1~12세션) | 2(13~24세션)
+ * @param {object} ctx - { scheduleData, submissionMap, extensionMap, durationWeeks }
+ */
+function _renderCorrectionPhase(targetEl, phase, ctx) {
+    var schedule = window.CORRECTION_SCHEDULE;
+    var scheduleData = ctx.scheduleData;
+    var submissionMap = ctx.submissionMap;
+    var extensionMap = ctx.extensionMap;
+    var durationWeeks = ctx.durationWeeks;
+
+    var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+    // 해당 phase 세션만 주차별 그룹핑
     var weeks = {};
     schedule.forEach(function(s) {
-        if (s.week > durationWeeks) return; // duration 초과 세션 제외
+        if ((s.phase || 1) !== phase) return;
+        if (phase === 1 && s.week > durationWeeks) return; // 1학기 duration 초과 제외
         if (!weeks[s.week]) weeks[s.week] = [];
         weeks[s.week].push(s);
     });
 
-    var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     var weekNums = Object.keys(weeks).sort(function(a, b) { return a - b; });
 
     weekNums.forEach(function(weekNum) {
@@ -110,7 +184,6 @@ async function renderCorrectionSchedule() {
         var weekBlock = document.createElement('div');
         weekBlock.className = 'week-block';
 
-        // week-header
         var weekHeader = document.createElement('div');
         weekHeader.className = 'week-header';
 
@@ -124,7 +197,6 @@ async function renderCorrectionSchedule() {
         weekHeader.appendChild(weekTitle);
         weekHeader.appendChild(weekDivider);
 
-        // days-grid (3열)
         var daysGrid = document.createElement('div');
         daysGrid.className = 'days-grid correction-days-grid';
 
@@ -132,17 +204,16 @@ async function renderCorrectionSchedule() {
             var writingLabel = session.writing.type === 'email' ? 'Email' : 'Discussion';
             var taskLabel = writingLabel + ' + Interview';
 
-            // 세션 날짜 계산: startDate + dayOffset
-            var sessionDate = new Date(startDate);
+            // 세션 날짜 계산: (해당 학기 시작일) + dayOffset
+            var baseDateStr = getCorrSessionStartDate(scheduleData, session);
+            var sessionDate = new Date(baseDateStr + 'T00:00:00');
             sessionDate.setDate(sessionDate.getDate() + session.dayOffset);
             var dateStr = monthNames[sessionDate.getMonth()] + ' ' + String(sessionDate.getDate()).padStart(2, '0');
 
-            // 세션 상태 결정 (Writing + Speaking 중 더 낮은 진행도 기준)
             var writingSub = submissionMap[session.session + '_writing'];
             var speakingSub = submissionMap[session.session + '_speaking'];
             var statusInfo = _getSessionStatus(writingSub, speakingSub);
 
-            // 카드 생성 (기존 day-button 패턴 사용)
             var dayButton = document.createElement('button');
             dayButton.className = 'day-button';
             dayButton.setAttribute('data-session', session.session);
@@ -163,7 +234,7 @@ async function renderCorrectionSchedule() {
 
         weekBlock.appendChild(weekHeader);
         weekBlock.appendChild(daysGrid);
-        container.appendChild(weekBlock);
+        targetEl.appendChild(weekBlock);
     });
 }
 
