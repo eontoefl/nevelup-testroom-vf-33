@@ -307,9 +307,9 @@ function renderSelfPacedBadge() {
     badge.insertAdjacentElement('afterend', chip);
 
     let deadlineText = '';
-    if (typeof getSelfPacedExpiry === 'function') {
-        const exp = getSelfPacedExpiry(mpUser);
-        if (exp) deadlineText = ' · 완료 기한 ' + formatStartDate(exp);
+    if (typeof getSelfPacedDeadlineDay === 'function') {
+        const lastDay = getSelfPacedDeadlineDay(mpUser);
+        if (lastDay) deadlineText = ' · 완료 기한 ' + formatStartDate(lastDay);
     }
     const note = document.createElement('span');
     note.id = 'selfPacedNote';
@@ -440,12 +440,12 @@ function renderSummaryCards() {
         const completedC = totalTasksC > 0 ? Math.min(mpV3Results.length, totalTasksC) : mpV3Results.length;
         const remainingC = Math.max(0, totalTasksC - completedC);
         const completePct = totalTasksC > 0 ? Math.round((completedC / totalTasksC) * 100) : 0;
-        const spExpiry = (typeof getSelfPacedExpiry === 'function') ? getSelfPacedExpiry(mpUser) : null;
+        const spLastDay = (typeof getSelfPacedDeadlineDay === 'function') ? getSelfPacedDeadlineDay(mpUser) : null;
         document.getElementById('challengeStatus').textContent = `완료 ${completedC} / ${totalTasksC}개`;
         document.getElementById('challengeBar').style.width = `${completePct}%`;
         document.getElementById('challengeSub').textContent = remainingC > 0 ? `${remainingC}개 남음` : `전체 완료 🎉`;
-        document.getElementById('challengeStartDate').textContent = spExpiry
-            ? `완료 기한: ${formatFullDate(spExpiry)}`
+        document.getElementById('challengeStartDate').textContent = spLastDay
+            ? `완료 기한: ${formatFullDate(spLastDay)}`
             : `시작일: ${formatFullDate(mpUser.startDate)}`;
     } else {
         const dplus = Math.min(Math.floor((today - startDate) / (1000 * 60 * 60 * 24)), totalCalendarDays);

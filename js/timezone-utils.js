@@ -169,20 +169,35 @@ function isDeadlinePassed(deadline) {
 }
 
 /**
- * 자기주도(self-paced) 학생의 완료 기한(만료) 시점 계산
- * 만료 = 시작일 + N주(self_paced_weeks). 마지막날 다음날 04:00 기준(과제 마감과 동일 규칙).
+ * 자기주도 학생이 "마지막으로 풀 수 있는 날" (표시용 날짜)
+ * = 시작일 + N주(self_paced_weeks), 시작 요일과 동일. 이 날은 하루 종일 풀이 가능.
+ *   예) 금요일 시작 + 2주 → 마지막 풀이일 = 2주 뒤 금요일
+ * 실제 잠금은 이 날 "다음날 04:00" → getSelfPacedExpiry() 참고.
  * @param {object} user - selfPaced / selfPacedWeeks / startDate 보유한 유저 객체
- * @param {string} [timezone] - IANA timezone
- * @returns {Date|null} 만료 시점, 자기주도 아니거나 정보 부족 시 null
+ * @returns {Date|null} 마지막 풀이 가능일(로컬 00:00), 정보 부족 시 null
  */
-function getSelfPacedExpiry(user, timezone) {
+function getSelfPacedDeadlineDay(user) {
     if (!user || !user.selfPaced || !user.selfPacedWeeks || !user.startDate) return null;
-    var tz = timezone || getUserTimezone();
     var start = new Date(user.startDate + 'T00:00:00');
     if (isNaN(start.getTime())) return null;
-    // 시작일 + (N주 - 1일) 의 다음날 04:00 = 총 N*7일의 학습 기간
     var lastDay = new Date(start);
-    lastDay.setDate(lastDay.getDate() + (user.selfPacedWeeks * 7) - 1);
+    lastDay.setDate(lastDay.getDate() + (user.selfPacedWeeks * 7));
+    return lastDay;
+}
+
+/**
+ * 자기주도(self-paced) 학생의 완료 기한(만료=잠금) 시점 계산
+ * 잠금 = "마지막 풀이 가능일"의 다음날 04:00 (과제 마감과 동일 규칙).
+ *   예) 금요일 시작 + 2주 → 마지막 풀이일 = 2주 뒤 금요일, 잠금 = 그 다음날(토) 04:00
+ *   → 마지막 풀이일 하루 종일 풀이·기록 가능.
+ * @param {object} user - selfPaced / selfPacedWeeks / startDate 보유한 유저 객체
+ * @param {string} [timezone] - IANA timezone
+ * @returns {Date|null} 만료(잠금) 시점, 자기주도 아니거나 정보 부족 시 null
+ */
+function getSelfPacedExpiry(user, timezone) {
+    var tz = timezone || getUserTimezone();
+    var lastDay = getSelfPacedDeadlineDay(user);
+    if (!lastDay) return null;
     return getTaskDeadline(lastDay, tz);
 }
 
