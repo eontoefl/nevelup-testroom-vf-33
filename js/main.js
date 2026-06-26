@@ -1519,6 +1519,40 @@ async function _loadPracticeTasks(practiceNumber) {
     showPracticeTaskListScreen(practiceNumber, tasks);
 }
 
+// ─── 연습코스 좌우 네비게이션 (Practice 번호 기준, 자유 이동) ───
+var _PRACTICE_NAV_MIN = 1;
+var _PRACTICE_NAV_MAX = 60; // renderPracticeSchedule의 6줄×10개와 일치
+
+function _renderPracticeNavHeader(headerEl, practiceNumber) {
+    var n = parseInt(practiceNumber, 10);
+
+    var prevHtml = '';
+    if (n > _PRACTICE_NAV_MIN) {
+        prevHtml = '<button class="day-nav-btn day-nav-prev" data-practice="' + (n - 1) + '">' +
+            '<i class="fas fa-chevron-left day-nav-arrow"></i>' +
+            '<span class="day-nav-label">P' + String(n - 1).padStart(2, '0') + '</span>' +
+            '</button>';
+    }
+
+    var nextHtml = '';
+    if (n < _PRACTICE_NAV_MAX) {
+        nextHtml = '<button class="day-nav-btn day-nav-next" data-practice="' + (n + 1) + '">' +
+            '<i class="fas fa-chevron-right day-nav-arrow"></i>' +
+            '<span class="day-nav-label">P' + String(n + 1).padStart(2, '0') + '</span>' +
+            '</button>';
+    }
+
+    headerEl.innerHTML = prevHtml +
+        '<span class="day-nav-title">Practice ' + n + '</span>' +
+        nextHtml;
+
+    headerEl.querySelectorAll('.day-nav-btn').forEach(function(btn) {
+        btn.onclick = function() {
+            selectPractice(parseInt(btn.dataset.practice, 10));
+        };
+    });
+}
+
 /**
  * 연습코스 과제 목록 화면 표시
  */
@@ -1549,7 +1583,7 @@ function showPracticeTaskListScreen(practiceNumber, tasks) {
     var subtitle = document.querySelector('#taskListScreen .welcome-header .subtitle');
     
     if (welcomeHeader) {
-        welcomeHeader.textContent = 'Practice ' + practiceNumber;
+        _renderPracticeNavHeader(welcomeHeader, practiceNumber);
     }
     if (subtitle) {
         subtitle.textContent = tasks.length + '개의 과제가 있습니다';
