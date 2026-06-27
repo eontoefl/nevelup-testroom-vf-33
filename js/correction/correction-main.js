@@ -92,6 +92,9 @@ async function renderCorrectionSchedule() {
 
     console.log('📋 [Correction] 렌더링 시작 — start_date:', scheduleData.start_date, ', sessions:', schedule.length);
 
+    // 0. 공지사항 배너 (첨삭 전용 — 메인 코스와 무관)
+    _renderCorrectionNotice(container);
+
     // 연장(2학기) 활성화 여부 / 시작 여부
     var extEnabled = !!(scheduleData.extension_enabled && scheduleData.extension_start_date);
     var extStarted = false;
@@ -273,6 +276,49 @@ function _getSessionStatus(writingSub, speakingSub) {
 
     // 하나라도 진행중이면
     return { dotClass: 'dot-partial', label: '진행중' };
+}
+
+/**
+ * 첨삭 공지사항 배너 렌더링 (FEEDBACK 메인 상단)
+ * @param {HTMLElement} container - correctionScheduleContainer
+ */
+function _renderCorrectionNotice(container) {
+    // TODO: 실제 운영 시 공지 내용/노출 여부는 DB(correction_notices 등)에서 조회
+    var notice = {
+        id: 'upgrade-2026-06-27',
+        title: '첨삭 시스템 업그레이드 안내 (6/27~)',
+        body: '6월 27일(일)부터 첨삭이 한층 강화됩니다. 그동안 누적된 시험 데이터와 채점 결과를 분석해, 더 정확하고 구체적이며 강력한 교습 방식을 새로 적용했어요. 이 과정에서 첨삭 방식과 피드백 형식이 다소 달라질 수 있는데, 모두 여러분의 실력 향상을 위한 변화입니다. 바뀐 방식대로 잘 따라와 주시면 분명 더 빠르게 성장하실 거예요. 응원합니다! 💪',
+        dismissible: true
+    };
+
+    // 사용자가 닫은 공지는 다시 띄우지 않음 (localStorage)
+    try {
+        if (notice.dismissible && localStorage.getItem('corrNoticeDismissed_' + notice.id) === '1') {
+            return;
+        }
+    } catch (e) {}
+
+    var box = document.createElement('div');
+    box.className = 'correction-notice';
+    box.innerHTML =
+        '<i class="fas fa-bullhorn correction-notice-icon"></i>' +
+        '<div class="correction-notice-content">' +
+            '<div class="correction-notice-title">' + notice.title + '</div>' +
+            '<div class="correction-notice-body">' + notice.body + '</div>' +
+        '</div>' +
+        (notice.dismissible
+            ? '<button class="correction-notice-close" title="닫기"><i class="fas fa-times"></i></button>'
+            : '');
+
+    if (notice.dismissible) {
+        var closeBtn = box.querySelector('.correction-notice-close');
+        closeBtn.onclick = function() {
+            try { localStorage.setItem('corrNoticeDismissed_' + notice.id, '1'); } catch (e) {}
+            box.remove();
+        };
+    }
+
+    container.appendChild(box);
 }
 
 // openCorrectionSession()은 js/correction/correction-session.js에서 정의

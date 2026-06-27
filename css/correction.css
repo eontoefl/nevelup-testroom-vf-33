@@ -58,6 +58,61 @@
 }
 
 /* ================================================
+   첨삭 공지사항 배너 (FEEDBACK 메인 상단)
+   ================================================ */
+.correction-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    margin: -24px 0 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f3effa 0%, #ebe6f7 100%);
+    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.12);
+}
+
+.correction-notice-icon {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    font-size: 18px;
+    color: var(--primary-color, #9480c5);
+}
+
+.correction-notice-content {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.correction-notice-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #5b4a86;
+    margin-bottom: 4px;
+}
+
+.correction-notice-body {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #6b6480;
+}
+
+.correction-notice-close {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #a99ec7;
+    font-size: 14px;
+    padding: 2px 4px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.correction-notice-close:hover {
+    color: #5b4a86;
+}
+
+/* ================================================
    연장(2학기) 탭 — 1~12세션 / 13~24세션
    연장 활성화된 학생에게만 노출
    ================================================ */
