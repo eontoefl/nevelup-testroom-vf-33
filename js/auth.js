@@ -124,8 +124,9 @@ async function handleLogin(event) {
             australiaStartDate: programInfo.australiaStartDate || null,  // 호주과정 시작일 (별도)
             practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부
             correctionEnabled: isCorrectionActiveNow(programInfo, userTimezone),  // 첨삭(FEEDBACK): D-1 새벽4시부터 활성화
-            selfPaced: !!programInfo.selfPaced,  // 자기주도(날짜무관) 모드 — 마감 없음, 만료일까지 자유 진행
-            selfPacedWeeks: programInfo.selfPacedWeeks || null,  // 완료 기한(주). 시작일+N주 = 만료일
+            selfPaced: !!programInfo.selfPaced,  // 자기주도 모드
+            selfPacedWeeks: programInfo.selfPacedWeeks || null,  // (구) 완료 기한(주). 시작일+N주 = 만료일
+            selfPacedEndDate: programInfo.selfPacedEndDate || null,  // (v2) 종료일. 있으면 압축+매일마감 모드
             timezone: userTimezone  // 학생별 타임존 (IANA)
         };
         
@@ -422,32 +423,60 @@ function getCurrentUserId() {
  */
 async function _fillMissingAuthRates(userId) {
     try {
-        // 자기주도 학생: 완료 기한(만료) 전에는 마감이 없으므로 자동 50% 확정을 하지 않음
-        // (에러노트를 나중에 해도 100%로 올라갈 수 있어야 함).
-        // 만료 후에는 정규과정과 동일하게 일괄 확정(인증 마감)되도록 통과시킨다.
-        if (typeof currentUser !== 'undefined' && currentUser && currentUser.selfPaced) {
+        var isSp = (typeof currentUser !== 'undefined' && currentUser && currentUser.selfPaced);
+        var isSpV2gate = isSp && (typeof isSelfPacedV2 === 'function') && isSelfPacedV2(currentUser);
+
+        // 자기주도(구 무마감): 만료 전엔 자동 확정 생략(에러노트를 나중에 해도 100% 가능),
+        // 만료 후에는 정규과정과 동일하게 일괄 확정.
+        if (isSp && !isSpV2gate) {
             var spExpired = (typeof isSelfPacedExpired === 'function') && isSelfPacedExpired(currentUser);
             if (!spExpired) {
-                console.log('🔒 [인증률] 자기주도 학생(기한 내) — 자동 확정 생략');
+                console.log('🔒 [인증률] 자기주도(구, 기한 내) — 자동 확정 생략');
                 return;
             }
-            console.log('🔒 [인증률] 자기주도 학생(기한 만료) — 일괄 확정 진행');
+            console.log('🔒 [인증률] 자기주도(구, 기한 만료) — 일괄 확정 진행');
         }
+
+        // v2(압축+매일마감)는 세트별 마감 판정이 필요 → 연장정보 최신화 + week/day 확보.
+        if (isSpV2gate && typeof loadDeadlineExtensions === 'function') {
+            try { await loadDeadlineExtensions(); } catch (e) { /* 무시 */ }
+        }
+        var selectCols = isSpV2gate
+            ? 'id,initial_record,error_note_submitted,week,day'
+            : 'id,initial_record,error_note_submitted';
 
         var rows = await supabaseSelect(
             'study_results_v3',
             'user_id=eq.' + userId
             + '&locked_auth_rate=is.null'
             + '&completed_at=not.is.null'
-            + '&select=id,initial_record,error_note_submitted'
+            + '&select=' + selectCols
         );
 
         if (!rows || rows.length === 0) return;
 
-        console.log('🔒 [인증률] 미확정 ' + rows.length + '건 발견 → 일괄 확정 시작');
+        console.log('🔒 [인증률] 미확정 ' + rows.length + '건 발견 → 확정 검토');
+
+        var tz = (typeof getUserTimezone === 'function') ? getUserTimezone() : undefined;
+        var now = new Date();
+        var frozen = 0;
 
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
+
+            // ★ v2: 이 세트의 배정 날짜 마감이 실제로 지났을 때만 동결.
+            //   아직 안 지난(앞서가는) 세트는 절대 건드리지 않음 → 조기 동결 방지(핵심 안전장치).
+            if (isSpV2gate) {
+                var setDate = (typeof getSelfPacedSetDate === 'function')
+                    ? getSelfPacedSetDate(currentUser, row.week, row.day) : null;
+                if (!setDate) continue; // 매핑 실패 → 건너뜀(표시는 실시간 계산으로 여전히 정확)
+                var dl = getTaskDeadline(setDate, tz);
+                var dStr = setDate.getFullYear() + '-' + String(setDate.getMonth() + 1).padStart(2, '0') + '-' + String(setDate.getDate()).padStart(2, '0');
+                var ext = (window._deadlineExtensions || []).find(function(e) { return e.original_date === dStr; });
+                if (ext) dl = new Date(dl.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+                if (now <= dl) continue; // 아직 마감 전 → 동결 안 함
+            }
+
             var hasInitial = row.initial_record != null;
             var rate = 0;
             if (hasInitial && row.error_note_submitted) {
@@ -459,9 +488,10 @@ async function _fillMissingAuthRates(userId) {
             await supabaseUpdate('study_results_v3', 'id=eq.' + row.id, {
                 locked_auth_rate: rate
             });
+            frozen++;
         }
 
-        console.log('🔒 [인증률] 일괄 확정 완료 (' + rows.length + '건)');
+        console.log('🔒 [인증률] 확정 완료 (' + frozen + '/' + rows.length + '건)');
     } catch (e) {
         console.warn('⚠️ [인증률] 일괄 확정 실패 (무시):', e);
     }

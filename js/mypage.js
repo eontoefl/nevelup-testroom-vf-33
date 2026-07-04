@@ -295,25 +295,28 @@ function renderSelfPacedNextTasks(container, programType, totalWeeks) {
     container.innerHTML = html;
 }
 
-// 자기주도 학생: 프로그램 뱃지 옆 칩 + "마감 없음 · 완료기한" 안내 라인 (표시 전용)
+// 자기주도 학생: 프로그램 뱃지 자체를 SELF-PACED로 표기 + 완료기한 안내 라인 (표시 전용)
 function renderSelfPacedBadge() {
     const badge = document.getElementById('programBadge');
-    if (!badge || document.getElementById('selfPacedChip')) return;
+    if (!badge) return;
 
-    const chip = document.createElement('span');
-    chip.id = 'selfPacedChip';
-    chip.textContent = '🎯 자기주도';
-    chip.style.cssText = 'display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;background:#6c5ce7;color:#fff;font-size:0.78rem;font-weight:700;vertical-align:middle;';
-    badge.insertAdjacentElement('afterend', chip);
+    // 프로그램 뱃지를 'SELF-PACED'로 표기 (Fast/Standard 대체). 별도 칩은 두지 않음.
+    // line 41이 매 렌더마다 원본(mpUser.program)으로 원복하므로 여기서 항상 덮어쓴다.
+    badge.textContent = (mpUser.program || '내벨업챌린지').replace(/Fast|Standard/i, 'SELF-PACED');
 
-    let deadlineText = '';
-    if (typeof getSelfPacedDeadlineDay === 'function') {
-        const lastDay = getSelfPacedDeadlineDay(mpUser);
-        if (lastDay) deadlineText = ' · 완료 기한 ' + formatStartDate(lastDay);
-    }
+    // 완료기한 안내 라인 (중복 append 방지)
+    if (document.getElementById('selfPacedNote')) return;
+
+    const isV2 = (typeof isSelfPacedV2 === 'function') && isSelfPacedV2(mpUser);
+    const lastDay = (typeof getSelfPacedDeadlineDay === 'function') ? getSelfPacedDeadlineDay(mpUser) : null;
+    const deadlineStr = lastDay ? formatStartDate(lastDay) : '';
+
     const note = document.createElement('span');
     note.id = 'selfPacedNote';
-    note.textContent = '⏳ 마감 없이 내 페이스로' + deadlineText;
+    // v2(압축+매일마감)는 '마감 없이' 문구가 틀리므로 완료 기한만 안내. v1(구 무마감)은 기존 문구 유지.
+    note.textContent = isV2
+        ? (deadlineStr ? ('⏳ 완료 기한 ' + deadlineStr) : '⏳ 매일 목표대로 진행')
+        : ('⏳ 마감 없이 내 페이스로' + (deadlineStr ? (' · 완료 기한 ' + deadlineStr) : ''));
     note.style.cssText = 'display:block;margin-top:4px;font-size:0.8rem;color:#6c5ce7;font-weight:600;';
     badge.parentNode.appendChild(note);
 }
@@ -682,21 +685,22 @@ function renderGrass() {
     const now = new Date();
     const levelClasses = ['', 'level-1', 'level-2'];
 
+    const spV2Grass = (typeof isSelfPacedV2 === 'function') && isSelfPacedV2(mpUser);
     document.querySelectorAll(`#${gridId} .g`).forEach(cell => {
         const dayNum = parseInt(cell.dataset.day);
         const order = parseInt(cell.dataset.order);
         const key = `${dayNum}_${order}`;
 
-        // ★ 연장된 셀 테두리 표시
-        const extDeadline = extendedDeadlineMap.get(dayNum);
+        // ★ 연장된 셀 테두리 표시 (v2는 getDeadlineForDayNum이 연장을 직접 반영하므로 맵 미사용)
+        const extDeadline = spV2Grass ? null : extendedDeadlineMap.get(dayNum);
         if (extDeadline) {
             cell.classList.add('extended');
         }
 
-        // ★ 이 칸의 마감 시각 계산 (연장이 있으면 연장 마감, 없으면 기본 마감)
+        // ★ 이 칸의 마감 시각 (연장 반영). v2는 세트 배정 날짜 기준.
         const deadline = extDeadline || getDeadlineForDayNum(dayNum);
-        // 자기주도 학생은 과제별 마감이 없으므로 '마감 지남 → 빨간칸'을 적용하지 않음
-        const isPastDeadline = !mpUser.selfPaced && deadline && now >= deadline;
+        // v1 자기주도(구 무마감)만 빨간칸 제외. v2/정규는 마감 지나면 빨간칸.
+        const isPastDeadline = (!mpUser.selfPaced || spV2Grass) && deadline && now >= deadline;
 
         const level = completedMap.get(key);
 
@@ -719,6 +723,20 @@ function renderGrass() {
  */
 function getDeadlineForDayNum(dayNum) {
     if (!mpUser.startDate) return null;
+
+    // v2 자기주도: dayNum(1-based) = 세트 번호. 계산기가 배정한 날짜의 마감 + 연장 반영.
+    if (typeof isSelfPacedV2 === 'function' && isSelfPacedV2(mpUser)) {
+        const w = Math.floor((dayNum - 1) / 6) + 1;
+        const di = (dayNum - 1) % 6;
+        const sd = (typeof getSelfPacedSetDate === 'function') ? getSelfPacedSetDate(mpUser, w, di) : null;
+        if (!sd) return null;
+        let dl = getTaskDeadline(sd, getUserTimezone());
+        const dStr = sd.getFullYear() + '-' + String(sd.getMonth() + 1).padStart(2, '0') + '-' + String(sd.getDate()).padStart(2, '0');
+        const ext = (mpDeadlineExtensions || []).find(e => e.original_date === dStr);
+        if (ext) dl = new Date(dl.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+        return dl;
+    }
+
     const startDate = new Date(mpUser.startDate + 'T00:00:00');
     if (isNaN(startDate.getTime())) return null;
 
@@ -1000,6 +1018,28 @@ function setupPlanTabs() {
     // 해당 잔디 그리드만 표시 (탭 버튼 없음)
     document.getElementById('grass-fast').style.display = programType === 'fast' ? '' : 'none';
     document.getElementById('grass-standard').style.display = programType === 'standard' ? '' : 'none';
+
+    // 자기주도 v2: 잔디 헤더 'Fast · 4주 과정 · 주 6일'을 자기주도 표기로 교체
+    // (HTML은 정규 학생도 공유하므로 여기서 JS로만 덮어씀. 자기주도는 항상 fast 그리드 사용)
+    if (typeof isSelfPacedV2 === 'function' && isSelfPacedV2(mpUser)) {
+        const gwDesc = document.querySelector('#grass-fast .section-desc');
+        const spSched = (typeof getSelfPacedSchedule === 'function') ? getSelfPacedSchedule(mpUser) : null;
+        if (gwDesc) {
+            if (spSched) {
+                const fmt = d => (d.getMonth() + 1) + '/' + d.getDate();
+                gwDesc.textContent = 'SELF-PACED · ' + fmt(spSched.start) + '~' + fmt(spSched.end) + ' · 총 24세트';
+            } else {
+                gwDesc.textContent = 'SELF-PACED';
+            }
+        }
+        // 격자 라벨도 통일: 행 'Week N' → 'Set (n-5)-(n)', 열 요일(가짜) → 숨김.
+        // gLabels[0]=헤더 자리(빈칸), gLabels[1..4]=Week 1~4
+        const gLabels = document.querySelectorAll('#grass-fast .g-label');
+        for (let i = 1; i <= 4 && i < gLabels.length; i++) {
+            gLabels[i].textContent = 'Set ' + ((i - 1) * 6 + 1) + '-' + (i * 6);
+        }
+        document.querySelectorAll('#grass-fast .g-head').forEach(h => { h.textContent = ''; });
+    }
 
     console.log(`🌱 [MyPage] 출석 잔디: ${programType} 과정 표시`);
 }

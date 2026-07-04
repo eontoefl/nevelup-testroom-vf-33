@@ -60,11 +60,33 @@ function isTaskDeadlinePassed() {
         return false;
     }
 
-    // 자기주도 학생: 과제별 마감 없음. 단, 완료 기한(만료) 후에는 인증 마감(복습만 가능).
-    // → 만료 전 false(자유 진행), 만료 후 true(기존 '마감 지남' 동작 재사용)
+    // 자기주도 학생
     if (user.selfPaced) {
+        // v2(압축+매일마감): 세트별 배정 날짜로 마감 판정 — fast/standard와 동일 규칙(연장 포함).
+        if (typeof isSelfPacedV2 === 'function' && isSelfPacedV2(user)) {
+            var spSetDate = (typeof getSelfPacedSetDate === 'function')
+                ? getSelfPacedSetDate(user, ct.currentWeek, ct.currentDay) : null;
+            if (!spSetDate) {
+                console.log('⏰ [마감] 자기주도 v2 — 세트 날짜 계산 불가 → 통과');
+                return false;
+            }
+            var spTz = getUserTimezone();
+            var spDeadline = getTaskDeadline(spSetDate, spTz);
+            // ★ 연장 체크 (배정 날짜 기준) — 정규과정과 동일
+            var spDateStr = spSetDate.getFullYear() + '-' +
+                String(spSetDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(spSetDate.getDate()).padStart(2, '0');
+            var spExt = (window._deadlineExtensions || []).find(function(e) { return e.original_date === spDateStr; });
+            if (spExt) {
+                spDeadline = new Date(spDeadline.getTime() + (spExt.extra_days || 1) * 24 * 60 * 60 * 1000);
+            }
+            var spPassed = new Date() > spDeadline;
+            console.log('⏰ [마감] 자기주도 v2 — 세트마감:', spDeadline.toLocaleString(), '→', spPassed ? '마감지남' : 'OK');
+            return spPassed;
+        }
+        // v1(구 무마감): 과제별 마감 없음. 만료(완료 기한) 후에만 인증 마감(복습만 가능).
         var spExpired = (typeof isSelfPacedExpired === 'function') && isSelfPacedExpired(user);
-        console.log('⏰ [마감] 자기주도 학생 — 만료여부:', spExpired);
+        console.log('⏰ [마감] 자기주도(구) — 만료여부:', spExpired);
         return spExpired;
     }
 

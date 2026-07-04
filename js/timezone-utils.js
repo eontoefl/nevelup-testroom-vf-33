@@ -177,7 +177,14 @@ function isDeadlinePassed(deadline) {
  * @returns {Date|null} 마지막 풀이 가능일(로컬 00:00), 정보 부족 시 null
  */
 function getSelfPacedDeadlineDay(user) {
-    if (!user || !user.selfPaced || !user.selfPacedWeeks || !user.startDate) return null;
+    if (!user || !user.selfPaced || !user.startDate) return null;
+    // v2(압축+매일마감): 종료일이 직접 지정돼 있으면 그 날짜가 마지막 풀이 가능일.
+    if (user.selfPacedEndDate) {
+        var end = new Date(user.selfPacedEndDate + 'T00:00:00');
+        return isNaN(end.getTime()) ? null : end;
+    }
+    // v1(구 무마감): 시작일 + N주.
+    if (!user.selfPacedWeeks) return null;
     var start = new Date(user.startDate + 'T00:00:00');
     if (isNaN(start.getTime())) return null;
     var lastDay = new Date(start);
@@ -211,6 +218,121 @@ function isSelfPacedExpired(user, timezone) {
     var expiry = getSelfPacedExpiry(user, timezone);
     if (!expiry) return false;
     return new Date() >= expiry;
+}
+
+// ================================================================
+// 자기주도 v2 — 압축 일정 계산기 (Set → 배정 날짜)
+// gate = 종료일(selfPacedEndDate)이 있으면 v2. 없으면 구(무마감) 방식.
+// 자기주도는 항상 fast 24세트 고정. 슬롯 순서 = 주1~4 × [일,월,화,수,목,금].
+// 이 계산기가 카드 날짜 / 오늘 강조 / 세트별 마감 / 인증률 동결의 단일 진실원.
+// ================================================================
+
+var SELF_PACED_SET_COUNT = 24;
+var SELF_PACED_DAYS_PER_WEEK = 6;
+
+/**
+ * v2(압축+매일마감) 모드 여부 = 자기주도 + 종료일 + 시작일이 모두 있을 때.
+ * @param {object} user
+ * @returns {boolean}
+ */
+function isSelfPacedV2(user) {
+    return !!(user && user.selfPaced && user.selfPacedEndDate && user.startDate);
+}
+
+/** 요일 표기(한글/영문/숫자)를 0(일)~5(금) 인덱스로 정규화. 알 수 없으면 null. */
+function _selfPacedDayIndex(day) {
+    if (typeof day === 'number') return (day >= 0 && day <= 5) ? day : null;
+    var kr = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5 };
+    var en = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5 };
+    if (day == null) return null;
+    if (kr[day] != null) return kr[day];
+    var low = String(day).toLowerCase();
+    return (en[low] != null) ? en[low] : null;
+}
+
+/**
+ * v2 자기주도 일정표 계산 (순수 함수, 부수효과 없음).
+ * 24개 세트를 시작일~종료일(양끝 포함)에 균등 분배. 무거운 날(2세트)은 고르게 흩뿌리고
+ * 마지막 날은 가능하면 가볍게(1세트). 종료일이 시작일보다 앞이면 null.
+ * @param {object} user - selfPaced / selfPacedEndDate / startDate 보유
+ * @returns {{dates: Date[], counts: number[], start: Date, end: Date, days: number}|null}
+ */
+function getSelfPacedSchedule(user) {
+    if (!isSelfPacedV2(user)) return null;
+    var start = new Date(user.startDate + 'T00:00:00');
+    var end = new Date(user.selfPacedEndDate + 'T00:00:00');
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+
+    var D = Math.floor((end - start) / 86400000) + 1; // 양끝 포함 일수
+    if (D < 1) return null; // 종료일 < 시작일 → 방어
+
+    var N = SELF_PACED_SET_COUNT;
+    var base = Math.floor(N / D);
+    var extra = N - base * D; // (base+1)개인 날 수
+    var counts = [];
+    var i;
+    for (i = 0; i < D; i++) counts.push(base);
+    if (extra > 0) {
+        // 마지막 날을 가볍게 두기 위해 무거운 날을 앞쪽 (D-1)일에 균등 분산.
+        var span = (extra <= D - 1) ? (D - 1) : D;
+        for (var k = 0; k < extra; k++) {
+            var idx = Math.floor((k + 0.5) * span / extra);
+            if (idx > D - 1) idx = D - 1;
+            counts[idx] += 1;
+        }
+    }
+
+    // 세트 인덱스(0-based) → 배정 날짜
+    var dates = [];
+    var setCounter = 0;
+    for (i = 0; i < D && setCounter < N; i++) {
+        var d = new Date(start);
+        d.setDate(d.getDate() + i);
+        for (var j = 0; j < counts[i] && setCounter < N; j++) {
+            dates.push(d);
+            setCounter++;
+        }
+    }
+    return { dates: dates, counts: counts, start: start, end: end, days: D };
+}
+
+/**
+ * 특정 세트(주,요일)의 배정 날짜. v2가 아니거나 정보 부족 시 null.
+ * @param {object} user
+ * @param {number} week - 1~4
+ * @param {string|number} day - 한글/영문 요일 또는 0~5
+ * @returns {Date|null}
+ */
+function getSelfPacedSetDate(user, week, day) {
+    var sched = getSelfPacedSchedule(user);
+    if (!sched || !week) return null;
+    var di = _selfPacedDayIndex(day);
+    if (di == null) return null;
+    var setIndex = (week - 1) * SELF_PACED_DAYS_PER_WEEK + di; // 0-based
+    if (setIndex < 0 || setIndex >= sched.dates.length) return null;
+    return sched.dates[setIndex];
+}
+
+/**
+ * 오늘(유효 오늘) 배정된 세트들의 1-based 인덱스 목록 (오늘 카드 강조용).
+ * @param {object} user
+ * @param {string} [timezone]
+ * @returns {number[]}
+ */
+function getSelfPacedTodaySets(user, timezone) {
+    var sched = getSelfPacedSchedule(user);
+    if (!sched) return [];
+    var tz = timezone || getUserTimezone();
+    var today = getEffectiveToday(tz);
+    today.setHours(0, 0, 0, 0);
+    var todayMs = today.getTime();
+    var out = [];
+    for (var s = 0; s < sched.dates.length; s++) {
+        var dd = new Date(sched.dates[s]);
+        dd.setHours(0, 0, 0, 0);
+        if (dd.getTime() === todayMs) out.push(s + 1);
+    }
+    return out;
 }
 
 /**

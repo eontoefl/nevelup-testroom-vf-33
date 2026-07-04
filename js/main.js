@@ -43,19 +43,16 @@ function initScheduleScreen() {
     }
     
     if (programBadgeElement) {
-        programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 Australia - ', 'AUS - ').replace('내벨업챌린지 - ', '');
-
-        // 자기주도 학생: 프로그램 뱃지 옆 '🎯 자기주도' 칩 (표시 전용)
-        var spChip = document.getElementById('selfPacedChipSchedule');
-        if (currentUser.selfPaced && !spChip) {
-            spChip = document.createElement('span');
-            spChip.id = 'selfPacedChipSchedule';
-            spChip.textContent = '🎯 자기주도';
-            spChip.style.cssText = 'display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;background:#6c5ce7;color:#fff;font-size:0.78rem;font-weight:700;vertical-align:middle;';
-            programBadgeElement.insertAdjacentElement('afterend', spChip);
-        } else if (!currentUser.selfPaced && spChip) {
-            spChip.remove();
+        // 자기주도: 기존 프로그램 뱃지를 그대로 재활용하되 'SELF-PACED'로 표기.
+        if (currentUser.selfPaced) {
+            programBadgeElement.textContent = 'SELF-PACED';
+        } else {
+            programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 Australia - ', 'AUS - ').replace('내벨업챌린지 - ', '');
         }
+
+        // (구) 별도 '🎯 자기주도' 칩은 뱃지 자체가 SELF-PACED를 표기하므로 제거.
+        var spChip = document.getElementById('selfPacedChipSchedule');
+        if (spChip) spChip.remove();
     }
 
     // 코스 모드에 따라 적절한 렌더링
@@ -1258,9 +1255,13 @@ function renderSchedule(program) {
     
     // startDate 기반 날짜 계산
     const startDate = currentUser && currentUser.startDate ? new Date(currentUser.startDate + 'T00:00:00') : null;
-    
+
     // 월 영문 약어
     const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+    // 자기주도 v2: 세트별 배정 날짜(계산기) + 오늘 배정 세트(강조용)
+    const isSpV2 = (typeof isSelfPacedV2 === 'function') && isSelfPacedV2(currentUser);
+    const spTodaySets = (isSpV2 && typeof getSelfPacedTodaySets === 'function') ? getSelfPacedTodaySets(currentUser) : [];
     
     for (let week = 1; week <= totalWeeks; week++) {
         const weekBlock = document.createElement('div');
@@ -1272,7 +1273,9 @@ function renderSchedule(program) {
         
         const weekTitle = document.createElement('h2');
         weekTitle.className = 'week-title';
-        weekTitle.textContent = `Week ${String(week).padStart(2, '0')}`;
+        weekTitle.textContent = isSpV2
+            ? `Set ${(week - 1) * 6 + 1}-${week * 6}`
+            : `Week ${String(week).padStart(2, '0')}`;
         
         const weekDivider = document.createElement('div');
         weekDivider.className = 'week-divider';
@@ -1306,10 +1309,18 @@ function renderSchedule(program) {
                 selectDay(week, dayKr, dayEn);
             };
             
-            // 날짜 계산: startDate + (week-1)*7 + dayIndex
-            // 자기주도 학생은 실제 진행일이 캘린더와 무관하므로 (실제와 안 맞는) 가짜 날짜를 표시하지 않음
+            // 세트 번호 (자기주도 v2: fast 24세트 고정 = 주×6 + 요일오프셋 + 1)
+            const setNo = (week - 1) * 6 + dayIndex + 1;
+
+            // 날짜 계산
+            // - v2 자기주도: 계산기가 배정한 실제 날짜
+            // - 정규: startDate + (week-1)*7 + dayIndex
+            // - v1 자기주도(구 무마감): 실제와 안 맞는 가짜 날짜라 숨김
             let dateStr = '';
-            if (startDate && !(currentUser && currentUser.selfPaced)) {
+            if (isSpV2) {
+                const sd = (typeof getSelfPacedSetDate === 'function') ? getSelfPacedSetDate(currentUser, week, dayKr) : null;
+                if (sd) dateStr = `${monthNames[sd.getMonth()]} ${String(sd.getDate()).padStart(2, '0')}`;
+            } else if (startDate && !(currentUser && currentUser.selfPaced)) {
                 const d = new Date(startDate);
                 d.setDate(d.getDate() + (week - 1) * 7 + dayIndex);
                 dateStr = `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
@@ -1329,14 +1340,19 @@ function renderSchedule(program) {
                 }
             }
             
-            // 자기주도 학생은 날짜가 없으므로 빈 .day-tasks를 아예 렌더하지 않음
-            // → 버튼이 이미 중앙정렬(center)이라 요일+점이 자동으로 중앙에 옴
-            const dateSpanHtml = (currentUser && currentUser.selfPaced) ? '' : `<span class="day-tasks">${dateStr}</span>`;
+            // v2 자기주도는 계산기 날짜를 보여줌. v1(구 무마감)만 날짜를 숨김.
+            const dateSpanHtml = (currentUser && currentUser.selfPaced && !isSpV2) ? '' : `<span class="day-tasks">${dateStr}</span>`;
+            const dayLabel = isSpV2 ? ('Set ' + setNo) : dayEnShort[dayKr];
             dayButton.innerHTML = `
-                <span class="day-name">${dayEnShort[dayKr]}</span>
+                <span class="day-name">${dayLabel}</span>
                 <div class="progress-dot ${dotClass}"></div>
                 ${dateSpanHtml}
             `;
+
+            // v2: 오늘 배정된 세트 카드 강조 (레이아웃 안 밀리게 box-shadow 링)
+            if (isSpV2 && spTodaySets.indexOf(setNo) !== -1) {
+                dayButton.style.boxShadow = '0 0 0 2px #6c5ce7';
+            }
             
             // 휴무일인 경우 스타일 변경
             if (tasks.length === 0) {
