@@ -411,7 +411,7 @@ function _showMemoScreen(dayData, topicIndex) {
             '<textarea id="bsMemoTextarea" placeholder="떠올린 아이디어를 자유롭게 적어보세요..." ' +
                 'style="width:100%;min-height:160px;box-sizing:border-box;border:1.5px solid #ddd;border-radius:12px;padding:14px;font-size:15px;line-height:1.6;resize:vertical;font-family:inherit;">' + _escapeHtml(existing) + '</textarea>' +
             '<div style="text-align:right;font-size:13px;color:#999;margin:6px 2px 18px;"><span id="bsMemoCount">0</span>자</div>' +
-            '<button id="bsMemoSaveBtn" style="width:100%;padding:14px;border-radius:10px;border:none;background:#5B4A9E;font-size:15px;font-weight:700;color:#fff;cursor:pointer;">저장하고 계속</button>' +
+            '<button id="bsMemoSaveBtn" style="width:100%;padding:14px;border-radius:10px;border:none;background:#5B4A9E;font-size:15px;font-weight:700;color:#fff;cursor:pointer;">메모 제출하고 계속</button>' +
             '<div style="text-align:center;margin-top:14px;">' +
                 '<button id="bsMemoSkipBtn" style="background:none;border:none;color:#9ca3af;font-size:13px;text-decoration:underline;cursor:pointer;padding:4px;">나중에 쓸게요</button>' +
             '</div>' +
@@ -439,7 +439,7 @@ function _showMemoScreen(dayData, topicIndex) {
         var text = ta.value.trim();
         if (text.length < BS_MEMO_MIN) return;
         saveBtn.disabled = true;
-        saveBtn.textContent = '저장 중...';
+        saveBtn.textContent = '제출 중...';
         await _saveBrainstormMemo(topicIndex, text);
         _afterTopic(dayData, topicIndex);
     };
