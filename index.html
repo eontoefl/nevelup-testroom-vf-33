@@ -2617,9 +2617,24 @@
                     <div class="repeat-intro-note">
                         No time for preparation will be provided.
                     </div>
+
+                    <!-- ★ 직접 녹음 안내 (인터뷰 전용) -->
+                    <div style="margin: 24px auto 0; max-width: 560px; padding: 20px 24px; background: #fff4f4; border-radius: 14px; text-align: center;">
+                        <p style="font-size: 19px; font-weight: 800; color: #c62828; margin: 0 0 14px;">
+                            🎙️ 답변 녹음 안내
+                        </p>
+                        <p style="font-size: 15px; color: #444; margin: 0 0 14px; line-height: 1.75;">
+                            사이트에서 자동으로 녹음이 되지 않습니다.<br>
+                            브라우저 녹음이 아닌, <b style="color:#c62828; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px;">휴대폰 녹음 기능으로 직접 녹음</b>해 주세요.
+                        </p>
+                        <p style="font-size: 15px; color: #444; margin: 0; line-height: 1.75;">
+                            질문은 총 4개이며, 한 번에 이어서 답변하는 방식이 아닙니다.<br>
+                            각 질문마다 45초씩, 질문별로 각각 답변을 녹음한 뒤 제출해 주세요.
+                        </p>
+                    </div>
                 </div>
             </div>
-            
+
             <!-- 첫 번째 화면: 상황 설명 -->
             <div id="interviewContextScreen" class="interview-context-screen" style="display: none;">
                 <p id="interviewContextText" class="interview-context-text"></p>
@@ -2680,10 +2695,9 @@
             
             <!-- 저장 팝업 -->
             <div id="interviewSavingPopup" class="repeat-saving-popup" style="display: none;">
-                <h3>Stop Speaking</h3>
-                <p>Response time has ended.</p>
-                <p>Please wait.</p>
-                <p>We are currently saving your response.</p>
+                <h3>답변 시간 종료</h3>
+                <p>방금 답변을 <b>직접 녹음</b>했는지 확인해 주세요.</p>
+                <p>잠시 후 다음 질문으로 넘어갑니다.</p>
             </div>
             
             <!-- 로딩 화면 -->
