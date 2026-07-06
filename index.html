@@ -447,6 +447,71 @@
             check:    { emoji: '✅', bg: '#f0fdf4', titleColor: '#16a34a', textColor: '#166534', glow: false }
         };
 
+        // "다시 보지 않기"로 숨긴 공지 id 목록 (localStorage 저장)
+        function getHiddenNotices() {
+            try { return JSON.parse(localStorage.getItem('tr_hidden_notices') || '[]'); }
+            catch (e) { return []; }
+        }
+
+        // 한 번이라도 펼쳐본(=읽은) 공지 id 목록 — N 뱃지 표시 여부용
+        function getSeenNotices() {
+            try { return JSON.parse(localStorage.getItem('tr_seen_notices') || '[]'); }
+            catch (e) { return []; }
+        }
+
+        function markNoticeSeen(id) {
+            const seen = getSeenNotices();
+            if (!seen.includes(id)) {
+                seen.push(id);
+                try { localStorage.setItem('tr_seen_notices', JSON.stringify(seen)); } catch (e) {}
+            }
+        }
+
+        // 공지 컨테이너에 남은 공지가 없으면 통째로 숨김
+        function hideNoticeContainerIfEmpty() {
+            const listEl = document.getElementById('noticeList');
+            const box = document.getElementById('noticeContainer');
+            if (listEl && box && listEl.children.length === 0) box.style.display = 'none';
+        }
+
+        // 제목 줄 클릭 — 내용 펼치기/접기
+        function toggleNotice(headEl) {
+            const item = headEl.closest('.notice-item');
+            if (!item) return;
+            item.classList.toggle('collapsed');
+            const collapsed = item.classList.contains('collapsed');
+
+            const chev = item.querySelector('.notice-chevron');
+            if (chev) chev.textContent = collapsed ? '▾' : '▴';
+
+            // 펼치면 읽은 것으로 처리 → N 뱃지 제거
+            if (!collapsed) {
+                markNoticeSeen(item.getAttribute('data-notice-id'));
+                const badge = item.querySelector('.notice-badge');
+                if (badge) badge.remove();
+            }
+        }
+
+        // 닫기(×) — 이번만 숨김 (새로고침하면 다시 보임)
+        function closeNotice(ev, btn) {
+            if (ev) ev.stopPropagation();   // 제목 클릭(토글)로 전파 방지
+            const item = btn.closest('.notice-item');
+            if (item) item.remove();
+            hideNoticeContainerIfEmpty();
+        }
+
+        // 다시 보지 않기 — 영구 숨김 (localStorage에 기록)
+        function dismissNotice(btn, id) {
+            const hidden = getHiddenNotices();
+            if (!hidden.includes(id)) {
+                hidden.push(id);
+                try { localStorage.setItem('tr_hidden_notices', JSON.stringify(hidden)); } catch (e) {}
+            }
+            const item = btn.closest('.notice-item');
+            if (item) item.remove();
+            hideNoticeContainerIfEmpty();
+        }
+
         // Supabase에서 공지사항 로드
         async function loadNotices() {
             const listEl = document.getElementById('noticeList');
@@ -468,7 +533,11 @@
 
                 const notices = await supabaseSelect('tr_notices', 'is_active=eq.true&order=sort_order.asc');
 
-                if (!notices || notices.length === 0) {
+                // "다시 보지 않기"로 영구 숨김한 공지 제외
+                const hidden = getHiddenNotices();
+                const visible = (notices || []).filter(n => !hidden.includes(n.id));
+
+                if (visible.length === 0) {
                     document.getElementById('noticeContainer').style.display = 'none';
                     return;
                 }
@@ -476,18 +545,34 @@
                 // 공지가 있으면 컨테이너 표시 (이전에 숨겨졌을 수 있으므로)
                 document.getElementById('noticeContainer').style.display = '';
 
-                listEl.innerHTML = notices.map(n => {
+                const seen = getSeenNotices();
+                listEl.innerHTML = visible.map(n => {
                     const s = NOTICE_STYLES[n.type] || NOTICE_STYLES.notice;
                     const glowStyle = s.glow ? 'animation:noticeGlow 2s ease-in-out infinite;' : '';
+                    const isNew = !seen.includes(n.id);
                     return `
-                        <div class="notice-item" style="background:${s.bg}; ${glowStyle}">
-                            <div class="notice-item-tag" style="color:${s.titleColor};">${s.emoji} ${n.title}</div>
-                            <div class="notice-item-content" style="color:${s.textColor};">${n.content}</div>
+                        <div class="notice-item collapsed" data-notice-id="${n.id}" style="background:${s.bg}; ${glowStyle}">
+                            <div class="notice-item-head" onclick="toggleNotice(this)">
+                                <div class="notice-item-tag" style="color:${s.titleColor};">
+                                    ${s.emoji} ${n.title}
+                                    ${isNew ? '<span class="notice-badge">N</span>' : ''}
+                                </div>
+                                <div class="notice-head-right">
+                                    <span class="notice-chevron" style="color:${s.titleColor};">▾</span>
+                                    <button class="notice-close-x" title="닫기" onclick="closeNotice(event, this)" style="color:${s.titleColor};">&times;</button>
+                                </div>
+                            </div>
+                            <div class="notice-item-body">
+                                <div class="notice-item-content" style="color:${s.textColor};">${n.content}</div>
+                                <div class="notice-item-actions">
+                                    <button class="notice-action-btn" onclick="dismissNotice(this, '${n.id}')" style="color:${s.textColor};">다시 보지 않기</button>
+                                </div>
+                            </div>
                         </div>
                     `;
                 }).join('');
 
-                console.log(`📢 공지사항 ${notices.length}개 로드 완료`);
+                console.log(`📢 공지사항 ${visible.length}개 로드 완료`);
             } catch (e) {
                 console.warn('⚠️ 공지사항 로드 실패:', e.message);
                 document.getElementById('noticeContainer').style.display = 'none';

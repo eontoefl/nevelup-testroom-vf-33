@@ -3,19 +3,13 @@
 /* (헤더 없이 흰 컨테이너 + 아이템) */
 /* ============================= */
 
-/* 컨테이너 */
+/* 컨테이너 — 바깥 상자 없이 배경 위에 카드가 바로 뜨도록 */
 #noticeContainer {
-    background-color: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px -5px rgba(148, 128, 197, 0.12),
-                0 4px 12px -2px rgba(0, 0, 0, 0.04);
-    overflow: hidden;
     margin-bottom: 2rem;
 }
 
 /* 리스트 — 가로 배치 (여러 공지를 한 줄에 나열) */
 #noticeList {
-    padding: 16px;
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
@@ -23,14 +17,14 @@
 
 /* 공지 아이템 (JS 동적 생성) */
 .notice-item {
-    border-radius: 12px;
-    padding: 14px;
+    border-radius: 14px;
+    padding: 20px 22px;
     font-size: 0.9rem;
-    line-height: 1.5;
+    line-height: 1.6;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     border: none;
     flex: 1 1 250px;
     min-width: 200px;
@@ -41,13 +35,102 @@
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.04);
 }
 
+/* 제목 줄 (클릭하면 펼치기/접기) */
+.notice-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+}
+
 .notice-item-tag {
-    font-size: 0.75rem;
+    font-size: 1.05rem;
     font-weight: 800;
-    text-transform: uppercase;
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+/* N 뱃지 — 새로 나온(안 읽은) 공지 표시 */
+.notice-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    margin-left: 4px;
+    border-radius: 9px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* 제목 오른쪽 컨트롤 (펼침 화살표 + 닫기 ×) */
+.notice-head-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.notice-chevron {
+    font-size: 1.1rem;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+.notice-close-x {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.5;
+    padding: 0 2px;
+    transition: opacity 0.15s ease;
+}
+
+.notice-close-x:hover {
+    opacity: 1;
+}
+
+/* 본문 영역 (접혔을 때 숨김) */
+.notice-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notice-item.collapsed .notice-item-body {
+    display: none;
+}
+
+/* 다시 보지 않기 — 본문 아래 오른쪽 */
+.notice-item-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-top: 8px;
+}
+
+.notice-action-btn {
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    opacity: 0.65;
+    padding: 0;
+    transition: opacity 0.15s ease;
+}
+
+.notice-action-btn:hover {
+    opacity: 1;
+    text-decoration: underline;
 }
 
 .notice-item-content {
