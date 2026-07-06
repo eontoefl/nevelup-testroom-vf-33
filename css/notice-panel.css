@@ -54,6 +54,7 @@
     font-weight: 600;
     color: #1a1a1a;
     word-break: keep-all;
+    white-space: pre-line;
 }
 
 /* 모바일 — 공지 아이템 세로 배치 */
