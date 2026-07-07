@@ -289,25 +289,24 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: #ffffff;
-    border-radius: 6px;
-    margin: 0;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(148, 128, 197, 0.08);
+    border-radius: 12px;
+    margin: 0 0 14px;
 }
 
 .explain-memo-status i {
-    color: #8B7BAE;
+    color: var(--primary-color);
     font-size: 14px;
     flex-shrink: 0;
 }
 
 .explain-memo-status p {
     font-size: 13px;
-    color: #666666;
-    line-height: 1.4;
+    font-weight: 500;
+    color: #5c6878;
+    line-height: 1.5;
     margin: 0;
     text-align: left;
 }
@@ -326,7 +325,7 @@
     height: 100%;
     flex: 1;
     min-height: 180px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: none;
     border-radius: 16px;
     padding: 16px;
     font-size: 15px;
@@ -336,32 +335,31 @@
     background: #ffffff;
     resize: none;
     outline: none;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
-    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.2s;
 }
 
 .explain-memo-textarea:focus {
-    background: #ffffff;
-    border-color: rgba(148, 128, 197, 0.4);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04), 0 0 8px rgba(148, 128, 197, 0.25);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 0 0 2px rgba(148, 128, 197, 0.55);
 }
 
 .explain-memo-textarea::placeholder {
-    color: var(--text-secondary);
+    color: #94a3b8;
     font-size: 13px;
 }
 
 .explain-memo-textarea:disabled {
-    background: #f1f2f3;
+    background: #eef0f3;
     color: var(--text-secondary);
     cursor: not-allowed;
+    box-shadow: none;
 }
 
 /* 하단 정보 */
 .explain-memo-footer {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     gap: 12px;
     padding: 12px 0 0;
     flex-shrink: 0;
@@ -381,21 +379,32 @@
 
 .explain-memo-word-count {
     font-size: 12px;
-    color: var(--text-secondary);
+    font-weight: 600;
+    color: #94a3b8;
+    background: #eef0f3;
+    padding: 4px 11px;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+    transition: background 0.2s, color 0.2s;
+}
+
+.explain-memo-word-count.is-valid {
+    color: #ffffff;
+    background: var(--success-color);
 }
 
 .explain-memo-submit-btn {
     padding: 10px 24px;
-    background: #9480c5;
+    background: linear-gradient(135deg, #9480c5 0%, #a692d6 100%);
     color: #fff;
     border: none;
     border-radius: 12px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
     font-family: inherit;
-    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.2);
+    box-shadow: 0 4px 12px rgba(148, 128, 197, 0.25);
 }
 
 .explain-memo-submit-btn:hover:not(:disabled) {
@@ -416,30 +425,221 @@
 /* ============================= */
 
 .explain-speaking-file-area {
-    padding: 16px 20px;
-    border-top: 1px solid var(--border-color);
+    padding: 18px 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    margin-top: 12px;
     flex-shrink: 0;
 }
 
-.explain-speaking-file-header {
+/* ── 헤더: 제목 + 진행 카운터 ── */
+.esf-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.esf-head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.esf-title {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 10px;
+    letter-spacing: -0.01em;
 }
 
-.explain-speaking-file-area input[type="file"] {
-    width: 100%;
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--text-primary);
-}
-
-.explain-speaking-file-msg {
+.esf-sub {
     font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    margin: 8px 0 0;
+    font-weight: 500;
+    color: #94a3b8;
+}
+
+.esf-count {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary-color);
+    background: rgba(148, 128, 197, 0.12);
+    padding: 4px 11px;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+    transition: background 0.2s, color 0.2s;
+}
+
+.esf-count.is-complete {
+    color: #ffffff;
+    background: var(--success-color);
+}
+
+/* ── 다시풀기 탭 안내문 ── */
+.esf-note {
+    font-size: 12.5px;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ── 슬롯 리스트 ── */
+.esf-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.esf-slot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f6f7f9;
+    border-radius: 14px;
+    transition: background 0.2s;
+}
+
+.esf-slot.is-filled {
+    background: rgba(119, 191, 126, 0.10);
+}
+
+.esf-slot.is-locked {
+    opacity: 0.75;
+}
+
+/* 번호 뱃지 */
+.esf-num {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-color);
+    background: rgba(148, 128, 197, 0.14);
+    transition: background 0.2s, color 0.2s;
+}
+
+.esf-slot.is-filled .esf-num {
+    color: #ffffff;
+    background: var(--success-color);
+}
+
+/* 슬롯 본문 (제목 + 힌트) */
+.esf-slot-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.esf-slot-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.esf-slot-hint {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.esf-slot.is-filled .esf-slot-hint {
+    color: #5a9e61;
+}
+
+/* 네이티브 인풋 숨김 → 라벨을 커스텀 버튼으로 */
+.esf-native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.esf-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(148, 128, 197, 0.12);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.esf-btn:hover {
+    background: rgba(148, 128, 197, 0.22);
+}
+
+.esf-btn:active {
+    transform: scale(0.97);
+}
+
+.esf-btn-icon {
+    opacity: 0.9;
+}
+
+.esf-slot.is-filled .esf-btn {
+    color: #5a9e61;
+    background: rgba(119, 191, 126, 0.16);
+}
+
+.esf-slot.is-filled .esf-btn:hover {
+    background: rgba(119, 191, 126, 0.26);
+}
+
+/* 마감 잠금 아이콘 */
+.esf-lock {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    color: #94a3b8;
+}
+
+/* 카드 하단 최종 제출 버튼 존 */
+.esf-submit-zone:empty {
+    display: none;
+}
+
+.esf-submit-zone {
+    margin-top: 16px;
+}
+
+.esf-submit-zone .explain-memo-submit-btn {
+    width: 100%;
+    padding: 13px 24px;
+    border-radius: 12px;
+}
+
+@media (max-width: 480px) {
+    .esf-slot {
+        flex-wrap: wrap;
+    }
+    .esf-btn {
+        margin-left: 38px;
+    }
 }
 
 /* ============================= */

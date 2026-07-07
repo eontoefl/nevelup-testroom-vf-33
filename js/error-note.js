@@ -170,6 +170,10 @@ var ErrorNote = {
         var fileArea = document.getElementById('explainSpeakingFileArea');
         if (!fileArea) return;
 
+        // 제출 버튼을 항상 먼저 푸터로 복귀 (이전 스피킹 렌더에서 카드로 옮겼을 수 있음)
+        // → fileArea.innerHTML 갱신 시 버튼이 파괴되는 것을 방지
+        this._restoreSubmitButtonHome();
+
         var isSpeaking = this._sectionType === 'speaking';
         var isInitialTab = this._activeTab === 'initial';
         var deadlinePassed = window._deadlinePassedMode || false;
@@ -187,8 +191,9 @@ var ErrorNote = {
         // 다시풀기 탭 → 안내만
         if (!isInitialTab) {
             fileArea.style.display = 'block';
-            fileArea.innerHTML = '<div class="explain-speaking-file-header"><span>🎤 스피킹 파일</span></div>'
-                + '<p class="explain-speaking-file-msg" style="color:#94a3b8;">다시풀기 오답노트의 녹음 파일은 저장되지 않습니다. 개인 연습용으로만 활용해 주세요.</p>';
+            fileArea.innerHTML =
+                '<div class="esf-head"><div class="esf-head-text"><span class="esf-title">🎤 스피킹 파일</span></div></div>'
+                + '<p class="esf-note">다시풀기 오답노트의 녹음 파일은 저장되지 않습니다. 개인 연습용으로만 활용해 주세요.</p>';
             this._updateSubmitState();
             return;
         }
@@ -197,26 +202,50 @@ var ErrorNote = {
         fileArea.style.display = 'block';
         this._existingFiles = this._parseSpeakingFiles(this._dbRow);
 
-        var html = '<div class="explain-speaking-file-header"><span>🎤 스피킹 녹음 파일 (인터뷰 4문항)</span></div>';
+        var uploadIcon = '<svg class="esf-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+        var lockIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+        var html = '<div class="esf-head">'
+            + '<div class="esf-head-text"><span class="esf-title">🎤 스피킹 녹음 파일</span><span class="esf-sub">인터뷰 ' + this.SPEAKING_SLOT_COUNT + '문항 · 각 최대 25MB</span></div>'
+            + '<span class="esf-count" id="esfCount">0 / ' + this.SPEAKING_SLOT_COUNT + '</span>'
+            + '</div>';
+        html += '<div class="esf-list">';
+
         for (var i = 0; i < this.SPEAKING_SLOT_COUNT; i++) {
             var num = i + 1;
             var has = !!this._existingFiles[i];
-            html += '<div class="explain-speaking-file-slot" style="margin-bottom:12px;">';
-            html += '<div class="explain-speaking-slot-label" style="font-size:13px;font-weight:600;color:#334155;margin-bottom:4px;">' + num + '번 답변</div>';
+            var slotCls = 'esf-slot' + (has ? ' is-filled' : '') + (deadlinePassed ? ' is-locked' : '');
+
+            html += '<div class="' + slotCls + '" id="esfSlot' + i + '">';
+            html += '<span class="esf-num">' + num + '</span>';
+            html += '<div class="esf-slot-main">';
+            html += '<span class="esf-slot-title">' + num + '번 답변</span>';
+
+            var hint;
+            if (deadlinePassed) {
+                hint = has ? '첨부 완료' : '마감 — 첨부 불가';
+            } else {
+                hint = has ? '첨부됨 · 다시 선택 시 교체' : '녹음 파일을 선택하세요';
+            }
+            html += '<span class="esf-slot-hint" id="explainSpeakingFileMsg' + i + '">' + hint + '</span>';
+            html += '</div>';
 
             if (deadlinePassed) {
-                html += '<p class="explain-speaking-file-msg" id="explainSpeakingFileMsg' + i + '" style="color:#64748b;">'
-                    + (has ? '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> 파일 첨부 완료' : '마감으로 인해 파일 첨부가 불가합니다.')
-                    + '</p>';
+                html += '<span class="esf-lock">' + lockIcon + '</span>';
             } else {
-                html += '<input type="file" id="explainSpeakingFileInput' + i + '" data-slot="' + i + '" accept="audio/*,video/mp4" />';
-                html += '<p class="explain-speaking-file-msg" id="explainSpeakingFileMsg' + i + '" style="color:#64748b;">'
-                    + (has ? '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> 첨부됨 (다시 선택하면 교체)' : '녹음 파일을 첨부해주세요. (최대 25MB)')
-                    + '</p>';
+                html += '<input type="file" id="explainSpeakingFileInput' + i + '" class="esf-native" accept="audio/*,video/mp4" />';
+                html += '<label for="explainSpeakingFileInput' + i + '" class="esf-btn">' + uploadIcon + '파일 선택</label>';
             }
             html += '</div>';
         }
+        html += '</div>';
+        html += '<div class="esf-submit-zone" id="esfSubmitZone"></div>';
         fileArea.innerHTML = html;
+
+        // 제출 버튼을 카드 하단으로 이동 → 메모 + 녹음 4개를 함께 내는 '최종 제출'
+        var zone = document.getElementById('esfSubmitZone');
+        var subBtn = document.getElementById('explainMemoSubmitBtn');
+        if (zone && subBtn) zone.appendChild(subBtn);
 
         // 슬롯별 input 이벤트 바인딩
         if (!deadlinePassed) {
@@ -231,7 +260,30 @@ var ErrorNote = {
             }
         }
 
+        this._updateSpeakingProgress();
         this._updateSubmitState();
+    },
+
+    // 헤더 진행 카운터(n/4) 갱신
+    _updateSpeakingProgress: function() {
+        var el = document.getElementById('esfCount');
+        if (!el) return;
+        var n = 0;
+        for (var i = 0; i < this.SPEAKING_SLOT_COUNT; i++) {
+            if ((this._selectedFiles && this._selectedFiles[i]) || (this._existingFiles && this._existingFiles[i])) n++;
+        }
+        el.textContent = n + ' / ' + this.SPEAKING_SLOT_COUNT;
+        el.classList.toggle('is-complete', n === this.SPEAKING_SLOT_COUNT);
+    },
+
+    // 제출 버튼을 원래 자리(메모 푸터)로 복귀
+    //   스피킹 실전풀이에서는 카드 하단으로 옮기므로, 다른 탭/과제 진입 시 되돌린다.
+    _restoreSubmitButtonHome: function() {
+        var btn = document.getElementById('explainMemoSubmitBtn');
+        var footer = document.querySelector('.explain-memo-footer');
+        if (btn && footer && btn.parentElement !== footer) {
+            footer.appendChild(btn);
+        }
     },
 
     // ── 상태별 UI 세팅 ──
@@ -305,18 +357,17 @@ var ErrorNote = {
         if (!fileInput || !fileInput.files[0]) return;
 
         var file = fileInput.files[0];
+        var slot = document.getElementById('esfSlot' + idx);
 
         // 25MB 제한
         if (file.size > 25 * 1024 * 1024) {
             alert((idx + 1) + '번 답변 파일 크기가 25MB를 초과합니다. 더 작은 파일을 선택해주세요.');
             fileInput.value = '';
             this._selectedFiles[idx] = null;
-            if (fileMsg) {
-                fileMsg.innerHTML = this._existingFiles[idx]
-                    ? '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> 첨부됨 (다시 선택하면 교체)'
-                    : '녹음 파일을 첨부해주세요. (최대 25MB)';
-                fileMsg.style.color = '#64748b';
-            }
+            var stillHas = !!this._existingFiles[idx];
+            if (slot) slot.classList.toggle('is-filled', stillHas);
+            if (fileMsg) fileMsg.textContent = stillHas ? '첨부됨 · 다시 선택 시 교체' : '녹음 파일을 선택하세요';
+            this._updateSpeakingProgress();
             this._updateSubmitState();
             return;
         }
@@ -324,12 +375,11 @@ var ErrorNote = {
         this._selectedFiles[idx] = file;
 
         // 파일 선택 완료 UI
-        if (fileMsg) {
-            fileMsg.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#77bf7e"></i> ' + file.name + ' (' + Math.round(file.size / 1024) + 'KB)';
-            fileMsg.style.color = '#334155';
-        }
+        if (slot) slot.classList.add('is-filled');
+        if (fileMsg) fileMsg.textContent = file.name + ' (' + Math.round(file.size / 1024) + 'KB)';
 
         console.log('📎 [메모장] ' + (idx + 1) + '번 답변 파일 선택:', file.name, Math.round(file.size / 1024) + 'KB');
+        this._updateSpeakingProgress();
         this._updateSubmitState();
     },
 
@@ -343,12 +393,7 @@ var ErrorNote = {
 
         var count = this.countWords(textarea.value);
         countEl.textContent = count + ' / 20 단어';
-
-        if (count >= 20) {
-            countEl.style.color = '#22c55e';
-        } else {
-            countEl.style.color = '#ef4444';
-        }
+        countEl.classList.toggle('is-valid', count >= 20);
     },
 
     // ========================================
@@ -599,7 +644,8 @@ var ErrorNote = {
         this._selectedFiles = [null, null, null, null];
         this._existingFiles = [null, null, null, null];
 
-        // 파일 영역 숨기기
+        // 제출 버튼을 푸터로 복귀시킨 뒤 파일 영역 숨기기
+        this._restoreSubmitButtonHome();
         var fileArea = document.getElementById('explainSpeakingFileArea');
         if (fileArea) fileArea.style.display = 'none';
     }
