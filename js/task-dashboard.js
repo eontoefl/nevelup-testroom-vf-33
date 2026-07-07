@@ -828,6 +828,32 @@ function _renderWritingScore(data, dbRow, mode) {
     return html;
 }
 
+/**
+ * speaking_file_1 컬럼 → 슬롯별 경로 배열(길이 4)
+ *   신규: JSON 배열 문자열, 레거시: 단일 경로 문자열
+ */
+function _parseSpeakingFilePaths(raw) {
+    var out = [null, null, null, null];
+    if (!raw) return out;
+
+    var arr = null;
+    if (Array.isArray(raw)) {
+        arr = raw;
+    } else if (typeof raw === 'string') {
+        var s = raw.trim();
+        if (s.charAt(0) === '[') {
+            try { arr = JSON.parse(s); } catch (e) { arr = null; }
+        }
+        if (!arr) { arr = [raw]; }  // 레거시 단일 경로
+    }
+    if (arr) {
+        for (var i = 0; i < 4 && i < arr.length; i++) {
+            out[i] = arr[i] || null;
+        }
+    }
+    return out;
+}
+
 /** 스피킹 세부 점수 */
 function _renderSpeakingScore(data, dbRow, mode) {
     var html = '<div class="sd-score-list">';
@@ -867,23 +893,25 @@ function _renderSpeakingScore(data, dbRow, mode) {
     
     html += '</div>';
     
-    // 녹음 파일 재생 버튼 — 실전풀이에서만 표시
+    // 녹음 파일 재생 버튼 — 실전풀이에서만 표시 (인터뷰 최대 4문항)
     if (mode === 'initial') {
-        var filePath = dbRow ? dbRow.speaking_file_1 : null;
-        if (filePath) {
+        var spFiles = _parseSpeakingFilePaths(dbRow ? dbRow.speaking_file_1 : null);
+        for (var qi = 0; qi < spFiles.length; qi++) {
+            var filePath = spFiles[qi];
+            if (!filePath) continue;
             var audioUrl = supabaseStorageUrl('speaking-files', filePath);
-            html += '<div class="sd-audio-player" id="sdAudioPlayerWrap">';
+            html += '<div class="sd-audio-player" id="sdAudioPlayerWrap' + qi + '">';
             html += '<div class="sd-audio-player-header">';
             html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="#9480c5"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>';
-            html += '<span>녹음 파일</span>';
+            html += '<span>' + (qi + 1) + '번 답변</span>';
             html += '</div>';
             html += '<div class="sd-audio-player-controls">';
-            html += '<button class="sd-audio-play-btn" id="sdAudioPlayBtn" data-src="' + _escapeHtml(audioUrl) + '">';
+            html += '<button class="sd-audio-play-btn" id="sdAudioPlayBtn' + qi + '" data-src="' + _escapeHtml(audioUrl) + '">';
             html += '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#9480c5">';
             html += '<path d="M8 5v14l11-7z"></path>';
             html += '</svg>';
             html += '</button>';
-            html += '<span class="sd-audio-filename" id="sdAudioFilename">' + _escapeHtml(filePath.split('/').pop()) + '</span>';
+            html += '<span class="sd-audio-filename" id="sdAudioFilename' + qi + '">' + _escapeHtml(filePath.split('/').pop()) + '</span>';
             html += '</div>';
             html += '</div>';
         }
