@@ -8,10 +8,10 @@
     margin-bottom: 2rem;
 }
 
-/* 리스트 — 가로 배치 (여러 공지를 한 줄에 나열) */
+/* 리스트 — 세로 배치 (여러 공지를 위아래로 쌓음) */
 #noticeList {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 12px;
 }
 
@@ -26,8 +26,7 @@
     flex-direction: column;
     gap: 10px;
     border: none;
-    flex: 1 1 250px;
-    min-width: 200px;
+    width: 100%;
 }
 
 .notice-item:hover {
@@ -138,15 +137,4 @@
     color: #1a1a1a;
     word-break: keep-all;
     white-space: pre-line;
-}
-
-/* 모바일 — 공지 아이템 세로 배치 */
-@media (max-width: 640px) {
-    #noticeList {
-        flex-direction: column;
-    }
-
-    .notice-item {
-        flex: 1 1 100%;
-    }
 }
