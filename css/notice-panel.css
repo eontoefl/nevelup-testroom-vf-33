@@ -76,6 +76,15 @@
     flex-shrink: 0;
 }
 
+/* 등록 날짜·시간 — 제목 줄 오른쪽 */
+.notice-date {
+    font-size: 0.72rem;
+    font-weight: 600;
+    opacity: 0.6;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
 .notice-chevron {
     font-size: 1.1rem;
     font-weight: 700;

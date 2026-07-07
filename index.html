@@ -447,6 +447,21 @@
             check:    { emoji: '✅', bg: '#f0fdf4', titleColor: '#16a34a', textColor: '#166534', glow: false }
         };
 
+        // 공지 등록 시각 → KST "2026.07.06 16:27" 포맷
+        function formatNoticeDate(iso) {
+            if (!iso) return '';
+            try {
+                const d = new Date(iso);
+                if (isNaN(d)) return '';
+                const p = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                }).formatToParts(d);
+                const g = t => (p.find(x => x.type === t) || {}).value || '';
+                return `${g('year')}.${g('month')}.${g('day')} ${g('hour')}:${g('minute')}`;
+            } catch (e) { return ''; }
+        }
+
         // "다시 보지 않기"로 숨긴 공지 id 목록 (localStorage 저장)
         function getHiddenNotices() {
             try { return JSON.parse(localStorage.getItem('tr_hidden_notices') || '[]'); }
@@ -550,6 +565,7 @@
                     const s = NOTICE_STYLES[n.type] || NOTICE_STYLES.notice;
                     const glowStyle = s.glow ? 'animation:noticeGlow 2s ease-in-out infinite;' : '';
                     const isNew = !seen.includes(n.id);
+                    const dateStr = formatNoticeDate(n.created_at);
                     return `
                         <div class="notice-item collapsed" data-notice-id="${n.id}" style="background:${s.bg}; ${glowStyle}">
                             <div class="notice-item-head" onclick="toggleNotice(this)">
@@ -558,6 +574,7 @@
                                     ${isNew ? '<span class="notice-badge">N</span>' : ''}
                                 </div>
                                 <div class="notice-head-right">
+                                    ${dateStr ? `<span class="notice-date" style="color:${s.titleColor};">${dateStr}</span>` : ''}
                                     <span class="notice-chevron" style="color:${s.titleColor};">▾</span>
                                     <button class="notice-close-x" title="닫기" onclick="closeNotice(event, this)" style="color:${s.titleColor};">&times;</button>
                                 </div>
