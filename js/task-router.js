@@ -64,21 +64,13 @@ function isTaskDeadlinePassed() {
     if (user.selfPaced) {
         // v2(압축+매일마감): 세트별 배정 날짜로 마감 판정 — fast/standard와 동일 규칙(연장 포함).
         if (typeof isSelfPacedV2 === 'function' && isSelfPacedV2(user)) {
-            var spSetDate = (typeof getSelfPacedSetDate === 'function')
-                ? getSelfPacedSetDate(user, ct.currentWeek, ct.currentDay) : null;
-            if (!spSetDate) {
+            // 세트 마감(연장 반영)은 timezone-utils의 단일 진실원 함수로 계산.
+            var spDeadline = (typeof getSelfPacedSetDeadline === 'function')
+                ? getSelfPacedSetDeadline(user, ct.currentWeek, ct.currentDay, window._deadlineExtensions, getUserTimezone())
+                : null;
+            if (!spDeadline) {
                 console.log('⏰ [마감] 자기주도 v2 — 세트 날짜 계산 불가 → 통과');
                 return false;
-            }
-            var spTz = getUserTimezone();
-            var spDeadline = getTaskDeadline(spSetDate, spTz);
-            // ★ 연장 체크 (배정 날짜 기준) — 정규과정과 동일
-            var spDateStr = spSetDate.getFullYear() + '-' +
-                String(spSetDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(spSetDate.getDate()).padStart(2, '0');
-            var spExt = (window._deadlineExtensions || []).find(function(e) { return e.original_date === spDateStr; });
-            if (spExt) {
-                spDeadline = new Date(spDeadline.getTime() + (spExt.extra_days || 1) * 24 * 60 * 60 * 1000);
             }
             var spPassed = new Date() > spDeadline;
             console.log('⏰ [마감] 자기주도 v2 — 세트마감:', spDeadline.toLocaleString(), '→', spPassed ? '마감지남' : 'OK');

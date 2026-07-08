@@ -127,9 +127,14 @@ async function handleLogin(event) {
             selfPaced: !!programInfo.selfPaced,  // 자기주도 모드
             selfPacedWeeks: programInfo.selfPacedWeeks || null,  // (구) 완료 기한(주). 시작일+N주 = 만료일
             selfPacedEndDate: programInfo.selfPacedEndDate || null,  // (v2) 종료일. 있으면 압축+매일마감 모드
+            selfPacedSchedule: programInfo.selfPacedSchedule || null,  // (v2) 저장된 확정 일정표(JSON/객체)
             timezone: userTimezone  // 학생별 타임존 (IANA)
         };
-        
+
+        // v2 확정 일정표 생성/갱신(materialize): 없거나 종료일이 바뀌었으면 다시 만들어 저장.
+        // → 화면 날짜가 매번 흔들리지 않게 하고, 종료일 변경 시 과거는 보존·미래만 재분배.
+        await _ensureSelfPacedSchedule(currentUser, programInfo.applicationId, userTimezone);
+
         // 세션에 저장 (새로고침 시에도 유지)
         sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
         
@@ -412,8 +417,48 @@ function getCurrentUserId() {
 }
 
 /**
+ * v2 자기주도 확정 일정표(materialized schedule) 생성/갱신.
+ * - 저장표가 없으면: 시작~종료일로 24세트를 만들어 저장.
+ * - 종료일이 저장표의 종료일과 다르면: 과거(오늘 이전) 세트는 보존하고 나머지만 재분배해 저장.
+ * - 그 외(이미 최신): 아무것도 안 함(멱등).
+ * currentUser.selfPacedSchedule을 최신 객체로 갱신하고 applications 컬럼에 JSON 저장.
+ * 저장 실패해도 로그인은 계속 — getSelfPacedSchedule이 실시간 계산으로 대체하므로 안전.
+ */
+async function _ensureSelfPacedSchedule(user, applicationId, timezone) {
+    try {
+        if (!user || typeof isSelfPacedV2 !== 'function' || !isSelfPacedV2(user)) return;
+        if (typeof buildMaterializedSelfPacedSchedule !== 'function') return;
+
+        // 현재 저장표 파싱 (문자열/객체 모두 허용)
+        var stored = user.selfPacedSchedule;
+        if (typeof stored === 'string') { try { stored = JSON.parse(stored); } catch (e) { stored = null; } }
+        var hasValid = stored && Array.isArray(stored.dates) && stored.dates.length === 24;
+        var upToDate = hasValid && stored.end === user.selfPacedEndDate;
+        if (upToDate) return; // 이미 최신 → 그대로
+
+        // 오늘 경계 (유효 오늘 00:00) — 과거/미래 구분 기준
+        var boundary = (typeof getEffectiveToday === 'function') ? getEffectiveToday(timezone) : new Date();
+        boundary.setHours(0, 0, 0, 0);
+
+        var prevDates = hasValid ? stored.dates : null;
+        var built = buildMaterializedSelfPacedSchedule(user, prevDates, boundary);
+        if (!built) return;
+
+        user.selfPacedSchedule = built; // 세션/화면에서 즉시 사용
+        if (typeof supabaseUpdate === 'function' && applicationId) {
+            await supabaseUpdate('applications', 'id=eq.' + applicationId, {
+                self_paced_schedule: JSON.stringify(built)
+            });
+            console.log('🗓️ [자기주도] 확정 일정표 ' + (prevDates ? '갱신' : '생성') + ' 저장 완료 (종료일 ' + built.end + ')');
+        }
+    } catch (e) {
+        console.warn('⚠️ [자기주도] 확정 일정표 저장 실패 (무시 — 실시간 계산으로 대체):', e);
+    }
+}
+
+/**
  * 밀린 인증률(locked_auth_rate) 일괄 확정
- * 
+ *
  * locked_auth_rate가 null인 행 = 마감이 지났는데 대시보드 미방문으로 기록 안 된 것
  * - initial_record 없음 → 0%
  * - initial_record 있음 + error_note_submitted false → 50%
@@ -467,13 +512,11 @@ async function _fillMissingAuthRates(userId) {
             // ★ v2: 이 세트의 배정 날짜 마감이 실제로 지났을 때만 동결.
             //   아직 안 지난(앞서가는) 세트는 절대 건드리지 않음 → 조기 동결 방지(핵심 안전장치).
             if (isSpV2gate) {
-                var setDate = (typeof getSelfPacedSetDate === 'function')
-                    ? getSelfPacedSetDate(currentUser, row.week, row.day) : null;
-                if (!setDate) continue; // 매핑 실패 → 건너뜀(표시는 실시간 계산으로 여전히 정확)
-                var dl = getTaskDeadline(setDate, tz);
-                var dStr = setDate.getFullYear() + '-' + String(setDate.getMonth() + 1).padStart(2, '0') + '-' + String(setDate.getDate()).padStart(2, '0');
-                var ext = (window._deadlineExtensions || []).find(function(e) { return e.original_date === dStr; });
-                if (ext) dl = new Date(dl.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+                // 세트 마감(연장 반영)은 timezone-utils의 단일 진실원 함수로 계산.
+                var dl = (typeof getSelfPacedSetDeadline === 'function')
+                    ? getSelfPacedSetDeadline(currentUser, row.week, row.day, window._deadlineExtensions, tz)
+                    : null;
+                if (!dl) continue; // 매핑 실패 → 건너뜀(표시는 실시간 계산으로 여전히 정확)
                 if (now <= dl) continue; // 아직 마감 전 → 동결 안 함
             }
 

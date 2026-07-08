@@ -250,30 +250,13 @@ function _selfPacedDayIndex(day) {
     return (en[low] != null) ? en[low] : null;
 }
 
-/**
- * v2 자기주도 일정표 계산 (순수 함수, 부수효과 없음).
- * 24개 세트를 시작일~종료일(양끝 포함)에 균등 분배. 무거운 날(2세트)은 고르게 흩뿌리고
- * 마지막 날은 가능하면 가볍게(1세트). 종료일이 시작일보다 앞이면 null.
- * @param {object} user - selfPaced / selfPacedEndDate / startDate 보유
- * @returns {{dates: Date[], counts: number[], start: Date, end: Date, days: number}|null}
- */
-function getSelfPacedSchedule(user) {
-    if (!isSelfPacedV2(user)) return null;
-    var start = new Date(user.startDate + 'T00:00:00');
-    var end = new Date(user.selfPacedEndDate + 'T00:00:00');
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-
-    var D = Math.floor((end - start) / 86400000) + 1; // 양끝 포함 일수
-    if (D < 1) return null; // 종료일 < 시작일 → 방어
-
-    var N = SELF_PACED_SET_COUNT;
+/** N개 세트를 D일에 균등 분배한 하루별 세트 수 배열. 무거운 날은 앞쪽에 흩뿌려 마지막 날을 가볍게. */
+function _distributeSetCounts(N, D) {
     var base = Math.floor(N / D);
     var extra = N - base * D; // (base+1)개인 날 수
     var counts = [];
-    var i;
-    for (i = 0; i < D; i++) counts.push(base);
+    for (var i = 0; i < D; i++) counts.push(base);
     if (extra > 0) {
-        // 마지막 날을 가볍게 두기 위해 무거운 날을 앞쪽 (D-1)일에 균등 분산.
         var span = (extra <= D - 1) ? (D - 1) : D;
         for (var k = 0; k < extra; k++) {
             var idx = Math.floor((k + 0.5) * span / extra);
@@ -281,19 +264,121 @@ function getSelfPacedSchedule(user) {
             counts[idx] += 1;
         }
     }
+    return counts;
+}
 
-    // 세트 인덱스(0-based) → 배정 날짜
+/** 하루별 세트 수(counts)를 start부터 이어붙여 세트별 배정 날짜(Date[]) 생성. */
+function _datesFromCounts(start, counts, N) {
     var dates = [];
-    var setCounter = 0;
-    for (i = 0; i < D && setCounter < N; i++) {
+    var c = 0;
+    for (var i = 0; i < counts.length && c < N; i++) {
         var d = new Date(start);
         d.setDate(d.getDate() + i);
-        for (var j = 0; j < counts[i] && setCounter < N; j++) {
-            dates.push(d);
-            setCounter++;
-        }
+        for (var j = 0; j < counts[i] && c < N; j++) { dates.push(d); c++; }
     }
+    return dates;
+}
+
+/** 저장된 확정 일정표(문자열/객체) 정규화. 유효(24개 날짜)하면 {end, dates[]} 반환, 아니면 null. */
+function _parseStoredSelfPacedSchedule(raw) {
+    if (!raw) return null;
+    var obj = raw;
+    if (typeof raw === 'string') { try { obj = JSON.parse(raw); } catch (e) { return null; } }
+    if (!obj || !Array.isArray(obj.dates) || obj.dates.length !== SELF_PACED_SET_COUNT) return null;
+    return obj;
+}
+
+/**
+ * v2 자기주도 일정표 (세트 → 배정 날짜).
+ * ★ 저장된 확정 일정표(user.selfPacedSchedule)가 있으면 그걸 단일 진실원으로 사용 → 화면이 흔들리지 않음.
+ *   없으면 시작~종료일로 실시간 계산(fallback) → 미저장/기존 학생도 안전.
+ * 실시간 계산: 24개 세트를 양끝 포함 일수에 균등 분배, 마지막 날은 가볍게. 종료일<시작일이면 null.
+ * @param {object} user - selfPaced / selfPacedEndDate / startDate (+ 선택: selfPacedSchedule)
+ * @returns {{dates: Date[], counts: number[]|null, start: Date, end: Date, days: number, materialized?: boolean}|null}
+ */
+function getSelfPacedSchedule(user) {
+    if (!isSelfPacedV2(user)) return null;
+    var start = new Date(user.startDate + 'T00:00:00');
+    var end = new Date(user.selfPacedEndDate + 'T00:00:00');
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+
+    // 1) 저장된 확정 일정표 우선
+    var stored = _parseStoredSelfPacedSchedule(user.selfPacedSchedule);
+    if (stored) {
+        var sdates = [];
+        var ok = true;
+        for (var si = 0; si < stored.dates.length; si++) {
+            var pd = new Date(stored.dates[si] + 'T00:00:00');
+            if (isNaN(pd.getTime())) { ok = false; break; }
+            sdates.push(pd);
+        }
+        if (ok) {
+            var sEnd = new Date((stored.end || user.selfPacedEndDate) + 'T00:00:00');
+            if (isNaN(sEnd.getTime())) sEnd = end;
+            var sStart = sdates[0];
+            var sDays = Math.floor((sEnd - sStart) / 86400000) + 1;
+            return { dates: sdates, counts: null, start: sStart, end: sEnd, days: sDays, materialized: true };
+        }
+        // 저장표 손상 시 아래 실시간 계산으로 폴백
+    }
+
+    // 2) 실시간 계산 (fallback)
+    var D = Math.floor((end - start) / 86400000) + 1; // 양끝 포함 일수
+    if (D < 1) return null; // 종료일 < 시작일 → 방어
+    var counts = _distributeSetCounts(SELF_PACED_SET_COUNT, D);
+    var dates = _datesFromCounts(start, counts, SELF_PACED_SET_COUNT);
     return { dates: dates, counts: counts, start: start, end: end, days: D };
+}
+
+/**
+ * 확정 일정표 생성/갱신(materialize). 로그인 시 auth.js가 호출해 DB에 저장.
+ * - 이전 일정표 없음(첫 생성): 시작~종료 전체에 24세트 균등 분배.
+ * - 이전 일정표 있음(종료일 변경): boundary(오늘) 이전 세트는 그대로 보존, 나머지만 [오늘~종료]에 재분배.
+ *   → "과거 불변, 미래만 재분배"를 구조로 보장.
+ * @param {object} user
+ * @param {string[]|null} prevDates - 이전 저장 dates (YYYY-MM-DD 24개) 또는 null
+ * @param {Date} boundary - 오늘 00:00 (유효 오늘)
+ * @returns {{end:string, dates:string[]}|null}
+ */
+function buildMaterializedSelfPacedSchedule(user, prevDates, boundary) {
+    if (!isSelfPacedV2(user)) return null;
+    var start = new Date(user.startDate + 'T00:00:00');
+    var end = new Date(user.selfPacedEndDate + 'T00:00:00');
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+    var N = SELF_PACED_SET_COUNT;
+    var fmt = function(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    };
+
+    // 첫 생성: 전체 균등 분배
+    if (!prevDates || prevDates.length !== N) {
+        var D = Math.floor((end - start) / 86400000) + 1;
+        if (D < 1) return null;
+        var counts = _distributeSetCounts(N, D);
+        return { end: fmt(end), dates: _datesFromCounts(start, counts, N).map(fmt) };
+    }
+
+    // 종료일 변경: 과거(오늘 이전) 세트 보존 + 나머지 재분배.
+    // dates는 오름차순이므로 과거는 항상 접두구간 → 첫 미래 세트에서 멈춤.
+    var P = 0;
+    for (var p = 0; p < prevDates.length; p++) {
+        var ppd = new Date(prevDates[p] + 'T00:00:00');
+        if (!isNaN(ppd.getTime()) && ppd.getTime() < boundary.getTime()) P++;
+        else break;
+    }
+    if (P >= N) return { end: fmt(end), dates: prevDates.slice() }; // 전부 과거 → 보존만
+    var R = N - P;
+    var wStart = new Date(boundary);
+    var D2 = Math.floor((end - wStart) / 86400000) + 1;
+    var remDates;
+    if (D2 < 1) {
+        // 창 붕괴(종료일이 오늘 이전) → 남은 세트를 종료일에 몰아 배치(방어)
+        remDates = [];
+        for (var r = 0; r < R; r++) remDates.push(fmt(end));
+    } else {
+        remDates = _datesFromCounts(wStart, _distributeSetCounts(R, D2), R).map(fmt);
+    }
+    return { end: fmt(end), dates: prevDates.slice(0, P).concat(remDates) };
 }
 
 /**
@@ -311,6 +396,34 @@ function getSelfPacedSetDate(user, week, day) {
     var setIndex = (week - 1) * SELF_PACED_DAYS_PER_WEEK + di; // 0-based
     if (setIndex < 0 || setIndex >= sched.dates.length) return null;
     return sched.dates[setIndex];
+}
+
+/**
+ * 자기주도 v2 — 특정 세트(주,요일)의 "연장까지 반영한 최종 마감시각".
+ * 세트→배정날짜→기본마감(다음날 04:00)→연장 적용을 한 곳에서 처리하는 단일 진실원.
+ * 마감 판정(task-router)·인증률 동결(auth)·잔디 빨간칸(mypage)이 모두 이 함수를 사용한다.
+ * 연장정보는 호출 컨텍스트마다 저장 위치가 다르므로(window._deadlineExtensions / mpDeadlineExtensions)
+ * 전역을 직접 읽지 않고 "받아서" 쓴다 → 어느 페이지에서든 동일하게 동작.
+ * @param {object} user - selfPaced / selfPacedEndDate / startDate 보유
+ * @param {number} week - 1~4
+ * @param {string|number} day - 한글/영문 요일 또는 0~5
+ * @param {Array} [extensions] - tr_deadline_extensions 목록 (호출자가 보유한 배열)
+ * @param {string} [timezone] - IANA timezone (미지정 시 getUserTimezone())
+ * @returns {Date|null} 연장 반영 마감 Date, 계산 불가 시 null
+ */
+function getSelfPacedSetDeadline(user, week, day, extensions, timezone) {
+    var setDate = getSelfPacedSetDate(user, week, day);
+    if (!setDate) return null;
+    var tz = timezone || ((typeof getUserTimezone === 'function') ? getUserTimezone() : undefined);
+    var deadline = getTaskDeadline(setDate, tz);
+    var dStr = setDate.getFullYear() + '-' +
+        String(setDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(setDate.getDate()).padStart(2, '0');
+    var ext = (extensions || []).find(function(e) { return e.original_date === dStr; });
+    if (ext) {
+        deadline = new Date(deadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+    }
+    return deadline;
 }
 
 /**

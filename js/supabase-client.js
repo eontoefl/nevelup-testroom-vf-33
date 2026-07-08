@@ -218,7 +218,7 @@ async function getStudentProgram(userEmail) {
 
     // 자기주도(self-paced) 플래그는 컬럼이 아직 없을 수도 있으므로 별도 조회로 안전 처리.
     // (컬럼 부재 시 supabaseSelect가 []를 반환 → 기본 false. 메인 로그인 쿼리는 절대 깨지지 않음)
-    let selfPaced = false, selfPacedWeeks = null, selfPacedEndDate = null;
+    let selfPaced = false, selfPacedWeeks = null, selfPacedEndDate = null, selfPacedSchedule = null;
     try {
         const spRows = await supabaseSelect('applications', `id=eq.${app.id}&select=self_paced,self_paced_weeks`);
         if (spRows && spRows[0]) {
@@ -226,7 +226,7 @@ async function getStudentProgram(userEmail) {
             selfPacedWeeks = spRows[0].self_paced_weeks || null;
         }
     } catch (e) { /* 컬럼 미존재 등 → 기본값 유지 */ }
-    // v2(압축+매일마감): 종료일 컬럼은 더 나중에 추가될 수 있으므로 별도 조회.
+    // v2(압축+매일마감): 종료일·확정일정표 컬럼은 더 나중에 추가될 수 있으므로 별도 조회.
     // (같은 select에 넣으면 컬럼 부재 시 self_paced 판정까지 함께 깨지므로 분리)
     // 자기주도 학생일 때만 조회 — 일반 학생 로그인에 불필요한 쿼리를 넣지 않음.
     if (selfPaced) {
@@ -234,6 +234,11 @@ async function getStudentProgram(userEmail) {
             const endRows = await supabaseSelect('applications', `id=eq.${app.id}&select=self_paced_end_date`);
             if (endRows && endRows[0]) selfPacedEndDate = endRows[0].self_paced_end_date || null;
         } catch (e) { /* 컬럼 미존재 → 종료일 없음(구 무마감 방식으로 동작) */ }
+        // 확정 일정표(materialized). 컬럼 부재/미저장 시 null → getSelfPacedSchedule이 실시간 계산으로 대체.
+        try {
+            const schRows = await supabaseSelect('applications', `id=eq.${app.id}&select=self_paced_schedule`);
+            if (schRows && schRows[0]) selfPacedSchedule = schRows[0].self_paced_schedule || null;
+        } catch (e) { /* 컬럼 미존재 → 미저장으로 간주 */ }
     }
 
     return {
@@ -248,7 +253,8 @@ async function getStudentProgram(userEmail) {
         correctionStartDate: app.correction_start_date || null,
         selfPaced: selfPaced,  // 자기주도 모드 여부
         selfPacedWeeks: selfPacedWeeks,  // (구) 완료 기한(주). 시작일+N주 = 만료일
-        selfPacedEndDate: selfPacedEndDate  // (v2) 종료일 YYYY-MM-DD. 있으면 압축+매일마감 모드로 gate
+        selfPacedEndDate: selfPacedEndDate,  // (v2) 종료일 YYYY-MM-DD. 있으면 압축+매일마감 모드로 gate
+        selfPacedSchedule: selfPacedSchedule  // (v2) 저장된 확정 일정표(JSON) 또는 null
     };
 }
 

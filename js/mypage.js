@@ -724,17 +724,13 @@ function renderGrass() {
 function getDeadlineForDayNum(dayNum) {
     if (!mpUser.startDate) return null;
 
-    // v2 자기주도: dayNum(1-based) = 세트 번호. 계산기가 배정한 날짜의 마감 + 연장 반영.
+    // v2 자기주도: dayNum(1-based) = 세트 번호. 세트 마감(연장 반영)은 단일 진실원 함수로 계산.
     if (typeof isSelfPacedV2 === 'function' && isSelfPacedV2(mpUser)) {
         const w = Math.floor((dayNum - 1) / 6) + 1;
         const di = (dayNum - 1) % 6;
-        const sd = (typeof getSelfPacedSetDate === 'function') ? getSelfPacedSetDate(mpUser, w, di) : null;
-        if (!sd) return null;
-        let dl = getTaskDeadline(sd, getUserTimezone());
-        const dStr = sd.getFullYear() + '-' + String(sd.getMonth() + 1).padStart(2, '0') + '-' + String(sd.getDate()).padStart(2, '0');
-        const ext = (mpDeadlineExtensions || []).find(e => e.original_date === dStr);
-        if (ext) dl = new Date(dl.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
-        return dl;
+        return (typeof getSelfPacedSetDeadline === 'function')
+            ? getSelfPacedSetDeadline(mpUser, w, di, mpDeadlineExtensions, getUserTimezone())
+            : null;
     }
 
     const startDate = new Date(mpUser.startDate + 'T00:00:00');
