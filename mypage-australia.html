@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="css/mypage-style.css?v=aus_001" />
+  <link rel="stylesheet" href="css/mypage-grass-fast.css" />
+  <link rel="stylesheet" href="css/mypage-grass-standard.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/notification.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -194,6 +196,22 @@
             <div class="omr-detail-wrong-badges" id="omrDetailWrongBadges"></div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ②-b 학습 잔디 (앱 학습 달력) -->
+    <section class="section-block" id="ausGrassSection">
+      <h2 class="section-title">
+        <i class="fa-solid fa-seedling"></i> 학습 달력
+      </h2>
+      <p class="section-desc">과제를 완료한 날은 초록, 마감이 지났는데 안 한 과제는 빨강으로 표시됩니다.</p>
+      <div class="grass-legend">
+        <span class="legend-item"><span class="legend-dot level-2"></span> 완료</span>
+        <span class="legend-item"><span class="legend-dot empty"></span> 미완료</span>
+        <span class="legend-item"><span class="legend-dot fail"></span> 마감 지남</span>
+      </div>
+      <div class="grass-wrap">
+        <div class="grass-grid grass-fast-grid" id="ausGrassGrid"></div>
       </div>
     </section>
 

@@ -93,8 +93,94 @@ function renderAll() {
     renderTodayTasks();
     renderSummaryCards();
     renderScoreChart();
+    renderAusGrass();
     renderCertificationList();
     setupRecordsNav();
+}
+
+// ================================================
+// 학습 잔디 (정규 mypage 방식 이식 — 호주 스케줄/기록 기반)
+// ================================================
+
+// 호주 과제 이름 → 저장 기록 키(분류/모듈번호). aus_study_results 실데이터 기준 매핑.
+//   보카/입문서 = 모듈1(주·요일로 구분), 그 외는 이름 끝 숫자가 모듈번호.
+function _ausTaskKey(taskName) {
+    const t = (taskName || '').trim();
+    let m;
+    if (t.indexOf('내벨업보카') === 0) return { type: 'vocab', mod: 1 };
+    if (t.indexOf('입문서') === 0) return { type: 'intro-book-aus', mod: 1 };
+    if ((m = t.match(/^리딩\s*(\d+)/))) return { type: 'reading', mod: parseInt(m[1]) };
+    if ((m = t.match(/^리스닝\s*(\d+)/))) return { type: 'listening', mod: parseInt(m[1]) };
+    if ((m = t.match(/브레인스토밍\s*Day\s*(\d+)/))) return { type: 'brainstorming', mod: parseInt(m[1]) };
+    if ((m = t.match(/^통스\s*(\d+)/))) return { type: 'intspk', mod: parseInt(m[1]) };
+    if ((m = t.match(/^통라\s*(\d+)/))) return { type: 'intwrt', mod: parseInt(m[1]) };
+    if ((m = t.match(/^토라\s*(\d+)/))) return { type: 'aus-discussion', mod: parseInt(m[1]) };
+    if ((m = t.match(/^독스\s*(?:TOPIC\s*)?(\d+)/))) return { type: 'ind-spk', mod: parseInt(m[1]) };
+    return null;
+}
+
+// 잔디 렌더: 완료=초록(level-2), 마감 지남+미완료=빨강(fail), 그 외=회색(empty)
+function renderAusGrass() {
+    const section = document.getElementById('ausGrassSection');
+    const grid = document.getElementById('ausGrassGrid');
+    if (!section || !grid) return;
+
+    // 신규 코호트(앱 자동 수집)만 잔디 표시. 구 코호트는 앱 학습 기록이 없어 숨김.
+    if (!_isAusCollectCohort()) { section.style.display = 'none'; return; }
+    if (typeof getAusDayTasks !== 'function') { section.style.display = 'none'; return; }
+    section.style.display = '';
+
+    const programType = mpUser.programType || 'fast';
+    const totalWeeks = programType === 'standard' ? 8 : 4;
+    grid.className = 'grass-grid ' + (programType === 'standard' ? 'grass-std-grid' : 'grass-fast-grid');
+
+    const startDateStr = getAusStartDate();
+    const startDate = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
+    const now = new Date();
+    const tz = getUserTimezone();
+
+    // 제출 기록 집합: "분류|모듈|주|요일"
+    const doneSet = new Set();
+    (mpOmrResults || []).forEach(function(r) {
+        doneSet.add(r.section_type + '|' + String(r.module_number) + '|' + String(r.week) + '|' + r.day);
+    });
+
+    const dayEnArr = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const dayKrArr = ['일', '월', '화', '수', '목', '금'];
+    const esc = function(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+
+    let html = '<div class="g-label"></div>';
+    dayKrArr.forEach(function(d) { html += '<div class="g-head">' + d + '</div>'; });
+
+    for (let w = 1; w <= totalWeeks; w++) {
+        html += '<div class="g-label">Week ' + w + '</div>';
+        for (let di = 0; di < 6; di++) {
+            const tasks = getAusDayTasks(programType, w, dayEnArr[di]) || [];
+
+            // 이 날 마감 = 시작일 + (주-1)*7 + 요일 → 다음날 04:00 (호주 정규와 동일, 연장 없음)
+            let past = false;
+            if (startDate && typeof getTaskDeadline === 'function') {
+                const taskDate = new Date(startDate);
+                taskDate.setDate(taskDate.getDate() + (w - 1) * 7 + di);
+                const dl = getTaskDeadline(taskDate, tz);
+                past = !!(dl && now >= dl);
+            }
+
+            let cells = '';
+            tasks.forEach(function(t) {
+                const key = _ausTaskKey(t);
+                const done = key && doneSet.has(key.type + '|' + String(key.mod) + '|' + String(w) + '|' + dayKrArr[di]);
+                let cls = done ? 'level-2' : (past ? 'fail' : 'empty');
+                cells += '<span class="g ' + cls + '" title="' + esc(t) + '"></span>';
+            });
+            if (tasks.length === 0) cells = '<span class="g blank"></span>';
+            html += '<div class="g-day">' + cells + '</div>';
+        }
+    }
+    grid.innerHTML = html;
+    console.log('🌱 [MyPage-AUS] 학습 잔디 렌더 (' + programType + ', ' + totalWeeks + '주)');
 }
 
 // ================================================
