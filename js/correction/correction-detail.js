@@ -31,27 +31,27 @@ var _corrDetailQuestionData = null;
 async function openCorrectionDetail(taskType, session, submission) {
     console.log('📋 [Correction Detail] 열기:', taskType, 'Session', session.session);
 
+    var meta = getCorrTaskMeta(session, taskType);
+
     // 전체 데이터가 필요하므로 단일 행 다시 조회 (feedback JSONB 포함)
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
     if (user && user.id && submission) {
-        var fullTaskType = (taskType === 'writing')
-            ? (session.writing.type === 'email' ? 'writing_email' : 'writing_discussion')
-            : 'speaking_interview';
-        var fullSub = await getCorrectionSubmission(user.id, session.session, fullTaskType);
+        var fullSub = await getCorrectionSubmission(user.id, session.session, meta.taskType);
         if (fullSub) submission = fullSub;
     }
 
     // 문제 데이터 로드 (문제 보기 아코디언 + Speaking 그리드용)
     _corrDetailInterviewData = null;
     _corrDetailQuestionData = null;
-    if (taskType === 'speaking' && typeof _loadCorrectionInterviewSet === 'function') {
-        var setNum = session.speaking.number;
-        _corrDetailInterviewData = await _loadCorrectionInterviewSet(setNum);
+    if (taskType === 'speaking' && meta.type === 'interview' && typeof _loadCorrectionInterviewSet === 'function') {
+        _corrDetailInterviewData = await _loadCorrectionInterviewSet(meta.number);
     } else if (taskType === 'writing') {
-        if (session.writing.type === 'email' && typeof _loadCorrectionEmailSet === 'function') {
-            _corrDetailQuestionData = await _loadCorrectionEmailSet(session.writing.number);
-        } else if (session.writing.type === 'discussion' && typeof _loadCorrectionDiscussionSet === 'function') {
-            _corrDetailQuestionData = await _loadCorrectionDiscussionSet(session.writing.number);
+        if (meta.type === 'email' && typeof _loadCorrectionEmailSet === 'function') {
+            _corrDetailQuestionData = await _loadCorrectionEmailSet(meta.number);
+        } else if ((meta.type === 'discussion' || meta.type === 'aus_discussion') && typeof _loadCorrectionDiscussionSet === 'function') {
+            _corrDetailQuestionData = await _loadCorrectionDiscussionSet(meta.number);
+        } else if (meta.type === 'aus_intwrt' && typeof _loadCorrectionIntWrtSet === 'function') {
+            _corrDetailQuestionData = await _loadCorrectionIntWrtSet(meta.number);
         }
     }
 
@@ -59,9 +59,7 @@ async function openCorrectionDetail(taskType, session, submission) {
 
     // 헤더
     var headerEl = document.getElementById('corrDetailHeader');
-    var taskLabel = (taskType === 'writing')
-        ? (session.writing.type === 'email' ? 'Email' : 'Discussion')
-        : 'Interview';
+    var taskLabel = meta ? meta.label : taskType;
     if (headerEl) headerEl.textContent = 'SESSION ' + String(session.session).padStart(2, '0') + ' · ' + taskLabel;
 
     // 데드라인 배너 (과제 상세)
@@ -147,8 +145,11 @@ function _renderQuestionPreview(isWriting, session) {
         var data = _corrDetailQuestionData;
         if (!data) return '';
 
-        if (session.writing.type === 'email') {
+        var wType = session.writing.type;
+        if (wType === 'email') {
             return _renderEmailQuestionPreview(data);
+        } else if (wType === 'aus_intwrt') {
+            return _renderIntWrtQuestionPreview(data);
         } else {
             return _renderDiscussionQuestionPreview(data);
         }
@@ -157,6 +158,18 @@ function _renderQuestionPreview(isWriting, session) {
         if (!data) return '';
         return _renderSpeakingQuestionPreview(data);
     }
+}
+
+/** 호주첨삭 INT WRT 문제 미리보기 — 지문 + 강의 음성 다시 듣기 */
+function _renderIntWrtQuestionPreview(data) {
+    var html = '<div class="corr-question-preview">';
+    html += '<p class="corr-qp-task">' + _escapeAndNl2br(CORR_IW_QUESTION) + '</p>';
+    html += '<div class="corr-qp-passage">' + _escapeAndNl2br(data.passage) + '</div>';
+    if (data.lectureAudioUrl) {
+        html += _renderAudioPlayer('강의 음성', data.lectureAudioUrl);
+    }
+    html += '</div>';
+    return html;
 }
 
 function _renderEmailQuestionPreview(data) {
@@ -629,9 +642,9 @@ function onCorrDetailDraft2Click(taskType) {
     }
 
     if (taskType === 'writing') {
-        startCorrectionWriting(session, scheduleData, submission);
+        _startCorrectionWritingByType(session, scheduleData, submission);
     } else {
-        startCorrectionSpeaking(session, scheduleData, submission);
+        _startCorrectionSpeakingByType(session, scheduleData, submission);
     }
 }
 
@@ -742,8 +755,12 @@ function _renderFailedMessage(status) {
 
 function _renderSpeakingGrid(sub, audioPrefix) {
     var interviewData = _corrDetailInterviewData;
+
+    // 호주첨삭 스피킹은 답변이 1개 → q1만 렌더 (일반첨삭 인터뷰는 4개)
+    var qCount = (getCorrectionTrack() === 'aus') ? 1 : 4;
+
     var html = '<div class="corr-spk-grid">';
-    for (var q = 1; q <= 4; q++) {
+    for (var q = 1; q <= qCount; q++) {
         var path = sub[audioPrefix + q];
         var questionText = '';
         if (interviewData && interviewData.videos && interviewData.videos[q - 1]) {

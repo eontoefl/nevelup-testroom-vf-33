@@ -70,6 +70,14 @@ async function _loadCorrectionInterviewSet(setNumber) {
 async function startCorrectionSpeaking(session, scheduleData, submission) {
     console.log('\n🎙️ [Correction Speaking] 시작 — Session', session.session);
 
+    // 이 파일은 일반첨삭 Interview 전용이다. 호주 스피킹(독스/통스)은
+    // 별도 화면으로 구현 예정 — 잘못 진입하면 여기서 막는다.
+    var meta = (typeof getCorrTaskMeta === 'function') ? getCorrTaskMeta(session, 'speaking') : null;
+    if (meta && meta.type !== 'interview') {
+        alert('아직 준비 중인 유형입니다.');
+        return;
+    }
+
     var setNumber = session.speaking.number;
     var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 

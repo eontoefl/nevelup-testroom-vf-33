@@ -48,27 +48,46 @@ function openCorrectionSession(session, scheduleData, submissionMap, extensionMa
 
     // Writing 카드
     var writingSub = submissionMap[session.session + '_writing'] || null;
-    var writingLabel = session.writing.type === 'email' ? 'Email' : 'Discussion';
+    var wMeta = getCorrTaskMeta(session, 'writing');
     _renderCorrectionTaskCard(
         'corrWritingCard',
         'writing',
-        writingLabel,
+        wMeta ? wMeta.label : 'Writing',
         writingSub,
         session
     );
 
     // Speaking 카드
     var speakingSub = submissionMap[session.session + '_speaking'] || null;
+    var sMeta = getCorrTaskMeta(session, 'speaking');
     _renderCorrectionTaskCard(
         'corrSpeakingCard',
         'speaking',
-        'Interview',
+        sMeta ? sMeta.label : 'Speaking',
         speakingSub,
         session
     );
 
+    // 카드 좌우 순서 — 호주첨삭은 스피킹이 왼쪽(독스 → 토라), 일반첨삭은 라이팅이 왼쪽
+    _applyCorrCardOrder(getCorrectionTrack());
+
     // 카드별 마감 실시간 타이머 시작 (동적 갱신이 필요한 카드가 있으면)
     _startCardDeadlineTimer();
+}
+
+/**
+ * 세션 상세의 Writing/Speaking 카드 좌우 순서 지정
+ * DOM 상으로는 Writing이 먼저 있으므로, 호주첨삭에서는 flex order로 뒤집는다.
+ * @param {'aus'|'general'} track
+ */
+function _applyCorrCardOrder(track) {
+    var writingCard = document.getElementById('corrWritingCard');
+    var speakingCard = document.getElementById('corrSpeakingCard');
+    if (!writingCard || !speakingCard) return;
+
+    var speakingFirst = (track === 'aus');
+    writingCard.style.order = speakingFirst ? '2' : '';
+    speakingCard.style.order = speakingFirst ? '1' : '';
 }
 
 /**
@@ -84,6 +103,18 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
     if (!container) return;
 
     var statusInfo = _getCorrectionCardStatus(submission);
+
+    // 아직 구현되지 않은 유형 → 잠금 (미제출 상태일 때만)
+    var meta = getCorrTaskMeta(session, taskType);
+    if (meta && meta.ready === false && !submission) {
+        statusInfo = {
+            text: '준비 중입니다',
+            btnText: '준비 중',
+            btnClass: 'btn-disabled',
+            disabled: true,
+            action: 'none'
+        };
+    }
 
     // 데드라인 지남 + 미제출 → 시작 차단
     if (statusInfo.action === 'write') {
@@ -193,15 +224,60 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
 
     if (action === 'write') {
         if (taskType === 'writing') {
-            startCorrectionWriting(session, scheduleData, submission);
+            _startCorrectionWritingByType(session, scheduleData, submission);
         } else {
-            startCorrectionSpeaking(session, scheduleData, submission);
+            _startCorrectionSpeakingByType(session, scheduleData, submission);
         }
         return;
     }
 
     // 과제 상세(아코디언) 화면으로 전환
     openCorrectionDetail(taskType, session, submission);
+}
+
+/**
+ * 라이팅 유형별 화면 라우팅
+ *   email / discussion → 일반첨삭
+ *   aus_discussion     → 호주첨삭 DISCUSSION (일반 Discussion과 화면 동일 → 같은 함수)
+ *   aus_intwrt         → 호주첨삭 INT WRT
+ */
+function _startCorrectionWritingByType(session, scheduleData, submission) {
+    var meta = getCorrTaskMeta(session, 'writing');
+    var type = meta ? meta.type : 'email';
+
+    if (type === 'aus_intwrt') {
+        startCorrectionIntWrt(session, scheduleData, submission);
+        return;
+    }
+
+    // email / discussion / aus_discussion
+    startCorrectionWriting(session, scheduleData, submission);
+}
+
+/**
+ * 스피킹 유형별 화면 라우팅
+ *   interview       → 일반첨삭 인터뷰 (4문항)
+ *   aus_indspk      → 호주첨삭 IND SPK
+ *   aus_intspk2/3/4 → 호주첨삭 INT SPK
+ */
+function _startCorrectionSpeakingByType(session, scheduleData, submission) {
+    var meta = getCorrTaskMeta(session, 'speaking');
+    var type = meta ? meta.type : 'interview';
+
+    if (type === 'aus_indspk') {
+        startCorrectionIndSpk(session, scheduleData, submission);
+        return;
+    }
+    if (type === 'aus_intspk2' || type === 'aus_intspk3' || type === 'aus_intspk4') {
+        startCorrectionIntSpk(session, scheduleData, submission);
+        return;
+    }
+    if (type === 'interview') {
+        startCorrectionSpeaking(session, scheduleData, submission);
+        return;
+    }
+
+    alert('아직 준비 중인 유형입니다.');
 }
 
 // ============================================================

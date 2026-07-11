@@ -19,7 +19,8 @@ async function renderCorrectionSchedule() {
     if (!container) return;
     container.innerHTML = '';
 
-    var schedule = window.CORRECTION_SCHEDULE;
+    var track = getCorrectionTrack();
+    var schedule = getCorrectionScheduleData();
     if (!schedule || schedule.length === 0) {
         container.innerHTML = '<div class="correction-empty-msg"><p>첨삭 스케줄 데이터가 없습니다.</p></div>';
         return;
@@ -37,6 +38,12 @@ async function renderCorrectionSchedule() {
         scheduleData = await getCorrectionSchedule(user.id);
     } catch (e) {
         console.warn('⚠️ [Correction] 스케줄 조회 실패:', e);
+    }
+
+    // 개발 모드(localhost): 일정이 배정 안 돼 있으면 지난 일요일을 시작일로 가정
+    if (window.CORR_DEV_AUS && (!scheduleData || !scheduleData.start_date)) {
+        scheduleData = { start_date: _corrLastSunday(), duration_weeks: 4 };
+        console.warn('🧪 [Correction] 개발 모드 임시 일정:', scheduleData.start_date);
     }
 
     if (!scheduleData || !scheduleData.start_date) {
@@ -96,7 +103,8 @@ async function renderCorrectionSchedule() {
     _renderCorrectionNotice(container);
 
     // 연장(2학기) 활성화 여부 / 시작 여부
-    var extEnabled = !!(scheduleData.extension_enabled && scheduleData.extension_start_date);
+    // 호주첨삭은 12세션만 운영 — 연장(13~24세션) 미도입
+    var extEnabled = (track !== 'aus') && !!(scheduleData.extension_enabled && scheduleData.extension_start_date);
     var extStarted = false;
     if (extEnabled) {
         var extStart = new Date(scheduleData.extension_start_date + 'T00:00:00');
@@ -162,7 +170,8 @@ async function renderCorrectionSchedule() {
  * @param {object} ctx - { scheduleData, submissionMap, extensionMap, durationWeeks }
  */
 function _renderCorrectionPhase(targetEl, phase, ctx) {
-    var schedule = window.CORRECTION_SCHEDULE;
+    var track = getCorrectionTrack();
+    var schedule = getCorrectionScheduleData();
     var scheduleData = ctx.scheduleData;
     var submissionMap = ctx.submissionMap;
     var extensionMap = ctx.extensionMap;
@@ -204,8 +213,12 @@ function _renderCorrectionPhase(targetEl, phase, ctx) {
         daysGrid.className = 'days-grid correction-days-grid';
 
         sessions.forEach(function(session) {
-            var writingLabel = session.writing.type === 'email' ? 'Email' : 'Discussion';
-            var taskLabel = writingLabel + ' + Interview';
+            var wMeta = getCorrTaskMeta(session, 'writing');
+            var sMeta = getCorrTaskMeta(session, 'speaking');
+            // 호주첨삭은 스피킹이 앞 (독스 + 토라), 일반첨삭은 라이팅이 앞 (Email + Interview)
+            var taskLabel = (track === 'aus')
+                ? (sMeta ? sMeta.label : '?') + ' + ' + (wMeta ? wMeta.label : '?')
+                : (wMeta ? wMeta.label : '?') + ' + ' + (sMeta ? sMeta.label : '?');
 
             // 세션 날짜 계산: (해당 학기 시작일) + dayOffset
             var baseDateStr = getCorrSessionStartDate(scheduleData, session);
@@ -283,6 +296,9 @@ function _getSessionStatus(writingSub, speakingSub) {
  * @param {HTMLElement} container - correctionScheduleContainer
  */
 function _renderCorrectionNotice(container) {
+    // 호주첨삭은 아직 별도 공지 없음 (일반첨삭 공지를 그대로 띄우면 안 됨)
+    if (getCorrectionTrack() === 'aus') return;
+
     // TODO: 실제 운영 시 공지 내용/노출 여부는 DB(correction_notices 등)에서 조회
     var notice = {
         id: 'upgrade-2026-06-27',
@@ -322,5 +338,17 @@ function _renderCorrectionNotice(container) {
 }
 
 // openCorrectionSession()은 js/correction/correction-session.js에서 정의
+
+/**
+ * 개발 모드 전용: 가장 최근 일요일 'YYYY-MM-DD'
+ * (첨삭 일정이 배정되지 않은 계정으로 화면을 확인하기 위한 임시 시작일)
+ */
+function _corrLastSunday() {
+    var d = new Date();
+    d.setDate(d.getDate() - d.getDay());
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+}
 
 console.log('✅ correction-main.js 로드 완료');

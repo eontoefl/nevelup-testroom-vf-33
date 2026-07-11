@@ -168,16 +168,20 @@ function _corrReplaceNames(text, profiles) {
 async function startCorrectionWriting(session, scheduleData, submission) {
     console.log('\n✍️ [Correction Writing] 시작 — Session', session.session);
 
-    var writingType = session.writing.type;   // 'email' | 'discussion'
-    var setNumber = session.writing.number;
+    var meta = getCorrTaskMeta(session, 'writing');
+
+    // 호주 토라(aus_discussion)는 일반 Discussion과 화면·문제 구조가 동일하므로
+    // 화면 렌더링 기준(writingType)은 'discussion'으로 맞추고, DB에 남길
+    // task_type만 트랙별로 구분한다.
+    var writingType = (meta.type === 'aus_discussion') ? 'discussion' : meta.type;  // 'email' | 'discussion'
+    var setNumber = meta.number;
     var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 
     // 2차 작성인데 feedback_1이 없으면 단일 행 다시 조회 (목록 조회는 feedback JSONB 미포함)
     if (isDraft2 && submission && !submission.feedback_1) {
         var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
         if (user && user.id) {
-            var fullTaskType = (writingType === 'email') ? 'writing_email' : 'writing_discussion';
-            var fullSub = await getCorrectionSubmission(user.id, session.session, fullTaskType);
+            var fullSub = await getCorrectionSubmission(user.id, session.session, meta.taskType);
             if (fullSub) submission = fullSub;
         }
     }
@@ -187,6 +191,8 @@ async function startCorrectionWriting(session, scheduleData, submission) {
         scheduleData: scheduleData,
         submission: submission,
         writingType: writingType,
+        taskType: meta.taskType,
+        taskLabel: meta.label,
         setNumber: setNumber,
         setData: null,
         profiles: null,     // discussion 전용
@@ -204,6 +210,23 @@ async function startCorrectionWriting(session, scheduleData, submission) {
         showScreen('correctionWritingDiscussionScreen');
         await _initCorrectionDiscussion(setNumber);
     }
+}
+
+/**
+ * 문제 화면 상단 제목
+ *   일반첨삭 — 'SESSION 01 · Email'   (기존 문구 유지)
+ *   호주첨삭 — '첨삭 세션 01 · DISCUSSION'
+ *              (호주 학생은 정규과정에서도 같은 화면을 보므로 첨삭임을 명시)
+ */
+function _corrWritingHeaderText(state, fallbackLabel) {
+    var num = String(state.session.session).padStart(2, '0');
+    var label = state.taskLabel || fallbackLabel;
+    var suffix = state.isDraft2 ? ' (2차 작성)' : '';
+
+    if (getCorrectionTrack() === 'aus') {
+        return '첨삭 세션 ' + num + ' · ' + label + suffix;
+    }
+    return 'SESSION ' + num + ' · ' + label + suffix;
 }
 
 // ============================================================
@@ -224,10 +247,7 @@ async function _initCorrectionEmail(setNumber) {
 
     // 헤더 설정
     var headerEl = document.getElementById('corrEmailHeader');
-    if (headerEl) {
-        headerEl.textContent = 'SESSION ' + String(state.session.session).padStart(2, '0') +
-            ' · Email' + (state.isDraft2 ? ' (2차 작성)' : '');
-    }
+    if (headerEl) headerEl.textContent = _corrWritingHeaderText(state, 'Email');
 
     // 문제 렌더링
     _setTextContent('corrEmailSituation', setData.scenario);
@@ -275,10 +295,7 @@ async function _initCorrectionDiscussion(setNumber) {
 
     // 헤더 설정
     var headerEl = document.getElementById('corrDiscussionHeader');
-    if (headerEl) {
-        headerEl.textContent = 'SESSION ' + String(state.session.session).padStart(2, '0') +
-            ' · Discussion' + (state.isDraft2 ? ' (2차 작성)' : '');
-    }
+    if (headerEl) headerEl.textContent = _corrWritingHeaderText(state, 'Discussion');
 
     // 문제 렌더링
     _setTextContent('corrDiscussionClassContext', setData.classContext);
@@ -547,7 +564,7 @@ async function submitCorrectionWriting() {
         return;
     }
 
-    var taskType = state.writingType === 'email' ? 'writing_email' : 'writing_discussion';
+    var taskType = state.taskType;
 
     try {
         if (state.isDraft2) {
@@ -612,6 +629,13 @@ async function submitCorrectionWriting() {
 function _sendCorrectionWebhook(isDraft2, payload) {
     var config = window.CORRECTION_CONFIG;
     if (!config) return;
+
+    // 호주첨삭은 아직 채점 워크플로우가 없다. 일반 워크플로우로 보내면
+    // 엉뚱한 기준으로 채점되므로 전송하지 않는다. (n8n 연결은 이후 단계)
+    if (getCorrectionTrack() === 'aus') {
+        console.log('📡 [Correction] 호주첨삭 — webhook 미연결 (전송 안 함)');
+        return;
+    }
 
     var webhookUrl = isDraft2 ? config.writingWebhookDraft2 : config.writingWebhookDraft1;
     if (!webhookUrl || webhookUrl.indexOf('placeholder') >= 0) {
