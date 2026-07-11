@@ -87,7 +87,7 @@
     <link rel="stylesheet" href="css/task-dashboard.css?v=001">
     <link rel="stylesheet" href="css/explain-viewer.css?v=001">
     <link rel="stylesheet" href="css/tutorial.css?v=001">
-    <link rel="stylesheet" href="css/correction.css?v=010">
+    <link rel="stylesheet" href="css/correction.css?v=012">
     <link rel="stylesheet" href="css/aus-task-select.css?v=001">
     
     <!-- [V3] 삭제됨: V2 Stage Selector 인라인 스타일 -->
@@ -876,6 +876,73 @@
     <!-- ============================= -->
     <!-- 첨삭 Speaking - Interview 화면 -->
     <!-- ============================= -->
+    <!-- ===== 호주첨삭: INT WRT (통합형 라이팅) ===== -->
+    <div id="correctionIntWrtScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionIntWrt()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrIwTitle" class="test-progress">첨삭 세션 02 · INT WRT</span>
+            <div class="test-title">
+                <i class="fas fa-pen"></i>
+                <span>Writing - Integrated</span>
+            </div>
+            <div class="test-header-right">
+                <button class="btn btn-success" id="corrIwNextBtn" style="display:none;">Next</button>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div id="corrIwContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== 호주첨삭: INT SPK 2·3·4 (통합형 스피킹) ===== -->
+    <div id="correctionIntSpkScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionIntSpk()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrIsTitle" class="test-progress">첨삭 세션 02 · INT SPK 2</span>
+            <div class="test-title">
+                <i class="fas fa-microphone"></i>
+                <span>Speaking - Integrated</span>
+            </div>
+            <div class="test-header-right">
+                <button class="btn btn-primary" id="corrIsContinueBtn" style="display:none;">
+                    Continue <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div id="corrIsContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== 호주첨삭: IND SPK (독립형 스피킹) ===== -->
+    <div id="correctionIndSpkScreen" class="screen" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="backFromCorrectionIndSpk()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <span id="corrIdsTitle" class="test-progress">첨삭 세션 01 · IND SPK</span>
+            <div class="test-title">
+                <i class="fas fa-microphone"></i>
+                <span>Speaking - Independent</span>
+            </div>
+            <div class="test-header-right">
+                <button class="btn btn-primary" id="corrIdsContinueBtn" style="display:none;">
+                    Continue <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div id="corrIdsContent"></div>
+        </div>
+    </div>
+
     <div id="correctionSpeakingScreen" class="screen" style="display:none;">
         <div class="test-header">
             <button class="btn-back" onclick="backFromCorrectionSpeaking()" title="뒤로가기">
@@ -2934,6 +3001,7 @@
     <script src="js/app-state.js?v=001"></script>
     <script src="js/correction-config.js?v=002"></script>
     <script src="js/correction-schedule-data.js?v=001"></script>
+    <script src="js/correction-schedule-data-aus.js?v=001"></script>
     <script src="js/schedule-data.js?v=006_intspk"></script>
     <script src="js/australia-schedule-data.js?v=001"></script>
     <script src="js/task-router.js?v=010_v3_dashboard"></script>
@@ -3033,10 +3101,14 @@
 <script src="js/vocab-test-logic-v2.js?v=20260223_stats"></script>
 
     <!-- ===== Correction (FEEDBACK) ===== -->
+    <script src="js/correction/correction-track.js?v=001"></script>
     <script src="js/correction/correction-main.js?v=001"></script>
     <script src="js/correction/correction-session.js?v=001"></script>
     <script src="js/correction/correction-writing.js?v=004"></script>
     <script src="js/correction/correction-speaking.js?v=008"></script>
+    <script src="js/correction/correction-indspk.js?v=001"></script>
+    <script src="js/correction/correction-intspk.js?v=001"></script>
+    <script src="js/correction/correction-intwrt.js?v=001"></script>
     <script src="js/correction/correction-feedback.js?v=002"></script>
     <script src="js/correction/correction-detail.js?v=003"></script>
 

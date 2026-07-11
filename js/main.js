@@ -1843,7 +1843,9 @@ function _initSegmentControl() {
     var btnFeedback = document.getElementById('segBtnFeedback');
     
     var hasPractice = currentUser && currentUser.practiceEnabled;
-    var hasCorrection = currentUser && (currentUser.correctionEnabled || window.__isAdmin);
+    var hasCorrection = (typeof isCorrectionAvailable === 'function')
+        ? isCorrectionAvailable(currentUser)
+        : (currentUser && (currentUser.correctionEnabled || window.__isAdmin));
     var hasAustralia = currentUser && currentUser.program && currentUser.program.includes('Australia');
     
     // 호주과정 학생: TESTROOM 숨김 / 정규 학생: AUSTRALIA 숨김
