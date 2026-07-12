@@ -2144,3 +2144,60 @@
     margin: 10px 0 0;
     white-space: pre-wrap;
 }
+
+/* ── 호주첨삭 스피킹 인트로: 녹음 안내 (IND SPK · INT SPK 공용) ──
+   DESIGN.md: 테두리로 섹션을 나누지 않는다. 톤 차이(surface-container-high)와
+   여백으로만 구분한다. 코랄(tertiary)은 치명적 경고 전용이므로 쓰지 않고,
+   주의 환기는 왼쪽 얇은 primary 액센트 + 볼드 타이포로만 준다. */
+
+.corr-rec-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin: 26px auto 0;
+    max-width: 560px;
+    padding: 18px 20px;
+    text-align: left;
+    background: #eceff1;                 /* surface-container-high — 톤 차이로만 분리 */
+    border-radius: 12px;
+}
+
+.corr-rec-notice-icon {
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 1.4;
+    color: #006688;                      /* primary */
+}
+
+.corr-rec-notice-body { flex: 1; }
+
+.corr-rec-notice-title {
+    font-size: 15px;
+    font-weight: 600;                    /* label: Semi-Bold */
+    letter-spacing: -0.01em;
+    color: #191c1d;                      /* on-surface — 순수 검정 금지 */
+    line-height: 1.55;
+    margin-bottom: 4px;
+}
+
+.corr-rec-notice-desc {
+    font-size: 13.5px;
+    color: #3e484f;                      /* on-surface-variant */
+    line-height: 1.65;
+}
+
+@media (max-width: 600px) {
+    .corr-rec-notice { padding: 15px 16px; gap: 11px; margin-top: 20px; }
+    .corr-rec-notice-title { font-size: 14px; }
+    .corr-rec-notice-desc { font-size: 12.5px; }
+}
+
+/* ── 호주첨삭: 대화/강의 이미지 — 모서리 둥글기·그림자 제거 ──
+   .is-audio-image / .iw-audio-image 는 정규 호주과정과 공유하는 클래스다.
+   정규 화면을 건드리지 않기 위해 첨삭 화면 안에서만 덮어쓴다. */
+
+#corrIsContent .is-audio-image,
+#corrIwContent .iw-audio-image {
+    border-radius: 0;
+    box-shadow: none;
+}
