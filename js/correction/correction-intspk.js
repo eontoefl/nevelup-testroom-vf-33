@@ -728,7 +728,17 @@ function cleanupCorrectionIntSpk() {
 // 9. 유틸
 // ============================================================
 
+/**
+ * 카운트다운 표시
+ * 답변 시간 60초를 '01:00'이 아니라 '00:60'으로 시작시킨다.
+ * (01:00 → 00:59로 떨어지면 1분이 통째로 사라진 것처럼 보인다)
+ * 통스의 모든 구간(지문 45초 · 준비 20~30초 · 답변 60초)이 60초 이하라
+ * 분 단위로 올릴 일이 없다.
+ */
 function _corrIsFormatTime(seconds) {
+    if (seconds <= 60) {
+        return '00:' + (seconds < 10 ? '0' + seconds : seconds);
+    }
     var m = Math.floor(seconds / 60);
     var s = seconds % 60;
     return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);

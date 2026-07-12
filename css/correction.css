@@ -2191,3 +2191,13 @@
     .corr-rec-notice-title { font-size: 14px; }
     .corr-rec-notice-desc { font-size: 12.5px; }
 }
+
+/* ── 호주첨삭: 대화/강의 이미지 — 모서리 둥글기·그림자 제거 ──
+   .is-audio-image / .iw-audio-image 는 정규 호주과정과 공유하는 클래스다.
+   정규 화면을 건드리지 않기 위해 첨삭 화면 안에서만 덮어쓴다. */
+
+#corrIsContent .is-audio-image,
+#corrIwContent .iw-audio-image {
+    border-radius: 0;
+    box-shadow: none;
+}
