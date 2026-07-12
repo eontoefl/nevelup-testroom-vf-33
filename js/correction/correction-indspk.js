@@ -144,7 +144,7 @@ function _showCorrIdsIntro() {
                     '<p>In this question, you will be asked to talk about a familiar topic.</p>' +
                     '<p>After you hear the question, you will have <strong>15 seconds</strong> to prepare your response, and <strong>45 seconds</strong> to speak.</p>' +
                 '</div>' +
-                '<div class="ids-intro-note">답변은 별도 기기로 녹음한 뒤, 마지막에 파일로 올려주세요.</div>' +
+                _corrRecordNoticeHtml() +
             '</div>' +
         '</div>';
 

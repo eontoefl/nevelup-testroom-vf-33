@@ -105,6 +105,23 @@ function getCorrTaskMeta(session, category) {
     };
 }
 
+/**
+ * 스피킹 인트로의 녹음 안내 배너 (IND SPK · INT SPK 공용)
+ * 답변 시간이 시작된 뒤 녹음 앱을 찾으면 답변 시간을 그대로 날린다.
+ * 그래서 "미리 켜두라"를 앞세운다.
+ */
+function _corrRecordNoticeHtml() {
+    return '' +
+        '<div class="corr-rec-notice">' +
+            '<i class="fas fa-mobile-alt corr-rec-notice-icon"></i>' +
+            '<div class="corr-rec-notice-body">' +
+                '<div class="corr-rec-notice-title">시작 전, 개인 휴대폰의 녹음 앱을 켜주세요.</div>' +
+                '<div class="corr-rec-notice-desc">화면에서는 녹음되지 않습니다. 답변이 끝나면 그 파일을 올려주세요.</div>' +
+            '</div>' +
+        '</div>';
+}
+
+window._corrRecordNoticeHtml = _corrRecordNoticeHtml;
 window.getCorrectionTrack = getCorrectionTrack;
 window.isCorrectionAvailable = isCorrectionAvailable;
 window.getCorrectionScheduleData = getCorrectionScheduleData;

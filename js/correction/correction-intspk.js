@@ -186,7 +186,7 @@ function _showCorrIsIntro() {
                 '<h1 class="is-intro-title">Integrated Speaking</h1>' +
                 '<div class="is-intro-type-badge">Task ' + type + '</div>' +
                 '<div class="is-intro-text"><p>' + (CORR_IS_INTRO_TEXT[type] || '') + '</p></div>' +
-                '<div class="is-intro-note">답변은 별도 기기로 녹음한 뒤, 마지막에 파일로 올려주세요.</div>' +
+                _corrRecordNoticeHtml() +
             '</div>' +
         '</div>';
 
