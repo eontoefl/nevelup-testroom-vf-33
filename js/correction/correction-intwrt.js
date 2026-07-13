@@ -47,7 +47,10 @@ async function _loadCorrectionIntWrtSet(setNumber) {
                 setId: Number(row.id),
                 passage: row.passage || '',
                 lectureAudioUrl: row.lecture_audio_url || '',
-                lectureImageUrl: row.lecture_image_url || ''
+                lectureImageUrl: row.lecture_image_url || '',
+                // 강의 대본 — 첨삭 상세의 "문제 보기"에서만 보여준다.
+                // (작성 화면에서는 감춘다. 듣기 실전 감각을 해치므로)
+                lectureScript: row.lecture_script || ''
             };
         });
         console.log('✅ [Correction IntWrt] ' + _cachedCorrIntWrtData.length + '세트 로드');
@@ -293,6 +296,10 @@ function _showCorrIwEditor(isDraft2) {
         if (isDraft2 && state.submission && state.submission.draft_1_text) {
             textarea.value = state.submission.draft_1_text;
         }
+        // 쓰다 만 답안이 남아 있으면 그것을 우선 복구 (제출 실패·새로고침·이탈 대비)
+        var savedDraft = _corrIwLoadDraft();
+        if (savedDraft) textarea.value = savedDraft;
+
         state.lastText = textarea.value;
         state.undoStack = [textarea.value];
         state.redoStack = [];
@@ -300,6 +307,7 @@ function _showCorrIwEditor(isDraft2) {
         textarea.addEventListener('input', function() {
             _corrIwUpdateWordCount();
             _corrIwPushUndo();
+            _corrIwSaveDraft();
         });
 
         _corrIwUpdateWordCount();
@@ -352,24 +360,13 @@ function _corrIwInsertFeedbackPanel() {
         '<button class="corr-iw-fb-tab" id="corrIwTabFeedback">1차 첨삭</button>' +
     '</div>';
 
-    var fbBody = '<p class="corr-ids-d2-nofb">1차 첨삭 내용을 불러오지 못했습니다.</p>';
-    if (fb) {
-        fbBody = '';
-        if (fb.annotated_html && typeof renderAnnotatedHtml === 'function') {
-            fbBody += renderAnnotatedHtml(fb.annotated_html);
-        }
-        if (fb.summary && typeof renderFeedbackSummary === 'function') {
-            fbBody += renderFeedbackSummary(fb);
-        }
-        if (!fbBody) fbBody = '<p class="corr-ids-d2-nofb">표시할 첨삭 내용이 없습니다.</p>';
-    }
-
     var panel = document.createElement('div');
     panel.className = 'corr-iw-left-wrap';
     panel.innerHTML = html +
-        '<div class="corr-iw-fb-panel" id="corrIwFbPanel" style="display:none;">' + fbBody + '</div>';
+        '<div class="corr-iw-fb-panel" id="corrIwFbPanel" style="display:none;">' + corrFeedbackSlotHtml() + '</div>';
 
     left.insertBefore(panel, left.firstChild);
+    corrFillFeedbackSlot(document.getElementById('corrIwFbPanel'), fb, 'writing');
 
     var scroll = left.querySelector('.iw-passage-scroll');
     var fbPanel = document.getElementById('corrIwFbPanel');
@@ -550,15 +547,16 @@ async function _corrIwDoSubmit(text, wordCount) {
     if (overlay) overlay.style.display = 'flex';
 
     try {
+        var saved;
         if (state.isDraft2) {
-            await updateCorrectionSubmission(state.submission.id, {
+            saved = await updateCorrectionSubmission(state.submission.id, {
                 draft_2_text: text,
                 draft_2_word_count: wordCount,
                 status: 'draft2_submitted',
                 draft_2_submitted_at: new Date().toISOString()
             });
         } else {
-            await insertCorrectionSubmission({
+            saved = await insertCorrectionSubmission({
                 user_id: user.id,
                 session_number: state.session.session,
                 task_type: state.taskType,
@@ -570,7 +568,29 @@ async function _corrIwDoSubmit(text, wordCount) {
             });
         }
 
-        // 호주첨삭은 채점 워크플로우(n8n) 미연결 — webhook 전송 안 함
+        // supabaseRequest()는 실패해도 throw하지 않고 null을 반환한다.
+        // 반환값을 확인하지 않으면 저장이 거부돼도 "제출되었습니다"가 뜨고 답안이 사라진다.
+        if (!saved) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+
+        // 저장 확인 후에만 임시저장본을 지운다
+        _corrIwClearDraft();
+
+        // n8n 전송. 통라가 아직 개통 전이면 getCorrWebhookUrl()이 null을 돌려줘
+        // 전송하지 않고 넘어간다(제출은 이미 저장됨 → 첨삭은 소급 처리).
+        if (typeof _sendCorrectionWebhook === 'function') {
+            _sendCorrectionWebhook(state.isDraft2, {
+                event: state.isDraft2 ? 'draft2_submitted' : 'draft1_submitted',
+                user_id: user.id,
+                user_name: user.name,
+                user_email: user.email,
+                session_number: state.session.session,
+                session_start_date: getCorrSessionStartDate(state.scheduleData, state.session),
+                task_type: state.taskType,
+                task_number: state.setNumber,
+                word_count: wordCount,
+                submitted_at: new Date().toISOString()
+            });
+        }
 
         if (overlay) overlay.style.display = 'none';
         alert(state.isDraft2 ? '2차 답안이 제출되었습니다.' : '답안이 제출되었습니다.');
@@ -581,8 +601,38 @@ async function _corrIwDoSubmit(text, wordCount) {
     } catch (err) {
         console.error('❌ [Correction IntWrt] 제출 실패:', err);
         if (overlay) overlay.style.display = 'none';
-        alert('제출에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
+        // 임시저장본은 지우지 않는다 — 다시 들어오면 쓰던 답안이 복구된다
+        alert('제출에 실패했습니다. 작성하신 답안은 안전하게 보관되어 있으니,\n' +
+              '인터넷 연결을 확인하고 다시 제출해주세요.');
     }
+}
+
+// ============================================================
+// 작성 중 임시저장 — 제출 실패·새로고침·이탈 시 답안 유실 방지
+// (정규 통라 컴포넌트의 _iwSaveDraft와 같은 방식, 키만 첨삭용으로 분리)
+// ============================================================
+
+function _corrIwDraftKey() {
+    var state = window._correctionIntWrtState;
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    var uid = (user && user.id) ? user.id : 'anon';
+    var num = state ? state.setNumber : '0';
+    var round = (state && state.isDraft2) ? 'd2' : 'd1';
+    return 'corr_iwdraft_' + uid + '_' + num + '_' + round;
+}
+
+function _corrIwSaveDraft() {
+    var ta = document.getElementById('corrIwTextarea');
+    if (!ta) return;
+    try { localStorage.setItem(_corrIwDraftKey(), ta.value); } catch (e) {}
+}
+
+function _corrIwLoadDraft() {
+    try { return localStorage.getItem(_corrIwDraftKey()) || ''; } catch (e) { return ''; }
+}
+
+function _corrIwClearDraft() {
+    try { localStorage.removeItem(_corrIwDraftKey()); } catch (e) {}
 }
 
 async function _returnToCorrIwSession() {

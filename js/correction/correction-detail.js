@@ -45,6 +45,10 @@ async function openCorrectionDetail(taskType, session, submission) {
     _corrDetailQuestionData = null;
     if (taskType === 'speaking' && meta.type === 'interview' && typeof _loadCorrectionInterviewSet === 'function') {
         _corrDetailInterviewData = await _loadCorrectionInterviewSet(meta.number);
+    } else if (taskType === 'speaking' && meta.type === 'aus_indspk' && typeof _loadCorrectionIndSpkSet === 'function') {
+        _corrDetailQuestionData = await _loadCorrectionIndSpkSet(meta.number);
+    } else if (taskType === 'speaking' && meta.type.indexOf('aus_intspk') === 0 && typeof _loadCorrectionIntSpkSet === 'function') {
+        _corrDetailQuestionData = await _loadCorrectionIntSpkSet(meta.number);
     } else if (taskType === 'writing') {
         if (meta.type === 'email' && typeof _loadCorrectionEmailSet === 'function') {
             _corrDetailQuestionData = await _loadCorrectionEmailSet(meta.number);
@@ -154,13 +158,61 @@ function _renderQuestionPreview(isWriting, session) {
             return _renderDiscussionQuestionPreview(data);
         }
     } else {
+        // 호주 스피킹(독스·통스)은 인터뷰와 문제 구조가 달라 따로 그린다
+        var sType = session.speaking ? session.speaking.type : '';
+        if (sType === 'aus_indspk') {
+            return _corrDetailQuestionData ? _renderIndSpkQuestionPreview(_corrDetailQuestionData) : '';
+        }
+        if (sType.indexOf('aus_intspk') === 0) {
+            return _corrDetailQuestionData ? _renderIntSpkQuestionPreview(_corrDetailQuestionData) : '';
+        }
+
         var data = _corrDetailInterviewData;
         if (!data) return '';
         return _renderSpeakingQuestionPreview(data);
     }
 }
 
-/** 호주첨삭 INT WRT 문제 미리보기 — 지문 + 강의 음성 다시 듣기 */
+/** 호주첨삭 독스 문제 미리보기 — 토픽 + 문제 음성 */
+function _renderIndSpkQuestionPreview(data) {
+    var html = '<div class="corr-question-preview">';
+    html += '<div class="corr-qp-passage">' + _escapeAndNl2br(data.text) + '</div>';
+    if (data.audioUrl) {
+        html += _renderAudioPlayer('문제 음성', data.audioUrl);
+    }
+    html += '</div>';
+    return html;
+}
+
+/** 호주첨삭 통스 문제 미리보기 — (지문) + 대화·강의 음성 + 문제 */
+function _renderIntSpkQuestionPreview(data) {
+    var html = '<div class="corr-question-preview">';
+
+    // 통스4는 읽기 지문이 없는 유형이라 passage가 비어 있다
+    if (data.passage) {
+        if (data.title) {
+            html += '<p class="corr-qp-task">' + _escapeAndNl2br(data.title) + '</p>';
+        }
+        html += '<div class="corr-qp-passage">' + _escapeAndNl2br(data.passage) + '</div>';
+    }
+    var listenLabel = (data.type === 2) ? '대화' : '강의';
+    if (data.dialogAudioUrl) {
+        html += _renderAudioPlayer(listenLabel + ' 음성', data.dialogAudioUrl);
+    }
+    html += _renderScriptToggle(listenLabel + ' 대본', data.dialogScript);
+
+    if (data.problemText) {
+        html += '<p class="corr-qp-task">' + _escapeAndNl2br(data.problemText) + '</p>';
+    }
+    if (data.problemAudioUrl) {
+        html += _renderAudioPlayer('문제 음성', data.problemAudioUrl);
+    }
+
+    html += '</div>';
+    return html;
+}
+
+/** 호주첨삭 INT WRT 문제 미리보기 — 지문 + 강의 음성 + 강의 대본 */
 function _renderIntWrtQuestionPreview(data) {
     var html = '<div class="corr-question-preview">';
     html += '<p class="corr-qp-task">' + _escapeAndNl2br(CORR_IW_QUESTION) + '</p>';
@@ -168,9 +220,43 @@ function _renderIntWrtQuestionPreview(data) {
     if (data.lectureAudioUrl) {
         html += _renderAudioPlayer('강의 음성', data.lectureAudioUrl);
     }
+    html += _renderScriptToggle('강의 대본', data.lectureScript);
     html += '</div>';
     return html;
 }
+
+/**
+ * 듣기 대본 — 접었다 펴는 형태.
+ * 복습 단계(첨삭 상세)에서만 쓴다. 작성 화면에서 열어주면 듣기 연습이 무의미해진다.
+ */
+var _corrScriptSeq = 0;
+
+function _renderScriptToggle(label, script) {
+    if (!script) return '';
+
+    var id = 'corrScript_' + (++_corrScriptSeq);
+    var html = '<div class="corr-qp-script">';
+    html += '<button type="button" class="corr-qp-script-btn" onclick="_toggleCorrScript(\'' + id + '\', this)">' +
+                '<i class="fas fa-file-lines"></i> ' + _escapeHtml(label) + ' 보기' +
+            '</button>';
+    html += '<div class="corr-qp-script-body" id="' + id + '" style="display:none;">' +
+                _escapeAndNl2br(script) +
+            '</div>';
+    html += '</div>';
+    return html;
+}
+
+function _toggleCorrScript(id, btn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+
+    var open = (el.style.display !== 'none');
+    el.style.display = open ? 'none' : 'block';
+
+    var label = btn.textContent.trim().replace(/\s*(보기|숨기기)$/, '');
+    btn.innerHTML = '<i class="fas fa-file-lines"></i> ' + _escapeHtml(label) + (open ? ' 보기' : ' 숨기기');
+}
+window._toggleCorrScript = _toggleCorrScript;
 
 function _renderEmailQuestionPreview(data) {
     var html = '<div class="corr-question-preview">';
@@ -372,7 +458,9 @@ function _renderFeedbackContent(isWriting, feedback, isFinal) {
             }
         }
         if (summaryEl) {
-            renderFeedbackSummary(summaryEl, feedbackData);
+            // 호주 스피킹만 4점 만점, 나머지는 5점 만점
+            var scoreMax = (!writing && getCorrectionTrack() === 'aus') ? 4 : 5;
+            renderFeedbackSummary(summaryEl, feedbackData, scoreMax);
         }
     }, 50);
 
@@ -548,16 +636,19 @@ function _renderSpeakingModelAnswer(sub) {
         }
     }
 
+    // 호주첨삭 스피킹은 답변이 1개 → 카드 1장 (일반 인터뷰는 4문항)
+    var qCount = (getCorrectionTrack() === 'aus') ? 1 : 4;
+
     var html = '<div class="corr-model-grid">';
-    for (var q = 1; q <= 4; q++) {
+    for (var q = 1; q <= qCount; q++) {
         // 소문자 키 우선, 대문자 fallback
         var key = 'q' + q;
         var item = data[key] || data['Q' + q] || null;
 
         html += '<div class="corr-model-card">';
-        // Q 배지
+        // Q 배지 (답변이 1개뿐이면 Q1이라는 번호가 의미 없다)
         html += '<div class="corr-model-card-header">';
-        html += '<span class="corr-model-card-badge">Q' + q + '</span>';
+        html += '<span class="corr-model-card-badge">' + (qCount === 1 ? '모범답안' : 'Q' + q) + '</span>';
         html += '</div>';
 
         if (item && item.text) {

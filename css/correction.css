@@ -2029,13 +2029,17 @@
 
 /* ── 2차 재녹음 (좌: 문제+업로드 / 우: 1차 첨삭) ── */
 
+/* 2차 작성 화면 —
+   왼쪽(문제·녹음 올리기)은 확인용이라 좁아도 되고,
+   오른쪽(1차 첨삭)이 실제로 읽고 작업하는 곳이라 넓어야 한다. */
 .corr-ids-d2-wrap {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    max-width: 1200px;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 20px;
+    max-width: 1680px;
     margin: 0 auto;
     padding: 24px 20px;
+    align-items: start;
 }
 
 .corr-ids-d2-left,
@@ -2046,7 +2050,48 @@
     padding: 20px;
 }
 
-.corr-ids-d2-right { max-height: 70vh; overflow-y: auto; }
+/* 오른쪽 첨삭 패널: 위(본문 | 코멘트) 좌우 분할 + 아래 총평 전체 폭 */
+.corr-ids-d2-right .corr-fb-slot {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
+}
+
+.corr-ids-d2-right .corr-fb-marked {
+    min-width: 0;
+    max-height: 58vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.corr-ids-d2-right .corr-mark-notes {
+    min-width: 0;
+    margin: 0;
+    max-height: 58vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* 총평은 아래에 전체 폭으로 */
+.corr-ids-d2-right .corr-fb-summary {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+}
+
+/* 화면이 좁으면 좌우 분할을 풀고 세로로 */
+@media (max-width: 1280px) {
+    .corr-ids-d2-wrap {
+        grid-template-columns: 300px minmax(0, 1fr);
+    }
+    .corr-ids-d2-right .corr-fb-slot {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .corr-ids-d2-right .corr-fb-marked,
+    .corr-ids-d2-right .corr-mark-notes {
+        max-height: none;
+        overflow: visible;
+    }
+}
 
 .corr-ids-d2-section-title {
     font-size: 13px;
@@ -2090,7 +2135,8 @@
 .corr-ids-d2-wrap .corr-ids-submit-btn { margin-top: 20px; }
 
 @media (max-width: 900px) {
-    .corr-ids-d2-wrap { grid-template-columns: 1fr; }
+    /* 모바일 — 문제/첨삭을 위아래로 */
+    .corr-ids-d2-wrap { grid-template-columns: minmax(0, 1fr); }
     .corr-ids-d2-right { max-height: none; }
 }
 
@@ -2142,6 +2188,122 @@
     line-height: 1.75;
     color: #444;
     margin: 10px 0 0;
+    white-space: pre-wrap;
+}
+
+/* ── 마킹 코멘트 카드 (호주첨삭 2차 작성 화면) ──
+   첨삭 코멘트는 문단 단위로 길다. 떠 있는 말풍선은 위로 한없이 늘어나 잘린다.
+   2차는 첨삭을 보면서 답안을 고쳐 쓰는 자리이므로 코멘트를 전부 펼쳐두고,
+   마킹을 누르면 해당 카드를 강조·스크롤한다. (첨삭 상세의 메모 패널과 같은 방식) */
+.corr-mark-notes {
+    margin: 14px 0 18px;   /* 아래 총평 카드와 맞닿지 않게 */
+}
+
+.corr-mark-notes-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a86a0;
+    letter-spacing: 0.02em;
+    margin: 0 0 8px;
+}
+
+.corr-mark-note-card {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: #f8f7fc;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.corr-mark-note-card:hover {
+    background: #f1eff9;
+}
+
+.corr-mark-note-card.active {
+    background: #fff8e6;
+}
+
+.corr-mark-note-num {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #f59e0b;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+}
+
+.corr-mark-note-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.75;
+    color: #3f3a2e;
+    white-space: pre-wrap;
+}
+
+/* 선택된 마킹 강조 */
+.corr-fb-slot .correction-mark.note-active {
+    background: #fcd34d;
+}
+
+/* 이 화면에서는 말풍선 툴팁을 쓰지 않는다 (코멘트 카드로 대체) */
+.corr-fb-slot .correction-tooltip {
+    display: none !important;
+}
+
+/* ── 호주첨삭 2차 작성 화면의 문제 텍스트 ──
+   .ids-topic-text / .is-topic-text 는 정규 과정의 "실전 화면"용이라 크고(22px)
+   아래 여백이 40px다. 2차는 문제를 다시 확인하는 자리라 그 크기가 과하고,
+   여백 때문에 아래 버튼과 뚝 떨어져 보인다. 2차 영역에서만 줄인다.
+   (1차 실전 화면은 그대로 커야 하므로 .corr-ids-d2-left 안으로 한정한다) */
+.corr-ids-d2-left .ids-topic-text,
+.corr-ids-d2-left .is-topic-text {
+    font-size: 16px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+    max-width: none;
+}
+
+/* ── 듣기 대본 (첨삭 상세의 문제 보기 전용) ──
+   복습 단계에서만 연다. 기본은 접어두어 지문·음성보다 앞서 보이지 않게 한다. */
+.corr-qp-script {
+    margin: 12px 0 0;
+}
+
+.corr-qp-script-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border: none;
+    border-radius: 8px;
+    background: #efedf7;
+    color: #5b4b8a;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.corr-qp-script-btn:hover {
+    background: #e4e0f2;
+}
+
+.corr-qp-script-body {
+    background: #f8f7fc;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 10px 0 0;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #444;
     white-space: pre-wrap;
 }
 

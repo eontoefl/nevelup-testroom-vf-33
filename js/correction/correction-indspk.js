@@ -352,14 +352,8 @@ function _showCorrIdsDraft2() {
     if (continueBtn) continueBtn.style.display = 'none';
 
     var sub = state.submission;
-    var feedbackHtml = '<p class="corr-ids-d2-nofb">1차 첨삭 내용을 불러오지 못했습니다.</p>';
     var fb = _corrIdsParseFeedback(sub && sub.feedback_1);
-    if (fb && typeof renderSpeakingFeedback === 'function') {
-        feedbackHtml = renderSpeakingFeedback(fb);
-        if (typeof renderFeedbackSummary === 'function' && fb.summary) {
-            feedbackHtml += renderFeedbackSummary(fb);
-        }
-    }
+    var feedbackHtml = corrFeedbackSlotHtml();
 
     // 1차 녹음 다시 듣기
     var d1Path = sub && sub.draft_1_audio_q1;
@@ -395,6 +389,7 @@ function _showCorrIdsDraft2() {
             '</div>' +
         '</div>';
 
+    corrFillFeedbackSlot(container, fb, 'speaking');
     _bindCorrIdsFilePicker();
 
     var replayBtn = document.getElementById('corrIdsReplayBtn');
@@ -457,14 +452,15 @@ async function _corrIdsDoSubmit() {
         var uploaded = await supabaseStorageUpload('correction-audio', storagePath, file);
         if (!uploaded) throw new Error('파일 업로드 실패');
 
+        var saved;
         if (state.isDraft2) {
-            await updateCorrectionSubmission(state.submission.id, {
+            saved = await updateCorrectionSubmission(state.submission.id, {
                 draft_2_audio_q1: uploaded,
                 status: 'draft2_submitted',
                 draft_2_submitted_at: new Date().toISOString()
             });
         } else {
-            await insertCorrectionSubmission({
+            saved = await insertCorrectionSubmission({
                 user_id: user.id,
                 session_number: state.session.session,
                 task_type: state.taskType,
@@ -475,7 +471,25 @@ async function _corrIdsDoSubmit() {
             });
         }
 
-        // 호주첨삭은 채점 워크플로우(n8n) 미연결 — webhook 전송 안 함
+        // supabaseRequest()는 실패해도 throw하지 않고 null을 반환한다.
+        // 확인하지 않으면 저장이 거부돼도 "제출되었습니다"가 뜬다.
+        if (!saved) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+
+        // n8n 전송 — 아직 개통 안 된 유형이면 getCorrWebhookUrl()이 null을 돌려줘
+        // 보내지 않고 넘어간다 (제출은 저장됨 → 첨삭은 소급 처리)
+        if (typeof _sendCorrectionWebhook === 'function') {
+            _sendCorrectionWebhook(state.isDraft2, {
+                event: state.isDraft2 ? 'draft2_submitted' : 'draft1_submitted',
+                user_id: user.id,
+                user_name: user.name,
+                user_email: user.email,
+                session_number: state.session.session,
+                session_start_date: getCorrSessionStartDate(state.scheduleData, state.session),
+                task_type: state.taskType,
+                task_number: state.setNumber,
+                submitted_at: new Date().toISOString()
+            });
+        }
 
         if (overlay) overlay.style.display = 'none';
         alert(state.isDraft2 ? '2차 녹음이 제출되었습니다.' : '녹음이 제출되었습니다.');

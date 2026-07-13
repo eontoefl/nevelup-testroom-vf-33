@@ -390,6 +390,10 @@ function logout() {
         if (typeof _stopCorrDeadlineTimer === 'function') _stopCorrDeadlineTimer();
         if (typeof _cleanupCorrectionWriting === 'function') _cleanupCorrectionWriting();
         if (typeof _cleanupCorrectionSpeaking === 'function') _cleanupCorrectionSpeaking();
+        // 호주첨삭 화면 3종 — 정리하지 않으면 작성 타이머와 오디오가 로그인 화면에서도 계속 돈다
+        if (typeof cleanupCorrectionIntWrt === 'function') cleanupCorrectionIntWrt();
+        if (typeof cleanupCorrectionIndSpk === 'function') cleanupCorrectionIndSpk();
+        if (typeof cleanupCorrectionIntSpk === 'function') cleanupCorrectionIntSpk();
         window._correctionSessionState = null;
         window.__isAdmin = false;
         

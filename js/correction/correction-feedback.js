@@ -64,9 +64,11 @@ function renderSpeakingFeedback(container, feedback) {
 /**
  * summary 카드 HTML 생성
  */
-function renderFeedbackSummary(container, feedback) {
+function renderFeedbackSummary(container, feedback, scoreMax) {
     if (!container || !feedback) return;
 
+    // 만점은 유형마다 다르다 — 라이팅 0~5, 호주 스피킹 0~4 (ETS 공식 기준)
+    var max = scoreMax || 5;
     var html = '';
 
     // Summary
@@ -85,9 +87,9 @@ function renderFeedbackSummary(container, feedback) {
     // Level (2차 피드백)
     if (feedback.level !== undefined && feedback.level !== null) {
         html += '<div class="corr-feedback-level-card">';
-        html += '<div class="corr-feedback-level-badge">' + Math.round(Number(feedback.level)) + '</div>';
+        html += '<div class="corr-feedback-level-badge">' + Math.round(Number(feedback.level)) + ' / ' + max + '</div>';
         html += '<div class="corr-feedback-level-label">Score</div>';
-        html += '<div class="corr-feedback-level-desc">실제 ETS의 Writing · Speaking 채점 기준인 0~5점 스케일로 평가한 점수입니다.</div>';
+        html += '<div class="corr-feedback-level-desc">실제 ETS 채점 기준(' + max + '점 만점)으로 내용 · 문법 · 구성을 평가한 점수입니다.</div>';
         html += '</div>';
     }
 
@@ -125,13 +127,20 @@ function _attachTooltip(mark) {
     var comment = mark.getAttribute('data-comment');
     if (!comment) return;
 
-    // tooltip 엘리먼트 생성하지 않음 (메모 패널로 대체)
-    // 클릭 이벤트: 스플릿 메모 패널 연동은 _buildMemoPanel에서 처리
-    // 스플릿 외부(Speaking 등)에서 호출될 경우를 위한 기본 active 토글만 유지
+    // 코멘트를 보여주는 방식이 화면마다 다르다.
+    //   스플릿 레이아웃(첨삭 상세) — 오른쪽 메모 패널이 받는다 (_buildMemoPanel)
+    //   그 외(호주첨삭 2차 작성 등) — 패널 하단의 코멘트 칸(.corr-mark-note)에 띄운다.
+    //
+    // 떠 있는 말풍선은 쓰지 않는다. 첨삭 코멘트가 문단 단위로 길어서
+    // 말풍선이 위로 한없이 늘어나고 컨테이너를 벗어나 잘린다.
+    // 스플릿(첨삭 상세) → 메모 패널이 처리
+    // 호주첨삭 2차 → corrFillFeedbackSlot이 코멘트 카드와 연동 (_corrBuildMarkNotes)
+    // 둘 다 여기서 할 일이 없다.
+    if (mark.closest('.corr-fb-split-wrap') || mark.closest('.corr-fb-slot')) return;
+
+    // 그 외 화면 — 기존 동작(active 토글) 유지
     mark.addEventListener('click', function(e) {
         e.stopPropagation();
-        // 스플릿 wrap 안이면 _buildMemoPanel 이벤트가 처리하므로 여기서는 무시
-        if (mark.closest('.corr-fb-split-wrap')) return;
         var allActive = document.querySelectorAll('.correction-mark.active');
         for (var j = 0; j < allActive.length; j++) {
             if (allActive[j] !== mark) allActive[j].classList.remove('active');

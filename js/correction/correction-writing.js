@@ -630,16 +630,11 @@ function _sendCorrectionWebhook(isDraft2, payload) {
     var config = window.CORRECTION_CONFIG;
     if (!config) return;
 
-    // 호주첨삭은 아직 채점 워크플로우가 없다. 일반 워크플로우로 보내면
-    // 엉뚱한 기준으로 채점되므로 전송하지 않는다. (n8n 연결은 이후 단계)
-    if (getCorrectionTrack() === 'aus') {
-        console.log('📡 [Correction] 호주첨삭 — webhook 미연결 (전송 안 함)');
-        return;
-    }
-
-    var webhookUrl = isDraft2 ? config.writingWebhookDraft2 : config.writingWebhookDraft1;
+    // 어느 워크플로우로 보낼지는 correction-track.js가 단독으로 정한다.
+    // 호주첨삭 중 아직 개통 안 된 유형은 null이 와서 전송하지 않는다.
+    var webhookUrl = getCorrWebhookUrl(payload.task_type, isDraft2);
     if (!webhookUrl || webhookUrl.indexOf('placeholder') >= 0) {
-        console.log('📡 [Correction] Webhook 스킵 (placeholder URL)');
+        console.log('📡 [Correction] Webhook 스킵');
         return;
     }
 
@@ -668,7 +663,14 @@ function _sendCorrectionWebhook(isDraft2, payload) {
 var _TASK_TYPE_LABELS = {
     writing_email: 'Writing Email',
     writing_discussion: 'Writing Discussion',
-    speaking_interview: 'Speaking Interview'
+    speaking_interview: 'Speaking Interview',
+    // 호주첨삭 — 학원에서 쓰는 용어 그대로
+    writing_aus_discussion: '[호주] 토라',
+    writing_aus_integrated: '[호주] 통라',
+    speaking_aus_independent: '[호주] 독스',
+    speaking_aus_int2: '[호주] 통스2',
+    speaking_aus_int3: '[호주] 통스3',
+    speaking_aus_int4: '[호주] 통스4'
 };
 
 /**
