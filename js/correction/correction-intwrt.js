@@ -243,11 +243,10 @@ function _showCorrIwEditor(isDraft2) {
         nextBtn.onclick = function() { _corrIwTrySubmit(); };
     }
 
-    // 2차: 타이머 대신 "강의 다시 듣기" 버튼 + 1차 첨삭 패널
+    // 2차: 타이머 없음. 강의는 왼쪽 "강의" 탭의 재생바로 다시 듣는다
+    // ("다시 듣기" 버튼은 처음부터 재생만 되고 되감기가 안 돼서 다시 듣는 의미가 없었다)
     var topRight = isDraft2
-        ? (item.lectureAudioUrl
-            ? '<button class="iw-hide-time-btn" id="corrIwReplayBtn"><i class="fas fa-volume-up"></i> 강의 다시 듣기</button>'
-            : '')
+        ? ''
         : '<span class="iw-timer" id="corrIwWritingTimer">' + _corrIwFormatTime(writingTime) + '</span>' +
           '<button class="iw-hide-time-btn" id="corrIwHideTimeBtn3" onclick="_corrIwToggleTime(\'corrIwWritingTimer\', \'corrIwHideTimeBtn3\')">' +
               '<i class="fas fa-eye"></i> Hide Time' +
@@ -292,10 +291,10 @@ function _showCorrIwEditor(isDraft2) {
 
     var textarea = document.getElementById('corrIwTextarea');
     if (textarea) {
-        // 2차는 1차 답안을 불러와 그 위에서 고쳐 쓴다
-        if (isDraft2 && state.submission && state.submission.draft_1_text) {
-            textarea.value = state.submission.draft_1_text;
-        }
+        // 2차도 백지에서 시작한다 (일반첨삭 Email·Discussion과 동일).
+        // 1차 답안을 붙여주면 빠진 내용을 채우는 게 아니라 있는 문장만 손보게 된다.
+        // 1차 답안은 왼쪽 "1차 첨삭" 탭에서 마킹된 상태로 볼 수 있다.
+
         // 쓰다 만 답안이 남아 있으면 그것을 우선 복구 (제출 실패·새로고침·이탈 대비)
         var savedDraft = _corrIwLoadDraft();
         if (savedDraft) textarea.value = savedDraft;
@@ -316,14 +315,6 @@ function _showCorrIwEditor(isDraft2) {
 
     if (isDraft2) {
         _corrIwInsertFeedbackPanel();
-
-        var replayBtn = document.getElementById('corrIwReplayBtn');
-        if (replayBtn) {
-            replayBtn.onclick = function() {
-                state.audioPlayer.stop();
-                state.audioPlayer.play(item.lectureAudioUrl, function() {});
-            };
-        }
         return;
     }
 
@@ -345,7 +336,11 @@ function _showCorrIwEditor(isDraft2) {
     }, 1000);
 }
 
-/** 2차 화면 — 1차 첨삭 패널을 지문 위에 얹는다 */
+/**
+ * 2차 화면 왼쪽 — 지문 / 강의 / 1차 첨삭 탭.
+ * 2차는 학습 단계라 강의 대본을 열어준다. 강의를 못 알아들어서 틀린 학생에게
+ * 대본 없이 다시 쓰라는 건 같은 실수를 반복하라는 뜻이다. (1차는 실전이라 감춘다)
+ */
 function _corrIwInsertFeedbackPanel() {
     var state = window._correctionIntWrtState;
     if (!state) return;
@@ -353,38 +348,71 @@ function _corrIwInsertFeedbackPanel() {
     var left = document.querySelector('#corrIwContent .iw-editor-left');
     if (!left) return;
 
+    var item = state.item || {};
     var fb = _corrIwParseFeedback(state.submission && state.submission.feedback_1);
+    var hasLecture = !!(item.lectureAudioUrl || item.lectureScript);
 
-    var html = '<div class="corr-iw-fb-tabs">' +
+    var tabs = '<div class="corr-iw-fb-tabs">' +
         '<button class="corr-iw-fb-tab active" id="corrIwTabPassage">지문</button>' +
+        (hasLecture ? '<button class="corr-iw-fb-tab" id="corrIwTabLecture">강의</button>' : '') +
         '<button class="corr-iw-fb-tab" id="corrIwTabFeedback">1차 첨삭</button>' +
     '</div>';
 
+    // 강의 패널 — 재생바(되감기 가능) + 대본
+    var lectureHtml = '';
+    if (hasLecture) {
+        lectureHtml = '<div class="corr-iw-lecture-panel" id="corrIwLecturePanel" style="display:none;">';
+        if (item.lectureAudioUrl) {
+            lectureHtml += '<audio controls preload="none" class="corr-iw-lecture-audio">' +
+                               '<source src="' + item.lectureAudioUrl + '">' +
+                           '</audio>';
+        }
+        if (item.lectureScript) {
+            lectureHtml += '<div class="corr-iw-lecture-script">' +
+                               _corrIwEscape(item.lectureScript).replace(/\n/g, '<br>') +
+                           '</div>';
+        } else {
+            lectureHtml += '<p class="corr-ids-d2-nofb" style="margin-top:12px;">대본이 준비되지 않았습니다.</p>';
+        }
+        lectureHtml += '</div>';
+    }
+
     var panel = document.createElement('div');
     panel.className = 'corr-iw-left-wrap';
-    panel.innerHTML = html +
+    panel.innerHTML = tabs +
+        lectureHtml +
         '<div class="corr-iw-fb-panel" id="corrIwFbPanel" style="display:none;">' + corrFeedbackSlotHtml() + '</div>';
 
     left.insertBefore(panel, left.firstChild);
     corrFillFeedbackSlot(document.getElementById('corrIwFbPanel'), fb, 'writing');
 
     var scroll = left.querySelector('.iw-passage-scroll');
+    var lecPanel = document.getElementById('corrIwLecturePanel');
     var fbPanel = document.getElementById('corrIwFbPanel');
+
     var tabP = document.getElementById('corrIwTabPassage');
+    var tabL = document.getElementById('corrIwTabLecture');
     var tabF = document.getElementById('corrIwTabFeedback');
 
-    tabP.onclick = function() {
-        tabP.classList.add('active');
-        tabF.classList.remove('active');
-        if (scroll) scroll.style.display = '';
-        if (fbPanel) fbPanel.style.display = 'none';
-    };
-    tabF.onclick = function() {
-        tabF.classList.add('active');
-        tabP.classList.remove('active');
-        if (scroll) scroll.style.display = 'none';
-        if (fbPanel) fbPanel.style.display = 'block';
-    };
+    function show(which) {
+        var map = [
+            [tabP, scroll],
+            [tabL, lecPanel],
+            [tabF, fbPanel]
+        ];
+        for (var i = 0; i < map.length; i++) {
+            var tab = map[i][0];
+            var pane = map[i][1];
+            if (!tab || !pane) continue;
+            var on = (tab === which);
+            tab.classList.toggle('active', on);
+            pane.style.display = on ? (pane === scroll ? '' : 'block') : 'none';
+        }
+    }
+
+    tabP.onclick = function() { show(tabP); };
+    if (tabL) tabL.onclick = function() { show(tabL); };
+    tabF.onclick = function() { show(tabF); };
 }
 
 function _corrIwParseFeedback(raw) {

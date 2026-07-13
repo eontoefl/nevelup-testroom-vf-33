@@ -366,17 +366,13 @@ function _showCorrIdsDraft2() {
         '</div>';
     }
 
-    var audioBtn = state.setData.audioUrl
-        ? '<button class="corr-ids-replay-btn" id="corrIdsReplayBtn"><i class="fas fa-volume-up"></i> 문제 음성 다시 듣기</button>'
-        : '';
-
+    // 문제 음성 버튼은 두지 않는다 — 문제문이 바로 위에 텍스트로 있다.
     var container = document.getElementById('corrIdsContent');
     container.innerHTML =
         '<div class="corr-ids-d2-wrap">' +
             '<div class="corr-ids-d2-left">' +
                 '<div class="corr-ids-d2-section-title">문제</div>' +
                 '<div class="ids-topic-text">' + _corrIdsEscape(state.setData.text) + '</div>' +
-                audioBtn +
                 d1Html +
                 '<div class="corr-ids-d2-section-title" style="margin-top:22px;">다시 녹음해서 올리기</div>' +
                 '<p class="corr-ids-upload-desc" style="text-align:left;margin:0 0 14px;">시간 제한 없이 다시 녹음한 뒤 파일을 올려주세요.</p>' +
@@ -391,14 +387,6 @@ function _showCorrIdsDraft2() {
 
     corrFillFeedbackSlot(container, fb, 'speaking');
     _bindCorrIdsFilePicker();
-
-    var replayBtn = document.getElementById('corrIdsReplayBtn');
-    if (replayBtn) {
-        replayBtn.onclick = function() {
-            state.audioPlayer.stop();
-            state.audioPlayer.play(state.setData.audioUrl, function() {});
-        };
-    }
 }
 
 /** feedback JSONB — 문자열로 이중 직렬화된 경우 방어 */

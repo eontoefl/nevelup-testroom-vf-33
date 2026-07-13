@@ -93,7 +93,8 @@ async function openCorrectionDetail(taskType, session, submission) {
     if (submission) {
         var draft1Content = _renderDraft1Content(isWriting, submission);
         var draft1Open = (status === 'draft1_submitted');
-        _addAccordionItem(accordionEl, '1차 작성본', draft1Content, draft1Open, 'draft1');
+        // 스피킹은 쓰는 게 아니라 녹음해서 낸다
+        _addAccordionItem(accordionEl, isWriting ? '1차 작성본' : '1차 녹음본', draft1Content, draft1Open, 'draft1');
     }
 
     // --- Section 2: 1차 피드백 ---
@@ -110,7 +111,7 @@ async function openCorrectionDetail(taskType, session, submission) {
         if (!isTerminal || hasDraft2) {
             var draft2Content = _renderDraft2Content(isWriting, submission, taskType, session, isTerminal);
             var draft2Open = (!isTerminal && status === 'feedback1_ready' && !hasDraft2);
-            _addAccordionItem(accordionEl, '2차 수정본', draft2Content, draft2Open, 'draft2');
+            _addAccordionItem(accordionEl, isWriting ? '2차 수정본' : '2차 녹음본', draft2Content, draft2Open, 'draft2');
         }
     }
 
@@ -196,17 +197,46 @@ function _renderIntSpkQuestionPreview(data) {
         }
         html += '<div class="corr-qp-passage">' + _escapeAndNl2br(data.passage) + '</div>';
     }
+    // 듣기 — 음성과 대본은 한 덩어리로 묶는다. 떨어뜨리면 둘의 관계가 안 보인다.
     var listenLabel = (data.type === 2) ? '대화' : '강의';
-    if (data.dialogAudioUrl) {
-        html += _renderAudioPlayer(listenLabel + ' 음성', data.dialogAudioUrl);
-    }
-    html += _renderScriptToggle(listenLabel + ' 대본', data.dialogScript);
+    html += _renderListenBlock(listenLabel, data.dialogAudioUrl, data.dialogScript);
 
+    // 문제 — 음성은 넣지 않는다. 복습 단계에서 문제를 다시 들을 이유가 없다.
     if (data.problemText) {
-        html += '<p class="corr-qp-task">' + _escapeAndNl2br(data.problemText) + '</p>';
+        html += '<div class="corr-qp-sub-label">문제</div>';
+        html += '<p class="corr-qp-task" style="margin:0;">' + _escapeAndNl2br(data.problemText) + '</p>';
     }
-    if (data.problemAudioUrl) {
-        html += _renderAudioPlayer('문제 음성', data.problemAudioUrl);
+
+    html += '</div>';
+    return html;
+}
+
+/**
+ * 듣기 블록 — 라벨·재생바·대본 버튼을 한 카드에 묶는다.
+ * 대본은 같은 카드 안에서 아래로 펼쳐진다.
+ */
+function _renderListenBlock(label, audioUrl, script) {
+    if (!audioUrl && !script) return '';
+
+    var id = 'corrScript_' + (++_corrScriptSeq);
+    var html = '<div class="corr-qp-listen">';
+
+    html += '<div class="corr-qp-listen-head">';
+    html += '<span class="corr-qp-listen-label"><i class="fas fa-headphones"></i> ' + _escapeHtml(label) + '</span>';
+    if (script) {
+        html += '<button type="button" class="corr-qp-script-btn" onclick="_toggleCorrScript(\'' + id + '\', this)">' +
+                    '<i class="fas fa-file-lines"></i> 대본 보기' +
+                '</button>';
+    }
+    html += '</div>';
+
+    if (audioUrl) {
+        html += '<audio controls preload="none" class="corr-qp-listen-audio"><source src="' + audioUrl + '"></audio>';
+    }
+    if (script) {
+        html += '<div class="corr-qp-script-body" id="' + id + '" style="display:none;">' +
+                    _escapeAndNl2br(script) +
+                '</div>';
     }
 
     html += '</div>';
@@ -218,34 +248,13 @@ function _renderIntWrtQuestionPreview(data) {
     var html = '<div class="corr-question-preview">';
     html += '<p class="corr-qp-task">' + _escapeAndNl2br(CORR_IW_QUESTION) + '</p>';
     html += '<div class="corr-qp-passage">' + _escapeAndNl2br(data.passage) + '</div>';
-    if (data.lectureAudioUrl) {
-        html += _renderAudioPlayer('강의 음성', data.lectureAudioUrl);
-    }
-    html += _renderScriptToggle('강의 대본', data.lectureScript);
+    html += _renderListenBlock('강의', data.lectureAudioUrl, data.lectureScript);
     html += '</div>';
     return html;
 }
 
-/**
- * 듣기 대본 — 접었다 펴는 형태.
- * 복습 단계(첨삭 상세)에서만 쓴다. 작성 화면에서 열어주면 듣기 연습이 무의미해진다.
- */
+// 듣기 대본은 복습 단계(첨삭 상세)에서만 편다. 작성 화면에서 열어주면 듣기 연습이 무의미해진다.
 var _corrScriptSeq = 0;
-
-function _renderScriptToggle(label, script) {
-    if (!script) return '';
-
-    var id = 'corrScript_' + (++_corrScriptSeq);
-    var html = '<div class="corr-qp-script">';
-    html += '<button type="button" class="corr-qp-script-btn" onclick="_toggleCorrScript(\'' + id + '\', this)">' +
-                '<i class="fas fa-file-lines"></i> ' + _escapeHtml(label) + ' 보기' +
-            '</button>';
-    html += '<div class="corr-qp-script-body" id="' + id + '" style="display:none;">' +
-                _escapeAndNl2br(script) +
-            '</div>';
-    html += '</div>';
-    return html;
-}
 
 function _toggleCorrScript(id, btn) {
     var el = document.getElementById(id);
@@ -254,8 +263,8 @@ function _toggleCorrScript(id, btn) {
     var open = (el.style.display !== 'none');
     el.style.display = open ? 'none' : 'block';
 
-    var label = btn.textContent.trim().replace(/\s*(보기|숨기기)$/, '');
-    btn.innerHTML = '<i class="fas fa-file-lines"></i> ' + _escapeHtml(label) + (open ? ' 보기' : ' 숨기기');
+    btn.classList.toggle('open', !open);
+    btn.innerHTML = '<i class="fas fa-file-lines"></i> ' + (open ? '대본 보기' : '대본 숨기기');
 }
 window._toggleCorrScript = _toggleCorrScript;
 
@@ -367,11 +376,17 @@ function _renderDraft2Content(isWriting, sub, taskType, session, isTerminal) {
     var hasDraft2 = isWriting ? !!sub.draft_2_text : !!sub.draft_2_audio_q1;
 
     if (!hasDraft2) {
-        // 2차 미제출 → "수정하기" 버튼
+        // 2차 미제출 → "수정하기" 버튼 (스피킹은 쓰는 게 아니라 다시 녹음한다)
+        var guide = isWriting
+            ? '1차 피드백을 참고하여 수정본을 작성하세요.'
+            : '1차 피드백을 참고하여 다시 녹음해 주세요.';
+        var btnLabel = isWriting ? '수정하기' : '다시 녹음하기';
+        var btnIcon = isWriting ? 'fa-edit' : 'fa-microphone';
+
         var html = '<div style="text-align:center; padding:20px;">';
-        html += '<p style="color:#666; margin-bottom:16px;">1차 피드백을 참고하여 수정본을 작성하세요.</p>';
+        html += '<p style="color:#666; margin-bottom:16px;">' + guide + '</p>';
         html += '<button class="corr-detail-action-btn" onclick="onCorrDetailDraft2Click(\'' + taskType + '\')">';
-        html += '<i class="fas fa-edit"></i> 수정하기</button>';
+        html += '<i class="fas ' + btnIcon + '"></i> ' + btnLabel + '</button>';
         html += '</div>';
         return html;
     }
@@ -638,29 +653,47 @@ function _renderSpeakingModelAnswer(sub) {
     }
 
     // 호주첨삭 스피킹은 답변이 1개 → 카드 1장 (일반 인터뷰는 4문항)
-    var qCount = (getCorrectionTrack() === 'aus') ? 1 : 4;
+    var isAus = (getCorrectionTrack() === 'aus');
+    var qCount = isAus ? 1 : 4;
 
-    var html = '<div class="corr-model-grid">';
+    var html = '<div class="corr-model-grid' + (isAus ? ' is-single' : '') + '">';
     for (var q = 1; q <= qCount; q++) {
         // 소문자 키 우선, 대문자 fallback
         var key = 'q' + q;
         var item = data[key] || data['Q' + q] || null;
 
         html += '<div class="corr-model-card">';
-        // Q 배지 (답변이 1개뿐이면 Q1이라는 번호가 의미 없다)
-        html += '<div class="corr-model-card-header">';
-        html += '<span class="corr-model-card-badge">' + (qCount === 1 ? '모범답안' : 'Q' + q) + '</span>';
-        html += '</div>';
+
+        // Q 배지 — 답변이 4개일 때만. 1개뿐이면 위에 이미 "모범답안"이라 써 있어 중복이다.
+        if (!isAus) {
+            html += '<div class="corr-model-card-header">';
+            html += '<span class="corr-model-card-badge">Q' + q + '</span>';
+            html += '</div>';
+        }
 
         if (item && item.text) {
-            // 영어 원문
-            html += '<p class="corr-model-card-text">' + _escapeAndNl2br(item.text) + '</p>';
-            // 번역 토글 + 번역 텍스트
-            if (item.trans) {
-                html += '<button class="corr-model-trans-btn" data-model-q="' + q + '" type="button">번역 보기</button>';
-                html += '<div class="corr-model-trans" id="corrModelTrans_' + q + '" style="display:none;">' + _escapeAndNl2br(item.trans) + '</div>';
+            if (isAus && item.trans) {
+                // 답변이 하나뿐이라 가로 공간이 남는다 → 영어와 해석을 나란히 둔다.
+                // 토글을 누를 필요 없이 바로 대조해 읽을 수 있다.
+                html += '<div class="corr-model-split">';
+                html += '  <div class="corr-model-split-col">';
+                html += '    <div class="corr-model-col-label">영어</div>';
+                html += '    <p class="corr-model-card-text">' + _escapeAndNl2br(item.text) + '</p>';
+                html += '  </div>';
+                html += '  <div class="corr-model-split-col">';
+                html += '    <div class="corr-model-col-label">해석</div>';
+                html += '    <p class="corr-model-card-trans">' + _escapeAndNl2br(item.trans) + '</p>';
+                html += '  </div>';
+                html += '</div>';
+            } else {
+                html += '<p class="corr-model-card-text">' + _escapeAndNl2br(item.text) + '</p>';
+                if (item.trans) {
+                    html += '<button class="corr-model-trans-btn" data-model-q="' + q + '" type="button">번역 보기</button>';
+                    html += '<div class="corr-model-trans" id="corrModelTrans_' + q + '" style="display:none;">' + _escapeAndNl2br(item.trans) + '</div>';
+                }
             }
-            // 오디오 플레이어 — model_answer_audio_url에서 읽기
+
+            // 오디오 플레이어 — model_answer_audio_url에서 읽기 (호주는 아직 음성 없음)
             var audioPath = audioData ? (audioData[key] || audioData['Q' + q] || '') : '';
             if (audioPath) {
                 var audioUrl = (audioPath.indexOf('http') === 0) ? audioPath : supabaseStorageUrl('correction-audio', audioPath);

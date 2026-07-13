@@ -527,27 +527,27 @@ function _showCorrIsDraft2() {
         '</div>';
     }
 
-    // 지문 (Task 2·3만)
+    // 지문 (Task 2·3만 — 통스4는 읽기 지문이 없는 유형)
     var passageHtml = '';
     if (CORR_IS_CONFIG[item.type].hasReading && item.passage) {
         passageHtml =
             '<div class="corr-ids-d2-section-title">지문</div>' +
             '<h3 class="is-reading-title" style="margin:0 0 10px;">' + _corrIsEscape(item.title) + '</h3>' +
-            '<div class="is-reading-passage" style="margin-bottom:14px;">' + _corrIsEscape(item.passage) + '</div>';
+            '<div class="is-reading-passage" style="margin-bottom:16px;">' + _corrIsEscape(item.passage) + '</div>';
     }
 
-    var replayBtns =
-        (item.dialogAudioUrl ? '<button class="corr-ids-replay-btn" id="corrIsReplayDialog"><i class="fas fa-volume-up"></i> ' + (item.type === 2 ? '대화' : '강의') + ' 다시 듣기</button> ' : '') +
-        (item.problemAudioUrl ? '<button class="corr-ids-replay-btn" id="corrIsReplayProblem"><i class="fas fa-volume-up"></i> 문제 다시 듣기</button>' : '');
+    // 듣기 — 재생바 + 대본을 한 카드에. 2차는 학습 단계라 대본을 열어준다.
+    // (1차는 실전이라 감춘다. 못 알아들어서 틀린 학생에게 대본 없이 다시 하라는 건 무의미하다.)
+    var listenHtml = _corrIsListenBlockHtml(item);
 
     var container = document.getElementById('corrIsContent');
     container.innerHTML =
         '<div class="corr-ids-d2-wrap">' +
             '<div class="corr-ids-d2-left">' +
                 passageHtml +
-                '<div class="corr-ids-d2-section-title">문제</div>' +
+                listenHtml +
+                '<div class="corr-ids-d2-section-title" style="margin-top:18px;">문제</div>' +
                 '<div class="is-topic-text" style="text-align:left;">' + _corrIsEscape(item.problemText) + '</div>' +
-                '<div style="margin-top:12px;">' + replayBtns + '</div>' +
                 d1Html +
                 '<div class="corr-ids-d2-section-title" style="margin-top:22px;">다시 녹음해서 올리기</div>' +
                 '<p class="corr-ids-upload-desc" style="text-align:left;margin:0 0 14px;">시간 제한 없이 다시 녹음한 뒤 파일을 올려주세요.</p>' +
@@ -562,21 +562,41 @@ function _showCorrIsDraft2() {
 
     corrFillFeedbackSlot(container, fb, 'speaking');
     _bindCorrIsFilePicker();
+}
 
-    var dlgBtn = document.getElementById('corrIsReplayDialog');
-    if (dlgBtn) {
-        dlgBtn.onclick = function() {
-            state.audioPlayer.stop();
-            state.audioPlayer.play(item.dialogAudioUrl, function() {});
-        };
+/**
+ * 2차 화면의 듣기 카드 — 재생바 + 대본 펼치기.
+ * 첨삭 상세의 듣기 블록과 같은 모양으로 맞춘다 (화면마다 다르면 학생이 매번 새로 익혀야 한다).
+ * '다시 듣기' 버튼 대신 재생바를 쓴다 — 되감기·구간 반복이 되어야 다시 듣는 의미가 있다.
+ * 문제 음성은 넣지 않는다 (문제문이 바로 아래 텍스트로 있다).
+ */
+function _corrIsListenBlockHtml(item) {
+    if (!item.dialogAudioUrl && !item.dialogScript) return '';
+
+    var label = (item.type === 2) ? '대화' : '강의';
+    var id = 'corrIsScript';
+    var html = '<div class="corr-qp-listen">';
+
+    html += '<div class="corr-qp-listen-head">';
+    html += '<span class="corr-qp-listen-label"><i class="fas fa-headphones"></i> ' + label + '</span>';
+    if (item.dialogScript) {
+        html += '<button type="button" class="corr-qp-script-btn" onclick="_toggleCorrScript(\'' + id + '\', this)">' +
+                    '<i class="fas fa-file-lines"></i> 대본 보기' +
+                '</button>';
     }
-    var probBtn = document.getElementById('corrIsReplayProblem');
-    if (probBtn) {
-        probBtn.onclick = function() {
-            state.audioPlayer.stop();
-            state.audioPlayer.play(item.problemAudioUrl, function() {});
-        };
+    html += '</div>';
+
+    if (item.dialogAudioUrl) {
+        html += '<audio controls preload="none" class="corr-qp-listen-audio"><source src="' + item.dialogAudioUrl + '"></audio>';
     }
+    if (item.dialogScript) {
+        html += '<div class="corr-qp-script-body" id="' + id + '" style="display:none;">' +
+                    _corrIsEscape(item.dialogScript).replace(/\n/g, '<br>') +
+                '</div>';
+    }
+
+    html += '</div>';
+    return html;
 }
 
 function _corrIsParseFeedback(raw) {

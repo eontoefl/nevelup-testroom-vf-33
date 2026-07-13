@@ -1039,6 +1039,47 @@
     gap: 14px;
 }
 
+/* 호주첨삭 — 답변이 1개뿐이라 카드도 1장. 2열 그리드로 쪼갤 이유가 없다. */
+.corr-model-grid.is-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* 카드 안에서 영어와 해석을 나란히.
+   토글로 감추면 대조해 읽을 수가 없고, 카드가 1장이라 가로 공간이 남는다. */
+.corr-model-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 22px;
+}
+
+.corr-model-split-col {
+    min-width: 0;
+}
+
+.corr-model-col-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a86a0;
+    letter-spacing: 0.02em;
+}
+
+.corr-model-card-trans {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #555;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@media (max-width: 860px) {
+    .corr-model-split {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+}
+
 .corr-model-card {
     background: #fff;
     border: 1px solid var(--border-color, #e2e8f0);
@@ -2030,15 +2071,20 @@
 /* ── 2차 재녹음 (좌: 문제+업로드 / 우: 1차 첨삭) ── */
 
 /* 2차 작성 화면 —
-   왼쪽(문제·녹음 올리기)은 확인용이라 좁아도 되고,
-   오른쪽(1차 첨삭)이 실제로 읽고 작업하는 곳이라 넓어야 한다. */
+   왼쪽: 문제 자료(지문·듣기·대본·문제문) + 녹음 올리기
+   오른쪽: 1차 첨삭 (본문 | 코멘트 + 총평)
+   통스는 왼쪽에 들어갈 게 많아서(지문·대화·대본·문제) 좁으면 깨진다.
+   독스는 토픽 한 문장뿐이라 남아도 무방. 둘 다 견디도록 460px을 준다. */
 .corr-ids-d2-wrap {
     display: grid;
-    grid-template-columns: 340px minmax(0, 1fr);
+    grid-template-columns: 460px minmax(0, 1fr);
     gap: 20px;
-    max-width: 1680px;
+    max-width: 1760px;
     margin: 0 auto;
     padding: 24px 20px;
+    /* 각 컬럼은 자기 내용만큼만 차지한다.
+       높이를 맞추려고 stretch를 주면 짧은 쪽(대개 왼쪽) 아래에 빈 공간이 남고,
+       고정 높이를 주면 내용이 남는데도 스크롤이 생긴다. 둘 다 하지 않는다. */
     align-items: start;
 }
 
@@ -2048,7 +2094,11 @@
     border: 1px solid #e8e8ef;
     border-radius: 14px;
     padding: 20px;
+    min-width: 0;
 }
+
+/* 왼쪽은 내용 높이 그대로. 안쪽 지문·대본 박스가 각자 스크롤을 가지므로
+   전체가 한없이 길어지지는 않는다. */
 
 /* 오른쪽 첨삭 패널: 위(본문 | 코멘트) 좌우 분할 + 아래 총평 전체 폭 */
 .corr-ids-d2-right .corr-fb-slot {
@@ -2078,10 +2128,10 @@
     margin-top: 4px;
 }
 
-/* 화면이 좁으면 좌우 분할을 풀고 세로로 */
-@media (max-width: 1280px) {
+/* 화면이 좁으면 첨삭 패널의 좌우 분할부터 푼다 */
+@media (max-width: 1400px) {
     .corr-ids-d2-wrap {
-        grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-columns: 400px minmax(0, 1fr);
     }
     .corr-ids-d2-right .corr-fb-slot {
         grid-template-columns: minmax(0, 1fr);
@@ -2179,6 +2229,37 @@
     background: #fff;
 }
 
+/* ── 통라 2차: 강의 탭 (재생바 + 대본) ──
+   "다시 듣기" 버튼은 처음부터 재생만 되고 되감기가 안 된다.
+   못 알아들은 구간을 다시 확인하는 게 목적이므로 재생바를 쓴다. */
+.corr-iw-lecture-panel {
+    padding: 16px 18px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #fff;
+}
+
+.corr-iw-lecture-audio {
+    display: block;
+    width: 100%;
+    height: 40px;
+    background: #f4f2fb;
+    border-radius: 8px;
+    padding: 2px;
+    box-sizing: border-box;
+}
+
+.corr-iw-lecture-script {
+    margin: 14px 0 0;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #f8f7fc;
+    font-size: 14px;
+    line-height: 1.85;
+    color: #444;
+    white-space: pre-wrap;
+}
+
 .corr-qp-passage {
     background: #f8f7fc;
     border: 1px solid #e6e2f2;
@@ -2271,40 +2352,105 @@
     max-width: none;
 }
 
-/* ── 듣기 대본 (첨삭 상세의 문제 보기 전용) ──
-   복습 단계에서만 연다. 기본은 접어두어 지문·음성보다 앞서 보이지 않게 한다. */
-.corr-qp-script {
-    margin: 12px 0 0;
+/* 지문도 실전 화면용(17px)이라 2차에서는 살짝 줄인다 */
+.corr-ids-d2-left .is-reading-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.corr-ids-d2-left .is-reading-passage {
+    font-size: 14px;
+    line-height: 1.75;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #f8f7fc;
+}
+
+/* ── 듣기 블록 (첨삭 상세의 문제 보기 전용) ──
+   라벨·재생바·대본을 한 카드에 묶는다. 셋이 따로 떠 있으면 관계가 안 보이고
+   대본을 폈을 때 어디에 딸린 건지도 알기 어렵다. */
+.corr-qp-listen {
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f4f2fb;
+}
+
+.corr-qp-listen-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.corr-qp-listen-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #5b4b8a;
+}
+
+/* 재생바 자체가 회색이라 라벤더 카드 위에서 묻힌다. 흰 받침을 깔아 띄운다. */
+.corr-qp-listen-audio {
+    display: block;
+    width: 100%;
+    height: 40px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 2px;
+    box-sizing: border-box;
 }
 
 .corr-qp-script-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 13px;
+    flex: 0 0 auto;
+    padding: 6px 12px;
     border: none;
     border-radius: 8px;
-    background: #efedf7;
+    background: #fff;
     color: #5b4b8a;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
 }
 
 .corr-qp-script-btn:hover {
-    background: #e4e0f2;
+    background: #ece9f7;
+}
+
+.corr-qp-script-btn.open {
+    background: #5b4b8a;
+    color: #fff;
 }
 
 .corr-qp-script-body {
-    background: #f8f7fc;
+    background: #fff;
     border-radius: 10px;
     padding: 14px 16px;
-    margin: 10px 0 0;
+    margin: 12px 0 0;
     font-size: 14px;
     line-height: 1.8;
     color: #444;
     white-space: pre-wrap;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+/* 문제 등 소제목 */
+.corr-qp-sub-label {
+    margin: 16px 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a86a0;
+    letter-spacing: 0.02em;
 }
 
 /* ── 호주첨삭 스피킹 인트로: 녹음 안내 (IND SPK · INT SPK 공용) ──

@@ -20,12 +20,12 @@ window.CORRECTION_CONFIG = {
     // false면 제출은 정상 저장되고 webhook만 보내지 않는다 (첨삭은 나중에 소급 처리).
     // 준비 안 된 유형을 열면 TODO 프롬프트로 엉터리 첨삭이 학생에게 생성된다.
     ausWebhookReady: {
-        writing_aus_discussion:   { draft1: true,  draft2: true  },  // 토라 — 일반 Discussion 프롬프트 재사용 (1·2차 모두)
-        writing_aus_integrated:   { draft1: true,  draft2: false },  // 통라 — 1차 프롬프트 투입·검증 완료 / 2차 대기
-        speaking_aus_independent: { draft1: true,  draft2: false },  // 독스 — 1차 프롬프트 투입 / 2차 대기
-        speaking_aus_int2:        { draft1: true,  draft2: false },  // 통스2
-        speaking_aus_int3:        { draft1: true,  draft2: false },  // 통스3
-        speaking_aus_int4:        { draft1: true,  draft2: false }   // 통스4
+        writing_aus_discussion:   { draft1: true, draft2: true },  // 토라 — 일반 Discussion 프롬프트 재사용
+        writing_aus_integrated:   { draft1: true, draft2: true },  // 통라
+        speaking_aus_independent: { draft1: true, draft2: true },  // 독스
+        speaking_aus_int2:        { draft1: true, draft2: true },  // 통스2
+        speaking_aus_int3:        { draft1: true, draft2: true },  // 통스3
+        speaking_aus_int4:        { draft1: true, draft2: true }   // 통스4
     },
 
     // ── Webhook 실패 시 텔레그램 알림 설정 ──
