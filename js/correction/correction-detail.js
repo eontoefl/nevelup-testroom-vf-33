@@ -159,7 +159,8 @@ function _renderQuestionPreview(isWriting, session) {
         }
     } else {
         // 호주 스피킹(독스·통스)은 인터뷰와 문제 구조가 달라 따로 그린다
-        var sType = session.speaking ? session.speaking.type : '';
+        // 일반 스케줄은 스피킹에 type이 없다 (인터뷰 고정)
+        var sType = (session.speaking && session.speaking.type) || '';
         if (sType === 'aus_indspk') {
             return _corrDetailQuestionData ? _renderIndSpkQuestionPreview(_corrDetailQuestionData) : '';
         }
