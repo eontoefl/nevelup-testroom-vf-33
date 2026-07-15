@@ -1284,3 +1284,92 @@
   .toefl-coach-split { flex-direction: column; gap: 0; }
   .toefl-coach-split-aside { flex-basis: auto; }
 }
+
+/* ======================================================
+   목표 현황 (체크리스트) + 다음목표 모달 섹션
+====================================================== */
+.toefl-goalstatus {
+  margin-bottom: 14px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--surface-container-lowest);
+  /* 차트 카드와 동일한 은은한 그림자 (칙칙한 회색 대신 살짝 떠 있는 흰 카드) */
+  box-shadow: 0 2px 10px rgba(25, 28, 29, 0.04), 0 12px 32px rgba(25, 28, 29, 0.06);
+}
+.toefl-goalstatus-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.toefl-goal-group { margin-bottom: 14px; }
+.toefl-goal-group:last-child { margin-bottom: 0; }
+.toefl-goal-grouptitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toefl-goal-tip { color: var(--primary); cursor: help; font-size: 0.78rem; }
+.toefl-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+.toefl-goal-row-click { cursor: pointer; transition: background 0.12s; }
+.toefl-goal-row-click:hover { background: rgba(148, 128, 197, 0.08); }
+.toefl-goal-row-active { background: rgba(148, 128, 197, 0.14); }
+.toefl-goal-check { flex-shrink: 0; font-size: 0.9rem; }
+.toefl-goal-metric { font-weight: 700; min-width: 74px; }
+.toefl-goal-val { font-weight: 700; color: var(--on-surface); }
+.toefl-goal-cur { margin-left: auto; font-size: 0.78rem; color: var(--text-muted); }
+.toefl-goal-eye { color: var(--primary); opacity: 0.5; font-size: 0.75rem; }
+.toefl-goal-row-active .toefl-goal-eye { opacity: 1; }
+.toefl-coach-hint { font-size: 0.8rem; color: var(--text-muted); }
+
+/* 다음목표 모달: 필수 배지 + 섹션 체크행 */
+.toefl-field-req {
+  font-size: 0.7rem; font-weight: 600; color: var(--primary);
+  background: rgba(148, 128, 197, 0.12); padding: 1px 7px; border-radius: 9999px;
+  margin-left: 6px;
+}
+.toefl-wish-secrow {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+}
+.toefl-wish-seccheck {
+  display: flex; align-items: center; gap: 8px;
+  min-width: 120px; font-weight: 600; cursor: pointer; font-size: 0.88rem;
+}
+.toefl-wish-seccheck input[type="checkbox"] {
+  width: 17px; height: 17px; accent-color: var(--primary);
+  cursor: pointer; flex-shrink: 0;
+}
+/* 섹션 셀렉트도 Overall 셀렉트(.toefl-field select)와 동일한 디자인 */
+.toefl-wish-secrow select {
+  flex: 1;
+  padding: 11px 14px;
+  background: var(--surface-container-low);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--on-surface);
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.toefl-wish-secrow select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(148, 128, 197, 0.12);
+}
+.toefl-wish-secrow select:disabled { opacity: 0.4; cursor: not-allowed; }
