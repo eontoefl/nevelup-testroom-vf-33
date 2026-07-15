@@ -211,13 +211,19 @@ body {
   box-shadow: 0 10px 15px -3px rgba(148, 128, 197, 0.3);
 }
 
-.program-badge {
+/*
+ * style.css 의 .program-badge 는 상단 네비바용이라 margin-left:8px 를 갖는데,
+ * 그 파일이 뒤에 로드되어 여기를 덮어쓴다. 마이페이지에서는 인사말과 왼쪽 라인을
+ * 맞춰야 하므로 선택자 특이도를 높여 되돌린다 (로드 순서와 무관하게 이긴다).
+ */
+.user-info-card .user-info-text .program-badge {
   display: inline-flex;
   align-items: center;
+  margin-left: 0;
   padding: 4px 12px;
   border-radius: 9999px;
-  background-color: rgba(119, 191, 126, 0.1);
-  color: var(--secondary);
+  background-color: var(--signature);
+  color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
   width: fit-content;

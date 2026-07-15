@@ -84,6 +84,11 @@ async function loadAllData() {
         `user_id=eq.${userId}&select=original_date,extra_days`
     ) || [];
 
+    // 실제 TOEFL 시험 일정 + 성적 + 목표점수
+    await loadToeflExams();
+    await loadToeflScores();
+    await loadToeflTarget();
+
     console.log(`📊 [MyPage] 로드 완료 - V3결과: ${mpV3Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${mpDeadlineExtensions.length}건`);
 }
 
@@ -96,6 +101,10 @@ function renderAll() {
     renderDeadlineExtensionBanner();
     renderGrass();
     renderScoreChart();
+    renderToeflExamCard();
+    renderToeflSection();
+    renderToeflBanner();
+    initMpTabs();
     showV2RecordsLink();
 }
 
@@ -1042,21 +1051,43 @@ function setupPlanTabs() {
 
 
 // ================================================
-// ④ V2 이전 학습 기록 버튼 표시
+// ④ 보조 링크 (해당되는 학생에게만)
+//    - V2 이전 학습 기록: 실제 V2 기록(tr_study_records)이 있는 학생만.
+//      전원에게 띄우면 대부분은 "기록이 없습니다" 빈 페이지로 간다.
+//    - 연습코스 마이페이지: practiceEnabled인 학생만.
+//    둘 다 해당 없으면 영역 자체를 감춘다.
 // ================================================
-function showV2RecordsLink() {
-    const linkEl = document.getElementById('v2RecordsLink');
-    if (!linkEl) return;
-    // 모든 학생에게 표시 (데이터 없으면 v2-records.html에서 안내)
-    linkEl.style.display = 'flex';
-    console.log('📦 [MyPage] V2 이전 학습 기록 버튼 표시');
+async function showV2RecordsLink() {
+    let shown = 0;
 
-    // 연습코스 마이페이지 링크 (practiceEnabled인 경우만)
+    // V2 기록이 실제로 있는지 확인 (1건만 조회)
+    const linkEl = document.getElementById('v2RecordsLink');
+    if (linkEl && mpUser && mpUser.id) {
+        try {
+            const v2 = await supabaseSelect(
+                'tr_study_records',
+                `user_id=eq.${mpUser.id}&select=id&limit=1`
+            );
+            if (v2 && v2.length > 0) {
+                linkEl.style.display = 'flex';
+                shown++;
+                console.log('📦 [MyPage] V2 이전 학습 기록 있음 → 버튼 표시');
+            }
+        } catch (err) {
+            console.warn('⚠️ [MyPage] V2 기록 조회 실패 (버튼 숨김):', err);
+        }
+    }
+
+    // 연습코스 마이페이지 링크
     const practiceLink = document.getElementById('practiceMyPageLink');
     if (practiceLink && mpUser && mpUser.practiceEnabled) {
         practiceLink.style.display = 'flex';
+        shown++;
         console.log('🏋️ [MyPage] 연습코스 마이페이지 링크 표시');
     }
+
+    const wrap = document.getElementById('mpExtraLinks');
+    if (wrap) wrap.style.display = shown > 0 ? 'flex' : 'none';
 }
 
 // ================================================
