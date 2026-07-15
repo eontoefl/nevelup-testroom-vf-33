@@ -1246,50 +1246,39 @@
 /* ── 커트라인 달성 코치: 좌(축하) / 우(도전 유도) 분할 ── */
 .toefl-coach-split {
   display: flex;
-  align-items: stretch;
-  gap: 20px;
-  padding: 0;                 /* 내부 영역이 각자 패딩 */
+  align-items: stretch;      /* 두 칸 높이를 같게 */
+  padding: 0;
   overflow: hidden;
 }
-.toefl-coach-split-main {
-  flex: 1 1 auto;
-  padding: 20px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.toefl-coach-split-text { flex: 1 1 auto; min-width: 0; }
-.toefl-coach-split-savebtn { flex-shrink: 0; }
-.toefl-coach-split-text .toefl-coach-title { margin-bottom: 8px; }
-.toefl-coach-split-text .toefl-coach-body { margin-bottom: 0; }
-@media (max-width: 480px) {
-  .toefl-coach-split-main { flex-direction: column; align-items: stretch; }
-  .toefl-coach-split-savebtn .toefl-coach-btn { width: 100%; justify-content: center; }
-}
-.toefl-coach-split-aside {
-  flex: 0 0 34%;
-  padding: 20px 22px;
+/* 두 칸 모두 동일한 세로 구조: 제목 / 본문 / (바닥) 버튼 */
+.toefl-coach-split-col {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  /* 톤 배경으로 우측을 구분 (테두리 대신) */
-  background: rgba(148, 128, 197, 0.12);
+  padding: 20px 22px;
 }
+.toefl-coach-split-main { flex: 1 1 auto; }          /* 왼쪽 넓게 */
+.toefl-coach-split-aside {
+  flex: 0 0 36%;
+  background: rgba(148, 128, 197, 0.12);             /* 톤 배경으로 우측 구분 */
+}
+/* 버튼을 양쪽 다 바닥에 붙여 세로 위치를 맞춘다 */
+.toefl-coach-split-foot { margin-top: auto; padding-top: 16px; }
+
+.toefl-coach-split .toefl-coach-title { margin-bottom: 8px; }
+.toefl-coach-split .toefl-coach-body { margin-bottom: 0; }
 .toefl-coach-aside-title {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--primary);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
 }
 .toefl-coach-aside-body {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   line-height: 1.6;
   color: var(--on-surface-variant);
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
-.toefl-coach-split .toefl-coach-title { margin-bottom: 8px; }
 
 @media (max-width: 640px) {
   .toefl-coach-split { flex-direction: column; gap: 0; }
