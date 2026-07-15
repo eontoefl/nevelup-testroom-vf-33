@@ -26,6 +26,7 @@ let toeflScores = [];
 let toeflChartInstance = null;
 let toeflTarget = null;       // 목표 Overall = 커트라인 (없으면 null)
 let toeflDeadline = null;     // 응시 마지노선 Date (없으면 null)
+let toeflCelebrateIdx = -1;   // 목표 도달한 Overall 점 인덱스 (저장 이미지에도 표시)
 
 // ================================================
 // 데이터 로드
@@ -453,13 +454,14 @@ function renderToeflChart() {
 
     if (toeflChartInstance) { toeflChartInstance.destroy(); }
 
-    // 목표(커트라인)에 처음 도달한 Overall 점 인덱스 — 폭죽 축하 대상
+    // 목표(커트라인)에 처음 도달한 Overall 점 인덱스 — 폭죽 축하 대상 (저장 이미지도 공유)
     var celebrateIdx = -1;
     if (toeflTarget) {
         for (var ci = 0; ci < overallData.length; ci++) {
             if (overallData[ci] != null && Number(overallData[ci]) >= toeflTarget) { celebrateIdx = ci; break; }
         }
     }
+    toeflCelebrateIdx = celebrateIdx;
 
     // 목표 도달 점 위에 폭죽 + "축하해요!" 말풍선 오버레이를 얹는다 (hover 없이 상시).
     // 캔버스에 직접 그리지 않고 HTML 오버레이 + CSS 애니메이션으로 처리한다.
@@ -598,9 +600,20 @@ function saveToeflChartImage() {
     ctx.fillRect(0, 0, out.width, out.height);
     ctx.drawImage(canvas, pad, pad);
 
+    // 목표 도달 축하 표시 -- 라이브 오버레이는 HTML이라 캔버스엔 안 담기므로 여기서 정적으로 그린다
+    if (toeflCelebrateIdx >= 0) {
+        var meta = toeflChartInstance.getDatasetMeta(0);   // Overall
+        var pt = meta && meta.data && meta.data[toeflCelebrateIdx];
+        if (pt) {
+            var dpr = window.devicePixelRatio || 1;
+            drawToeflCelebration(ctx, pad + pt.x * dpr, pad + pt.y * dpr, dpr);
+        }
+    }
+
     ctx.font = '600 15px Pretendard, sans-serif';
     ctx.fillStyle = '#9480c5';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
     ctx.fillText('이온토플 내벨업챌린지  |  eonfl.com',
         out.width / 2, canvas.height + pad + 30);
 
@@ -608,6 +621,70 @@ function saveToeflChartImage() {
     link.download = 'toefl-score-' + (mpUser && mpUser.name ? mpUser.name : 'chart') + '.png';
     link.href = out.toDataURL('image/png');
     link.click();
+}
+
+/**
+ * 저장 이미지용 정적 축하 그림 (폭죽 + 말풍선). s = 스케일(devicePixelRatio).
+ * (px, py)는 목표 도달 Overall 점의 캔버스 픽셀 위치.
+ */
+function drawToeflCelebration(ctx, px, py, s) {
+    ctx.save();
+
+    // 폭죽 파티클 (정적)
+    var sparks = [[22, -18, '#9480c5'], [-24, -14, '#77bf7e'], [20, 16, '#e2a05a'],
+                  [-20, 18, '#5aa9e2'], [28, 2, '#e27a7a'], [-28, -2, '#b9ace2']];
+    sparks.forEach(function(sp) {
+        ctx.beginPath();
+        ctx.arc(px + sp[0] * s, py + sp[1] * s, 3 * s, 0, Math.PI * 2);
+        ctx.fillStyle = sp[2];
+        ctx.fill();
+    });
+
+    // 펄스 링 (정적 원)
+    ctx.beginPath();
+    ctx.arc(px, py, 15 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(148, 128, 197, 0.5)';
+    ctx.lineWidth = 2 * s;
+    ctx.stroke();
+
+    // 말풍선
+    var text = '🎉 축하해요!';
+    ctx.font = '700 ' + (13 * s) + 'px Pretendard, sans-serif';
+    var tw = ctx.measureText(text).width;
+    var padX = 12 * s, h = 26 * s, w = tw + padX * 2;
+    var bx = px - w / 2, by = py - 18 * s - h, r = 12 * s;
+
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(bx, by, w, h, r); }
+    else {
+        ctx.moveTo(bx + r, by);
+        ctx.arcTo(bx + w, by, bx + w, by + h, r);
+        ctx.arcTo(bx + w, by + h, bx, by + h, r);
+        ctx.arcTo(bx, by + h, bx, by, r);
+        ctx.arcTo(bx, by, bx + w, by, r);
+    }
+    var grad = ctx.createLinearGradient(bx, by, bx + w, by + h);
+    grad.addColorStop(0, '#9480c5');
+    grad.addColorStop(1, '#b9ace2');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // 꼬리
+    ctx.beginPath();
+    ctx.moveTo(px - 6 * s, by + h);
+    ctx.lineTo(px + 6 * s, by + h);
+    ctx.lineTo(px, by + h + 8 * s);
+    ctx.closePath();
+    ctx.fillStyle = '#a594d0';
+    ctx.fill();
+
+    // 텍스트
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, px, by + h / 2);
+
+    ctx.restore();
 }
 
 // ================================================
