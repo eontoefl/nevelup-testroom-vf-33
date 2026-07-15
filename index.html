@@ -548,9 +548,17 @@
 
                 const notices = await supabaseSelect('tr_notices', 'is_active=eq.true&order=sort_order.asc');
 
-                // "다시 보지 않기"로 영구 숨김한 공지 제외
+                // 공개 대상 필터: 현재 학생이 호주내챌인지 판별 (main.js와 동일 기준)
+                const isAus = !!(currentUser && currentUser.program && currentUser.program.includes('Australia'));
+                const audienceMatch = n => {
+                    const aud = n.audience || 'all';   // 레거시 공지(값 없음)는 전체 공개로 간주
+                    if (aud === 'all') return true;
+                    return aud === (isAus ? 'australia' : 'regular');
+                };
+
+                // "다시 보지 않기"로 영구 숨김한 공지 제외 + 대상 필터
                 const hidden = getHiddenNotices();
-                const visible = (notices || []).filter(n => !hidden.includes(n.id));
+                const visible = (notices || []).filter(n => audienceMatch(n) && !hidden.includes(n.id));
 
                 if (visible.length === 0) {
                     document.getElementById('noticeContainer').style.display = 'none';
