@@ -174,7 +174,7 @@ function renderToeflCoach() {
     if (diff > 0) {
         el.innerHTML = buildCoachBox('success',
             '📈 Overall +' + diff.toFixed(1) + ' — 곡선이 올라가고 있어요',
-            '토플은 2점, 5점씩 쌓는 시험이에요. 오르는 흐름을 탔을 때 이어가는 게 제일 빠릅니다. ' + goNext + '<br>' + targetLine,
+            '토플은 0.5점씩 차곡차곡 쌓아가는 시험이에요. 오르는 흐름을 탔을 때 이어가는 게 제일 빠릅니다. ' + goNext + '<br>' + targetLine,
             goAction);
         return;
     }
