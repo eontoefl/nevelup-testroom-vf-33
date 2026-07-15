@@ -181,7 +181,7 @@ function renderToeflCoach() {
 
     if (diff === 0) {
         el.innerHTML = buildCoachBox('info',
-            '이번엔 제자리였네요. 흔한 일이에요',
+            '지금은 힘을 모으는 구간이에요',
             '정체는 보통 <strong>한 영역이 발목을 잡을 때</strong> 생깁니다. 나머지가 올라도 그 하나가 평균을 눌러버리거든요. ' +
             '아래 그래프에서 어느 선이 안 움직이는지 보세요. 거기가 다음 목표입니다.<br>' +
             '정체 구간은 대부분 다음 한 번에서 풀립니다. ' + goNext,
