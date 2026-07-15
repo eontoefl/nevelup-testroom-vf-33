@@ -134,8 +134,7 @@ function renderToeflCoach() {
     if (toeflTarget && overall >= toeflTarget) {
         el.innerHTML = buildCoachBox('success',
             '🎉 목표 Overall ' + toeflTarget.toFixed(1) + ' 달성!',
-            '정말 고생하셨어요. 후기 한 번 남겨주시기로 하셨죠? ' +
-            '아래 그래프를 이미지로 저장해서 함께 올려주시면 좋아요.',
+            '정말 고생하셨어요. 아래 그래프를 이미지로 저장해서 후기에 함께 올려주시면 좋아요.',
             '<button class="toefl-coach-btn" onclick="saveToeflChartImage()">' +
                 '<i class="fa-solid fa-download"></i> 그래프 이미지 저장</button>');
         return;
@@ -454,6 +453,42 @@ function renderToeflChart() {
 
     if (toeflChartInstance) { toeflChartInstance.destroy(); }
 
+    // 목표(커트라인)에 처음 도달한 Overall 점 인덱스 — 폭죽 축하 대상
+    var celebrateIdx = -1;
+    if (toeflTarget) {
+        for (var ci = 0; ci < overallData.length; ci++) {
+            if (overallData[ci] != null && Number(overallData[ci]) >= toeflTarget) { celebrateIdx = ci; break; }
+        }
+    }
+
+    // 목표 도달 점 위에 폭죽 + "축하해요!" 말풍선 오버레이를 얹는다 (hover 없이 상시).
+    // 캔버스에 직접 그리지 않고 HTML 오버레이 + CSS 애니메이션으로 처리한다.
+    var celebratePlugin = {
+        id: 'toeflCelebrate',
+        afterDatasetsDraw: function(chart) {
+            var wrap = chart.canvas.parentNode;
+            if (!wrap) return;
+            var overlay = wrap.querySelector('.toefl-celebrate');
+            if (celebrateIdx < 0) { if (overlay) overlay.remove(); return; }
+            var meta = chart.getDatasetMeta(0);   // Overall
+            var pt = meta && meta.data && meta.data[celebrateIdx];
+            if (!pt) return;
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'toefl-celebrate';
+                overlay.innerHTML =
+                    '<div class="toefl-celebrate-bubble">🎉 축하해요!</div>' +
+                    '<span class="toefl-spark toefl-spark-ring"></span>' +
+                    '<span class="toefl-spark s1"></span><span class="toefl-spark s2"></span>' +
+                    '<span class="toefl-spark s3"></span><span class="toefl-spark s4"></span>' +
+                    '<span class="toefl-spark s5"></span><span class="toefl-spark s6"></span>';
+                wrap.appendChild(overlay);
+            }
+            overlay.style.left = (chart.canvas.offsetLeft + pt.x) + 'px';
+            overlay.style.top = (chart.canvas.offsetTop + pt.y) + 'px';
+        }
+    };
+
     // 본 시험 날짜(x축)를 알약 배지로 그린다. 기본 축 텍스트는 숨기고 그 자리에 그린다.
     var examBadgePlugin = {
         id: 'toeflExamBadges',
@@ -502,7 +537,7 @@ function renderToeflChart() {
 
     toeflChartInstance = new Chart(canvas, {
         type: 'line',
-        plugins: [examBadgePlugin],
+        plugins: [examBadgePlugin, celebratePlugin],
         data: {
             labels: labels,
             datasets: [
