@@ -290,7 +290,7 @@ function renderToeflScoreList() {
     html += '</div>' +
         '<p class="toefl-list-note">' +
             '<i class="fa-solid fa-circle-info"></i> ' +
-            '성적은 마이페이지에서 직접 등록하지 않습니다. 성적표가 나오면 <strong>카톡으로 캡처를 보내주시면</strong> 선생님이 등록해드려요.' +
+            '성적은 마이페이지에서 직접 등록하지 않습니다. 성적표가 나오면 <strong>카톡으로 캡처를 보내주시면</strong> 제가 등록해드려요.' +
         '</p>';
 
     el.innerHTML = html;
