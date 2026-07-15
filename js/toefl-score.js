@@ -149,12 +149,21 @@ function renderToeflCoach() {
     var nextBtn = '<button class="toefl-coach-btn toefl-coach-add" onclick="openToeflExamModal()">' +
         '<i class="fa-solid fa-plus"></i> 등록한 시험 추가하기</button>';
 
+    // 예정된 다음 시험이 이미 있으면 "등록하라"가 아니라 "응시하고 결과 보내라"로 안내한다.
+    // 이때 코치엔 추가 버튼을 두지 않는다(헤더 버튼이 "하나 더" 역할을 맡는다).
+    var upcoming = (typeof getToeflUpcomingExams === 'function') ? getToeflUpcomingExams() : [];
+    var nextExam = upcoming.length ? upcoming[0] : null;
+    var goNext = nextExam
+        ? '예정된 <strong>' + formatToeflExamDate(nextExam.exam_datetime) + '</strong> 시험을 응시하고, 성적표가 나오면 카톡으로 보내주세요. 이어서 그려드릴게요.'
+        : '다음 시험을 등록하면 곡선이 이어져요.';
+    var goAction = nextExam ? null : nextBtn;
+
     // ── 1회 응시 ──
     if (count === 1) {
         el.innerHTML = buildCoachBox('info',
             '📈 첫 점수가 찍혔어요',
-            '점 하나로는 선이 안 그려집니다. 다음 시험을 등록하면 그때부터 곡선이 보여요.<br>' + targetLine,
-            nextBtn);
+            '점 하나로는 선이 안 그려집니다. ' + goNext + '<br>' + targetLine,
+            goAction);
         return;
     }
 
@@ -165,8 +174,8 @@ function renderToeflCoach() {
     if (diff > 0) {
         el.innerHTML = buildCoachBox('success',
             '📈 Overall +' + diff.toFixed(1) + ' — 곡선이 올라가고 있어요',
-            '토플은 2점, 5점씩 쌓는 시험이에요. 오르는 흐름을 탔을 때 이어가는 게 제일 빠릅니다.<br>' + targetLine,
-            nextBtn);
+            '토플은 2점, 5점씩 쌓는 시험이에요. 오르는 흐름을 탔을 때 이어가는 게 제일 빠릅니다. ' + goNext + '<br>' + targetLine,
+            goAction);
         return;
     }
 
@@ -175,8 +184,8 @@ function renderToeflCoach() {
             '이번엔 제자리였네요. 흔한 일이에요',
             '정체는 보통 <strong>한 영역이 발목을 잡을 때</strong> 생깁니다. 나머지가 올라도 그 하나가 평균을 눌러버리거든요. ' +
             '아래 그래프에서 어느 선이 안 움직이는지 보세요. 거기가 다음 목표입니다.<br>' +
-            '정체 구간은 대부분 다음 한 번에서 풀립니다. <strong>여기서 멈추는 게 제일 아까워요.</strong>',
-            nextBtn);
+            '정체 구간은 대부분 다음 한 번에서 풀립니다. ' + goNext,
+            goAction);
         return;
     }
 
@@ -187,8 +196,8 @@ function renderToeflCoach() {
         '연습 때처럼 100% 발휘하는 사람은 없어요. 점수가 내려간 건 실력이 떨어진 게 아닙니다.<br>' +
         '3번, 4번 보면서 오르락내리락하다가 결국 목표 찍는 분들이 훨씬 많아요.' +
         buildDropReasons() +
-        '<br><strong>여기서 멈추는 게 제일 아깝습니다.</strong> 한 번 내려갔다가 다음 시험에서 확 오르는 경우가 정말 흔해요. 흐름을 끊지 마세요.',
-        nextBtn);
+        '<br><strong>여기서 멈추는 게 제일 아깝습니다.</strong> ' + goNext,
+        goAction);
 }
 
 /** 점수가 내려간 흔한 원인 (접었다 펴는 영역) */
@@ -350,6 +359,16 @@ function renderToeflChart() {
         key: 'deadline', date: toeflDeadline, content: '응시 마지노선', position: 'end',
         border: 'rgba(226, 122, 122, 0.6)', bg: 'rgba(226, 122, 122, 0.9)'
     });
+    // 아직 성적이 안 나온 예정 시험도 세로선으로 표시 (다음 점이 찍힐 자리)
+    if (typeof getToeflUpcomingExams === 'function') {
+        getToeflUpcomingExams().forEach(function(e, i) {
+            markers.push({
+                key: 'upcoming' + i, date: new Date(e.exam_datetime),
+                content: '예정 시험', position: 'start',
+                border: 'rgba(90, 169, 226, 0.6)', bg: 'rgba(90, 169, 226, 0.9)'
+            });
+        });
+    }
 
     var points = toeflScores.map(function(s) {
         return { date: new Date(s.test_date + 'T00:00:00'), score: s };
