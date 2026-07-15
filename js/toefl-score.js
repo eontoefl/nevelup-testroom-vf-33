@@ -90,6 +90,20 @@ function renderToeflSection() {
     renderToeflCoach();
     renderToeflScoreList();
     renderToeflChart();
+    updateToeflHeaderButton();
+}
+
+/**
+ * 헤더의 "등록한 시험 추가하기"는 코치 박스가 같은 추가 버튼을 보여줄 때만 숨긴다.
+ * 성적이 생기면 코치 버튼이 동선상 앞에 오고, 코치에 추가 버튼이 없는 상태
+ * (성적 0건 / 목표 달성 등)에서는 헤더 버튼이 빈자리를 메운다.
+ * → 어느 상태든 추가 버튼이 정확히 하나만 보인다.
+ */
+function updateToeflHeaderButton() {
+    var headerBtn = document.querySelector('.toefl-header-add');
+    if (!headerBtn) return;
+    var coachHasAdd = !!document.querySelector('#toeflCoach .toefl-coach-add');
+    headerBtn.style.display = coachHasAdd ? 'none' : '';
 }
 
 // ================================================
@@ -132,7 +146,7 @@ function renderToeflCoach() {
           (Math.round((toeflTarget - overall) * 10) / 10).toFixed(1) + '</strong> 남았어요.<br>'
         : '';
 
-    var nextBtn = '<button class="toefl-coach-btn" onclick="openToeflExamModal()">' +
+    var nextBtn = '<button class="toefl-coach-btn toefl-coach-add" onclick="openToeflExamModal()">' +
         '<i class="fa-solid fa-plus"></i> 등록한 시험 추가하기</button>';
 
     // ── 1회 응시 ──
@@ -205,9 +219,11 @@ function buildDropReasons() {
 
 function buildCoachBox(tone, title, body, action) {
     return '<div class="toefl-coach toefl-coach-' + tone + '">' +
-        '<div class="toefl-coach-title">' + title + '</div>' +
+        '<div class="toefl-coach-head">' +
+            '<div class="toefl-coach-title">' + title + '</div>' +
+            (action ? '<div class="toefl-coach-action">' + action + '</div>' : '') +
+        '</div>' +
         '<div class="toefl-coach-body">' + body + '</div>' +
-        (action ? '<div class="toefl-coach-action">' + action + '</div>' : '') +
     '</div>';
 }
 

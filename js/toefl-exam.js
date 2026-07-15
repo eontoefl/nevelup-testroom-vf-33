@@ -160,7 +160,7 @@ function renderToeflExamCard() {
             '<div class="toefl-exam-card-main">' +
                 '<div class="toefl-exam-info">' +
                     '<strong>응시 예정인 시험이 없습니다</strong>' +
-                    '<span>다음 시험을 접수하셨다면, 위 [등록한 시험 추가하기]로 일정을 넣어주세요.</span>' +
+                    '<span>ETS에서 다음 시험을 접수하셨다면, 일정을 추가해주세요.</span>' +
                 '</div>' +
             '</div>' +
         '</div>' +

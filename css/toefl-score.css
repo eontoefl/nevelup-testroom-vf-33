@@ -975,19 +975,31 @@
 .toefl-coach-success { background: var(--accent-light); }
 .toefl-coach-caution { background: var(--sub-light); }
 
+/* 제목 + 버튼을 한 줄에 (버튼은 우측 정렬, 제목과 일직선) */
+.toefl-coach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
 .toefl-coach-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--on-surface);
   letter-spacing: -0.02em;
-  margin-bottom: 8px;
 }
 .toefl-coach-body {
   font-size: 0.85rem;
   line-height: 1.75;
   color: var(--on-surface-variant);
 }
-.toefl-coach-action { margin-top: 16px; }
+.toefl-coach-action { flex-shrink: 0; }
+@media (max-width: 560px) {
+  .toefl-coach-action { width: 100%; }
+  .toefl-coach-action .toefl-coach-btn { width: 100%; justify-content: center; }
+}
 .toefl-coach-btn {
   display: inline-flex;
   align-items: center;
