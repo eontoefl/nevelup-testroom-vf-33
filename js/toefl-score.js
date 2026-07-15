@@ -468,7 +468,7 @@ function renderToeflChart() {
             var top = chart.chartArea.bottom + 6;   // 플롯 영역 바로 아래(축 라벨 자리)
             examIndices.forEach(function(i) {
                 var cx = xs.getPixelForTick(i);
-                var text = labels[i];
+                var text = labels[i] + ' 시험';
                 var tw = g.measureText(text).width;
                 var h = 19, padX = 9, w = tw + padX * 2;
                 var x = cx - w / 2, y = top, r = h / 2;
