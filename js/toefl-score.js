@@ -156,32 +156,32 @@ function renderToeflCoach() {
     var saveBtn = '<button class="toefl-coach-btn" onclick="saveToeflChartImage()">' +
         '<i class="fa-solid fa-download"></i> 그래프 이미지 저장</button>';
     var wishSetBtn = '<button class="toefl-coach-btn" onclick="openToeflWishModal()">' +
-        '<i class="fa-solid fa-bullseye"></i> 희망점수 정하기</button>';
+        '<i class="fa-solid fa-bullseye"></i> 다음 목표 설정하기</button>';
     var wishEditBtn = '<button class="toefl-coach-btn toefl-coach-btn-ghost" onclick="openToeflWishModal()">' +
-        '<i class="fa-solid fa-pen"></i> 희망점수 수정</button>';
+        '<i class="fa-solid fa-pen"></i> 다음 목표 수정</button>';
 
     // ── 커트라인 달성 이후: 2차 목표(희망점수) 흐름 (다른 상태보다 우선) ──
     if (toeflTarget && overall >= toeflTarget) {
         var wishOn = toeflWishValid();
 
-        // ④ 희망점수까지 달성
+        // ④ 다음 목표까지 달성
         if (wishOn && overall >= toeflWish) {
             el.innerHTML = buildCoachBox('success',
-                '🎉 희망점수 ' + toeflWish.toFixed(1) + ' 달성!',
+                '🎉 다음 목표 ' + toeflWish.toFixed(1) + '까지 달성!',
                 '커트라인을 넘어 스스로 세운 목표까지 이뤘어요. 대단해요! ' +
                 '그래프를 저장해서 후기에 올려주시면 좋아요. 더 높이 가보고 싶다면 목표를 다시 세워도 좋아요.',
                 saveBtn + ' ' + wishEditBtn);
             return;
         }
 
-        // ③ 희망점수 설정됨, 아직 미달
+        // ③ 다음 목표 설정됨, 아직 미달
         if (wishOn) {
             var left = (Math.round((toeflWish - overall) * 10) / 10).toFixed(1);
             el.innerHTML = buildCoachBox('info',
-                '🎯 희망점수 ' + toeflWish.toFixed(1) + '까지 ' + left + ' 남았어요',
+                '🎯 다음 목표 ' + toeflWish.toFixed(1) + '까지 ' + left + ' 남았어요',
                 '커트라인은 이미 넘었어요. 이제 스스로 세운 목표를 향해 가는 중이에요. ' +
                 buildToeflGoNext() +
-                '<div class="toefl-wish-editline">지금 목표: 희망 ' + toeflWish.toFixed(1) + ' &nbsp;·&nbsp; ' + wishEditBtn + '</div>',
+                '<div class="toefl-wish-editline">지금 목표: ' + toeflWish.toFixed(1) + ' &nbsp;·&nbsp; ' + wishEditBtn + '</div>',
                 null);
             return;
         }
@@ -197,7 +197,7 @@ function renderToeflCoach() {
                 '</div>' +
                 '<div class="toefl-coach-split-aside">' +
                     '<div class="toefl-coach-aside-title">더 높이 가볼까요?</div>' +
-                    '<div class="toefl-coach-aside-body">여유가 있다면 <strong>희망점수</strong>를 정해 한 번 더 도전!</div>' +
+                    '<div class="toefl-coach-aside-body">여유가 있다면 <strong>다음 목표</strong>를 정해 한 번 더 도전!</div>' +
                     wishSetBtn +
                 '</div>' +
             '</div>';
@@ -518,7 +518,7 @@ function renderToeflChart() {
             borderWidth: 2, borderDash: [4, 4],
             label: {
                 display: true,
-                content: '희망 ' + toeflWish.toFixed(1),
+                content: '다음 목표 ' + toeflWish.toFixed(1),
                 position: 'end',
                 backgroundColor: 'rgba(217, 164, 65, 0.95)',
                 color: '#fff',
@@ -542,7 +542,7 @@ function renderToeflChart() {
     toeflCelebrateText = '🎉 축하해요!';
     if (toeflWishValid() && firstIdxReaching(toeflWish) >= 0) {
         celebrateIdx = firstIdxReaching(toeflWish);
-        toeflCelebrateText = '🎉 희망점수 달성!';
+        toeflCelebrateText = '🎉 다음 목표 달성!';
     } else if (toeflTarget && firstIdxReaching(toeflTarget) >= 0) {
         celebrateIdx = firstIdxReaching(toeflTarget);
         toeflCelebrateText = '🎉 축하해요!';
@@ -811,7 +811,7 @@ async function submitToeflWish() {
     var sel = document.getElementById('toeflWishSelect');
     var btn = document.getElementById('toeflWishSubmitBtn');
     var val = parseFloat(sel.value);
-    if (isNaN(val)) { alert('희망점수를 선택해주세요.'); return; }
+    if (isNaN(val)) { alert('다음 목표 점수를 선택해주세요.'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
@@ -832,7 +832,7 @@ async function submitToeflWish() {
 
 async function removeToeflWish() {
     if (!mpUser || !mpUser.applicationId) return;
-    if (!confirm('희망점수 목표를 지울까요?')) return;
+    if (!confirm('다음 목표를 지울까요?')) return;
     try {
         var ok = await supabaseUpdate('applications', 'id=eq.' + mpUser.applicationId, { target_wish_new: null });
         if (!ok) { alert('삭제에 실패했습니다.'); return; }
