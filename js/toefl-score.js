@@ -24,9 +24,11 @@
 // ================================================
 let toeflScores = [];
 let toeflChartInstance = null;
-let toeflTarget = null;       // 목표 Overall = 커트라인 (없으면 null)
+let toeflTarget = null;       // 커트라인 = 1차 목표 (관리자 입력, 없으면 null)
+let toeflWish = null;         // 희망점수 = 2차 목표 (학생이 커트라인 달성 후 스스로 입력)
 let toeflDeadline = null;     // 응시 마지노선 Date (없으면 null)
-let toeflCelebrateIdx = -1;   // 목표 도달한 Overall 점 인덱스 (저장 이미지에도 표시)
+let toeflCelebrateIdx = -1;   // 도달한 가장 높은 목표의 Overall 점 인덱스 (저장 이미지에도 표시)
+let toeflCelebrateText = '🎉 축하해요!';   // 축하 말풍선 문구 (커트라인/희망 달성에 따라 다름)
 
 // ================================================
 // 데이터 로드
@@ -63,12 +65,13 @@ async function loadToeflScores() {
 /** 신청서에서 목표 점수를 가져온다 (코치 문구에서 "목표까지 얼마" 표시용) */
 async function loadToeflTarget() {
     toeflTarget = null;
+    toeflWish = null;
     toeflDeadline = null;
     if (!mpUser || !mpUser.applicationId) return;
     try {
         var rows = await supabaseSelect(
             'applications',
-            'id=eq.' + mpUser.applicationId + '&select=target_cutoff_new,no_target_score,submission_deadline'
+            'id=eq.' + mpUser.applicationId + '&select=target_cutoff_new,target_wish_new,no_target_score,submission_deadline'
         );
         if (!rows || !rows.length) return;
         var r = rows[0];
@@ -77,11 +80,21 @@ async function loadToeflTarget() {
             var t = parseFloat(r.target_cutoff_new);
             if (!isNaN(t) && t > 0) toeflTarget = t;
         }
+        // 희망점수: 학생이 설정한 2차 목표
+        var w = parseFloat(r.target_wish_new);
+        if (!isNaN(w) && w > 0 && w <= 6) toeflWish = w;
         // 응시 마지노선: 목표점수 유무와 무관하게 마감일이 있으면 사용
         toeflDeadline = parseToeflDate(r.submission_deadline);
     } catch (err) {
         console.warn('⚠️ [TOEFL] 목표/마감 로드 실패 (무시):', err);
     }
+}
+
+/** 희망점수가 유효한지 (설정됐고, 커트라인보다 높고, 6.0 이하) */
+function toeflWishValid() {
+    if (toeflWish == null) return false;
+    if (toeflTarget != null && toeflWish <= toeflTarget) return false;
+    return toeflWish <= 6;
 }
 
 // ================================================
@@ -92,6 +105,15 @@ function renderToeflSection() {
     renderToeflScoreList();
     renderToeflChart();
     updateToeflHeaderButton();
+}
+
+/** "다음 시험" 안내 문구: 예정 시험이 있으면 응시 유도, 없으면 등록 유도 */
+function buildToeflGoNext() {
+    var upcoming = (typeof getToeflUpcomingExams === 'function') ? getToeflUpcomingExams() : [];
+    var nextExam = upcoming.length ? upcoming[0] : null;
+    return nextExam
+        ? '예정된 <strong>' + formatToeflExamDate(nextExam.exam_datetime) + '</strong> 시험을 응시하고, 성적표가 나오면 카톡으로 보내주세요. 이어서 그려드릴게요.'
+        : '다음 시험을 등록하면 곡선이 이어져요.';
 }
 
 /**
@@ -131,18 +153,59 @@ function renderToeflCoach() {
     var latest = sorted[count - 1];
     var overall = Number(latest.overall);
 
-    // ── 목표 달성 (다른 상태보다 우선) ──
+    var saveBtn = '<button class="toefl-coach-btn" onclick="saveToeflChartImage()">' +
+        '<i class="fa-solid fa-download"></i> 그래프 이미지 저장</button>';
+    var wishSetBtn = '<button class="toefl-coach-btn" onclick="openToeflWishModal()">' +
+        '<i class="fa-solid fa-bullseye"></i> 희망점수 정하기</button>';
+    var wishEditBtn = '<button class="toefl-coach-btn toefl-coach-btn-ghost" onclick="openToeflWishModal()">' +
+        '<i class="fa-solid fa-pen"></i> 희망점수 수정</button>';
+
+    // ── 커트라인 달성 이후: 2차 목표(희망점수) 흐름 (다른 상태보다 우선) ──
     if (toeflTarget && overall >= toeflTarget) {
-        el.innerHTML = buildCoachBox('success',
-            '🎉 목표 Overall ' + toeflTarget.toFixed(1) + ' 달성!',
-            '정말 고생하셨어요. 아래 그래프를 이미지로 저장해서 후기에 함께 올려주시면 좋아요.',
-            '<button class="toefl-coach-btn" onclick="saveToeflChartImage()">' +
-                '<i class="fa-solid fa-download"></i> 그래프 이미지 저장</button>');
+        var wishOn = toeflWishValid();
+
+        // ④ 희망점수까지 달성
+        if (wishOn && overall >= toeflWish) {
+            el.innerHTML = buildCoachBox('success',
+                '🎉 희망점수 ' + toeflWish.toFixed(1) + ' 달성!',
+                '커트라인을 넘어 스스로 세운 목표까지 이뤘어요. 대단해요! ' +
+                '그래프를 저장해서 후기에 올려주시면 좋아요. 더 높이 가보고 싶다면 목표를 다시 세워도 좋아요.',
+                saveBtn + ' ' + wishEditBtn);
+            return;
+        }
+
+        // ③ 희망점수 설정됨, 아직 미달
+        if (wishOn) {
+            var left = (Math.round((toeflWish - overall) * 10) / 10).toFixed(1);
+            el.innerHTML = buildCoachBox('info',
+                '🎯 희망점수 ' + toeflWish.toFixed(1) + '까지 ' + left + ' 남았어요',
+                '커트라인은 이미 넘었어요. 이제 스스로 세운 목표를 향해 가는 중이에요. ' +
+                buildToeflGoNext() +
+                '<div class="toefl-wish-editline">지금 목표: 희망 ' + toeflWish.toFixed(1) + ' &nbsp;·&nbsp; ' + wishEditBtn + '</div>',
+                null);
+            return;
+        }
+
+        // ② 커트라인 달성, 희망점수 미설정 → 좌(축하) / 우(2차 목표 권유) 분할
+        //    같은 박스에 섞으면 도전 유도가 축하에 묻혀 스킵되므로 좌우로 나눈다.
+        el.innerHTML =
+            '<div class="toefl-coach toefl-coach-success toefl-coach-split">' +
+                '<div class="toefl-coach-split-main">' +
+                    '<div class="toefl-coach-title">🎉 커트라인 ' + toeflTarget.toFixed(1) + ' 넘었어요!</div>' +
+                    '<div class="toefl-coach-body">정말 고생하셨어요. 그래프를 저장해서 후기에 올려주시면 좋아요.</div>' +
+                    '<div class="toefl-coach-action">' + saveBtn + '</div>' +
+                '</div>' +
+                '<div class="toefl-coach-split-aside">' +
+                    '<div class="toefl-coach-aside-title">더 높이 가볼까요?</div>' +
+                    '<div class="toefl-coach-aside-body">여유가 있다면 <strong>희망점수</strong>를 정해 한 번 더 도전!</div>' +
+                    wishSetBtn +
+                '</div>' +
+            '</div>';
         return;
     }
 
     var targetLine = toeflTarget
-        ? '목표 Overall ' + toeflTarget.toFixed(1) + '까지 <strong>' +
+        ? '커트라인 ' + toeflTarget.toFixed(1) + '까지 <strong>' +
           (Math.round((toeflTarget - overall) * 10) / 10).toFixed(1) + '</strong> 남았어요.<br>'
         : '';
 
@@ -151,11 +214,8 @@ function renderToeflCoach() {
 
     // 예정된 다음 시험이 이미 있으면 "등록하라"가 아니라 "응시하고 결과 보내라"로 안내한다.
     // 이때 코치엔 추가 버튼을 두지 않는다(헤더 버튼이 "하나 더" 역할을 맡는다).
-    var upcoming = (typeof getToeflUpcomingExams === 'function') ? getToeflUpcomingExams() : [];
-    var nextExam = upcoming.length ? upcoming[0] : null;
-    var goNext = nextExam
-        ? '예정된 <strong>' + formatToeflExamDate(nextExam.exam_datetime) + '</strong> 시험을 응시하고, 성적표가 나오면 카톡으로 보내주세요. 이어서 그려드릴게요.'
-        : '다음 시험을 등록하면 곡선이 이어져요.';
+    var nextExam = getToeflUpcomingExams && getToeflUpcomingExams().length ? getToeflUpcomingExams()[0] : null;
+    var goNext = buildToeflGoNext();
     var goAction = nextExam ? null : nextBtn;
 
     // ── 1회 응시 ──
@@ -430,36 +490,62 @@ function renderToeflChart() {
         };
     });
 
-    // 커트라인 가로선
+    // 커트라인 가로선 (1차 목표 · 넘어야 할 선)
     if (toeflTarget) {
         annotations.targetLine = {
             type: 'line',
-            yMin: toeflTarget,
-            yMax: toeflTarget,
+            yMin: toeflTarget, yMax: toeflTarget,
             borderColor: 'rgba(226, 122, 122, 0.55)',
-            borderWidth: 2,
-            borderDash: [4, 4],
+            borderWidth: 2, borderDash: [4, 4],
             label: {
                 display: true,
-                content: '목표 ' + toeflTarget.toFixed(1),
+                content: '커트라인 ' + toeflTarget.toFixed(1),
                 position: 'end',
                 backgroundColor: 'rgba(226, 122, 122, 0.85)',
                 color: '#fff',
                 font: { size: 11, weight: '600', family: 'Pretendard' },
-                padding: { x: 8, y: 4 },
-                borderRadius: 6
+                padding: { x: 8, y: 4 }, borderRadius: 6
+            }
+        };
+    }
+
+    // 희망점수 가로선 (2차 목표 · 가고 싶은 선) -- 금색으로 구분
+    if (toeflWishValid()) {
+        annotations.wishLine = {
+            type: 'line',
+            yMin: toeflWish, yMax: toeflWish,
+            borderColor: 'rgba(217, 164, 65, 0.7)',
+            borderWidth: 2, borderDash: [4, 4],
+            label: {
+                display: true,
+                content: '희망 ' + toeflWish.toFixed(1),
+                position: 'end',
+                backgroundColor: 'rgba(217, 164, 65, 0.95)',
+                color: '#fff',
+                font: { size: 11, weight: '600', family: 'Pretendard' },
+                padding: { x: 8, y: 4 }, borderRadius: 6
             }
         };
     }
 
     if (toeflChartInstance) { toeflChartInstance.destroy(); }
 
-    // 목표(커트라인)에 처음 도달한 Overall 점 인덱스 — 폭죽 축하 대상 (저장 이미지도 공유)
-    var celebrateIdx = -1;
-    if (toeflTarget) {
-        for (var ci = 0; ci < overallData.length; ci++) {
-            if (overallData[ci] != null && Number(overallData[ci]) >= toeflTarget) { celebrateIdx = ci; break; }
+    // 도달한 가장 높은 목표의 Overall 점 인덱스 — 폭죽 축하 대상 (저장 이미지도 공유)
+    // 희망점수까지 도달했으면 그 점을, 아니면 커트라인 도달점을.
+    var firstIdxReaching = function(goal) {
+        for (var i = 0; i < overallData.length; i++) {
+            if (overallData[i] != null && Number(overallData[i]) >= goal) return i;
         }
+        return -1;
+    };
+    var celebrateIdx = -1;
+    toeflCelebrateText = '🎉 축하해요!';
+    if (toeflWishValid() && firstIdxReaching(toeflWish) >= 0) {
+        celebrateIdx = firstIdxReaching(toeflWish);
+        toeflCelebrateText = '🎉 희망점수 달성!';
+    } else if (toeflTarget && firstIdxReaching(toeflTarget) >= 0) {
+        celebrateIdx = firstIdxReaching(toeflTarget);
+        toeflCelebrateText = '🎉 축하해요!';
     }
     toeflCelebrateIdx = celebrateIdx;
 
@@ -479,13 +565,16 @@ function renderToeflChart() {
                 overlay = document.createElement('div');
                 overlay.className = 'toefl-celebrate';
                 overlay.innerHTML =
-                    '<div class="toefl-celebrate-bubble">🎉 축하해요!</div>' +
+                    '<div class="toefl-celebrate-bubble">' + toeflCelebrateText + '</div>' +
                     '<span class="toefl-spark toefl-spark-ring"></span>' +
                     '<span class="toefl-spark s1"></span><span class="toefl-spark s2"></span>' +
                     '<span class="toefl-spark s3"></span><span class="toefl-spark s4"></span>' +
                     '<span class="toefl-spark s5"></span><span class="toefl-spark s6"></span>';
                 wrap.appendChild(overlay);
             }
+            // 재렌더 시 문구가 바뀔 수 있으므로 매번 갱신 (커트라인/희망 달성)
+            var bubble = overlay.querySelector('.toefl-celebrate-bubble');
+            if (bubble && bubble.textContent !== toeflCelebrateText) bubble.textContent = toeflCelebrateText;
             overlay.style.left = (chart.canvas.offsetLeft + pt.x) + 'px';
             overlay.style.top = (chart.canvas.offsetTop + pt.y) + 'px';
         }
@@ -648,7 +737,7 @@ function drawToeflCelebration(ctx, px, py, s) {
     ctx.stroke();
 
     // 말풍선
-    var text = '🎉 축하해요!';
+    var text = toeflCelebrateText;
     ctx.font = '700 ' + (13 * s) + 'px Pretendard, sans-serif';
     var tw = ctx.measureText(text).width;
     var padX = 12 * s, h = 26 * s, w = tw + padX * 2;
@@ -685,6 +774,75 @@ function drawToeflCelebration(ctx, px, py, s) {
     ctx.fillText(text, px, by + h / 2);
 
     ctx.restore();
+}
+
+// ================================================
+// 희망점수(2차 목표) 설정 -- 커트라인 달성 후 학생이 스스로 정한다
+// ================================================
+function openToeflWishModal() {
+    var overlay = document.getElementById('toeflWishModalOverlay');
+    var sel = document.getElementById('toeflWishSelect');
+    var removeBtn = document.getElementById('toeflWishRemoveBtn');
+    if (!overlay || !sel) return;
+
+    // 선택지: 커트라인보다 0.5 높은 값 ~ 6.0 (신규 척도 0.5 단위)
+    var min = (toeflTarget != null ? toeflTarget : 1.0) + 0.5;
+    var opts = '';
+    for (var v = min; v <= 6.0 + 1e-9; v += 0.5) {
+        var val = (Math.round(v * 2) / 2).toFixed(1);
+        var selAttr = (toeflWish != null && Number(val) === Number(toeflWish)) ? ' selected' : '';
+        opts += '<option value="' + val + '"' + selAttr + '>' + val + '</option>';
+    }
+    sel.innerHTML = opts;
+
+    // 이미 설정돼 있으면 "삭제" 노출
+    if (removeBtn) removeBtn.style.display = (toeflWish != null) ? '' : 'none';
+
+    overlay.classList.add('show');
+}
+
+function closeToeflWishModal() {
+    var overlay = document.getElementById('toeflWishModalOverlay');
+    if (overlay) overlay.classList.remove('show');
+}
+
+async function submitToeflWish() {
+    if (!mpUser || !mpUser.applicationId) { alert('신청서 정보를 찾을 수 없습니다.'); return; }
+    var sel = document.getElementById('toeflWishSelect');
+    var btn = document.getElementById('toeflWishSubmitBtn');
+    var val = parseFloat(sel.value);
+    if (isNaN(val)) { alert('희망점수를 선택해주세요.'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
+    try {
+        var ok = await supabaseUpdate('applications', 'id=eq.' + mpUser.applicationId, { target_wish_new: val });
+        if (!ok) { alert('저장에 실패했습니다.'); return; }
+        toeflWish = val;
+        closeToeflWishModal();
+        renderToeflSection();
+    } catch (err) {
+        console.error('❌ [TOEFL] 희망점수 저장 실패:', err);
+        alert('저장 중 오류가 발생했습니다.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> 목표 설정';
+    }
+}
+
+async function removeToeflWish() {
+    if (!mpUser || !mpUser.applicationId) return;
+    if (!confirm('희망점수 목표를 지울까요?')) return;
+    try {
+        var ok = await supabaseUpdate('applications', 'id=eq.' + mpUser.applicationId, { target_wish_new: null });
+        if (!ok) { alert('삭제에 실패했습니다.'); return; }
+        toeflWish = null;
+        closeToeflWishModal();
+        renderToeflSection();
+    } catch (err) {
+        console.error('❌ [TOEFL] 희망점수 삭제 실패:', err);
+        alert('삭제 중 오류가 발생했습니다.');
+    }
 }
 
 // ================================================

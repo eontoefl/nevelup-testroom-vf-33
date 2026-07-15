@@ -422,6 +422,34 @@
       <img id="toeflImageViewerImg" src="" alt="성적표" />
     </div>
 
+    <!-- ── 희망점수(2차 목표) 설정 모달 ── -->
+    <div class="toefl-modal-overlay" id="toeflWishModalOverlay">
+      <div class="toefl-modal">
+        <div class="toefl-modal-header">
+          <h3><i class="fa-solid fa-bullseye"></i> 희망점수 정하기</h3>
+          <button class="toefl-modal-close" onclick="closeToeflWishModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="toefl-modal-body">
+          <p class="toefl-modal-notice">
+            커트라인은 이미 넘으셨어요. 더 높이 가고 싶은 <strong>희망 Overall 점수</strong>를 정해보세요.
+            언제든 다시 바꿀 수 있어요.
+          </p>
+          <div class="toefl-field">
+            <label for="toeflWishSelect">희망 Overall</label>
+            <select id="toeflWishSelect"></select>
+          </div>
+          <button class="toefl-submit-btn" id="toeflWishSubmitBtn" onclick="submitToeflWish()">
+            <i class="fa-solid fa-check"></i> 목표 설정
+          </button>
+          <button class="toefl-wish-remove" id="toeflWishRemoveBtn" onclick="removeToeflWish()" style="display:none;">
+            희망점수 목표 지우기
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ⑤ 다른 페이지로 나가는 보조 링크 (해당되는 학생에게만) -->
     <div class="mp-extra-links" id="mpExtraLinks" style="display:none;">
 
