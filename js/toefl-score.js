@@ -359,12 +359,18 @@ function renderToeflChart() {
         key: 'deadline', date: toeflDeadline, content: '응시 마지노선', position: 'end',
         border: 'rgba(226, 122, 122, 0.6)', bg: 'rgba(226, 122, 122, 0.9)'
     });
-    // 아직 성적이 안 나온 예정 시험도 세로선으로 표시 (다음 점이 찍힐 자리)
+    // 아직 성적이 안 나온 예정 시험도 세로선으로 표시 (다음 점이 찍힐 자리).
+    // 1개면 "예정 시험", 여러 개면 날짜로 구분("예정 8/1").
     if (typeof getToeflUpcomingExams === 'function') {
-        getToeflUpcomingExams().forEach(function(e, i) {
+        var ups = getToeflUpcomingExams();
+        ups.forEach(function(e, i) {
+            var ed = new Date(e.exam_datetime);
+            var label = ups.length > 1
+                ? '예정 ' + (ed.getMonth() + 1) + '/' + ed.getDate()
+                : '예정 시험';
             markers.push({
-                key: 'upcoming' + i, date: new Date(e.exam_datetime),
-                content: '예정 시험', position: 'start',
+                key: 'upcoming' + i, date: ed,
+                content: label, position: 'start',
                 border: 'rgba(90, 169, 226, 0.6)', bg: 'rgba(90, 169, 226, 0.9)'
             });
         });
