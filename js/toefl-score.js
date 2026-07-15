@@ -417,8 +417,10 @@ function renderToeflGoalStatus() {
 
 function buildToeflGoalGroup(label, goal, isCutoff) {
     var tip = isCutoff
-        ? ' <span class="toefl-goal-tip" tabindex="0" title="지원하는 학교·기관이 공식적으로 요구하는 최소 점수예요. 내가 받고 싶은 점수가 아니라 반드시 넘어야 하는 선입니다. 더 높은 도전은 [다음 목표]에서 세워요.">' +
-          '<i class="fa-solid fa-circle-info"></i></span>'
+        ? ' <span class="toefl-goal-tip" tabindex="0" role="button" onclick="toggleToeflTip(event, this)">' +
+          '<i class="fa-solid fa-circle-info"></i>' +
+          '<span class="toefl-goal-tipbox">지원하는 학교·기관이 공식적으로 요구하는 최소 점수예요. 내가 받고 싶은 점수가 아니라 반드시 넘어야 하는 선입니다. 더 높은 도전은 [다음 목표]에서 세워요.</span>' +
+          '</span>'
         : '';
     var rows = toeflGoalItems(goal).map(function(it) {
         var cur = toeflLatestScore(it.key);
@@ -445,6 +447,24 @@ function toggleToeflHilite(metricKey) {
     toeflHiliteMetric = (toeflHiliteMetric === metricKey) ? null : metricKey;
     renderToeflGoalStatus();
     renderToeflChart();
+}
+
+/** 커트라인 ⓘ 툴팁: 클릭/탭으로 열고 닫는다 (모바일엔 hover가 없으므로 title 대신). */
+function toggleToeflTip(event, el) {
+    event.stopPropagation();
+    var willOpen = !el.classList.contains('toefl-goal-tip-open');
+    var opened = document.querySelectorAll('.toefl-goal-tip-open');
+    for (var i = 0; i < opened.length; i++) opened[i].classList.remove('toefl-goal-tip-open');
+    if (willOpen) {
+        el.classList.add('toefl-goal-tip-open');
+        // 바깥을 누르면 닫힘
+        setTimeout(function() {
+            document.addEventListener('click', function closeTip() {
+                el.classList.remove('toefl-goal-tip-open');
+                document.removeEventListener('click', closeTip);
+            }, { once: true });
+        }, 0);
+    }
 }
 
 // ================================================

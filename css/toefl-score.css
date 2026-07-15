@@ -1314,7 +1314,36 @@
   align-items: center;
   gap: 4px;
 }
-.toefl-goal-tip { color: var(--primary); cursor: help; font-size: 0.78rem; }
+.toefl-goal-tip {
+  position: relative;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  outline: none;
+}
+/* 커트라인 설명 말풍선 — hover(데스크톱) 또는 클릭/탭(모바일)로 표시 */
+.toefl-goal-tipbox {
+  display: none;
+  position: absolute;
+  top: 150%;
+  left: 0;
+  z-index: 60;
+  width: 240px;
+  max-width: 74vw;
+  padding: 11px 13px;
+  background: #2d2b3d;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(25, 28, 29, 0.22);
+  white-space: normal;
+  cursor: default;
+}
+.toefl-goal-tip:hover .toefl-goal-tipbox,
+.toefl-goal-tip-open .toefl-goal-tipbox { display: block; }
 .toefl-goal-row {
   display: flex;
   align-items: center;
