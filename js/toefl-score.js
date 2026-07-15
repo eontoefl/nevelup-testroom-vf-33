@@ -191,13 +191,15 @@ function renderToeflCoach() {
         el.innerHTML =
             '<div class="toefl-coach toefl-coach-success toefl-coach-split">' +
                 '<div class="toefl-coach-split-main">' +
-                    '<div class="toefl-coach-title">🎉 커트라인 ' + toeflTarget.toFixed(1) + ' 넘었어요!</div>' +
-                    '<div class="toefl-coach-body">정말 고생하셨어요. 그래프를 저장해서 후기에 올려주시면 좋아요.</div>' +
-                    '<div class="toefl-coach-action">' + saveBtn + '</div>' +
+                    '<div class="toefl-coach-split-text">' +
+                        '<div class="toefl-coach-title">🎉 커트라인 ' + toeflTarget.toFixed(1) + ' 넘었어요!</div>' +
+                        '<div class="toefl-coach-body">정말 고생하셨어요. 그래프를 저장해서 후기에 올려주시면 좋아요.</div>' +
+                    '</div>' +
+                    '<div class="toefl-coach-split-savebtn">' + saveBtn + '</div>' +
                 '</div>' +
                 '<div class="toefl-coach-split-aside">' +
                     '<div class="toefl-coach-aside-title">더 높이 가볼까요?</div>' +
-                    '<div class="toefl-coach-aside-body">여유가 있다면 <strong>다음 목표</strong>를 정해 한 번 더 도전!</div>' +
+                    '<div class="toefl-coach-aside-body"><strong>다음 목표</strong>를 정해 한 번 더 도전!</div>' +
                     wishSetBtn +
                 '</div>' +
             '</div>';

@@ -1254,6 +1254,18 @@
 .toefl-coach-split-main {
   flex: 1 1 auto;
   padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.toefl-coach-split-text { flex: 1 1 auto; min-width: 0; }
+.toefl-coach-split-savebtn { flex-shrink: 0; }
+.toefl-coach-split-text .toefl-coach-title { margin-bottom: 8px; }
+.toefl-coach-split-text .toefl-coach-body { margin-bottom: 0; }
+@media (max-width: 480px) {
+  .toefl-coach-split-main { flex-direction: column; align-items: stretch; }
+  .toefl-coach-split-savebtn .toefl-coach-btn { width: 100%; justify-content: center; }
 }
 .toefl-coach-split-aside {
   flex: 0 0 34%;
