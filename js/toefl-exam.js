@@ -205,35 +205,30 @@ function renderToeflExamCard() {
     }).join('');
 
     var cards = upcomingCards + pastCards;
+    el.innerHTML = cards;
 
-    // ── 예정·지난 시험 중 하나라도 있으면 카드로 보여준다 ──
-    if (cards) {
-        el.innerHTML = cards + buildToeflRegDeadlineNote(validCount);
-        return;
-    }
+    // ── 제목 아래 공지 영역(#toeflExamNotice) ──
+    // '응시 예정 없음' 넛지와 등록 마감/기한 지남 안내는 카드가 아니라
+    // 제목 바로 아래 공지 영역에 위아래로 쌓아 보여준다.
+    var noticeEl = document.getElementById('toeflExamNotice');
+    if (!noticeEl) return;
 
-    // ── 보여줄 시험이 하나도 없는 경우 ──
-    // 완전 빈 상태(성적도 0건)에서는 "응시 예정 없음" 카드를 아예 그리지 않는다.
-    // 바로 아래 성적 빈 상태의 "등록된 성적이 없습니다"와 의미가 겹치기 때문.
-    // 여기선 마감 경고만 남기고, 빈 메시지와 CTA는 성적 빈 상태가 가져간다.
+    // '응시 예정 없음' 넛지: 예정·지난 시험이 하나도 없고, 성적은 있을 때만.
+    // (성적도 0건인 완전 빈 상태에서는 아래 '등록된 성적이 없습니다'와 겹치므로 넛지를 안 띄운다.)
     var hasScores = (typeof toeflScores !== 'undefined' && toeflScores.length > 0);
-    if (!hasScores) {
-        el.innerHTML = buildToeflRegDeadlineNote(validCount);
-        return;
-    }
-
-    // 성적은 있는데 예정 시험이 없는 경우: 다음 시험을 잡도록 넛지하는 상태 카드만 둔다.
-    // (추가 버튼은 섹션 헤더에 있다.)
-    el.innerHTML =
-        '<div class="toefl-exam-card">' +
-            '<div class="toefl-exam-card-main">' +
-                '<div class="toefl-exam-info">' +
+    var nudge = '';
+    if (!cards && hasScores) {
+        nudge =
+            '<div class="toefl-noti toefl-noti-info">' +
+                '<span class="toefl-noti-icon"><i class="fa-solid fa-calendar-plus"></i></span>' +
+                '<div class="toefl-noti-text">' +
                     '<strong>응시 예정인 시험이 없습니다</strong>' +
                     '<span>ETS에서 다음 시험을 접수하셨다면, 일정을 추가해주세요.</span>' +
                 '</div>' +
-            '</div>' +
-        '</div>' +
-        buildToeflRegDeadlineNote(validCount);
+            '</div>';
+    }
+
+    noticeEl.innerHTML = nudge + buildToeflRegDeadlineNote(validCount);
 }
 
 /**
@@ -255,18 +250,23 @@ function buildToeflRegDeadlineNote(validCount) {
     if (left < 0) {
         // 기간이 지났어도 "지금이라도 등록하라"고 안내 중이므로, 문을 닫지 않는다.
         // '기간 안에 접수' 문구는 지난 학생에겐 자기모순이라 못 쓰고, 실행 가능성을 준다.
-        return '<div class="toefl-alert toefl-alert-danger">' +
-            '<i class="fa-solid fa-triangle-exclamation"></i>' +
-            '<span>시험 등록 기한이 지났습니다. 시험료지원금 <strong>21만원 반환 대상</strong>이에요.' +
-            '<span class="toefl-alert-tip">📌 <strong>아직 접수 안 하셨다면 지금이라도 서둘러 등록하세요.</strong> 실제 시험 보는 날짜는 챌린지가 끝난 뒤여도 괜찮습니다. 등록 후 카톡으로 메세지 주세요.</span></span>' +
+        return '<div class="toefl-noti toefl-noti-crit">' +
+            '<span class="toefl-noti-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>' +
+            '<div class="toefl-noti-text">' +
+                '<strong>시험 등록 기한이 지났습니다</strong>' +
+                '<span>시험료지원금 <b>21만원 반환 대상</b>이에요.</span>' +
+                '<span class="toefl-noti-tip">📌 아직 접수 안 하셨다면 지금이라도 서둘러 등록하세요. 실제 시험 보는 날짜는 챌린지가 끝난 뒤여도 괜찮습니다. 등록 후 카톡으로 메세지 주세요.</span>' +
+            '</div>' +
         '</div>';
     }
 
-    return '<div class="toefl-alert toefl-alert-warning">' +
-        '<i class="fa-solid fa-triangle-exclamation"></i>' +
-        '<span><strong>시험 등록 마감 D-' + left + '</strong> — ' + remain + '회 더 등록하셔야 해요.<br>' +
-        '기한 내 미등록 시 시험료지원금 <strong>21만원 반환 대상</strong>입니다. 미룰수록 점수 올릴 기회가 줄어들어요.' +
-        '<span class="toefl-alert-tip">📌 챌린지 기간 안에 <strong>시험을 접수(등록)</strong>하시면 됩니다. 실제 시험 보는 날은 챌린지가 끝난 뒤여도 괜찮아요.</span></span>' +
+    return '<div class="toefl-noti toefl-noti-warn">' +
+        '<span class="toefl-noti-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>' +
+        '<div class="toefl-noti-text">' +
+            '<strong>시험 등록 마감 D-' + left + '</strong>' +
+            '<span>' + remain + '회 더 등록하셔야 해요. 기한 내 미등록 시 시험료지원금 <b>21만원 반환 대상</b>입니다.</span>' +
+            '<span class="toefl-noti-tip">📌 챌린지 기간 안에 시험을 접수(등록)하시면 됩니다. 실제 시험 보는 날은 챌린지가 끝난 뒤여도 괜찮아요.</span>' +
+        '</div>' +
     '</div>';
 }
 

@@ -836,6 +836,37 @@
 /* 예정 시험이 여러 개일 때 카드 사이 간격 */
 .toefl-exam-card + .toefl-exam-card { margin-top: 10px; }
 
+/* 제목 아래 알림 스트립: 알림들을 가로로 나란히 (전체 폭). 모바일에선 wrap */
+#toeflExamNotice:not(:empty) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 44px;
+  margin-bottom: 20px;
+}
+
+/* 알림 아이템 -- 박스/선 없이 아이콘 칩 + 텍스트로 "알림" 느낌.
+   (DESIGN.md: 구분선·박스 금지, 여백으로 분리, 코랄은 critical에만) */
+.toefl-noti { display: flex; align-items: flex-start; gap: 11px; flex: 1 1 300px; min-width: 0; }
+.toefl-noti-icon {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  border-radius: 11px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+}
+.toefl-noti-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.toefl-noti-text > strong {
+  font-size: 0.86rem; font-weight: 700;
+  color: var(--on-surface); letter-spacing: -0.01em;
+}
+.toefl-noti-text > span { font-size: 0.79rem; line-height: 1.55; color: var(--on-surface-variant); }
+.toefl-noti-tip { margin-top: 3px; font-size: 0.75rem; }
+/* 톤: info(예정 없음)=시그니처, warn(마감 임박)=주황, crit(기한 지남)=코랄 */
+.toefl-noti-info .toefl-noti-icon { background: var(--signature-light); color: var(--primary); }
+.toefl-noti-warn .toefl-noti-icon { background: var(--orange-light); color: var(--orange); }
+.toefl-noti-crit .toefl-noti-icon { background: rgba(255, 126, 95, 0.12); color: var(--tertiary); }
+.toefl-noti-crit .toefl-noti-text > strong { color: var(--tertiary); }
+
 /* 섹션 헤더: 제목 + 우측 "등록한 시험 추가하기" (항상 노출되는 주 액션) */
 .toefl-section-head {
   display: flex;
