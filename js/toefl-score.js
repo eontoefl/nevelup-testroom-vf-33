@@ -32,6 +32,10 @@ let toeflHiliteMetric = null; // 체크리스트에서 눌러 강조 중인 섹�
 let toeflCelebrateIdx = -1;   // 축하 대상 Overall 점 인덱스 (저장 이미지에도 표시)
 let toeflCelebrateText = '🎉 축하해요!';   // 축하 말풍선 문구
 
+// 신점수(1.0~6.0) → 구점수(0~120) 공식 환산표. 그래프 y축·툴팁에 구점수 병기용.
+// (Overall 총점 기준. 섹션은 0~30 다른 척도라 이 표로 병기하지 않는다.)
+var TOEFL_OLD_SCORE = { 2: 28, 2.5: 38, 3: 51, 3.5: 65, 4: 80, 4.5: 90, 5: 100, 5.5: 110, 6: 118 };
+
 // 5개 지표 (Overall + 4섹션). 색은 그래프 데이터 선과 맞춤.
 var TOEFL_METRICS = [
     { key: 'overall',   label: 'Overall',   color: '#1e1b2e' },
@@ -855,7 +859,15 @@ function renderToeflChart() {
             scales: {
                 y: {
                     min: 1, max: 6,
-                    ticks: { stepSize: 0.5, font: { family: 'Pretendard' } },
+                    ticks: {
+                        stepSize: 0.5,
+                        font: { family: 'Pretendard' },
+                        // 신점수 옆에 구점수 병기: 5.0 (100). 환산표에 없는 값(1.0/1.5)은 신점수만.
+                        callback: function(val) {
+                            var o = TOEFL_OLD_SCORE[val];
+                            return o != null ? (Number(val).toFixed(1) + ' (' + o + ')') : Number(val).toFixed(1);
+                        }
+                    },
                     grid: { color: 'rgba(0,0,0,0.05)' }
                 },
                 x: {
@@ -873,6 +885,19 @@ function renderToeflChart() {
                 legend: {
                     position: 'bottom',
                     labels: { usePointStyle: true, font: { family: 'Pretendard', size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        // Overall만 구점수 병기 (섹션은 0~30 다른 척도라 이 표로 환산 안 함)
+                        label: function(ctx) {
+                            var v = ctx.parsed.y;
+                            var s = ctx.dataset.label + ': ' + (v != null ? Number(v).toFixed(1) : '-');
+                            if (ctx.dataset.label === 'Overall' && v != null && TOEFL_OLD_SCORE[v] != null) {
+                                s += ' (기존 ' + TOEFL_OLD_SCORE[v] + ')';
+                            }
+                            return s;
+                        }
+                    }
                 },
                 annotation: { annotations: annotations }
             }
