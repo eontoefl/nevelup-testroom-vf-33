@@ -75,6 +75,21 @@ function getToeflNextExam() {
     return upcoming.length ? upcoming[0] : null;
 }
 
+/**
+ * 이미 날짜가 지난 시험 (응시 완료 · 성적 아직 미등록) -- 최근 순.
+ * 예정 시험만 그리면, 지난 날짜로 등록한 시험이 화면에서 아예 사라져
+ * 학생이 "저장이 안 됐다"고 오해하고 반복 등록하게 된다. 지난 시험도 보여준다.
+ * 성적이 이미 연결된(score_id) 시험은 성적 목록·그래프가 대신 보여주므로 제외.
+ */
+function getToeflPastExams() {
+    var now = new Date();
+    return toeflExams.filter(function(e) {
+        return e.status === 'scheduled' && !e.score_id && new Date(e.exam_datetime) <= now;
+    }).sort(function(a, b) {
+        return new Date(b.exam_datetime) - new Date(a.exam_datetime);
+    });
+}
+
 /** 시험 등록 마감일 (없으면 null) */
 function getToeflRegDeadline() {
     if (!mpUser || !mpUser.startDate) return null;
@@ -102,48 +117,102 @@ function formatToeflExamDate(iso) {
 }
 
 // ================================================
+// 시험 카드 -- 시험일까지 남은 일수(D-day)로 문구/배지가 단계별로 바뀐다
+// ================================================
+/**
+ * 시험일 기준 단계별 표시 정보.
+ *   ① D-2 이상 : 기본 응원
+ *   ② D-1      : 전날 (컨디션 + 카톡 예고)
+ *   ③ D-DAY    : 당일 (강한 화이팅)
+ *   ④ D+1~D+7  : 시험 직후 (성적 보내달라 - 부드럽게)
+ *   ⑤ D+8 이상 : 성적 미인증 경고 (강하게)
+ */
+function toeflExamPhase(dday) {
+    if (dday >= 2) return {
+        cardClass: 'toefl-exam-card-upcoming',
+        badgeClass: 'toefl-exam-dday',
+        badgeLabel: 'D-' + dday,
+        sub: '그동안 쌓은 실력을 확인하는 날이 다가와요. 지금처럼만 준비하면 돼요! 💪'
+    };
+    if (dday === 1) return {
+        cardClass: 'toefl-exam-card-upcoming',
+        badgeClass: 'toefl-exam-dday',
+        badgeLabel: 'D-1',
+        sub: '내일이 바로 시험날이에요! 오늘은 푹 쉬고 컨디션만 챙기세요. 시험 끝나면 제가 카톡 드릴 테니, 답장만 주시면 돼요 🙂'
+    };
+    if (dday === 0) return {
+        cardClass: 'toefl-exam-card-upcoming',
+        badgeClass: 'toefl-exam-dday',
+        badgeLabel: 'D-DAY',
+        sub: '드디어 오늘이에요! 긴장은 열심히 준비했다는 증거예요. 평소처럼, 아니 평소보다 더 잘하고 오실 거예요. 화이팅!! 🔥'
+    };
+    if (dday >= -7) return {   // D+1 ~ D+7
+        cardClass: 'toefl-exam-card-past',
+        badgeClass: 'toefl-exam-dday toefl-exam-dday-done',
+        badgeLabel: '응시함',
+        sub: '시험 보느라 고생 많으셨어요! 성적이 나오면 <strong>반드시 카톡으로 성적표를 캡처해서 보내주세요.</strong> 제가 바로 등록해드릴게요.'
+    };
+    return {   // D+8 이상 -- 성적 미인증 경고
+        cardClass: 'toefl-exam-card-overdue',
+        badgeClass: 'toefl-exam-dday toefl-exam-dday-overdue',
+        badgeLabel: '미인증',
+        sub: '⚠️ 아직 <strong>성적 인증이 안 된 상태</strong>예요. 성적표를 카톡으로 보내주셔야 인증 처리가 됩니다. 이미 성적이 나왔다면 지금 바로 캡처해서 보내주세요!'
+    };
+}
+
+/** 시험 카드 1개 HTML. isNext=가장 가까운 예정 시험이면 제목에 '다음 시험' 접두 */
+function buildToeflExamCardHtml(e, isNext) {
+    var dday = toeflDaysUntil(e.exam_datetime);
+    var ph = toeflExamPhase(dday);
+    var dateStr = formatToeflExamDate(e.exam_datetime);
+    var title = (isNext && dday >= 1) ? ('다음 시험 ' + dateStr) : (dateStr + ' 시험');
+    return '<div class="toefl-exam-card ' + ph.cardClass + '">' +
+        '<div class="toefl-exam-card-main">' +
+            '<span class="' + ph.badgeClass + '">' + ph.badgeLabel + '</span>' +
+            '<div class="toefl-exam-info">' +
+                '<strong>' + title + '</strong>' +
+                '<span>' + ph.sub + '</span>' +
+            '</div>' +
+        '</div>' +
+        '<div class="toefl-exam-card-actions">' +
+            '<button class="toefl-exam-btn-ghost" onclick="openToeflExamModal(\'' + e.id + '\')">수정</button>' +
+            '<button class="toefl-exam-btn-ghost" onclick="cancelToeflExam(\'' + e.id + '\')">취소</button>' +
+        '</div>' +
+    '</div>';
+}
+
+// ================================================
 // 렌더링 -- 시험 일정 카드 (행동 유도 영역)
 // ================================================
 function renderToeflExamCard() {
     var el = document.getElementById('toeflExamCard');
     if (!el) return;
 
-    var next = getToeflNextExam();
     var validCount = getToeflAttemptCount();
-
     var upcoming = getToeflUpcomingExams();
+    var past = getToeflPastExams();
 
-    // ── 응시 예정 시험이 있는 경우 ──
-    // 여러 개 등록 가능하다. 예정 시험을 모두 보여주고, 아래에 "하나 더 등록" 버튼을 둔다.
-    if (upcoming.length) {
-        var cards = upcoming.map(function(e, idx) {
-            var dday = toeflDaysUntil(e.exam_datetime);
-            var ddayLabel = dday > 0 ? 'D-' + dday : (dday === 0 ? 'D-DAY' : '');
-            // 알림톡 안내는 시험 당일에 알림톡으로 가므로 여기선 동기부여만.
-            var sub = idx === 0
-                ? '그동안 쌓은 실력을 확인하는 날이에요. 긴장 말고 평소처럼 보고 오세요! 💪'
-                : '이 흐름 그대로 이어가 보세요!';
-            return '<div class="toefl-exam-card toefl-exam-card-upcoming">' +
-                '<div class="toefl-exam-card-main">' +
-                    '<span class="toefl-exam-dday">' + ddayLabel + '</span>' +
-                    '<div class="toefl-exam-info">' +
-                        '<strong>' + (idx === 0 ? '다음 시험 ' : '') + formatToeflExamDate(e.exam_datetime) + '</strong>' +
-                        '<span>' + sub + '</span>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="toefl-exam-card-actions">' +
-                    '<button class="toefl-exam-btn-ghost" onclick="openToeflExamModal(\'' + e.id + '\')">수정</button>' +
-                    '<button class="toefl-exam-btn-ghost" onclick="cancelToeflExam(\'' + e.id + '\')">취소</button>' +
-                '</div>' +
-            '</div>';
-        }).join('');
+    // ── 예정 시험 카드 (가까운 순) ── 문구·배지는 D-day 단계별로 자동 결정된다.
+    // 여러 개 등록 가능하다. (추가 버튼은 섹션 헤더에 항상 있다.)
+    var upcomingCards = upcoming.map(function(e, idx) {
+        return buildToeflExamCardHtml(e, idx === 0);
+    }).join('');
 
-        // 시험 추가 버튼은 섹션 헤더에 항상 있으므로 여기엔 두지 않는다.
+    // ── 지난 시험 카드 ── 시험 직후 성적 요청 → 7일 초과 시 미인증 경고로 바뀐다.
+    // 날짜가 지난 시험도 등록한 그대로 보여준다. 안 보이면 학생이 저장 실패로 오해한다.
+    var pastCards = past.map(function(e) {
+        return buildToeflExamCardHtml(e, false);
+    }).join('');
+
+    var cards = upcomingCards + pastCards;
+
+    // ── 예정·지난 시험 중 하나라도 있으면 카드로 보여준다 ──
+    if (cards) {
         el.innerHTML = cards + buildToeflRegDeadlineNote(validCount);
         return;
     }
 
-    // ── 예정 시험이 없는 경우 ──
+    // ── 보여줄 시험이 하나도 없는 경우 ──
     // 완전 빈 상태(성적도 0건)에서는 "응시 예정 없음" 카드를 아예 그리지 않는다.
     // 바로 아래 성적 빈 상태의 "등록된 성적이 없습니다"와 의미가 겹치기 때문.
     // 여기선 마감 경고만 남기고, 빈 메시지와 CTA는 성적 빈 상태가 가져간다.
@@ -184,9 +253,12 @@ function buildToeflRegDeadlineNote(validCount) {
     var remain = TOEFL_REQUIRED_COUNT - validCount;
 
     if (left < 0) {
+        // 기간이 지났어도 "지금이라도 등록하라"고 안내 중이므로, 문을 닫지 않는다.
+        // '기간 안에 접수' 문구는 지난 학생에겐 자기모순이라 못 쓰고, 실행 가능성을 준다.
         return '<div class="toefl-alert toefl-alert-danger">' +
             '<i class="fa-solid fa-triangle-exclamation"></i>' +
-            '<span>시험 등록 기한이 지났습니다. 시험료지원금 21만원 반환 대상이에요. 카톡으로 상담 주세요.</span>' +
+            '<span>시험 등록 기한이 지났습니다. 시험료지원금 <strong>21만원 반환 대상</strong>이에요.' +
+            '<span class="toefl-alert-tip">📌 <strong>아직 접수 안 하셨다면 지금이라도 서둘러 등록하세요.</strong> 실제 시험 보는 날짜는 챌린지가 끝난 뒤여도 괜찮습니다. 등록 후 카톡으로 메세지 주세요.</span></span>' +
         '</div>';
     }
 

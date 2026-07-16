@@ -812,6 +812,27 @@
 .toefl-exam-card-upcoming {
   background: var(--signature-light);
 }
+/* 지난 시험 -- 이미 응시, 성적 대기. 예정 시험과 달리 차분한 중립 톤 */
+.toefl-exam-card-past {
+  background: var(--surface-container-low);
+}
+/* 지난 시험 배지 -- D-day 배지와 달리 강조를 낮춰 "지났음"을 표현 */
+.toefl-exam-dday-done {
+  background: #e8eaed;
+  color: var(--on-surface-variant);
+  box-shadow: none;
+  font-weight: 600;
+}
+/* 성적 미인증 경고 (시험 후 7일 초과) -- 위험 톤 (등록 마감 danger와 동일 계열) */
+.toefl-exam-card-overdue {
+  background: rgba(255, 126, 95, 0.10);
+}
+.toefl-exam-dday-overdue {
+  background: var(--tertiary);
+  color: #fff;
+  box-shadow: none;
+  font-weight: 700;
+}
 /* 예정 시험이 여러 개일 때 카드 사이 간격 */
 .toefl-exam-card + .toefl-exam-card { margin-top: 10px; }
 
@@ -1100,6 +1121,20 @@
   color: var(--on-surface-variant);
 }
 .toefl-exam-guard i { margin-top: 3px; color: var(--primary); flex-shrink: 0; }
+
+/* 등록 모달 -- 시험 날짜 아래 상시 안내. 학생들이 자주 묻는 '기간 뒤 등록' 오해 해소 */
+.toefl-date-tip {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 11px 13px;
+  background: var(--signature-pale);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--on-surface-variant);
+}
+.toefl-date-tip strong { color: var(--on-surface); }
 
 /* ======================================================
    보조 링크 (이전 학습 기록 / 연습코스 마이페이지)
