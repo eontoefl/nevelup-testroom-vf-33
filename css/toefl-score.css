@@ -867,6 +867,83 @@
 .toefl-noti-crit .toefl-noti-icon { background: rgba(255, 126, 95, 0.12); color: var(--tertiary); }
 .toefl-noti-crit .toefl-noti-text > strong { color: var(--tertiary); }
 
+/* ======================================================
+   설문 리워드 말풍선 (컴포즈 아메리카노)
+   -- 디데이 카드 오른쪽에 둥둥 떠서(화이트 컨테이너 위) 카드를 왼쪽 화살표로 가리킴.
+   따뜻한 초대 톤(경고와 구분).
+====================================================== */
+#toeflExamCard { position: relative; }
+/* wrapper: 카드 오른쪽 여백(수정/취소 버튼 왼쪽)에 세로 중앙정렬로 고정 */
+.toefl-survey-bubble-wrap {
+  position: absolute;
+  top: 50%;
+  left: 1077px;            /* 카드 왼쪽 기준 고정(%가 아니라 px) -- 폭이 바뀌어도 안 흐르게 */
+  transform: translateY(-50%);
+  z-index: 5;
+  pointer-events: none;   /* 버튼 위에 떠도 클릭을 막지 않게(장식/안내용) */
+}
+/* 안쪽 말풍선: 둥둥 애니메이션만 담당 (중앙정렬 transform과 분리) */
+.toefl-survey-bubble {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 280px;
+  padding: 12px 15px;
+  border-radius: 16px;
+  background: var(--accent-light);
+  /* box-shadow는 사각형만 따라가서 꼬리엔 그림자가 안 생김.
+     drop-shadow는 실제 모양(꼬리 뾰족한 부분까지) 따라 그림자를 그려 꼬리도 떠오른다. */
+  filter: drop-shadow(0 8px 18px rgba(25, 28, 29, 0.28));
+  animation: toeflSurveyFloat 3.2s ease-in-out infinite;
+}
+/* 꼬리: 왼쪽으로 뾰족하게 -- border 삼각형(본체에 딱 붙고 길이 조절 쉬움).
+   tip은 왼쪽(left), base(오른쪽 세로변)는 본체 안쪽(+3px)에 물려 seamless. */
+.toefl-survey-bubble::after {
+  content: '';
+  position: absolute;
+  left: -13px; top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-right: 16px solid var(--accent-light);   /* 이 값을 키우면 꼬리가 더 길어짐 */
+}
+.toefl-survey-bubble-icon {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.75);
+}
+.toefl-survey-bubble-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toefl-survey-bubble-text > strong {
+  font-size: 0.83rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.01em;
+}
+.toefl-survey-bubble-text > span { font-size: 0.76rem; line-height: 1.5; color: var(--on-surface-variant); }
+
+/* 둥둥 부유 애니메이션 (안쪽 말풍선만 위아래로) -- 이름 고유하게(축하 말풍선과 충돌 방지) */
+@keyframes toeflSurveyFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+
+/* 좁은 화면(PC라도 창 좁힘)에선 겹침 방지: 카드 위 정적 배치 + 꼬리 아래로 */
+@media (max-width: 760px) {
+  #toeflExamCard { position: static; }
+  .toefl-survey-bubble-wrap { position: static; transform: none; margin-bottom: 16px; }
+  .toefl-survey-bubble { width: auto; max-width: 480px; animation: none; }
+  /* 모바일: 말풍선이 카드 위 정적 배치 → 꼬리는 아래 방향 삼각형 */
+  .toefl-survey-bubble::after {
+    left: 30px; right: auto; top: auto; bottom: -13px; transform: none;
+    border-top: 16px solid var(--accent-light);
+    border-right: 9px solid transparent;
+    border-bottom: 0;
+    border-left: 9px solid transparent;
+  }
+}
+
 /* 섹션 헤더: 제목 + 우측 "등록한 시험 추가하기" (항상 노출되는 주 액션) */
 .toefl-section-head {
   display: flex;

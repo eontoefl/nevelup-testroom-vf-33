@@ -205,7 +205,12 @@ function renderToeflExamCard() {
     }).join('');
 
     var cards = upcomingCards + pastCards;
-    el.innerHTML = cards;
+
+    // 설문 리워드 말풍선: 시험 직후(응시함 창)면 B, 예정 시험이 있으면 A. 카드 위에 붙인다.
+    var bubble = '';
+    if (toeflInSurveyWindow()) bubble = buildToeflSurveyBubble('B');
+    else if (upcoming.length) bubble = buildToeflSurveyBubble('A');
+    el.innerHTML = bubble + cards;
 
     // ── 제목 아래 공지 영역(#toeflExamNotice) ──
     // '응시 예정 없음' 넛지와 등록 마감/기한 지남 안내는 카드가 아니라
@@ -443,6 +448,48 @@ async function cancelToeflExam(examId) {
         console.error('❌ [TOEFL] 시험 일정 취소 실패:', err);
         alert('취소 중 오류가 발생했습니다.');
     }
+}
+
+// ================================================
+// 설문 리워드 말풍선 (컴포즈 아메리카노)
+// ================================================
+// 예정 시험(D-N) 카드엔 '예고(A)'로 각인, 시험 직후(응시함 창)엔 '지금 참여(B)'.
+// 알림톡엔 광고 문구를 못 넣으므로, 마이페이지 말풍선이 광고판 역할을 한다.
+// (설문 링크 자체는 알림톡으로 가므로 말풍선엔 버튼 없이 안내만.)
+
+/** 시험 직후 창인가 (당일 응시 후 ~ D+7). 성적 미등록 시험 기준. */
+function toeflInSurveyWindow() {
+    if (typeof getToeflPastExams !== 'function') return false;
+    var past = getToeflPastExams();
+    for (var i = 0; i < past.length; i++) {
+        var dd = toeflDaysUntil(past[i].exam_datetime);
+        if (dd <= 0 && dd >= -7) return true;
+    }
+    return false;
+}
+
+/**
+ * 설문 리워드 말풍선 HTML. 예정/직후 시험 카드 위에 붙어 "말하는" 느낌.
+ * variant 'B'=시험 직후(콜투액션), 그 외='A'(예고).
+ */
+function buildToeflSurveyBubble(variant) {
+    var title, body;
+    if (variant === 'B') {
+        title = '시험보느라 고생 많으셨어요! 아아 받아가세요~';
+        body = '카톡으로 보내드린 설문(10초) 링크로 참여하고 메가커피 아메리카노(ICE) 받아가세요! (전원제공)';
+    } else {
+        title = '아이스 아메리카노 꼭! 받아가세요';
+        body = '시험을 보고 나면 카톡으로 짧은 설문(10초) 링크를 보내드려요. 메가커피 아메리카노(ICE) 기프티콘을 보내드려요! (전원 제공)';
+    }
+    return '<div class="toefl-survey-bubble-wrap">' +
+        '<div class="toefl-survey-bubble">' +
+            '<span class="toefl-survey-bubble-icon">☕</span>' +
+            '<div class="toefl-survey-bubble-text">' +
+                '<strong>' + title + '</strong>' +
+                '<span>' + body + '</span>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
 }
 
 console.log('✅ toefl-exam.js 로드 완료');
