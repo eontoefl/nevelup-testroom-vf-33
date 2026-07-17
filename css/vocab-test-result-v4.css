@@ -227,6 +227,42 @@
     color: #c53030;
 }
 
+/* ── 오답 글자단위 diff 강조 ───────────────────────────── */
+/* 정답 박스: 학생이 놓치거나 틀린 글자 (노랑 강조) */
+.dc-miss {
+    background: #ffe08a;
+    color: #7a4e00;
+    font-weight: 800;
+    border-radius: 3px;
+    padding: 0 1px;
+}
+/* 내 답안 박스: 자리가 틀린 글자 (빨강 물결 밑줄) */
+.dc-wrong {
+    color: #c53030;
+    font-weight: 800;
+    text-decoration: underline wavy #e66e78;
+}
+/* 내 답안 박스: 불필요하게 더 쓴 글자 (취소선) */
+.dc-extra {
+    color: #c53030;
+    text-decoration: line-through;
+    opacity: .75;
+}
+/* 내 답안 박스: 빠진 자리 표시 '_' */
+.dc-gap {
+    color: #e66e78;
+    font-weight: 800;
+}
+/* 오답 원인 한 줄 힌트 */
+.syn-hint {
+    font-size: 12.5px;
+    color: #a15c00;
+    background: #fff7e6;
+    border-radius: 8px;
+    padding: 6px 11px;
+    margin: -2px 0 2px;
+}
+
 /* 버튼 영역 */
 .vocab-result-actions {
     margin-top: 30px;

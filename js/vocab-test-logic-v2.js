@@ -467,12 +467,15 @@ async function showVocabTestResult() {
                 allCorrect = false;
             }
             
-            // 정답란 표시: 맞혔으면 학생이 매칭한 답을, 틀렸으면 주 정답(첫 번째)을 보여줌
+            // 정답란 표시: 맞혔으면 학생이 매칭한 답을, 틀렸으면 학생 답과 가장 가까운 변형을 보여줌
+            // (복수정답이 없으면 항상 주 정답. 복수정답이면 diff가 의미있도록 가장 가까운 답을 기준으로)
             const variants = correctSynonym.split('|').map(x => x.trim()).filter(Boolean);
             let displayCorrect = variants[0] || correctSynonym.trim();
             if (isCorrect) {
                 const matched = variants.find(v => v.toLowerCase() === userLower);
                 if (matched) displayCorrect = matched;
+            } else if (userSynonym && variants.length > 1) {
+                displayCorrect = _vocabClosestVariant(userSynonym, variants);
             }
 
             synonymResults.push({
@@ -513,6 +516,103 @@ async function showVocabTestResult() {
     const resultScreen = document.getElementById('vocabResultScreen');
     resultScreen.classList.add('active');
     resultScreen.style.display = 'block';
+}
+
+// ── 오답 글자단위 diff ─────────────────────────────────────────────
+// 학생 오답이 정답과 "어디가" 다른지(빠진 글자/틀린 글자/불필요한 글자) 짚어주기 위한 유틸.
+// 채점 자체는 바꾸지 않는다. 표시 전용이며 대소문자는 무시하고 비교, 화면 글자는 원문 유지.
+
+// HTML 이스케이프 (한 글자씩 innerHTML로 주입하므로 안전 처리)
+function _vocabEsc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// 편집거리 백트레이스로 정렬 결과(op 목록) 산출
+// op: {t:'eq'|'sub'|'del'|'ins', a?, b?}  (a=학생답 글자, b=정답 글자)
+//   eq  = 일치, sub = 자리 틀림, del = 학생만 가짐(불필요), ins = 정답만 가짐(빠뜨림)
+function _vocabAlign(a, b) {
+    const al = a.toLowerCase(), bl = b.toLowerCase();
+    const n = a.length, m = b.length;
+    const dp = Array.from({length: n + 1}, () => new Array(m + 1).fill(0));
+    for (let i = 0; i <= n; i++) dp[i][0] = i;
+    for (let j = 0; j <= m; j++) dp[0][j] = j;
+    for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) {
+        const cost = al[i - 1] === bl[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+    let i = n, j = m; const ops = [];
+    while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + (al[i - 1] === bl[j - 1] ? 0 : 1)) {
+            ops.push({t: al[i - 1] === bl[j - 1] ? 'eq' : 'sub', a: a[i - 1], b: b[j - 1]});
+            i--; j--;
+        } else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) {
+            ops.push({t: 'del', a: a[i - 1]});
+            i--;
+        } else {
+            ops.push({t: 'ins', b: b[j - 1]});
+            j--;
+        }
+    }
+    return ops.reverse();
+}
+
+// 두 문자열의 편집거리 (복수정답 중 가장 가까운 변형 고르기용)
+function _vocabEditDistance(a, b) {
+    const al = a.toLowerCase(), bl = b.toLowerCase(), n = al.length, m = bl.length;
+    let prev = Array.from({length: m + 1}, (_, j) => j);
+    for (let i = 1; i <= n; i++) {
+        const cur = [i];
+        for (let j = 1; j <= m; j++) {
+            const cost = al[i - 1] === bl[j - 1] ? 0 : 1;
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        }
+        prev = cur;
+    }
+    return prev[m];
+}
+
+// 복수정답(|)일 때 학생 답과 가장 가까운 변형 반환
+function _vocabClosestVariant(userAnswer, variants) {
+    let best = variants[0], bestD = Infinity;
+    for (const v of variants) {
+        const d = _vocabEditDistance(userAnswer, v);
+        if (d < bestD) { bestD = d; best = v; }
+    }
+    return best;
+}
+
+// "내 답안" 박스용: 맞은 글자 그대로 · 틀린 글자 밑줄 · 불필요 글자 취소선 · 빠진 자리 '_'
+function _renderDiffMine(ops) {
+    let html = '';
+    for (const o of ops) {
+        if (o.t === 'eq')       html += _vocabEsc(o.a);
+        else if (o.t === 'sub') html += `<span class="dc-wrong">${_vocabEsc(o.a)}</span>`;
+        else if (o.t === 'del') html += `<span class="dc-extra">${_vocabEsc(o.a)}</span>`;
+        else if (o.t === 'ins') html += `<span class="dc-gap">_</span>`;
+    }
+    return html;
+}
+
+// "정답" 박스용: 맞은 글자 그대로 · 학생이 놓치거나 틀린 글자 강조
+function _renderDiffAnswer(ops) {
+    let html = '';
+    for (const o of ops) {
+        if (o.t === 'eq')                       html += _vocabEsc(o.b);
+        else if (o.t === 'sub' || o.t === 'ins') html += `<span class="dc-miss">${_vocabEsc(o.b)}</span>`;
+    }
+    return html;
+}
+
+// 오답 원인 한 줄 힌트 자동 생성
+function _vocabHint(ops) {
+    const miss = ops.filter(o => o.t === 'ins').map(o => o.b);
+    const sub  = ops.filter(o => o.t === 'sub');
+    const ext  = ops.filter(o => o.t === 'del').map(o => o.a);
+    const parts = [];
+    if (miss.length) parts.push(`‘${_vocabEsc(miss.join(''))}’ 글자가 빠졌어요`);
+    if (sub.length)  parts.push(`${sub.length}글자가 달라요`);
+    if (ext.length)  parts.push(`‘${_vocabEsc(ext.join(''))}’는 불필요해요`);
+    return parts.join(' · ');
 }
 
 // 결과 렌더링
@@ -566,17 +666,30 @@ function renderVocabResult(results, correctCount, totalCount, percentage) {
         
         result.synonyms.forEach((syn, synIndex) => {
             const userAnswerClass = syn.isCorrect ? 'correct' : (syn.userAnswer ? 'wrong' : 'empty');
-            const userAnswerText = syn.userAnswer || '-';
-            
+
+            // 오답이면서 학생이 뭔가 쓴 경우에만 글자단위 diff로 어디가 틀렸는지 표시
+            let mineHtml, answerHtml, hintHtml = '';
+            if (userAnswerClass === 'wrong') {
+                const ops = _vocabAlign(syn.userAnswer, syn.correctAnswer);
+                mineHtml = _renderDiffMine(ops);
+                answerHtml = _renderDiffAnswer(ops);
+                const hint = _vocabHint(ops);
+                if (hint) hintHtml = `<div class="syn-hint">${hint}</div>`;
+            } else {
+                mineHtml = _vocabEsc(syn.userAnswer || '-');
+                answerHtml = _vocabEsc(syn.correctAnswer);
+            }
+
             resultsList += `
                 <div class="vocab-synonym-row">
                     <div class="syn-label">동의어 ${synIndex + 1}</div>
                     <div class="syn-my-label">내 답안</div>
-                    <div class="syn-user-box">${userAnswerText}</div>
+                    <div class="syn-user-box">${mineHtml}</div>
                     <div class="syn-arrow">→</div>
                     <div class="syn-correct-label">정답</div>
-                    <div class="syn-correct ${userAnswerClass}">${syn.correctAnswer}</div>
+                    <div class="syn-correct ${userAnswerClass}">${answerHtml}</div>
                 </div>
+                ${hintHtml}
             `;
         });
         
