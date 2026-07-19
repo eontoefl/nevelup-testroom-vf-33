@@ -121,9 +121,8 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         var state = window._correctionSessionState;
         var scheduleData = state ? state.scheduleData : null;
         if (scheduleData) {
-            var extMap = state.extensionMap || {};
-            var extHours = extMap[session.session + '_' + taskType] || 0;
-            var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
+            var ext = _corrExt(state.extensionMap, session.session, taskType);
+            var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
             if (new Date() > dl1) {
                 statusInfo = {
                     text: '마감됨 · 제출 불가',
@@ -301,34 +300,68 @@ function getCorrSessionStartDate(scheduleData, session) {
 }
 
 /**
+ * extensionMap에서 해당 세션·과제의 연장 정보를 꺼낸다.
+ * @returns {object|null} { hours, at } — 없으면 null
+ */
+function _corrExt(extMap, sessionNumber, taskType) {
+    if (!extMap) return null;
+    return extMap[sessionNumber + '_' + (taskType || 'writing')] || null;
+}
+
+/**
+ * 연장 묶음에서 해당 차수의 연장을 꺼낸다.
+ * 예전 형태(숫자 / 차수 없는 객체)도 그대로 받아준다.
+ *
+ * @param {number} round - 1 = 1차, 2 = 2차
+ */
+function _pickCorrExt(ext, round) {
+    if (!ext) return null;
+    if (typeof ext === 'number') return ext > 0 ? { hours: ext, at: null } : null;
+    if (ext.hours) return ext;   // 차수 구분 없는 옛 형태
+    var e = (round === 2) ? ext.r2 : ext.r1;
+    return (e && e.hours) ? e : null;
+}
+
+/**
+ * 마감에 연장을 적용한다.
+ *
+ * 기준점 = max(원래 마감, 연장을 건 시각)
+ *   - 마감 전에 연장 → 원래 마감 + N시간 (기존과 동일)
+ *   - 마감 후에 연장 → 연장을 건 시각 + N시간 (이전에는 이미 지난 시각이 나와 무의미했다)
+ */
+function _applyCorrExt(base, ext, round) {
+    var e = _pickCorrExt(ext, round);
+    if (!e) return base;
+    var anchor = (e.at && e.at > base) ? e.at : base;
+    return new Date(anchor.getTime() + e.hours * 60 * 60 * 1000);
+}
+
+/**
  * 1차 Draft 데드라인: sessionDate 다음날 04:00 (학생 타임존 기준)
  */
-function getCorrDraft1Deadline(startDate, dayOffset, extendedHours) {
+function getCorrDraft1Deadline(startDate, dayOffset, ext) {
     var tz = getUserTimezone();
     // sessionDate = startDate + dayOffset
     var sessionDate = new Date(startDate + 'T00:00:00');
     sessionDate.setDate(sessionDate.getDate() + dayOffset);
-    var base = getTaskDeadline(sessionDate, tz);
-    if (extendedHours) base = new Date(base.getTime() + extendedHours * 60 * 60 * 1000);
-    return base;
+    return _applyCorrExt(getTaskDeadline(sessionDate, tz), ext, 1);
 }
 
 /**
  * 2차 Draft 데드라인: max(스케줄상 마감, feedback_1_at + 24시간)
  * 스케줄상 2차: sessionDate+1일의 다음날 04:00
  */
-function getCorrDraft2Deadline(startDate, dayOffset, feedback1At, extendedHours) {
+function getCorrDraft2Deadline(startDate, dayOffset, feedback1At, ext) {
     var tz = getUserTimezone();
     // 스케줄 기반: sessionDate+1일 → 그 다음날 04:00
     var sessionDatePlus1 = new Date(startDate + 'T00:00:00');
     sessionDatePlus1.setDate(sessionDatePlus1.getDate() + dayOffset + 1);
-    var base = getTaskDeadline(sessionDatePlus1, tz);
-    if (extendedHours) base = new Date(base.getTime() + extendedHours * 60 * 60 * 1000);
+    var base = _applyCorrExt(getTaskDeadline(sessionDatePlus1, tz), ext, 2);
 
     // feedback_1_at + 24시간
     if (feedback1At) {
-        var fbDeadline = new Date(new Date(feedback1At).getTime() + 24 * 60 * 60 * 1000);
-        if (extendedHours) fbDeadline = new Date(fbDeadline.getTime() + extendedHours * 60 * 60 * 1000);
+        var fbDeadline = _applyCorrExt(
+            new Date(new Date(feedback1At).getTime() + 24 * 60 * 60 * 1000), ext, 2);
         if (fbDeadline > base) return fbDeadline;
     }
     return base;
@@ -392,8 +425,7 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
     var scheduleData = state ? state.scheduleData : null;
     if (!scheduleData) return '';
 
-    var extMap = state.extensionMap || {};
-    var extHours = extMap[session.session + '_' + (taskType || 'writing')] || 0;
+    var ext = _corrExt(state.extensionMap, session.session, taskType);
 
     var status = submission ? submission.status : null;
     var released1 = submission ? submission.released_1 : false;
@@ -442,7 +474,7 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
     // --- feedback1_ready + released_1=true (2차 단계) ---
     if (status === 'feedback1_ready' && released1) {
         rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, extHours);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, ext);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 2차 마감 초과', cls: 'overdue' });
@@ -477,7 +509,7 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
 
     // --- 미제출 (null) ---
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
+        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
@@ -608,8 +640,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
     if (!deadlineEl) return false;
 
     var state = window._correctionSessionState;
-    var extMap = state ? (state.extensionMap || {}) : {};
-    var extHours = extMap[session.session + '_' + (taskType || 'writing')] || 0;
+    var ext = _corrExt(state ? state.extensionMap : null, session.session, taskType);
 
     var status = submission ? submission.status : null;
     var released1 = submission ? submission.released_1 : false;
@@ -617,7 +648,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
 
     // 미제출 → 1차 마감 카운트다운
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
+        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 1차 마감 초과</div>';
@@ -634,7 +665,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
 
     // feedback1_ready + released_1 → 2차 마감 카운트다운
     if (status === 'feedback1_ready' && released1) {
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, extHours);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, ext);
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             deadlineEl.innerHTML =

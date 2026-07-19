@@ -757,9 +757,8 @@ function onCorrDetailDraft2Click(taskType) {
 
     // 2차 데드라인 초과 체크
     if (scheduleData && submission) {
-        var extMap = sessionState.extensionMap || {};
-        var extHours = extMap[session.session + '_' + taskType] || 0;
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, extHours);
+        var ext = _corrExt(sessionState.extensionMap, session.session, taskType);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, ext);
         if (new Date() > dl2) {
             alert('2차 수정 마감이 지났습니다.');
             return;
@@ -832,8 +831,7 @@ function _renderCorrDetailDeadlineBanner(session, submission, taskType) {
     }
 
     var scheduleData = sessionState.scheduleData;
-    var extMap = sessionState.extensionMap || {};
-    var extHours = extMap[session.session + '_' + (taskType || 'writing')] || 0;
+    var ext = _corrExt(sessionState.extensionMap, session.session, taskType);
 
     // 2차 단계인지 판별
     var isDraft2Phase = false;
@@ -850,10 +848,10 @@ function _renderCorrDetailDeadlineBanner(session, submission, taskType) {
 
     if (isDraft2Phase) {
         var feedback1At = submission ? submission.feedback_1_at : null;
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, feedback1At, extHours);
+        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, feedback1At, ext);
         renderDeadlineBanner(bannerEl, '2차 마감', dl2);
     } else {
-        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, extHours);
+        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
         renderDeadlineBanner(bannerEl, '1차 마감', dl1);
     }
 }

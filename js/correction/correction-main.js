@@ -75,24 +75,44 @@ async function renderCorrectionSchedule() {
 
     // 3. correction_deadline_extensions에서 마감 연장 조회
     var extensions = [];
+    var extBase = 'user_id=eq.' + user.id + '&select=session_number,task_type,extended_hours,created_at';
     try {
-        extensions = await supabaseSelect(
-            'correction_deadline_extensions',
-            'user_id=eq.' + user.id + '&select=session_number,task_type,extended_hours'
-        );
+        extensions = await supabaseSelect('correction_deadline_extensions', extBase + ',draft_round');
     } catch (e) {
-        console.warn('⚠️ [Correction] 마감 연장 조회 실패:', e);
+        // draft_round 마이그레이션 전이면 컬럼이 없어 실패한다 → 차수 없이 재조회 (연장이 전부 무효가 되는 것 방지)
+        console.warn('⚠️ [Correction] 마감 연장 조회 실패, draft_round 없이 재시도:', e);
+        try {
+            extensions = await supabaseSelect('correction_deadline_extensions', extBase);
+        } catch (e2) {
+            console.warn('⚠️ [Correction] 마감 연장 조회 실패:', e2);
+        }
     }
 
     // extensionMap 빌드 (이중 키: 원본 + 카테고리)
     var extensionMap = {};
     if (extensions && extensions.length > 0) {
         extensions.forEach(function(ext) {
+            // 연장을 건 시각도 함께 보관 — 마감이 지난 뒤 연장한 경우의 기준점이 된다
+            var entry = {
+                hours: ext.extended_hours,
+                at: ext.created_at ? new Date(ext.created_at) : null
+            };
+            // draft_round: 1=1차만, 2=2차만, null=둘 다(구버전 행)
+            var round = ext.draft_round;
+
+            function put(key) {
+                var slot = extensionMap[key];
+                if (!slot) { slot = { r1: null, r2: null }; extensionMap[key] = slot; }
+                if (round === 1) slot.r1 = entry;
+                else if (round === 2) slot.r2 = entry;
+                else { slot.r1 = entry; slot.r2 = entry; }
+            }
+
             // 원본 키: "1_writing_email"
-            extensionMap[ext.session_number + '_' + ext.task_type] = ext.extended_hours;
+            put(ext.session_number + '_' + ext.task_type);
             // 카테고리 키: "1_writing"
             var category = ext.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-            extensionMap[ext.session_number + '_' + category] = ext.extended_hours;
+            put(ext.session_number + '_' + category);
         });
         console.log('📋 [Correction] 마감 연장:', Object.keys(extensionMap).length + '건');
     }
