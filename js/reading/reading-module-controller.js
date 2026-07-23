@@ -851,12 +851,28 @@ async function _finishReadingModule() {
         try {
             if (inPractice2) {
                 var pNum = state2.practiceNumber;
-                if (mod.isRetake) {
-                    await upsertCurrentRecordPractice(user.id, 'reading', mod.moduleNum, pNum, recordJson);
-                } else {
-                    await upsertInitialRecordPractice(user.id, 'reading', mod.moduleNum, pNum, recordJson, {
-                        initial_level: level
+                // 연습코스: 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
+                var saveOk = await SaveGuard.attempt(function() {
+                    return mod.isRetake
+                        ? upsertCurrentRecordPractice(user.id, 'reading', mod.moduleNum, pNum, recordJson)
+                        : upsertInitialRecordPractice(user.id, 'reading', mod.moduleNum, pNum, recordJson, {
+                            initial_level: level
+                        });
+                });
+                if (!saveOk) {
+                    _hideSubmitLoading();
+                    SaveGuard.showFailurePopup({
+                        sectionType: 'reading',
+                        moduleNumber: mod.moduleNum,
+                        practiceNumber: pNum,
+                        taskLabel: '리딩 Module ' + mod.moduleNum + ' (P' + pNum + (mod.isRetake ? ', 다시풀기' : '') + ')',
+                        record: recordJson,
+                        onDone: function() {
+                            window.currentReadingModule = null;
+                            backToTaskDashboard();
+                        }
                     });
+                    return;
                 }
             } else if (mod.isRetake) {
                 await upsertCurrentRecord(user.id, 'reading', mod.moduleNum, week, day, recordJson);

@@ -407,10 +407,25 @@ async function _finishSpeakingModule() {
         try {
             if (inPractice2) {
                 var pNum = state2.practiceNumber;
-                if (mod.isRetake) {
-                    await upsertCurrentRecordPractice(user.id, 'speaking', mod.moduleNum, pNum, recordJson);
-                } else {
-                    await upsertInitialRecordPractice(user.id, 'speaking', mod.moduleNum, pNum, recordJson);
+                // 연습코스: 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
+                var saveOk = await SaveGuard.attempt(function() {
+                    return mod.isRetake
+                        ? upsertCurrentRecordPractice(user.id, 'speaking', mod.moduleNum, pNum, recordJson)
+                        : upsertInitialRecordPractice(user.id, 'speaking', mod.moduleNum, pNum, recordJson);
+                });
+                if (!saveOk) {
+                    _hideSubmitLoading();
+                    SaveGuard.showFailurePopup({
+                        sectionType: 'speaking',
+                        moduleNumber: mod.moduleNum,
+                        practiceNumber: pNum,
+                        taskLabel: '스피킹 ' + mod.moduleNum + ' (P' + pNum + (mod.isRetake ? ', 다시풀기' : '') + ')',
+                        record: recordJson,
+                        onDone: function() {
+                            backToTaskDashboard();
+                        }
+                    });
+                    return;
                 }
             } else if (mod.isRetake) {
                 await upsertCurrentRecord(user.id, 'speaking', mod.moduleNum, week, day, recordJson);

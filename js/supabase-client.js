@@ -42,6 +42,8 @@ async function supabaseRequest(endpoint, options = {}) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`❌ [Supabase] ${options.method || 'GET'} ${endpoint} 실패:`, response.status, errorText);
+            // SaveGuard(저장실패 보고)가 실패 사유를 이메일에 담을 수 있도록 기록
+            window._sgLastError = { kind: 'server', status: response.status, body: errorText, at: Date.now() };
             return null;
         }
 
@@ -54,6 +56,8 @@ async function supabaseRequest(endpoint, options = {}) {
 
     } catch (error) {
         console.error(`❌ [Supabase] 요청 실패:`, error);
+        // 네트워크 단계 실패(서버 미도달) — SaveGuard 보고용 기록
+        window._sgLastError = { kind: 'network', message: String(error), at: Date.now() };
         return null;
     }
 }

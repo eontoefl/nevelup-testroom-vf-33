@@ -550,15 +550,30 @@ async function _finishWritingModule() {
             var saveResult;
             if (inPractice2) {
                 var pNum = state2.practiceNumber;
-                if (mod.isRetake) {
-                    saveResult = await upsertCurrentRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
-                    console.log('💾 [Practice] current_record 저장 완료');
-                } else {
-                    // email/discussion 원문은 recordJson(initial_record)에 이미 포함됨.
-                    // study_results_practice에는 별도 텍스트 컬럼이 없으므로 extras를 넘기지 않는다.
-                    // (없는 컬럼을 전송하면 저장 전체가 거부됨)
-                    saveResult = await upsertInitialRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
-                    console.log('💾 [Practice] initial_record 저장 완료');
+                // 연습코스: 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
+                // email/discussion 원문은 recordJson(initial_record)에 이미 포함됨.
+                // study_results_practice에는 별도 텍스트 컬럼이 없으므로 extras를 넘기지 않는다.
+                saveResult = await SaveGuard.attempt(function() {
+                    return mod.isRetake
+                        ? upsertCurrentRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson)
+                        : upsertInitialRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
+                });
+                if (!saveResult) {
+                    if (typeof _hideSubmitLoading === 'function') {
+                        _hideSubmitLoading();
+                    }
+                    SaveGuard.showFailurePopup({
+                        sectionType: 'writing',
+                        moduleNumber: mod.moduleNum,
+                        practiceNumber: pNum,
+                        taskLabel: '라이팅 ' + mod.moduleNum + ' (P' + pNum + (mod.isRetake ? ', 다시풀기' : '') + ')',
+                        record: recordJson,
+                        onDone: function() {
+                            window.currentWritingModule = null;
+                            backToTaskDashboard();
+                        }
+                    });
+                    return;
                 }
             } else if (mod.isRetake) {
                 saveResult = await upsertCurrentRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson);

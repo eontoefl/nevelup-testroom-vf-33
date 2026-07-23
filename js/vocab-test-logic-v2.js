@@ -758,15 +758,25 @@ async function saveVocabRecord(correctCount, totalCount, percentage) {
         
         if (inPractice && vocabPNum) {
             // 연습코스: study_results_practice에 저장
-            if (window._deadlinePassedMode) {
-                await upsertCurrentRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson);
-                console.log('📝 [Vocab] 연습코스 마감 후 → current_record 저장');
-            } else {
-                // study_results_practice에는 locked_auth_rate 컬럼이 없음 — 넘기면 저장 전체가 400으로 실패한다.
-                // 정답률은 recordJson.accuracy에 이미 포함되어 있어 정보 손실 없음.
-                await upsertInitialRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson);
-                console.log('📝 [Vocab] 연습코스 기록 저장 완료');
+            // 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
+            // ※ locked_auth_rate 컬럼은 이 테이블에 없으므로 넘기지 않는다 (넘기면 400).
+            var vocabSaveOk = await SaveGuard.attempt(function() {
+                return window._deadlinePassedMode
+                    ? upsertCurrentRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson)
+                    : upsertInitialRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson);
+            });
+            if (!vocabSaveOk) {
+                SaveGuard.showFailurePopup({
+                    sectionType: 'vocab',
+                    moduleNumber: 1,
+                    practiceNumber: vocabPNum,
+                    taskLabel: '내벨업보카 ' + (currentPages || '') + 'pg (P' + vocabPNum + ')',
+                    record: recordJson
+                    // onDone 없음 — 팝업 닫으면 채점 결과 화면 유지
+                });
+                return;
             }
+            console.log('📝 [Vocab] 연습코스 기록 저장 완료');
         } else if (window._deadlinePassedMode) {
             // 마감 후 제출 → current_record에 저장 (연습 기록, 인증률 무관)
             await upsertCurrentRecord(user.id, 'vocab', 1, scheduleInfo.week, scheduleInfo.day, recordJson);
