@@ -421,6 +421,33 @@ function _pickSpeakingSet(sets, prefix, moduleNumber) {
     return sets[idx];
 }
 
+/**
+ * 다시쓰기 저장에 필요한 DB 컨텍스트 생성.
+ * 연습코스면 practiceNumber를 실어서 저장이 practice 테이블로 가도록 한다.
+ * (정규 테이블은 week/day가 필수라 연습코스에서 쓰면 400으로 거부됨)
+ */
+function _buildRewriteDbContext(st) {
+    var dashState = window._taskDashboardState || {};
+    return {
+        userId: st.dbRow.user_id,
+        sectionType: st.sectionType,
+        moduleNumber: st.moduleNumber,
+        week: st.week,
+        day: st.day,
+        isPractice: !!dashState.isPractice,
+        practiceNumber: dashState.practiceNumber || null
+    };
+}
+
+/** 해설 화면 상단 라벨: 정규 "Week N, X요일" / 연습 "Practice N" */
+function _explainContextLabel(st) {
+    var dashState = window._taskDashboardState || {};
+    if (dashState.isPractice) {
+        return 'Practice ' + dashState.practiceNumber;
+    }
+    return 'Week ' + st.week + ', ' + st.day + '요일';
+}
+
 function _extractData(def, recordJson, st) {
     switch (def.type) {
         case 'arrange':
@@ -430,17 +457,17 @@ function _extractData(def, recordJson, st) {
         case 'email':
             if (!recordJson.email) return null;
             return Object.assign({
-                weekDay: 'Week ' + st.week + ', ' + st.day + '요일',
+                weekDay: _explainContextLabel(st),
                 _rewrite: st.dbRow.rewrite_record ? st.dbRow.rewrite_record.email || null : null,
-                _dbContext: { userId: st.dbRow.user_id, sectionType: st.sectionType, moduleNumber: st.moduleNumber, week: st.week, day: st.day }
+                _dbContext: _buildRewriteDbContext(st)
             }, recordJson.email);
 
         case 'discussion':
             if (!recordJson.discussion) return null;
             return Object.assign({
-                weekDay: 'Week ' + st.week + ', ' + st.day + '요일',
+                weekDay: _explainContextLabel(st),
                 _rewrite: st.dbRow.rewrite_record ? st.dbRow.rewrite_record.discussion || null : null,
-                _dbContext: { userId: st.dbRow.user_id, sectionType: st.sectionType, moduleNumber: st.moduleNumber, week: st.week, day: st.day }
+                _dbContext: _buildRewriteDbContext(st)
             }, recordJson.discussion);
 
         case 'repeat':

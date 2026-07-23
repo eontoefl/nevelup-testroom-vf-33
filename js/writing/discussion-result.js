@@ -388,7 +388,9 @@ async function handleDiscussionRewriteSave() {
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
 
     try {
-        var existing = await getStudyResultV3(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day);
+        var existing = ctx.isPractice
+            ? await getStudyResultPractice(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.practiceNumber)
+            : await getStudyResultV3(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day);
         var rewriteRecord = (existing && existing.rewrite_record) ? existing.rewrite_record : {};
         rewriteRecord.discussion = {
             text: text,
@@ -396,7 +398,11 @@ async function handleDiscussionRewriteSave() {
             savedAt: new Date().toISOString()
         };
 
-        await upsertRewriteRecord(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day, rewriteRecord);
+        var saved = ctx.isPractice
+            ? await upsertRewriteRecordPractice(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.practiceNumber, rewriteRecord)
+            : await upsertRewriteRecord(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day, rewriteRecord);
+        // upsert 계열은 실패해도 throw 없이 null을 반환 → 성공 화면으로 넘어가지 않도록 명시적 확인
+        if (!saved) throw new Error('DB 저장 실패');
 
         // 저장 성공 → ③ 비교 화면으로 전환
         var userAnswer = _discussionData ? _discussionData.userAnswer : '';
