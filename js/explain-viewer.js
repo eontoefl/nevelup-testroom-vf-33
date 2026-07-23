@@ -163,7 +163,12 @@ function _updateExplainHeader(sectionType, moduleNumber, week, day) {
 
     if (iconEl) iconEl.textContent = SECTION_ICONS[sectionType] || '';
     if (titleEl) titleEl.textContent = (SECTION_LABELS[sectionType] || sectionType) + ' 모듈 ' + moduleNumber;
-    if (subtitleEl) subtitleEl.textContent = 'Week ' + week + ' - ' + _getDayLabel(day);
+    if (subtitleEl) {
+        var dashState = window._taskDashboardState || {};
+        subtitleEl.textContent = dashState.isPractice
+            ? 'Practice ' + dashState.practiceNumber
+            : 'Week ' + week + ' - ' + _getDayLabel(day);
+    }
 }
 
 function _getDayLabel(day) {
