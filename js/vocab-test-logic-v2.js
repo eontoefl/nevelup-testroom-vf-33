@@ -762,10 +762,10 @@ async function saveVocabRecord(correctCount, totalCount, percentage) {
                 await upsertCurrentRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson);
                 console.log('📝 [Vocab] 연습코스 마감 후 → current_record 저장');
             } else {
-                await upsertInitialRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson, {
-                    locked_auth_rate: authRate
-                });
-                console.log('📝 [Vocab] 연습코스 기록 저장 완료, 인증률:', authRate + '%');
+                // study_results_practice에는 locked_auth_rate 컬럼이 없음 — 넘기면 저장 전체가 400으로 실패한다.
+                // 정답률은 recordJson.accuracy에 이미 포함되어 있어 정보 손실 없음.
+                await upsertInitialRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson);
+                console.log('📝 [Vocab] 연습코스 기록 저장 완료');
             }
         } else if (window._deadlinePassedMode) {
             // 마감 후 제출 → current_record에 저장 (연습 기록, 인증률 무관)
