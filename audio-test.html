@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오디오 확인 테스트</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+    background: #f4f6fa;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    max-width: 520px;
+    width: 100%;
+    padding: 36px 32px;
+  }
+  h1 { font-size: 22px; color: #1a2b4a; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: #6b7a90; line-height: 1.6; margin-bottom: 24px; }
+  .warn {
+    background: #fff8e6;
+    border: 1px solid #ffd666;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #8a6d1a;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .test-block {
+    border: 2px solid #e5eaf2;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.3s;
+  }
+  .test-block.active { border-color: #4a90e2; }
+  .test-block.done { border-color: #34c98e; background: #f4fdf9; }
+  .test-title { font-size: 16px; font-weight: 700; color: #1a2b4a; margin-bottom: 12px; }
+  .play-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 10px;
+    background: #4a90e2;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .play-btn:hover:not(:disabled) { background: #3a7bc8; }
+  .play-btn:disabled { background: #c7d2e0; cursor: not-allowed; }
+  .status {
+    font-size: 13px;
+    color: #6b7a90;
+    margin-top: 10px;
+    min-height: 20px;
+    line-height: 1.5;
+  }
+  .status.playing { color: #4a90e2; font-weight: 600; }
+  .status.remember { color: #d97706; font-weight: 600; }
+  .countdown-num { font-weight: 700; color: #4a90e2; }
+  .result-guide {
+    display: none;
+    background: #eef6ff;
+    border: 1px solid #b3d4f5;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 14px;
+    color: #1a4a7a;
+    line-height: 1.7;
+    margin-top: 8px;
+  }
+  .result-guide.show { display: block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🎧 오디오 확인 테스트</h1>
+  <p class="subtitle">
+    숫자를 세는 목소리(one, two, three…)가 재생됩니다.<br>
+    <b>몇 번부터 들리는지</b>만 기억해주시면 됩니다. 1분이면 끝나요!
+  </p>
+  <div class="warn">
+    ⚠️ 꼭 <b>소리가 잘렸던 그 컴퓨터의 크롬</b>으로 열어주세요.<br>
+    ⚠️ 테스트 중에는 유튜브, 음악 등 <b>다른 소리를 재생하지 말아주세요.</b><br>
+    (버튼이 잠겨 있는 시간은 오디오 장치가 쉬기를 기다리는 시간이에요)
+  </div>
+
+  <div class="test-block" id="block1">
+    <div class="test-title">테스트 1</div>
+    <button class="play-btn" id="btn1" disabled>준비 중…</button>
+    <div class="status" id="status1"></div>
+  </div>
+
+  <div class="test-block" id="block2">
+    <div class="test-title">테스트 2</div>
+    <button class="play-btn" id="btn2" disabled>테스트 1을 먼저 진행해주세요</button>
+    <div class="status" id="status2"></div>
+  </div>
+
+  <div class="result-guide" id="resultGuide">
+    ✅ 테스트 완료! 아래 두 가지를 카톡으로 알려주세요.<br>
+    ① 테스트 1에서 <b>처음 들린 숫자</b> (예: three부터 들렸어요)<br>
+    ② 테스트 2에서 <b>처음 들린 숫자</b><br>
+    <br>
+    숫자가 하나도 안 들렸거나 다시 해보고 싶으시면, 20초 뒤에 버튼이 다시 켜지니 한 번 더 눌러보셔도 돼요.
+  </div>
+</div>
+
+<script>
+(function() {
+  var COOLDOWN = 20; // 오디오 장치가 다시 잠들 때까지 기다리는 시간(초)
+  var AUDIO_1 = 'audio-test-original.mp3';
+  var AUDIO_2 = 'audio-test-padded.mp3';
+
+  var btn1 = document.getElementById('btn1');
+  var btn2 = document.getElementById('btn2');
+  var status1 = document.getElementById('status1');
+  var status2 = document.getElementById('status2');
+  var block1 = document.getElementById('block1');
+  var block2 = document.getElementById('block2');
+  var resultGuide = document.getElementById('resultGuide');
+
+  var test1Done = false;
+  var test2Done = false;
+  var playing = false;
+  var countdownTimer = null;
+
+  // 미리 받아두면 재생 시점 조건이 실제 서비스와 달라지므로 프리로드하지 않고,
+  // 실제 응답고르기 컴포넌트와 동일하게 클릭 시점에 new Audio → play() 한다.
+  function playClip(url, statusEl, onDone) {
+    playing = true;
+    var audio = new Audio(url);
+    statusEl.className = 'status playing';
+    statusEl.textContent = '🔊 재생 중… 처음 들리는 숫자를 기억해주세요!';
+    audio.addEventListener('ended', function() {
+      playing = false;
+      statusEl.className = 'status remember';
+      statusEl.textContent = '방금 처음 들린 숫자를 기억해주세요!';
+      onDone();
+    });
+    audio.addEventListener('error', function() {
+      playing = false;
+      statusEl.className = 'status';
+      statusEl.textContent = '⚠️ 재생에 실패했어요. 인터넷 연결 확인 후 새로고침 해주세요.';
+      onDone();
+    });
+    audio.play().catch(function() {
+      playing = false;
+      statusEl.className = 'status';
+      statusEl.textContent = '⚠️ 재생에 실패했어요. 버튼을 다시 눌러주세요.';
+      onDone();
+    });
+  }
+
+  function setButtons(enabled) {
+    btn1.disabled = !enabled;
+    btn1.textContent = enabled ? '▶ 테스트 1 재생' : btn1.textContent;
+    var b2on = enabled && test1Done;
+    btn2.disabled = !b2on;
+    if (b2on) btn2.textContent = '▶ 테스트 2 재생';
+  }
+
+  // 재생 전 오디오 장치가 완전히 잠들도록 버튼을 잠그고 카운트다운을 보여준다
+  function startCooldown(onReady) {
+    var remain = COOLDOWN;
+    btn1.disabled = true;
+    btn2.disabled = true;
+    var target = !test1Done ? btn1 : btn2;
+    function tick() {
+      if (remain <= 0) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        onReady();
+        return;
+      }
+      target.textContent = '⏳ ' + remain + '초 뒤 재생할 수 있어요';
+      remain--;
+    }
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  function updateBlocks() {
+    block1.className = 'test-block' + (test1Done ? ' done' : ' active');
+    block2.className = 'test-block' + (test2Done ? ' done' : (test1Done ? ' active' : ''));
+    if (test1Done && test2Done) resultGuide.className = 'result-guide show';
+  }
+
+  btn1.addEventListener('click', function() {
+    if (playing) return;
+    btn1.disabled = true;
+    btn2.disabled = true;
+    playClip(AUDIO_1, status1, function() {
+      test1Done = true;
+      updateBlocks();
+      startCooldown(function() { setButtons(true); });
+    });
+  });
+
+  btn2.addEventListener('click', function() {
+    if (playing) return;
+    btn1.disabled = true;
+    btn2.disabled = true;
+    playClip(AUDIO_2, status2, function() {
+      test2Done = true;
+      updateBlocks();
+      startCooldown(function() { setButtons(true); });
+    });
+  });
+
+  // 페이지를 열자마자 재생하면 직전에 다른 소리로 장치가 깨어 있을 수 있으므로
+  // 첫 재생 전에도 20초를 기다린다
+  updateBlocks();
+  startCooldown(function() { setButtons(true); });
+})();
+</script>
+</body>
+</html>
