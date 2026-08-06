@@ -444,7 +444,7 @@ function _ext_renderApplyGuideImpl(host, ctx, deadline) {
         '</div>' +
 
         // 손실회피
-        '<div class="ext-loss-note">지금 잡힌 감각은 한 주만 쉬어도 흐려져요. 다시 끌어올리는 데 오히려 더 오래 걸립니다.</div>' +
+        '<div class="ext-loss-note">지금 잡힌 감각은 <b>한 주만 쉬어도</b> 흐려져요. 다시 끌어올리는 데 오히려 더 오래 걸립니다.</div>' +
 
         // 가격
         '<div class="ext-price-box">' +
