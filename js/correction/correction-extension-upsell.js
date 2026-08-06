@@ -321,11 +321,6 @@ function renderExtensionUpsellTabs(container, ctx) {
         tab2.classList.toggle('active', p2);
         panel1.style.display = p2 ? 'none' : 'block';
         panel2.style.display = p2 ? 'block' : 'none';
-        // 🔒 탭 진입 시: 배경 카드가 먼저 보이고, 0.5초 뒤 성적표가 스르륵 등장 (재진입마다 재생)
-        if (p2) {
-            var ov = panel2.querySelector('.ext-upsell-overlay');
-            if (ov) { ov.classList.remove('ext-reveal'); void ov.offsetWidth; ov.classList.add('ext-reveal'); }
-        }
     }
     tab1.onclick = function () { activate(1); };
     tab2.onclick = function () { activate(2); };

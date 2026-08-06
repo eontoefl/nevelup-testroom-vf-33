@@ -230,8 +230,8 @@
 /* 배경: 실제 세션 카드를 흐리게 — "이걸 열려면 여기 집중해야겠다" 유도 */
 .ext-locked-bg {
     align-self: start;
-    opacity: 0.22;
-    filter: blur(2.5px) grayscale(0.2);
+    opacity: 0.12;
+    filter: blur(1.5px) grayscale(0.1);
     pointer-events: none;
     user-select: none;
 }
@@ -249,17 +249,4 @@
     max-width: 640px;
     margin-bottom: 0;
     box-shadow: 0 14px 44px rgba(120, 100, 170, 0.30);
-}
-/* 🔒 탭 진입: 배경 카드가 먼저 보이고 0.5초 뒤 성적표가 스르륵 등장 */
-.ext-upsell-overlay { opacity: 0; }
-.ext-upsell-overlay.ext-reveal {
-    animation: extReveal 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) 0.5s both;
-}
-@keyframes extReveal {
-    0% { opacity: 0; transform: translateY(18px) scale(0.98); }
-    100% { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .ext-upsell-overlay { opacity: 1; }
-    .ext-upsell-overlay.ext-reveal { animation: none; }
 }
