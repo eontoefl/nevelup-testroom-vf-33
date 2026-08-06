@@ -250,3 +250,16 @@
     margin-bottom: 0;
     box-shadow: 0 14px 44px rgba(120, 100, 170, 0.30);
 }
+/* 🔒 탭 진입: 배경 카드가 먼저 보이고 0.5초 뒤 성적표가 스르륵 등장 */
+.ext-upsell-overlay { opacity: 0; }
+.ext-upsell-overlay.ext-reveal {
+    animation: extReveal 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) 0.5s both;
+}
+@keyframes extReveal {
+    0% { opacity: 0; transform: translateY(18px) scale(0.98); }
+    100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ext-upsell-overlay { opacity: 1; }
+    .ext-upsell-overlay.ext-reveal { animation: none; }
+}

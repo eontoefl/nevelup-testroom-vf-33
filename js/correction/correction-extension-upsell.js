@@ -256,7 +256,7 @@ function _ext_reportInnerHtml(data) {
         var first = _ext_fmtScore(data.points[0].avg);
         var last = _ext_fmtScore(data.points[data.points.length - 1].avg);
         html += '<div class="ext-report-block">' +
-            '<div class="ext-report-block-title">지난 첨삭, 이렇게 올랐어요</div>' +
+            '<div class="ext-report-block-title">지난 첨삭, 이만큼 올랐어요</div>' +
             '<div class="ext-graph-highlight">첫 세션 평균 <b>' + first + '</b> <span class="ext-hl-arrow">→</span> 최근 <b>' + last + '점</b></div>' +
             _ext_renderGraph(data.points) +
             '<div class="ext-graph-ref">세션당 평균 · raw point 5점 만점</div>' +
@@ -321,6 +321,11 @@ function renderExtensionUpsellTabs(container, ctx) {
         tab2.classList.toggle('active', p2);
         panel1.style.display = p2 ? 'none' : 'block';
         panel2.style.display = p2 ? 'block' : 'none';
+        // 🔒 탭 진입 시: 배경 카드가 먼저 보이고, 0.5초 뒤 성적표가 스르륵 등장 (재진입마다 재생)
+        if (p2) {
+            var ov = panel2.querySelector('.ext-upsell-overlay');
+            if (ov) { ov.classList.remove('ext-reveal'); void ov.offsetWidth; ov.classList.add('ext-reveal'); }
+        }
     }
     tab1.onclick = function () { activate(1); };
     tab2.onclick = function () { activate(2); };
@@ -412,7 +417,7 @@ async function _ext_loadAndRenderState(host, ctx) {
         '<div class="ext-deadline-note">' +
         '<span class="ext-deadline-strong"><i class="fas fa-clock"></i> 신청 마감 ' + _ext_fmtDate(deadline) +
         (ddayStr ? ' <span class="ext-dday">' + ddayStr + '</span>' : '') + '</span>' +
-        '<span class="ext-deadline-sub">지금 신청하면 다음 주 일요일에 바로 이어서 시작할 수 있어요.</span>' +
+        '<span class="ext-deadline-sub">이 날이 지나면 13~24세션 연장은 신청할 수 없어요. 다음 기수를 기다려야 합니다.</span>' +
         '</div>' +
         '<button class="ext-cta-btn" id="extLookBtn">다음 4주 살펴보기</button>';
     var btn = host.querySelector('#extLookBtn');
