@@ -543,7 +543,7 @@ function _ext_renderApplied(host, req) {
         '<div class="ext-step"><span class="ext-step-n">3</span><span>다음 일요일부터 13~24세션이 바로 열립니다</span></div>' +
         '</div>' +
 
-        '<a class="ext-kakao-btn ext-kakao-inline" href="' + EXT_KAKAO_URL + '" target="_blank" rel="noopener"><i class="fas fa-comment"></i> 궁금한 점은 카톡 문의</a>' +
+        '<a class="ext-kakao-link" href="' + EXT_KAKAO_URL + '" target="_blank" rel="noopener"><i class="fas fa-comment-dots"></i> 궁금한 점은 카톡으로 문의하세요</a>' +
         '</div>';
 }
 

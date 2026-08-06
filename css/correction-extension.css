@@ -277,11 +277,20 @@
 }
 .ext-step em { color: #9aa0a6; font-style: normal; font-size: 12px; }
 
-.ext-kakao-inline {
-    display: block; width: 100%; box-sizing: border-box;
-    text-align: center; margin-top: 4px;
+/* 신청 완료 카드의 카톡 문의 — 저강조 고스트(primary 톤), No-Line */
+.ext-kakao-link {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; box-sizing: border-box;
+    padding: 12px;
+    background: #f6f4fb;
+    color: #7c6bb0;
+    font-size: 13px; font-weight: 600;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background 0.18s ease, color 0.18s ease;
 }
-.ext-kakao-inline i { margin-right: 5px; }
+.ext-kakao-link:hover { background: #ede9f6; color: #6b5aa0; }
+.ext-kakao-link i { font-size: 13px; }
 
 /* ── 마감 잠금 카드 ── */
 .ext-closed { text-align: center; padding: 12px 0; }
