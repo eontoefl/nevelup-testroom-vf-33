@@ -255,31 +255,59 @@ function _ext_reportInnerHtml(data) {
             : '목표 점수까지, 지금 만들어진 흐름을 이어가면 됩니다.') + '</div>';
     }
 
-    // 그래프(가로 꽉) 또는 누적 숫자
-    if (data.rising && data.points.length >= 2) {
-        var first = _ext_fmtScore(data.points[0].avg);
-        var last = _ext_fmtScore(data.points[data.points.length - 1].avg);
-        html += '<div class="ext-report-block">' +
-            '<div class="ext-report-block-title">지난 첨삭, 이만큼 올랐어요</div>' +
-            '<div class="ext-graph-highlight">첫 세션 평균 <b>' + first + '</b> <span class="ext-hl-arrow">→</span> 최근 <b>' + last + '점</b></div>' +
-            _ext_renderGraph(data.points) +
-            '<div class="ext-graph-ref">세션당 평균 · raw point 5점 만점</div>' +
-            '</div>';
+    // 추세 판정 (최근 평균 − 첫 평균): +0.3↑ 상승 / ±0.3 유지 / −0.3↓ 하락
+    // 상승·유지는 그래프 표시, 하락은 그래프 숨기고 누적 숫자로 (우하향 곡선은 결제 직전 위축을 부름)
+    var pts = data.points || [];
+    var copyMid, copyEnd;
+    var graphRef = '<div class="ext-graph-ref">세션당 평균 · raw point 5점 만점</div>';
+    if (pts.length >= 2) {
+        var firstV = pts[0].avg, lastV = pts[pts.length - 1].avg;
+        var diff = lastV - firstV;
+        if (diff >= 0.3) {
+            // 상승
+            html += '<div class="ext-report-block">' +
+                '<div class="ext-report-block-title">지난 첨삭, 이만큼 올랐어요</div>' +
+                '<div class="ext-graph-highlight">첫 세션 평균 <b>' + _ext_fmtScore(firstV) + '</b> <span class="ext-hl-arrow">→</span> 최근 <b>' + _ext_fmtScore(lastV) + '점</b></div>' +
+                _ext_renderGraph(pts) + graphRef + '</div>';
+            copyMid = '방식을 바꾸지 않는 이유는 하나입니다. 위에 보이는 변화가 이 방식에서 나왔거든요.';
+            copyEnd = '지난 8주는 큰 오류를 지우는 시간이었어요. 다음 4주는 남은 습관을 지우는 시간입니다. 남은 습관은 혼자서는 잘 안 보여요. 보였다면 이미 고치셨을 테니까요.';
+        } else if (diff <= -0.3) {
+            // 하락 → 그래프 숨김, 누적 숫자
+            html += _ext_numsBlock(data);
+            copyMid = '최근 몇 세션 점수가 조금 내려왔어요. 이럴 때 멈추면 그 흔들림이 습관으로 굳어버립니다. 반대로 지금 잡으면 원인을 정확히 짚어 되돌릴 수 있어요.';
+            copyEnd = '다음 4주는 그 흔들림을 바로잡는 시간입니다.';
+        } else {
+            // 유지
+            html += '<div class="ext-report-block">' +
+                '<div class="ext-report-block-title">점수가 단단하게 자리잡았어요</div>' +
+                '<div class="ext-graph-highlight">평균 <b>' + _ext_fmtScore(lastV) + '점</b>을 안정적으로 유지 중</div>' +
+                _ext_renderGraph(pts) + graphRef + '</div>';
+            copyMid = '점수가 흔들리지 않는다는 건 실력이 자리잡는 중이라는 신호예요. 하지만 아직 완전히 굳은 건 아닙니다. 여기서 손을 놓으면 자리잡던 실력이 다시 풀려요.';
+            copyEnd = '다음 4주는 이 실력을 목표 점수까지 밀어 올리는 시간입니다.';
+        }
     } else {
-        html += '<div class="ext-report-block ext-report-nums">' +
-            '<div class="ext-num-cell"><span class="ext-num">' + data.completed + '<span class="ext-num-unit">/12</span></span><span class="ext-num-lbl">완료한 세션</span></div>' +
-            '<div class="ext-num-cell"><span class="ext-num">' + data.hintTotal + '<span class="ext-num-unit">개</span></span><span class="ext-num-lbl">함께 고친 교정 포인트</span></div>' +
-            '</div>';
+        // 데이터 부족 → 누적 숫자 + 무난한 본문
+        html += _ext_numsBlock(data);
+        copyMid = '지난 8주의 첨삭 흐름을 그대로 이어받습니다.';
+        copyEnd = '다음 4주는 남은 습관을 지우는 시간입니다. 남은 습관은 혼자서는 잘 안 보여요. 보였다면 이미 고치셨을 테니까요.';
     }
 
-    // 본문: 그래프 아래
+    // 본문: 그래프/숫자 아래 (추세별)
     html += '<div class="ext-copy">' +
         '<p>13~24세션은 새로운 문제 12세션입니다. 방식은 그대로예요.</p>' +
-        '<p>방식을 바꾸지 않는 이유는 하나입니다. 위에 보이는 변화가 이 방식에서 나왔거든요.</p>' +
-        '<p>지난 8주는 큰 오류를 지우는 시간이었어요. 다음 4주는 남은 습관을 지우는 시간입니다. 남은 습관은 혼자서는 잘 안 보여요. 보였다면 이미 고치셨을 테니까요.</p>' +
+        '<p>' + copyMid + '</p>' +
+        '<p>' + copyEnd + '</p>' +
         '</div>';
 
     return html;
+}
+
+// 누적 숫자 카드(완료 세션 + 교정 포인트) — 하락/데이터부족 시 그래프 대체
+function _ext_numsBlock(data) {
+    return '<div class="ext-report-block ext-report-nums">' +
+        '<div class="ext-num-cell"><span class="ext-num">' + data.completed + '<span class="ext-num-unit">/12</span></span><span class="ext-num-lbl">완료한 세션</span></div>' +
+        '<div class="ext-num-cell"><span class="ext-num">' + data.hintTotal + '<span class="ext-num-unit">개</span></span><span class="ext-num-lbl">함께 고친 교정 포인트</span></div>' +
+        '</div>';
 }
 
 // ================================================
