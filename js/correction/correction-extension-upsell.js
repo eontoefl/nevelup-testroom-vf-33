@@ -167,32 +167,46 @@ function _ext_isRising(points) {
  */
 function _ext_renderGraph(points) {
     if (!points || points.length < 2) return '';
-    var W = 300, H = 120, padL = 8, padR = 8, padT = 12, padB = 18;
+    // viewBox를 넓게 잡아 CSS width:100%로 축소될 때 글자·점이 상대적으로 작게 보이게 한다.
+    var W = 560, H = 210, padL = 30, padR = 14, padT = 14, padB = 34;
     var xs = points.map(function (p) { return p.s; });
     var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
-    var minY = 0, maxY = 5;                                   // 5점 만점 고정 축
+    var minY = 0, maxY = 5;                                   // raw 5점 만점 고정 축
     function X(s) { return padL + (maxX === minX ? 0.5 : (s - minX) / (maxX - minX)) * (W - padL - padR); }
     function Y(v) { return padT + (1 - (v - minY) / (maxY - minY)) * (H - padT - padB); }
+
+    // y축 가로 그리드(0~5) + 왼쪽 눈금 숫자 (5점 만점임이 보이게)
+    var grid = '';
+    for (var g = 0; g <= 5; g++) {
+        var gy = Y(g).toFixed(1);
+        grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="#e7e1f2" stroke-width="1"/>';
+        grid += '<text x="' + (padL - 6) + '" y="' + (Y(g) + 4).toFixed(1) + '" font-size="12" fill="#b7a8db" text-anchor="end">' + g + '</text>';
+    }
+    // x축 세션 번호 (모든 점 아래)
+    var xlabels = points.map(function (p) {
+        return '<text x="' + X(p.s).toFixed(1) + '" y="' + (H - 12) + '" font-size="12" fill="#9aa0a6" text-anchor="middle">' + p.s + '</text>';
+    }).join('');
+    var xtitle = '<text x="' + ((padL + W - padR) / 2).toFixed(1) + '" y="' + (H - 1) + '" font-size="11" fill="#b7a8db" text-anchor="middle">세션</text>';
+
     var line = points.map(function (p, i) { return (i ? 'L' : 'M') + X(p.s).toFixed(1) + ' ' + Y(p.avg).toFixed(1); }).join(' ');
     var dots = points.map(function (p) {
-        return '<circle cx="' + X(p.s).toFixed(1) + '" cy="' + Y(p.avg).toFixed(1) + '" r="3.5" fill="#9480c5"/>';
+        return '<circle cx="' + X(p.s).toFixed(1) + '" cy="' + Y(p.avg).toFixed(1) + '" r="4.5" fill="#9480c5" stroke="#fff" stroke-width="1.5"/>';
     }).join('');
-    var area = 'M' + X(points[0].s).toFixed(1) + ' ' + (H - padB) +
+    var area = 'M' + X(points[0].s).toFixed(1) + ' ' + Y(0).toFixed(1) +
         ' ' + points.map(function (p) { return 'L' + X(p.s).toFixed(1) + ' ' + Y(p.avg).toFixed(1); }).join(' ') +
-        ' L' + X(points[points.length - 1].s).toFixed(1) + ' ' + (H - padB) + ' Z';
+        ' L' + X(points[points.length - 1].s).toFixed(1) + ' ' + Y(0).toFixed(1) + ' Z';
     var first = points[0].avg.toFixed(2), last = points[points.length - 1].avg.toFixed(2);
     return '' +
         '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;">' +
         '<defs><linearGradient id="extGrad" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0%" stop-color="#9480c5" stop-opacity="0.22"/>' +
         '<stop offset="100%" stop-color="#9480c5" stop-opacity="0"/></linearGradient></defs>' +
+        grid +
         '<path d="' + area + '" fill="url(#extGrad)"/>' +
-        '<path d="' + line + '" fill="none" stroke="#9480c5" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
-        dots +
-        '<text x="' + X(points[0].s) + '" y="' + (H - 4) + '" font-size="10" fill="#9aa0a6" text-anchor="start">세션 ' + points[0].s + '</text>' +
-        '<text x="' + X(points[points.length - 1].s) + '" y="' + (H - 4) + '" font-size="10" fill="#9aa0a6" text-anchor="end">세션 ' + points[points.length - 1].s + '</text>' +
+        '<path d="' + line + '" fill="none" stroke="#9480c5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' +
+        dots + xlabels + xtitle +
         '</svg>' +
-        '<div class="ext-graph-caption">첫 세션 평균 ' + first + '점 → 최근 ' + last + '점</div>';
+        '<div class="ext-graph-caption">첫 세션 평균 ' + first + '점 → 최근 ' + last + '점 <span class="ext-graph-max">(raw 5점 만점)</span></div>';
 }
 
 /**
@@ -218,7 +232,7 @@ function _ext_reportInnerHtml(data) {
 
     // 아래층: 상승 곡선이면 그래프, 아니면 누적 숫자
     if (data.rising && data.points.length >= 2) {
-        html += '<div class="ext-report-block"><div class="ext-report-block-title">지난 세션, 이렇게 올랐어요</div>' +
+        html += '<div class="ext-report-block"><div class="ext-report-block-title">지난 세션, 이렇게 올랐어요 · 세션당 평균</div>' +
             _ext_renderGraph(data.points) + '</div>';
     } else {
         html += '<div class="ext-report-block ext-report-nums">' +
@@ -286,29 +300,59 @@ function renderExtensionUpsellTabs(container, ctx) {
 }
 
 /**
- * 잠금 패널: 업셀 카드(성적표/신청/마감) + 흐린 잠금 세션 카드 12개.
+ * 잠금 패널: 1~12세션과 똑같은 디자인의 세션 카드 13~24를 흐린 배경으로 깔고,
+ * 그 위에 업셀 카드(성적표/신청/마감)를 얹는다.
  */
 function _ext_renderLockedPanel(panel, ctx) {
+    var stage = document.createElement('div');
+    stage.className = 'ext-locked-stage';
+
+    // 배경: 실제 세션 카드와 동일한 마크업(week-block/day-button) — 흐리게 + 클릭 불가
+    var bg = document.createElement('div');
+    bg.className = 'ext-locked-bg';
+    bg.innerHTML = _ext_lockedCardsHtml();
+
+    // 전경: 성적표/신청 오버레이
+    var overlay = document.createElement('div');
+    overlay.className = 'ext-upsell-overlay';
     var upsell = document.createElement('div');
     upsell.className = 'ext-upsell-card';
     upsell.innerHTML = '<div class="ext-loading"><i class="fas fa-spinner fa-spin"></i> 불러오는 중…</div>';
-    panel.appendChild(upsell);
+    overlay.appendChild(upsell);
 
-    // 흐린 잠금 세션 카드 12개 (장식 — 클릭 불가)
-    var grid = document.createElement('div');
-    grid.className = 'ext-locked-grid';
-    var labels = ['Email', 'Discussion'];
-    for (var i = 13; i <= 24; i++) {
-        var card = document.createElement('div');
-        card.className = 'ext-locked-card';
-        card.innerHTML = '<i class="fas fa-lock ext-locked-icon"></i>' +
-            '<span class="ext-locked-name">SESSION ' + i + '</span>' +
-            '<span class="ext-locked-task">' + (i % 2 ? 'Email' : 'Discussion') + ' + Interview</span>';
-        grid.appendChild(card);
-    }
-    panel.appendChild(grid);
+    stage.appendChild(bg);
+    stage.appendChild(overlay);
+    panel.appendChild(stage);
 
     _ext_loadAndRenderState(upsell, ctx);
+}
+
+/**
+ * 세션 13~24 카드 HTML (1~12세션과 동일한 week-block/day-button 마크업 — 배경 장식용).
+ */
+function _ext_lockedCardsHtml() {
+    var html = '';
+    var wnum = 5;
+    for (var wk = 0; wk < 4; wk++, wnum++) {
+        var cards = '';
+        for (var c = 0; c < 3; c++) {
+            var s = 13 + wk * 3 + c;
+            var wtype = (s % 2) ? 'Email' : 'Discussion';
+            cards +=
+                '<button class="day-button" type="button" tabindex="-1">' +
+                '<span class="day-name">SESSION ' + String(s).padStart(2, '0') + '</span>' +
+                '<div class="progress-dot dot-none"></div>' +
+                '<span class="day-tasks">' + wtype + ' + Interview</span>' +
+                '<span class="day-tasks" style="font-size:10px;color:#bbb;">잠금</span>' +
+                '</button>';
+        }
+        html +=
+            '<div class="week-block">' +
+            '<div class="week-header"><h2 class="week-title">Week ' + String(wnum).padStart(2, '0') + '</h2><div class="week-divider"></div></div>' +
+            '<div class="days-grid correction-days-grid">' + cards + '</div>' +
+            '</div>';
+    }
+    return html;
 }
 
 /**
@@ -349,13 +393,13 @@ function _ext_renderApplyGuide(host, ctx, deadline) { return _ext_renderApplyGui
 function _ext_renderApplyGuideImpl(host, ctx, deadline) {
     host.innerHTML =
         '<div class="ext-guide">' +
+        '<button class="ext-back-btn ext-back-top" id="extBackBtn">← 뒤로</button>' +
         '<div class="ext-guide-title">13~24세션 — 다음 4주</div>' +
         '<p>지금까지와 똑같이 라이팅·스피킹을 매일 새 문제로 풀고, 1차·2차 첨삭을 받습니다. 새로운 문제 12세션이에요.</p>' +
         '<p>지난 8주의 첨삭 흐름을 그대로 이어받아, 남은 습관을 지우는 데 집중합니다.</p>' +
         '<div class="ext-price-row"><span>연장 비용</span><strong>' + EXT_PRICE_TEXT + '</strong></div>' +
         '<label class="ext-agree"><input type="checkbox" id="extAgree"> <span>' + EXT_AGREEMENT_TEXT + '</span></label>' +
         '<button class="ext-cta-btn" id="extApplyBtn" disabled>신청하기</button>' +
-        '<button class="ext-back-btn" id="extBackBtn">← 성적표로 돌아가기</button>' +
         '</div>';
     var agree = host.querySelector('#extAgree');
     var apply = host.querySelector('#extApplyBtn');

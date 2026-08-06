@@ -4,7 +4,19 @@
  * 기존 primary(#9480c5) 톤 사용. No-Line: 배경색 차이로 구분.
  * ================================================ */
 
-.ext-tab-locked { opacity: 0.85; }
+/* 🔒 13~24세션 칩 — 노란 자물쇠로 "어? 잠겨있네? 궁금하다" 유도 */
+.ext-tab-locked:not(.active) {
+    background: #fff6e0;
+    color: #b7791f;
+}
+.ext-tab-locked .fa-lock { color: #f5a623; }
+.ext-tab-locked:not(.active) {
+    animation: extLockPulse 2.2s ease-in-out infinite;
+}
+@keyframes extLockPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.0); }
+    50% { box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.18); }
+}
 
 /* ── 업셀 카드 (성적표/신청/마감 공통 컨테이너) ── */
 .ext-upsell-card {
@@ -61,6 +73,7 @@
     color: #6b7280;
     margin-top: 6px;
 }
+.ext-graph-max { color: #b7a8db; font-weight: 600; }
 .ext-report-nums { display: flex; gap: 12px; }
 .ext-num-cell {
     flex: 1;
@@ -134,6 +147,10 @@
     cursor: pointer; padding: 6px;
 }
 .ext-back-btn:hover { color: #7c6bb0; }
+.ext-back-top {
+    width: auto; margin: 0 0 10px; padding: 4px 2px;
+    text-align: left; font-size: 13px; font-weight: 600;
+}
 
 /* ── 신청 접수 상태 카드 ── */
 .ext-applied-badge {
@@ -165,26 +182,36 @@
     text-decoration: none;
 }
 
-/* ── 흐린 잠금 세션 카드 12개 (장식) ── */
-.ext-locked-grid {
+/* ── 오버레이 스테이지: 흐린 세션 카드(배경) 위에 업셀 카드(전경) ── */
+.ext-locked-stage {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    opacity: 0.5;
+    position: relative;
+}
+.ext-locked-stage > .ext-locked-bg,
+.ext-locked-stage > .ext-upsell-overlay {
+    grid-column: 1;
+    grid-row: 1;
+}
+/* 배경: 실제 세션 카드를 흐리게 — "이걸 열려면 여기 집중해야겠다" 유도 */
+.ext-locked-bg {
+    align-self: start;
+    opacity: 0.4;
+    filter: blur(2px) grayscale(0.15);
     pointer-events: none;
-    filter: grayscale(0.3);
+    user-select: none;
 }
-.ext-locked-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 16px 8px;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+.ext-locked-bg .day-button { cursor: default; }
+/* 전경: 성적표/신청 카드를 배경 위에 얹음 */
+.ext-upsell-overlay {
+    align-self: start;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    padding-top: 18px;
 }
-.ext-locked-icon { font-size: 15px; color: #c3b6df; margin-bottom: 2px; }
-.ext-locked-name { font-size: 12px; font-weight: 700; color: #9aa0a6; }
-.ext-locked-task { font-size: 10px; color: #bbb; }
-
-@media (max-width: 420px) {
-    .ext-locked-grid { grid-template-columns: repeat(2, 1fr); }
+.ext-upsell-overlay .ext-upsell-card {
+    width: 100%;
+    max-width: 380px;
+    margin-bottom: 0;
+    box-shadow: 0 14px 44px rgba(120, 100, 170, 0.30);
 }
