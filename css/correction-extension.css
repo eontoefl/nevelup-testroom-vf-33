@@ -1,0 +1,340 @@
+/* ================================================
+ * correction-extension.css
+ * 첨삭 연장(13~24세션) 업셀 화면 전용
+ * 기존 primary(#9480c5) 톤 사용. No-Line: 배경색 차이로 구분.
+ * ================================================ */
+
+/* 🔒 13~24세션 칩 — 노란 자물쇠로 "어? 잠겨있네? 궁금하다" 유도 */
+.ext-tab-locked:not(.active) {
+    background: #fff6e0;
+    color: #b7791f;
+}
+.ext-tab-locked .fa-lock { color: #f5a623; }
+.ext-tab-locked:not(.active) {
+    animation: extLockPulse 2.2s ease-in-out infinite;
+}
+@keyframes extLockPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.0); }
+    50% { box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.18); }
+}
+
+/* ── 업셀 카드 (성적표/신청/마감 공통 컨테이너) ── */
+.ext-upsell-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px 20px;
+    box-shadow: 0 4px 24px rgba(148, 128, 197, 0.10);
+    margin-bottom: 20px;
+}
+.ext-loading {
+    text-align: center;
+    color: #9aa0a6;
+    font-size: 14px;
+    padding: 28px 0;
+}
+
+/* ── 성적표: 시험 총점 → 목표 ── */
+.ext-exam-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 6px;
+}
+.ext-exam-now, .ext-exam-goal { display: flex; flex-direction: column; align-items: center; }
+.ext-exam-num { font-size: 34px; font-weight: 800; color: #191c1d; line-height: 1.1; letter-spacing: -0.02em; }
+.ext-exam-goal .ext-exam-num { color: #9480c5; }
+.ext-exam-lbl { font-size: 11px; color: #9aa0a6; margin-top: 2px; }
+.ext-exam-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ext-exam-gap {
+    font-size: 11px; font-weight: 700; color: #d98324;
+    background: #fff2e0; padding: 2px 7px; border-radius: 999px;
+    white-space: nowrap;
+}
+.ext-exam-arrow { font-size: 22px; color: #cbb8e8; font-weight: 700; line-height: 1; }
+.ext-exam-caption {
+    text-align: center;
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-bottom: 18px;
+}
+
+/* ── 성적표: 블록 (그래프 / 누적 숫자) ── */
+.ext-report-block {
+    background: #f6f4fb;
+    border-radius: 12px;
+    padding: 16px 14px;
+    margin-bottom: 16px;
+}
+.ext-report-block-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #7c6bb0;
+    margin-bottom: 10px;
+    text-align: center;
+}
+/* 그래프 위 강조 캡션 — "오 이렇게 올랐구나" */
+.ext-graph-highlight {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4b4658;
+    margin: 2px 0 10px;
+}
+.ext-graph-highlight b { color: #9480c5; font-weight: 800; font-size: 19px; }
+.ext-hl-arrow { color: #cbb8e8; margin: 0 4px; }
+/* 작은 참고 수치 */
+.ext-graph-ref {
+    text-align: center;
+    font-size: 11px;
+    color: #a8a2b8;
+    margin-top: 6px;
+}
+.ext-report-nums { display: flex; gap: 12px; }
+.ext-num-cell {
+    flex: 1;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 8px;
+    text-align: center;
+}
+.ext-num { font-size: 26px; font-weight: 800; color: #9480c5; letter-spacing: -0.02em; }
+.ext-num-unit { font-size: 14px; font-weight: 700; color: #b7a8db; margin-left: 1px; }
+.ext-num-lbl { display: block; font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+/* ── 성적표: 문구 ── */
+.ext-copy { margin: 4px 2px 0; }
+.ext-copy p {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #3e484f;
+    margin: 0 0 10px;
+}
+.ext-copy p:last-child { margin-bottom: 0; }
+
+/* ── 마감 안내 + CTA ── */
+.ext-deadline-note {
+    background: #fff6e0;
+    border-radius: 10px;
+    padding: 13px 14px;
+    margin: 18px 0 14px;
+    text-align: center;
+}
+.ext-deadline-strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+    color: #d98324;
+    letter-spacing: -0.01em;
+}
+.ext-deadline-strong i { margin-right: 5px; }
+.ext-dday {
+    display: inline-block;
+    background: #d98324; color: #fff;
+    font-size: 12px; font-weight: 700;
+    padding: 1px 8px; border-radius: 999px;
+    margin-left: 5px; vertical-align: middle;
+}
+.ext-deadline-sub {
+    display: block;
+    font-size: 12px;
+    color: #9a7b4a;
+    line-height: 1.5;
+    margin-top: 5px;
+}
+.ext-cta-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #9480c5, #b49fe0);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.18s ease;
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.28);
+}
+.ext-cta-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(148, 128, 197, 0.36); }
+.ext-cta-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+/* ── 안내 화면 ── */
+.ext-guide-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.ext-guide-title { font-size: 17px; font-weight: 800; color: #191c1d; }
+.ext-guide-deadline {
+    font-size: 13px; font-weight: 700; color: #d98324; white-space: nowrap;
+}
+.ext-guide-deadline i { margin-right: 4px; }
+.ext-guide p { font-size: 13.5px; line-height: 1.7; color: #3e484f; margin: 0 0 14px; }
+
+/* 받는 것 박스 */
+.ext-benefits {
+    background: #f6f4fb;
+    border-radius: 12px;
+    padding: 16px 16px 14px;
+    margin-bottom: 14px;
+}
+.ext-benefits-title {
+    font-size: 13px; font-weight: 700; color: #7c6bb0;
+    margin-bottom: 12px;
+}
+.ext-benefit-item {
+    display: flex; align-items: baseline; gap: 9px;
+    font-size: 13px; line-height: 1.55; color: #3e484f;
+    margin-bottom: 10px;
+}
+.ext-benefit-item:last-child { margin-bottom: 0; }
+.ext-benefit-item i { color: #9480c5; font-size: 12px; flex-shrink: 0; width: 15px; text-align: center; }
+.ext-benefit-item span { color: #9aa0a6; font-size: 11.5px; }
+.ext-benefit-strong { font-size: 13.5px; color: #191c1d; }
+.ext-benefit-strong b { color: #9480c5; font-weight: 800; }
+
+/* 손실회피 */
+.ext-loss-note {
+    font-size: 12.5px; line-height: 1.6; color: #9a7b4a;
+    background: #fff6e0; border-radius: 10px;
+    padding: 11px 14px; margin-bottom: 14px;
+}
+.ext-loss-note b { color: #d98324; font-weight: 800; }
+
+/* 가격 박스 */
+.ext-price-box {
+    background: #f6f4fb; border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 14px;
+}
+.ext-price-row {
+    display: flex; align-items: center; justify-content: space-between;
+}
+.ext-price-row span { font-size: 13px; color: #6b7280; }
+.ext-price-row strong { font-size: 20px; font-weight: 800; color: #9480c5; letter-spacing: -0.02em; }
+.ext-agree {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12.5px; color: #3e484f; line-height: 1.5;
+    margin-bottom: 16px; cursor: pointer;
+}
+.ext-agree input { margin-top: 2px; width: 16px; height: 16px; accent-color: #9480c5; flex-shrink: 0; }
+.ext-back-btn {
+    width: 100%; margin-top: 10px;
+    background: none; border: none;
+    color: #9aa0a6; font-family: inherit; font-size: 13px;
+    cursor: pointer; padding: 6px;
+}
+.ext-back-btn:hover { color: #7c6bb0; }
+.ext-back-top {
+    width: auto; margin: 0 0 10px; padding: 4px 2px;
+    text-align: left; font-size: 13px; font-weight: 600;
+}
+
+/* ── 신청 접수 상태 카드 ── */
+.ext-applied-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #eef8f0; color: #3d9a4e;
+    font-size: 13px; font-weight: 700;
+    padding: 7px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+}
+/* 입금 마감 강조 배너 */
+.ext-applied-deadline {
+    background: #fff6e0; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 14px; text-align: center;
+}
+.ext-applied-deadline-main { font-size: 16px; font-weight: 800; color: #d98324; }
+.ext-applied-deadline-main i { margin-right: 5px; }
+.ext-applied-deadline-sub { font-size: 12px; color: #9a7b4a; margin-top: 5px; line-height: 1.5; }
+
+.ext-applied-box {
+    background: #f6f4fb; border-radius: 12px;
+    padding: 16px; text-align: center; margin-bottom: 14px;
+}
+.ext-applied-line { font-size: 14px; font-weight: 700; color: #191c1d; }
+.ext-applied-amount { font-size: 24px; font-weight: 800; color: #9480c5; margin-top: 4px; letter-spacing: -0.02em; }
+.ext-applied-name { font-size: 12.5px; line-height: 1.6; color: #6b7280; margin-top: 8px; }
+.ext-applied-name strong { color: #a53b22; }
+
+/* 다음 단계 1-2-3 */
+.ext-steps {
+    background: #fff; border-radius: 12px;
+    padding: 15px 16px; margin-bottom: 14px;
+    box-shadow: 0 2px 12px rgba(148, 128, 197, 0.06);
+}
+.ext-steps-title { font-size: 12.5px; font-weight: 700; color: #7c6bb0; margin-bottom: 12px; }
+.ext-step {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: #3e484f; line-height: 1.5;
+    margin-bottom: 10px;
+}
+.ext-step:last-child { margin-bottom: 0; }
+.ext-step-n {
+    flex-shrink: 0;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #9480c5; color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.ext-step em { color: #9aa0a6; font-style: normal; font-size: 12px; }
+
+/* 신청 완료 카드의 카톡 문의 — 특수상황용, 작고 은은한 파스텔 노랑 */
+.ext-kakao-link {
+    display: flex; align-items: center; gap: 6px;
+    width: fit-content; margin-left: auto; flex-shrink: 0;
+    padding: 6px 14px;
+    background: #fdf3cf;
+    color: #9a7d2e;
+    font-size: 12px; font-weight: 600;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.18s ease;
+}
+.ext-kakao-link:hover { background: #f8ebb8; }
+.ext-kakao-link i { font-size: 12px; }
+
+/* ── 마감 잠금 카드 ── */
+.ext-closed { text-align: center; padding: 12px 0; }
+.ext-closed-icon { font-size: 32px; color: #cbb8e8; margin-bottom: 12px; }
+.ext-closed-title { font-size: 16px; font-weight: 700; color: #191c1d; }
+.ext-closed-sub { font-size: 13px; color: #6b7280; margin-top: 4px; }
+.ext-kakao-btn {
+    display: inline-block; margin-top: 14px;
+    background: #fee500; color: #191600;
+    font-size: 13px; font-weight: 700;
+    padding: 9px 18px; border-radius: 8px;
+    text-decoration: none;
+}
+
+/* ── 오버레이 스테이지: 흐린 세션 카드(배경) 위에 업셀 카드(전경) ── */
+.ext-locked-stage {
+    display: grid;
+    position: relative;
+}
+.ext-locked-stage > .ext-locked-bg,
+.ext-locked-stage > .ext-upsell-overlay {
+    grid-column: 1;
+    grid-row: 1;
+}
+/* 배경: 실제 세션 카드를 흐리게 — "이걸 열려면 여기 집중해야겠다" 유도 */
+.ext-locked-bg {
+    align-self: start;
+    opacity: 0.12;
+    filter: blur(1.5px) grayscale(0.1);
+    pointer-events: none;
+    user-select: none;
+}
+.ext-locked-bg .day-button { cursor: default; }
+/* 전경: 성적표/신청 카드를 배경 위에 얹음 */
+.ext-upsell-overlay {
+    align-self: start;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    padding-top: 18px;
+}
+.ext-upsell-overlay .ext-upsell-card {
+    width: 98%;
+    max-width: 640px;
+    margin-bottom: 0;
+    box-shadow: 0 14px 44px rgba(120, 100, 170, 0.30);
+}
