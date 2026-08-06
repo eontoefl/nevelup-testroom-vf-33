@@ -83,14 +83,6 @@
 }
 .ext-graph-highlight b { color: #9480c5; font-weight: 800; font-size: 19px; }
 .ext-hl-arrow { color: #cbb8e8; margin: 0 4px; }
-/* x축 이름 */
-.ext-graph-xaxis {
-    text-align: center;
-    font-size: 11px;
-    color: #8a7fb0;
-    margin-top: 2px;
-    letter-spacing: 0.04em;
-}
 /* 작은 참고 수치 */
 .ext-graph-ref {
     text-align: center;
@@ -136,6 +128,13 @@
     letter-spacing: -0.01em;
 }
 .ext-deadline-strong i { margin-right: 5px; }
+.ext-dday {
+    display: inline-block;
+    background: #d98324; color: #fff;
+    font-size: 12px; font-weight: 700;
+    padding: 1px 8px; border-radius: 999px;
+    margin-left: 5px; vertical-align: middle;
+}
 .ext-deadline-sub {
     display: block;
     font-size: 12px;
@@ -231,8 +230,8 @@
 /* 배경: 실제 세션 카드를 흐리게 — "이걸 열려면 여기 집중해야겠다" 유도 */
 .ext-locked-bg {
     align-self: start;
-    opacity: 0.4;
-    filter: blur(2px) grayscale(0.15);
+    opacity: 0.22;
+    filter: blur(2.5px) grayscale(0.2);
     pointer-events: none;
     user-select: none;
 }
@@ -246,8 +245,20 @@
     padding-top: 18px;
 }
 .ext-upsell-overlay .ext-upsell-card {
-    width: 96%;
-    max-width: 460px;
+    width: 98%;
+    max-width: 680px;
     margin-bottom: 0;
     box-shadow: 0 14px 44px rgba(120, 100, 170, 0.30);
+}
+
+/* 성적표 2열: 왼쪽 점수·그래프 / 오른쪽 문구 → 가로 긴 카드 */
+.ext-report-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 22px;
+    align-items: center;
+}
+.ext-report-col-b { align-self: center; }
+@media (max-width: 600px) {
+    .ext-report-grid { grid-template-columns: 1fr; gap: 12px; }
 }
