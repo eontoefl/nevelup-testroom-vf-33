@@ -512,19 +512,38 @@ async function _ext_submitApplication(host, ctx, deadline, btn) {
  * 신청 접수 상태 카드 (계좌 안내).
  */
 function _ext_renderApplied(host, req) {
-    var deadlineStr = req && req.deadline_date
-        ? _ext_fmtDate(new Date(req.deadline_date + 'T00:00:00'))
-        : '';
+    var deadlineD = (req && req.deadline_date) ? new Date(req.deadline_date + 'T23:59:59') : null;
+    var deadlineStr = deadlineD ? _ext_fmtDate(deadlineD) : '';
+    var dday = deadlineD ? Math.ceil((deadlineD - new Date()) / (24 * 60 * 60 * 1000)) : null;
+    var ddayStr = (dday != null && dday > 0) ? 'D-' + dday : (dday === 0 ? 'D-DAY' : '');
     host.innerHTML =
         '<div class="ext-applied">' +
         '<div class="ext-applied-badge"><i class="fas fa-check-circle"></i> 신청 접수됨 · 입금 확인 대기</div>' +
+
+        // 마감 강조 배너 (입금 기한 + 자동취소 손실회피)
+        (deadlineStr ?
+            '<div class="ext-applied-deadline">' +
+            '<div class="ext-applied-deadline-main"><i class="fas fa-clock"></i> 입금 마감 ' + deadlineStr +
+            (ddayStr ? ' <span class="ext-dday">' + ddayStr + '</span>' : '') + '</div>' +
+            '<div class="ext-applied-deadline-sub">이때까지 입금이 확인되지 않으면 신청은 자동 취소돼요.</div>' +
+            '</div>' : '') +
+
+        // 계좌
         '<div class="ext-applied-box">' +
         '<div class="ext-applied-line">' + EXT_DEPOSIT_LINE + '</div>' +
         '<div class="ext-applied-amount">' + EXT_PRICE_TEXT + '</div>' +
+        '<div class="ext-applied-name">반드시 <strong>본인 이름</strong>으로 입금해주세요.</div>' +
         '</div>' +
-        '<p class="ext-applied-note">반드시 <strong>본인 이름</strong>으로 입금해주세요.</p>' +
-        '<p class="ext-applied-note">입금이 확인되면 카톡으로 확정 안내가 가고, 13~24세션이 열립니다.' +
-        (deadlineStr ? ' (신청 마감 ' + deadlineStr + ')' : '') + '</p>' +
+
+        // 다음 단계 1-2-3
+        '<div class="ext-steps">' +
+        '<div class="ext-steps-title">이제 이렇게 진행돼요</div>' +
+        '<div class="ext-step"><span class="ext-step-n">1</span><span>위 계좌로 입금하기 <em>(본인 이름으로)</em></span></div>' +
+        '<div class="ext-step"><span class="ext-step-n">2</span><span>입금이 확인되면 카톡으로 알려드려요</span></div>' +
+        '<div class="ext-step"><span class="ext-step-n">3</span><span>다음 일요일부터 13~24세션이 바로 열립니다</span></div>' +
+        '</div>' +
+
+        '<a class="ext-kakao-btn ext-kakao-inline" href="' + EXT_KAKAO_URL + '" target="_blank" rel="noopener"><i class="fas fa-comment"></i> 궁금한 점은 카톡 문의</a>' +
         '</div>';
 }
 
