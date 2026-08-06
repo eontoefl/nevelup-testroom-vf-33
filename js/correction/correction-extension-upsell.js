@@ -541,9 +541,8 @@ function _ext_renderApplied(host, req) {
         '<div class="ext-step"><span class="ext-step-n">1</span><span>위 계좌로 입금하기 <em>(본인 이름으로)</em></span></div>' +
         '<div class="ext-step"><span class="ext-step-n">2</span><span>입금이 확인되면 카톡으로 알려드려요</span></div>' +
         '<div class="ext-step"><span class="ext-step-n">3</span><span>다음 일요일부터 13~24세션이 바로 열립니다</span></div>' +
-        '</div>' +
-
         '<a class="ext-kakao-link" href="' + EXT_KAKAO_URL + '" target="_blank" rel="noopener"><i class="fas fa-comment-dots"></i> 카톡 문의</a>' +
+        '</div>' +
         '</div>';
 }
 
