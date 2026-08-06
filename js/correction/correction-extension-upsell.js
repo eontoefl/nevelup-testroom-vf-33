@@ -230,52 +230,52 @@ function _ext_renderGraph(points) {
  * 성적표 본문 HTML (데이터 로드 후).
  */
 function _ext_reportInnerHtml(data) {
-    // ── 왼쪽 열: 시험→목표 + 그래프/누적 ──
-    var colA = '';
+    var html = '';
+
+    // 위층: 시험 → 목표 점수 (둘 다 .0 스케일: 4→4.0, 5.5→5.5)
     var showExamRow = (data.target != null) && (data.lastExam == null || data.lastExam < data.target);
     if (showExamRow) {
-        colA += '<div class="ext-exam-row">';
+        html += '<div class="ext-exam-row">';
         if (data.lastExam != null) {
             var dateLbl = data.lastExamDate ? (_ext_mdFromYmd(data.lastExamDate) + ' 시험') : '최근 시험';
-            colA += '<div class="ext-exam-now"><span class="ext-exam-num">' + _ext_fmtScore(data.lastExam) + '</span><span class="ext-exam-lbl">' + dateLbl + '</span></div>';
+            html += '<div class="ext-exam-now"><span class="ext-exam-num">' + data.lastExam.toFixed(1) + '</span><span class="ext-exam-lbl">' + dateLbl + '</span></div>';
             var gap = data.target - data.lastExam;
-            colA += '<div class="ext-exam-mid">' +
-                (gap > 0 ? '<span class="ext-exam-gap">' + _ext_fmtScore(gap) + '점 UP</span>' : '') +
+            html += '<div class="ext-exam-mid">' +
+                (gap > 0 ? '<span class="ext-exam-gap">' + gap.toFixed(1) + '점 UP</span>' : '') +
                 '<span class="ext-exam-arrow">→</span></div>';
         }
-        colA += '<div class="ext-exam-goal"><span class="ext-exam-num">' + _ext_fmtScore(data.target) + '</span><span class="ext-exam-lbl">목표</span></div>';
-        colA += '</div>';
-        colA += '<div class="ext-exam-caption">' + (data.lastExam != null
-            ? '목표까지 조금만 더 올리면 됩니다. 지금 흐름이면 충분히 닿아요.'
+        html += '<div class="ext-exam-goal"><span class="ext-exam-num">' + data.target.toFixed(1) + '</span><span class="ext-exam-lbl">목표 점수</span></div>';
+        html += '</div>';
+        html += '<div class="ext-exam-caption">' + (data.lastExam != null
+            ? '목표 점수까지 조금만 더 올리면 됩니다. 지금 속도면 충분히 닿아요.'
             : '목표 점수까지, 지금 만들어진 흐름을 이어가면 됩니다.') + '</div>';
     }
+
+    // 그래프(가로 꽉) 또는 누적 숫자
     if (data.rising && data.points.length >= 2) {
         var first = _ext_fmtScore(data.points[0].avg);
         var last = _ext_fmtScore(data.points[data.points.length - 1].avg);
-        colA += '<div class="ext-report-block">' +
+        html += '<div class="ext-report-block">' +
             '<div class="ext-report-block-title">지난 첨삭, 이렇게 올랐어요</div>' +
             '<div class="ext-graph-highlight">첫 세션 평균 <b>' + first + '</b> <span class="ext-hl-arrow">→</span> 최근 <b>' + last + '점</b></div>' +
             _ext_renderGraph(data.points) +
             '<div class="ext-graph-ref">세션당 평균 · raw point 5점 만점</div>' +
             '</div>';
     } else {
-        colA += '<div class="ext-report-block ext-report-nums">' +
+        html += '<div class="ext-report-block ext-report-nums">' +
             '<div class="ext-num-cell"><span class="ext-num">' + data.completed + '<span class="ext-num-unit">/12</span></span><span class="ext-num-lbl">완료한 세션</span></div>' +
             '<div class="ext-num-cell"><span class="ext-num">' + data.hintTotal + '<span class="ext-num-unit">개</span></span><span class="ext-num-lbl">함께 고친 교정 포인트</span></div>' +
             '</div>';
     }
 
-    // ── 오른쪽 열: 문구 (방식을 안 바꾸는 이유) ──
-    var colB = '<div class="ext-copy">' +
+    // 본문: 그래프 아래
+    html += '<div class="ext-copy">' +
         '<p>13~24세션은 새로운 문제 12세션입니다. 방식은 그대로예요.</p>' +
         '<p>방식을 바꾸지 않는 이유는 하나입니다. 위에 보이는 변화가 이 방식에서 나왔거든요.</p>' +
         '<p>지난 8주는 큰 오류를 지우는 시간이었어요. 다음 4주는 남은 습관을 지우는 시간입니다. 남은 습관은 혼자서는 잘 안 보여요. 보였다면 이미 고치셨을 테니까요.</p>' +
         '</div>';
 
-    return '<div class="ext-report-grid">' +
-        '<div class="ext-report-col-a">' + colA + '</div>' +
-        '<div class="ext-report-col-b">' + colB + '</div>' +
-        '</div>';
+    return html;
 }
 
 // ================================================

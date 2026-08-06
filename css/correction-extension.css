@@ -246,19 +246,7 @@
 }
 .ext-upsell-overlay .ext-upsell-card {
     width: 98%;
-    max-width: 680px;
+    max-width: 640px;
     margin-bottom: 0;
     box-shadow: 0 14px 44px rgba(120, 100, 170, 0.30);
-}
-
-/* 성적표 2열: 왼쪽 점수·그래프 / 오른쪽 문구 → 가로 긴 카드 */
-.ext-report-grid {
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 22px;
-    align-items: center;
-}
-.ext-report-col-b { align-self: center; }
-@media (max-width: 600px) {
-    .ext-report-grid { grid-template-columns: 1fr; gap: 12px; }
 }
