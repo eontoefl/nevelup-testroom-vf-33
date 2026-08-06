@@ -439,12 +439,12 @@ function _ext_renderApplyGuideImpl(host, ctx, deadline) {
         '<div class="ext-benefits">' +
         '<div class="ext-benefits-title">다음 4주에 받는 것</div>' +
         '<div class="ext-benefit-item"><i class="fas fa-pen-nib"></i> 라이팅 12편 <span>이메일 6 · 토론형 6</span> · 스피킹 12편 <span>인터뷰</span></div>' +
-        '<div class="ext-benefit-item"><i class="fas fa-comments"></i> 편마다 문장별 교정 첨삭 → 수정 → 최종 첨삭(점수·총평) → 모범답안</div>' +
+        '<div class="ext-benefit-item"><i class="fas fa-comments"></i> 실전처럼 제출 → 1차 첨삭(점수·총평)으로 직접 고쳐보고 → 2차 제출 → 디테일까지 잡아주는 최종 첨삭(점수·총평) → 모범답안</div>' +
         '<div class="ext-benefit-item ext-benefit-strong"><i class="fas fa-star"></i> 합치면 <b>48번의 개별 첨삭</b> + 모범답안 24편</div>' +
         '</div>' +
 
         // 손실회피
-        '<div class="ext-loss-note">지금 잡힌 감각은 몇 주만 쉬어도 흐려져요. 다시 끌어올리는 데 오히려 더 오래 걸립니다.</div>' +
+        '<div class="ext-loss-note">지금 잡힌 감각은 한 주만 쉬어도 흐려져요. 다시 끌어올리는 데 오히려 더 오래 걸립니다.</div>' +
 
         // 가격
         '<div class="ext-price-box">' +
