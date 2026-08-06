@@ -45,7 +45,13 @@
 .ext-exam-num { font-size: 34px; font-weight: 800; color: #191c1d; line-height: 1.1; letter-spacing: -0.02em; }
 .ext-exam-goal .ext-exam-num { color: #9480c5; }
 .ext-exam-lbl { font-size: 11px; color: #9aa0a6; margin-top: 2px; }
-.ext-exam-arrow { font-size: 22px; color: #cbb8e8; font-weight: 700; }
+.ext-exam-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ext-exam-gap {
+    font-size: 11px; font-weight: 700; color: #d98324;
+    background: #fff2e0; padding: 2px 7px; border-radius: 999px;
+    white-space: nowrap;
+}
+.ext-exam-arrow { font-size: 22px; color: #cbb8e8; font-weight: 700; line-height: 1; }
 .ext-exam-caption {
     text-align: center;
     font-size: 12.5px;
@@ -67,13 +73,31 @@
     margin-bottom: 10px;
     text-align: center;
 }
-.ext-graph-caption {
+/* 그래프 위 강조 캡션 — "오 이렇게 올랐구나" */
+.ext-graph-highlight {
     text-align: center;
-    font-size: 12px;
-    color: #6b7280;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4b4658;
+    margin: 2px 0 10px;
+}
+.ext-graph-highlight b { color: #9480c5; font-weight: 800; font-size: 19px; }
+.ext-hl-arrow { color: #cbb8e8; margin: 0 4px; }
+/* x축 이름 */
+.ext-graph-xaxis {
+    text-align: center;
+    font-size: 11px;
+    color: #8a7fb0;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+}
+/* 작은 참고 수치 */
+.ext-graph-ref {
+    text-align: center;
+    font-size: 11px;
+    color: #a8a2b8;
     margin-top: 6px;
 }
-.ext-graph-max { color: #b7a8db; font-weight: 600; }
 .ext-report-nums { display: flex; gap: 12px; }
 .ext-num-cell {
     flex: 1;
@@ -98,14 +122,26 @@
 
 /* ── 마감 안내 + CTA ── */
 .ext-deadline-note {
-    font-size: 12.5px;
-    color: #8a7fb0;
-    background: #f6f4fb;
-    border-radius: 8px;
-    padding: 10px 12px;
+    background: #fff6e0;
+    border-radius: 10px;
+    padding: 13px 14px;
     margin: 18px 0 14px;
     text-align: center;
+}
+.ext-deadline-strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+    color: #d98324;
+    letter-spacing: -0.01em;
+}
+.ext-deadline-strong i { margin-right: 5px; }
+.ext-deadline-sub {
+    display: block;
+    font-size: 12px;
+    color: #9a7b4a;
     line-height: 1.5;
+    margin-top: 5px;
 }
 .ext-cta-btn {
     width: 100%;
@@ -210,8 +246,8 @@
     padding-top: 18px;
 }
 .ext-upsell-overlay .ext-upsell-card {
-    width: 100%;
-    max-width: 380px;
+    width: 96%;
+    max-width: 460px;
     margin-bottom: 0;
     box-shadow: 0 14px 44px rgba(120, 100, 170, 0.30);
 }

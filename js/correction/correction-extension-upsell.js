@@ -88,6 +88,19 @@ function _ext_ymd(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
+// 'YYYY-MM-DD' → 'M/D'
+function _ext_mdFromYmd(ymd) {
+    if (!ymd) return '';
+    var p = String(ymd).split('-');
+    if (p.length < 3) return '';
+    return parseInt(p[1], 10) + '/' + parseInt(p[2], 10);
+}
+
+// 점수 표기: 소수점이 필요할 때만 (4.0→"4", 2.5→"2.5", 2.75→"2.75")
+function _ext_fmtScore(v) {
+    return String(parseFloat(Number(v).toFixed(2)));
+}
+
 /**
  * 성적표 재료 로드: 세션별 평균 점수(1·2차 있는 값 전부) + 교정포인트 누적 + 시험총점 + 목표총점.
  * @param {object} user - getCurrentUser()
@@ -126,13 +139,16 @@ async function loadExtensionReportData(user) {
     // 2) 상승 곡선 여부 (선형 기울기 > 0)
     result.rising = _ext_isRising(result.points);
 
-    // 3) 최근 인증 시험 총점
+    // 3) 최근 인증 시험 총점 + 날짜
     try {
         var scores = await supabaseSelect(
             'toefl_actual_scores',
             'user_id=eq.' + user.id + '&order=test_date.desc&limit=1&select=overall,test_date'
         ) || [];
-        if (scores[0] && scores[0].overall != null) result.lastExam = Number(scores[0].overall);
+        if (scores[0] && scores[0].overall != null) {
+            result.lastExam = Number(scores[0].overall);
+            result.lastExamDate = scores[0].test_date || null;
+        }
     } catch (e) { console.warn('[Ext] 시험 점수 로드 실패:', e); }
 
     // 4) 목표 총점
@@ -167,26 +183,29 @@ function _ext_isRising(points) {
  */
 function _ext_renderGraph(points) {
     if (!points || points.length < 2) return '';
-    // viewBox를 넓게 잡아 CSS width:100%로 축소될 때 글자·점이 상대적으로 작게 보이게 한다.
-    var W = 560, H = 210, padL = 30, padR = 14, padT = 14, padB = 34;
+    // 가로로 넓고 낮은 비율 (그래프에 어울리게). viewBox를 넓게 잡아 글자·점이 상대적으로 작게.
+    var W = 560, H = 168, padL = 42, padR = 16, padT = 12, padB = 30;
     var xs = points.map(function (p) { return p.s; });
     var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
     var minY = 0, maxY = 5;                                   // raw 5점 만점 고정 축
     function X(s) { return padL + (maxX === minX ? 0.5 : (s - minX) / (maxX - minX)) * (W - padL - padR); }
     function Y(v) { return padT + (1 - (v - minY) / (maxY - minY)) * (H - padT - padB); }
 
-    // y축 가로 그리드(0~5) + 왼쪽 눈금 숫자 (5점 만점임이 보이게)
+    // y축(점수, 0~5) 가로 그리드 + 왼쪽 눈금 숫자
     var grid = '';
     for (var g = 0; g <= 5; g++) {
         var gy = Y(g).toFixed(1);
         grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="#e7e1f2" stroke-width="1"/>';
-        grid += '<text x="' + (padL - 6) + '" y="' + (Y(g) + 4).toFixed(1) + '" font-size="12" fill="#b7a8db" text-anchor="end">' + g + '</text>';
+        grid += '<text x="' + (padL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" font-size="12" fill="#b7a8db" text-anchor="end">' + g + '</text>';
     }
+    // y축 이름 (세로, 왼쪽 끝)
+    var ytitle = '<text x="12" y="' + ((padT + H - padB) / 2).toFixed(1) + '" font-size="12" fill="#8a7fb0" text-anchor="middle" transform="rotate(-90 12 ' + ((padT + H - padB) / 2).toFixed(1) + ')">점수</text>';
     // x축 세션 번호 (모든 점 아래)
     var xlabels = points.map(function (p) {
         return '<text x="' + X(p.s).toFixed(1) + '" y="' + (H - 12) + '" font-size="12" fill="#9aa0a6" text-anchor="middle">' + p.s + '</text>';
     }).join('');
-    var xtitle = '<text x="' + ((padL + W - padR) / 2).toFixed(1) + '" y="' + (H - 1) + '" font-size="11" fill="#b7a8db" text-anchor="middle">세션</text>';
+    // x축 이름 (오른쪽 끝, 세션 번호 줄과 같은 높이)
+    var xtitle = '<text x="' + (W - padR + 2) + '" y="' + (H - 12) + '" font-size="12" fill="#8a7fb0" text-anchor="end" opacity="0">세션</text>';
 
     var line = points.map(function (p, i) { return (i ? 'L' : 'M') + X(p.s).toFixed(1) + ' ' + Y(p.avg).toFixed(1); }).join(' ');
     var dots = points.map(function (p) {
@@ -195,18 +214,17 @@ function _ext_renderGraph(points) {
     var area = 'M' + X(points[0].s).toFixed(1) + ' ' + Y(0).toFixed(1) +
         ' ' + points.map(function (p) { return 'L' + X(p.s).toFixed(1) + ' ' + Y(p.avg).toFixed(1); }).join(' ') +
         ' L' + X(points[points.length - 1].s).toFixed(1) + ' ' + Y(0).toFixed(1) + ' Z';
-    var first = points[0].avg.toFixed(2), last = points[points.length - 1].avg.toFixed(2);
     return '' +
         '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;">' +
         '<defs><linearGradient id="extGrad" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0%" stop-color="#9480c5" stop-opacity="0.22"/>' +
         '<stop offset="100%" stop-color="#9480c5" stop-opacity="0"/></linearGradient></defs>' +
-        grid +
+        grid + ytitle +
         '<path d="' + area + '" fill="url(#extGrad)"/>' +
         '<path d="' + line + '" fill="none" stroke="#9480c5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' +
         dots + xlabels + xtitle +
         '</svg>' +
-        '<div class="ext-graph-caption">첫 세션 평균 ' + first + '점 → 최근 ' + last + '점 <span class="ext-graph-max">(raw 5점 만점)</span></div>';
+        '<div class="ext-graph-xaxis">← 세션 →</div>';
 }
 
 /**
@@ -220,10 +238,14 @@ function _ext_reportInnerHtml(data) {
     if (showExamRow) {
         html += '<div class="ext-exam-row">';
         if (data.lastExam != null) {
-            html += '<div class="ext-exam-now"><span class="ext-exam-num">' + data.lastExam.toFixed(1) + '</span><span class="ext-exam-lbl">최근 시험</span></div>';
-            html += '<div class="ext-exam-arrow">→</div>';
+            var dateLbl = data.lastExamDate ? (_ext_mdFromYmd(data.lastExamDate) + ' 시험') : '최근 시험';
+            html += '<div class="ext-exam-now"><span class="ext-exam-num">' + _ext_fmtScore(data.lastExam) + '</span><span class="ext-exam-lbl">' + dateLbl + '</span></div>';
+            var gap = data.target - data.lastExam;
+            html += '<div class="ext-exam-mid">' +
+                (gap > 0 ? '<span class="ext-exam-gap">' + _ext_fmtScore(gap) + '점 UP</span>' : '') +
+                '<span class="ext-exam-arrow">→</span></div>';
         }
-        html += '<div class="ext-exam-goal"><span class="ext-exam-num">' + data.target.toFixed(1) + '</span><span class="ext-exam-lbl">목표</span></div>';
+        html += '<div class="ext-exam-goal"><span class="ext-exam-num">' + _ext_fmtScore(data.target) + '</span><span class="ext-exam-lbl">목표</span></div>';
         html += '</div>';
         html += '<div class="ext-exam-caption">' + (data.lastExam != null
             ? '목표까지 아직 거리가 남았습니다. 지금이 멈출 때가 아니에요.'
@@ -232,8 +254,14 @@ function _ext_reportInnerHtml(data) {
 
     // 아래층: 상승 곡선이면 그래프, 아니면 누적 숫자
     if (data.rising && data.points.length >= 2) {
-        html += '<div class="ext-report-block"><div class="ext-report-block-title">지난 세션, 이렇게 올랐어요 · 세션당 평균</div>' +
-            _ext_renderGraph(data.points) + '</div>';
+        var first = _ext_fmtScore(data.points[0].avg);
+        var last = _ext_fmtScore(data.points[data.points.length - 1].avg);
+        html += '<div class="ext-report-block">' +
+            '<div class="ext-report-block-title">지난 첨삭, 이렇게 올랐어요</div>' +
+            '<div class="ext-graph-highlight">첫 세션 평균 <b>' + first + '</b> <span class="ext-hl-arrow">→</span> 최근 <b>' + last + '점</b></div>' +
+            _ext_renderGraph(data.points) +
+            '<div class="ext-graph-ref">세션당 평균 · raw point 5점 만점</div>' +
+            '</div>';
     } else {
         html += '<div class="ext-report-block ext-report-nums">' +
             '<div class="ext-num-cell"><span class="ext-num">' + data.completed + '<span class="ext-num-unit">/12</span></span><span class="ext-num-lbl">완료한 세션</span></div>' +
@@ -380,7 +408,10 @@ async function _ext_loadAndRenderState(host, ctx) {
     var data = await loadExtensionReportData(user);
     host.innerHTML =
         '<div class="ext-report">' + _ext_reportInnerHtml(data) + '</div>' +
-        '<div class="ext-deadline-note">신청 마감 ' + _ext_fmtDate(deadline) + '까지 · 다음 주 일요일부터 쉼 없이 이어서 시작할 수 있어요.</div>' +
+        '<div class="ext-deadline-note">' +
+        '<span class="ext-deadline-strong"><i class="fas fa-clock"></i> 신청 마감 ' + _ext_fmtDate(deadline) + '</span>' +
+        '<span class="ext-deadline-sub">이 날이 지나면 다음 기수까지 기다려야 해요. 다음 주 일요일부터 쉼 없이 이어서 시작할 수 있습니다.</span>' +
+        '</div>' +
         '<button class="ext-cta-btn" id="extLookBtn">다음 4주 살펴보기</button>';
     var btn = host.querySelector('#extLookBtn');
     if (btn) btn.onclick = function () { _ext_renderApplyGuide(host, ctx, deadline); };
