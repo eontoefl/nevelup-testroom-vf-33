@@ -424,13 +424,33 @@ async function _ext_loadAndRenderState(host, ctx) {
  */
 function _ext_renderApplyGuide(host, ctx, deadline) { return _ext_renderApplyGuideImpl(host, ctx, deadline); }
 function _ext_renderApplyGuideImpl(host, ctx, deadline) {
+    var dday = Math.ceil((deadline - new Date()) / (24 * 60 * 60 * 1000));
+    var ddayStr = dday > 0 ? 'D-' + dday : (dday === 0 ? 'D-DAY' : '');
     host.innerHTML =
         '<div class="ext-guide">' +
         '<button class="ext-back-btn ext-back-top" id="extBackBtn">← 뒤로</button>' +
         '<div class="ext-guide-title">13~24세션 — 다음 4주</div>' +
-        '<p>지금까지와 똑같이 라이팅·스피킹을 매일 새 문제로 풀고, 1차·2차 첨삭을 받습니다. 새로운 문제 12세션이에요.</p>' +
-        '<p>지난 8주의 첨삭 흐름을 그대로 이어받아, 남은 습관을 지우는 데 집중합니다.</p>' +
-        '<div class="ext-price-row"><span>연장 비용</span><strong>' + EXT_PRICE_TEXT + '</strong></div>' +
+        '<p>지금까지와 똑같이, 매일 새 실전 문제로 라이팅·스피킹을 풀고 첨삭을 받습니다. 지난 8주의 첨삭 흐름을 그대로 이어받아 남은 습관을 지우는 데 집중해요.</p>' +
+
+        // 받는 것 (숫자로 구체화)
+        '<div class="ext-benefits">' +
+        '<div class="ext-benefits-title">다음 4주에 받는 것</div>' +
+        '<div class="ext-benefit-item"><i class="fas fa-pen-nib"></i> 라이팅 6세트 · 스피킹 6세트 <span>매일 새 실전 문제</span></div>' +
+        '<div class="ext-benefit-item"><i class="fas fa-comments"></i> 세트마다 1차 첨삭 → 수정 → 최종 첨삭(점수·총평) → 모범답안</div>' +
+        '<div class="ext-benefit-item ext-benefit-strong"><i class="fas fa-star"></i> 합치면 <b>48번의 1:1 첨삭</b></div>' +
+        '</div>' +
+
+        // 손실회피
+        '<div class="ext-loss-note">지금 잡힌 감각은 몇 주만 쉬어도 흐려져요. 다시 끌어올리는 데 오히려 더 오래 걸립니다.</div>' +
+
+        // 가격 + 정직 프레임
+        '<div class="ext-price-box">' +
+        '<div class="ext-price-row"><span>연장 비용 (13~24세션 전체)</span><strong>' + EXT_PRICE_TEXT + '</strong></div>' +
+        '<div class="ext-price-note">첨삭 상세 안내 페이지를 아직 준비 중이라, 지금은 이 가격으로 안내드리고 있어요.</div>' +
+        '</div>' +
+
+        (ddayStr ? '<div class="ext-guide-deadline"><i class="fas fa-clock"></i> 신청 마감 ' + _ext_fmtDate(deadline) + ' <span class="ext-dday">' + ddayStr + '</span></div>' : '') +
+
         '<label class="ext-agree"><input type="checkbox" id="extAgree"> <span>' + EXT_AGREEMENT_TEXT + '</span></label>' +
         '<button class="ext-cta-btn" id="extApplyBtn" disabled>신청하기</button>' +
         '</div>';
