@@ -34,8 +34,9 @@ var EXT_DEV = (function () {
 })();
 
 /**
- * 세션 9가 끝난 상태인가 (2차 공개 또는 마감). 둘 중 하나라도 최종 단계면 true.
- * @param {object} submissionMap - correction-main이 만든 맵 (키: "9_writing","9_speaking")
+ * 세션 9 이상에 도달했는가 — 세션 9~12 중 하나라도 최종 단계(2차 공개 or 마감)면 true.
+ * 세션9의 2차만 보면 세션9를 건너뛰고 10~12로 간 학생을 놓치므로 9~12를 함께 본다.
+ * @param {object} submissionMap - correction-main이 만든 맵 (키: "9_writing","10_speaking" 등)
  */
 function _ext_isSession9Done(submissionMap) {
     var endStates = ['complete', 'expired', 'skipped'];
@@ -45,7 +46,10 @@ function _ext_isSession9Done(submissionMap) {
         if (sub.status === 'feedback2_ready' && sub.released_2) return true;
         return false;
     }
-    return done(submissionMap['9_writing']) || done(submissionMap['9_speaking']);
+    for (var s = 9; s <= 12; s++) {
+        if (done(submissionMap[s + '_writing']) || done(submissionMap[s + '_speaking'])) return true;
+    }
+    return false;
 }
 
 /**
