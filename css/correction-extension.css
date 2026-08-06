@@ -280,7 +280,7 @@
 /* 신청 완료 카드의 카톡 문의 — 특수상황용, 작고 은은한 파스텔 노랑 */
 .ext-kakao-link {
     display: flex; align-items: center; gap: 6px;
-    width: fit-content; margin: 12px 0 0 auto;
+    width: fit-content; margin-left: auto; flex-shrink: 0;
     padding: 6px 14px;
     background: #fdf3cf;
     color: #9a7d2e;
