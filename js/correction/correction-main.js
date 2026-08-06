@@ -135,8 +135,12 @@ async function renderCorrectionSchedule() {
     var ctx = { scheduleData: scheduleData, submissionMap: submissionMap, extensionMap: extensionMap, durationWeeks: durationWeeks };
 
     if (!extEnabled) {
-        // ── 연장 OFF: 탭 없이 1~12세션만 렌더 (기존 화면 그대로) ──
-        _renderCorrectionPhase(container, 1, ctx);
+        // ── 연장 OFF: 업셀 조건(세션9 종료 등) 충족 시 [1~12][🔒13~24] 칩, 아니면 1~12만 ──
+        if (typeof shouldShowExtensionUpsell === 'function' && shouldShowExtensionUpsell(ctx)) {
+            renderExtensionUpsellTabs(container, ctx);
+        } else {
+            _renderCorrectionPhase(container, 1, ctx);
+        }
         return;
     }
 

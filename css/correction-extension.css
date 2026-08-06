@@ -1,0 +1,190 @@
+/* ================================================
+ * correction-extension.css
+ * 첨삭 연장(13~24세션) 업셀 화면 전용
+ * 기존 primary(#9480c5) 톤 사용. No-Line: 배경색 차이로 구분.
+ * ================================================ */
+
+.ext-tab-locked { opacity: 0.85; }
+
+/* ── 업셀 카드 (성적표/신청/마감 공통 컨테이너) ── */
+.ext-upsell-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px 20px;
+    box-shadow: 0 4px 24px rgba(148, 128, 197, 0.10);
+    margin-bottom: 20px;
+}
+.ext-loading {
+    text-align: center;
+    color: #9aa0a6;
+    font-size: 14px;
+    padding: 28px 0;
+}
+
+/* ── 성적표: 시험 총점 → 목표 ── */
+.ext-exam-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 6px;
+}
+.ext-exam-now, .ext-exam-goal { display: flex; flex-direction: column; align-items: center; }
+.ext-exam-num { font-size: 34px; font-weight: 800; color: #191c1d; line-height: 1.1; letter-spacing: -0.02em; }
+.ext-exam-goal .ext-exam-num { color: #9480c5; }
+.ext-exam-lbl { font-size: 11px; color: #9aa0a6; margin-top: 2px; }
+.ext-exam-arrow { font-size: 22px; color: #cbb8e8; font-weight: 700; }
+.ext-exam-caption {
+    text-align: center;
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-bottom: 18px;
+}
+
+/* ── 성적표: 블록 (그래프 / 누적 숫자) ── */
+.ext-report-block {
+    background: #f6f4fb;
+    border-radius: 12px;
+    padding: 16px 14px;
+    margin-bottom: 16px;
+}
+.ext-report-block-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #7c6bb0;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.ext-graph-caption {
+    text-align: center;
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 6px;
+}
+.ext-report-nums { display: flex; gap: 12px; }
+.ext-num-cell {
+    flex: 1;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 8px;
+    text-align: center;
+}
+.ext-num { font-size: 26px; font-weight: 800; color: #9480c5; letter-spacing: -0.02em; }
+.ext-num-unit { font-size: 14px; font-weight: 700; color: #b7a8db; margin-left: 1px; }
+.ext-num-lbl { display: block; font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+/* ── 성적표: 문구 ── */
+.ext-copy { margin: 4px 2px 0; }
+.ext-copy p {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #3e484f;
+    margin: 0 0 10px;
+}
+.ext-copy p:last-child { margin-bottom: 0; }
+
+/* ── 마감 안내 + CTA ── */
+.ext-deadline-note {
+    font-size: 12.5px;
+    color: #8a7fb0;
+    background: #f6f4fb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 18px 0 14px;
+    text-align: center;
+    line-height: 1.5;
+}
+.ext-cta-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #9480c5, #b49fe0);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.18s ease;
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.28);
+}
+.ext-cta-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(148, 128, 197, 0.36); }
+.ext-cta-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+/* ── 안내 화면 ── */
+.ext-guide-title { font-size: 17px; font-weight: 800; color: #191c1d; margin-bottom: 12px; }
+.ext-guide p { font-size: 13.5px; line-height: 1.7; color: #3e484f; margin: 0 0 10px; }
+.ext-price-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f6f4fb; border-radius: 10px;
+    padding: 14px 16px; margin: 16px 0;
+}
+.ext-price-row span { font-size: 13px; color: #6b7280; }
+.ext-price-row strong { font-size: 18px; font-weight: 800; color: #9480c5; }
+.ext-agree {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12.5px; color: #3e484f; line-height: 1.5;
+    margin-bottom: 16px; cursor: pointer;
+}
+.ext-agree input { margin-top: 2px; width: 16px; height: 16px; accent-color: #9480c5; flex-shrink: 0; }
+.ext-back-btn {
+    width: 100%; margin-top: 10px;
+    background: none; border: none;
+    color: #9aa0a6; font-family: inherit; font-size: 13px;
+    cursor: pointer; padding: 6px;
+}
+.ext-back-btn:hover { color: #7c6bb0; }
+
+/* ── 신청 접수 상태 카드 ── */
+.ext-applied-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #eef8f0; color: #3d9a4e;
+    font-size: 13px; font-weight: 700;
+    padding: 7px 14px; border-radius: 999px;
+    margin-bottom: 16px;
+}
+.ext-applied-box {
+    background: #f6f4fb; border-radius: 12px;
+    padding: 16px; text-align: center; margin-bottom: 14px;
+}
+.ext-applied-line { font-size: 14px; font-weight: 700; color: #191c1d; }
+.ext-applied-amount { font-size: 22px; font-weight: 800; color: #9480c5; margin-top: 4px; letter-spacing: -0.02em; }
+.ext-applied-note { font-size: 12.5px; line-height: 1.6; color: #6b7280; margin: 6px 0 0; }
+.ext-applied-note strong { color: #a53b22; }
+
+/* ── 마감 잠금 카드 ── */
+.ext-closed { text-align: center; padding: 12px 0; }
+.ext-closed-icon { font-size: 32px; color: #cbb8e8; margin-bottom: 12px; }
+.ext-closed-title { font-size: 16px; font-weight: 700; color: #191c1d; }
+.ext-closed-sub { font-size: 13px; color: #6b7280; margin-top: 4px; }
+.ext-kakao-btn {
+    display: inline-block; margin-top: 14px;
+    background: #fee500; color: #191600;
+    font-size: 13px; font-weight: 700;
+    padding: 9px 18px; border-radius: 8px;
+    text-decoration: none;
+}
+
+/* ── 흐린 잠금 세션 카드 12개 (장식) ── */
+.ext-locked-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    opacity: 0.5;
+    pointer-events: none;
+    filter: grayscale(0.3);
+}
+.ext-locked-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+.ext-locked-icon { font-size: 15px; color: #c3b6df; margin-bottom: 2px; }
+.ext-locked-name { font-size: 12px; font-weight: 700; color: #9aa0a6; }
+.ext-locked-task { font-size: 10px; color: #bbb; }
+
+@media (max-width: 420px) {
+    .ext-locked-grid { grid-template-columns: repeat(2, 1fr); }
+}
