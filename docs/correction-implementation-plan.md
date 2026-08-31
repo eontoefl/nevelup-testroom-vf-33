@@ -99,7 +99,7 @@
 | 항목 | 결정 |
 |------|------|
 | 1차 마감 | 스케줄상 고정 (dayOffset 기준 다음날 04:00) |
-| 2차 마감 | `max(스케줄상 마감, feedback_1_at + 24시간)` |
+| 2차 마감 | **`released_1_at`(1차 첨삭 공개 시각) + 24시간** (+연장). 스케줄 바닥 없음 — 2026-08-31 개정(이전: `max(스케줄상 마감, feedback_1_at + 24시간)`). 정본: README §첨삭 마감 규칙 |
 | expired/skipped | n8n이 일괄 처리 |
 | failed 상태 | "첨삭 준비 중 문제가 발생했습니다. 잠시 후 다시 확인해주세요." |
 | duration_weeks | correction_schedules에 추가 (INT, 기본값 4) |
@@ -111,7 +111,7 @@
 | Webhook 설정 | `js/correction-config.js`에 전역 변수 (`window.CORRECTION_CONFIG`) |
 | 관리자 접근 | `window.__isAdmin` 플래그 활용. correction_enabled 무관하게 FEEDBACK 탭 표시 |
 | n8n 연동 | 프론트는 webhook 호출만. URL은 설정 파일에서 읽기 |
-| 과도기 승인 | UI 없음. Supabase에서 released 직접 변경. 24시간 미승인 시 n8n 자동 승인 |
+| 승인(공개) | 관리자 수동 승인 또는 **AI 생성(feedback_N_at) 5시간 후 pg_cron 자동 승인**(공홈 `auto_approve_correction_5h.sql`, 1차·2차 동일). (구 서술 "24시간 미승인 시 n8n 자동 승인"은 폐기) |
 
 ---
 
@@ -682,7 +682,7 @@ scheduleScreen
         ▼  n8n 피드백 완료
   feedback1_ready  (released_1=false)
         │
-        ▼  수동 승인 또는 24시간 후 자동 승인 (n8n)
+        ▼  수동 승인 또는 AI 생성 5시간 후 자동 승인 (pg_cron)
   feedback1_ready  (released_1=true)
         │
         ▼  학생이 2차 제출
@@ -696,7 +696,7 @@ scheduleScreen
         ▼  n8n 피드백 완료
   feedback2_ready  (released_2=false)
         │
-        ▼  수동 승인 또는 24시간 후 자동 승인 (n8n)
+        ▼  수동 승인 또는 AI 생성 5시간 후 자동 승인 (pg_cron)
   feedback2_ready  (released_2=true)
         │
         ▼  양쪽 모두 released → 자동 또는 수동
@@ -721,11 +721,11 @@ scheduleScreen
 | `draft1_submitted` → `feedback1_processing` | Webhook 수신 |
 | `feedback1_processing` → `feedback1_ready` | GPT 피드백 완료 |
 | `feedback1_processing` → `feedback1_failed` | GPT 호출 실패 |
-| `feedback1_ready` → `released_1=true` | 수동 승인 또는 24시간 자동 |
+| `feedback1_ready` → `released_1=true` | 수동 승인 또는 AI 생성 5시간 후 자동(pg_cron). 이때 `released_1_at` 기록 → 2차 마감 = `released_1_at`+24h |
 | `draft2_submitted` → `feedback2_processing` | Webhook 수신 |
 | `feedback2_processing` → `feedback2_ready` | GPT 피드백 완료 |
 | `feedback2_processing` → `feedback2_failed` | GPT 호출 실패 |
-| `feedback2_ready` → `released_2=true` | 수동 승인 또는 24시간 자동 |
+| `feedback2_ready` → `released_2=true` | 수동 승인 또는 AI 생성 5시간 후 자동(pg_cron) |
 | (any) → `expired` / `skipped` | 일일 데드라인 초과 워크플로우 |
 | `released_1=true` + `released_2=true` → `complete` | 전체 완료 확인 |
 
@@ -775,35 +775,21 @@ function getDraft1Deadline(startDate, dayOffset) {
 }
 ```
 
-### 8.3 2차 Draft 데드라인 계산 (Q31 반영)
+### 8.3 2차 Draft 데드라인 계산 (2026-08-31 개정)
+
+> **개정 사유:** 카톡 "1차 첨삭 완료 안내"의 수정본 마감은 **공개 시각+24시간**인데 앱은 생성 시각+24시간과 스케줄 바닥의 max를 써서 두 숫자가 어긋났다(대표 확정 룰: 2차 마감 = 1차 첨삭본을 **받은** 시각부터 24시간). 스케줄 바닥은 룰에 없어 제거. 실제 코드: `js/correction/correction-session.js` `getCorrDraft2DeadlineFromRelease`.
 
 ```javascript
-function getDraft2Deadline(startDate, dayOffset, feedback1At) {
-    // 스케줄상 2차 마감: dayOffset + 1일의 다음날 04:00
-    // 2차 dayOffset = 1차 dayOffset + 1 (일→월, 화→수, 목→금)
-    var draft2DayOffset = dayOffset + 1;
-    
-    var taskDate = new Date(startDate);
-    taskDate.setDate(taskDate.getDate() + draft2DayOffset);
-    
-    var scheduleDeadline = new Date(taskDate);
-    scheduleDeadline.setDate(scheduleDeadline.getDate() + 1);
-    scheduleDeadline.setHours(4, 0, 0, 0);
-    
-    // feedback_1_at + 24시간
-    var feedbackDeadline = null;
-    if (feedback1At) {
-        feedbackDeadline = new Date(feedback1At);
-        feedbackDeadline.setHours(feedbackDeadline.getHours() + 24);
-    }
-    
-    // max(스케줄상 마감, feedback_1_at + 24시간)
-    if (feedbackDeadline && feedbackDeadline > scheduleDeadline) {
-        return feedbackDeadline;
-    }
-    return scheduleDeadline;
+function getCorrDraft2DeadlineFromRelease(releasedAt, feedback1At, ext) {
+    // 앵커 = released_1_at(1차 첨삭 공개 시각). 없으면 feedback_1_at(레거시 행 예비). 둘 다 없으면 null.
+    var anchor = releasedAt || feedback1At;
+    if (!anchor) return null;   // 호출처는 null이면 카운트다운·차단 모두 생략
+    return _applyCorrExt(new Date(new Date(anchor).getTime() + 24 * 60 * 60 * 1000), ext, 2);
 }
 ```
+- 카드 표시·실시간 타이머·"수정하기" 차단 세 곳이 같은 함수를 쓴다(값 불일치 불가).
+- 연장(`_applyCorrExt`)은 그대로: 기준점 = max(원래 마감, 연장 건 시각) + N시간.
+- (구 구현 `getDraft2Deadline` — `max(스케줄상 마감, feedback_1_at + 24시간)` — 은 폐기.)
 
 ### 8.4 프론트에서 데드라인 표시
 - 정규과정의 `_renderDeadlineBanner()` 패턴 활용.
@@ -1373,7 +1359,7 @@ function initScheduleScreen() {
 
 ### 13.8 데드라인
 - [ ] 1차 마감 계산 정확 (dayOffset + 다음날 04:00)
-- [ ] 2차 마감 계산 정확: max(스케줄 마감, feedback_1_at + 24시간)
+- [ ] 2차 마감 계산 정확: released_1_at + 24시간 (+연장), 앵커 없으면 차단·카운트다운 생략
 - [ ] 마감 전: 남은 시간 표시
 - [ ] 마감 임박 (6시간 이내): 빨간색 강조
 - [ ] 마감 후: "마감됨" + 읽기전용

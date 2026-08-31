@@ -153,3 +153,22 @@ TOEFL 4개 영역(Reading, Listening, Writing, Speaking) 학습 및 해설 뷰�
 - **이슈 발견 시**: 중단 후 보고, 혼자 판단으로 수정 금지
 - **설명**: 코드 용어 없이 쉽게 설명, 근본적 해결책 제시
 - **관리자 계정**: `test@me.com` (admin-skip 기능 활성화)
+
+---
+
+## 첨삭 마감 규칙 (정본 — 2026-08-31 확정)
+
+이 절이 스라첨삭 마감의 단일 기준이다. 코드·문서·카톡 문구가 여기서 어긋나면 이 절이 맞다.
+
+| 항목 | 규칙 | 코드 |
+|---|---|---|
+| 1차(원본) 제출 마감 | 세션일 **다음날 새벽 4시**(학생 타임존) + 연장 | `correction-session.js` `getCorrDraft1Deadline` |
+| 첨삭 공개 | AI 생성(`feedback_N_at`) **5시간 뒤** 자동 공개(공홈 pg_cron, 5분 주기; 1차·2차 동일). 관리자가 먼저 공개 가능. 공개 시각 = `released_N_at` | 공홈 `auto_approve_correction_5h.sql` |
+| 2차(수정본) 제출 마감 | **1차 첨삭 공개 시각(`released_1_at`) + 24시간** + 연장. 스케줄 기반 바닥 없음 | `correction-session.js` `getCorrDraft2DeadlineFromRelease` |
+| 앵커 결손(레거시) | `released_1_at`이 없으면 `feedback_1_at` 사용, 둘 다 없으면 **차단·카운트다운 모두 생략** | 카드·타이머·`onCorrDetailDraft2Click` null 분기 |
+| 연장 | 기준점 = max(원래 마감, 연장 건 시각) + N시간 (`correction_deadline_extensions`) | `_applyCorrExt` |
+| 도착 예상 표시 | (생성 시각 ‖ 제출 시각) + 5시간을 **시 단위 "오전 8시쯤"**으로 | `_getEstimatedArrival` |
+
+- 카톡 "1차 첨삭 완료 안내"의 수정본 마감은 **발송(=공개) 시각 + 24시간** — 위 2차 규칙과 같은 기준이다. 단 **연장은 카톡에 반영되지 않는다**(공개 후 부여되므로).
+- 마감 시각 표시는 브라우저 로컬 시간, 카톡은 KST(해외 브라우저는 숫자가 다르게 보일 수 있음 — 기존 동작).
+- 이전 규칙(`max(스케줄상 마감, feedback_1_at+24h)`)은 카톡과 최대 5시간 어긋나 2026-08-31 폐기. 경위: `C:\기능구현\첨삭_2차마감_통일\구현계획서_v2_확정.md`.
