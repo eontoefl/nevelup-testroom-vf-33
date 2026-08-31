@@ -397,14 +397,16 @@ function _formatDeadlineDateTime(date) {
 }
 
 /**
- * 예상 시각 포맷 (시:분만): "10:00"
+ * 예상 시각 포맷 (시 단위, 가장 가까운 정시로 반올림): "오전 8시쯤" / "낮 12시쯤" / "밤 12시쯤"
+ * 추정값이라 분 단위로 보여주면 정확한 척이 된다(2026-08-31 개정: "09:08" → "오전 9시쯤").
  * @param {Date} date
  * @returns {string}
  */
-function _formatTimeHHMM(date) {
-    var hh = String(date.getHours()).padStart(2, '0');
-    var mm = String(date.getMinutes()).padStart(2, '0');
-    return hh + ':' + mm;
+function _formatHourApprox(date) {
+    var h = new Date(date.getTime() + 30 * 60 * 1000).getHours();
+    if (h === 0) return '밤 12시쯤';
+    if (h === 12) return '낮 12시쯤';
+    return (h < 12 ? '오전 ' : '오후 ') + (h % 12) + '시쯤';
 }
 
 /**
@@ -451,7 +453,7 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
     if (status === 'draft2_submitted' || status === 'feedback2_processing') {
         rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
         rows.push({ html: '<i class="fas fa-check-circle"></i> 2차 제출 완료', cls: 'completed' });
-        var est2 = _getEstimatedArrival(submission.draft_2_submitted_at);
+        var est2 = _getEstimatedArrival(submission.draft_2_submitted_at, submission.feedback_2_at);
         rows.push({ html: '<i class="fas fa-hourglass-half"></i> 최종 첨삭 예상: ' + est2, cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
@@ -496,7 +498,7 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
     // --- draft1_submitted / feedback1_processing ---
     if (status === 'draft1_submitted' || status === 'feedback1_processing') {
         rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 제출 완료', cls: 'completed' });
-        var est1 = _getEstimatedArrival(submission.draft_1_submitted_at);
+        var est1 = _getEstimatedArrival(submission.draft_1_submitted_at, submission.feedback_1_at);
         rows.push({ html: '<i class="fas fa-hourglass-half"></i> 첨삭 도착 예상: ' + est1, cls: 'waiting' });
         return _wrapDeadlineRows(rows);
     }
@@ -521,16 +523,18 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
 
 /**
  * 첨삭 도착 예상 시각 계산
- * submitted_at + 6시간, 이미 지났으면 "곧 도착"
- * @param {string} submittedAt - ISO 날짜 문자열
+ * 실제 공개 = AI 생성(feedback_N_at) + 5시간(자동 공개 cron). 생성 시각이 있으면 그것을, 없으면 제출 시각을 기준으로 +5시간.
+ * (실측: 제출→공개 중앙값 304분. 이전 +6시간·분 단위 표시는 2026-08-31 개정.) 이미 지났으면 "곧 도착".
+ * @param {string} submittedAt - 제출 ISO 문자열
+ * @param {string} [feedbackAt] - AI 생성 ISO 문자열 (있으면 우선)
  * @returns {string}
  */
-function _getEstimatedArrival(submittedAt) {
-    if (!submittedAt) return '곧 도착';
-    var est = new Date(submittedAt);
-    est.setHours(est.getHours() + 6);
+function _getEstimatedArrival(submittedAt, feedbackAt) {
+    var anchor = feedbackAt || submittedAt;
+    if (!anchor) return '곧 도착';
+    var est = new Date(new Date(anchor).getTime() + 5 * 60 * 60 * 1000);
     if (new Date() >= est) return '곧 도착';
-    return _formatTimeHHMM(est);
+    return _formatHourApprox(est);
 }
 
 /**
