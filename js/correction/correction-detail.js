@@ -755,11 +755,11 @@ function onCorrDetailDraft2Click(taskType) {
     var subKey = session.session + '_' + taskType;
     var submission = submissionMap[subKey] || null;
 
-    // 2차 데드라인 초과 체크
-    if (scheduleData && submission) {
+    // 2차 데드라인 초과 체크 — 공개시각 + 24h(+연장). 앵커가 없으면(null) 차단하지 않는다.
+    if (submission) {
         var ext = _corrExt(sessionState.extensionMap, session.session, taskType);
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, ext);
-        if (new Date() > dl2) {
+        var dl2 = getCorrDraft2DeadlineFromRelease(submission.released_1_at, submission.feedback_1_at, ext);
+        if (dl2 && new Date() > dl2) {
             alert('2차 수정 마감이 지났습니다.');
             return;
         }
@@ -833,27 +833,9 @@ function _renderCorrDetailDeadlineBanner(session, submission, taskType) {
     var scheduleData = sessionState.scheduleData;
     var ext = _corrExt(sessionState.extensionMap, session.session, taskType);
 
-    // 2차 단계인지 판별
-    var isDraft2Phase = false;
-    if (submission) {
-        var s = status;
-        if (s === 'draft2_submitted' || s === 'feedback2_processing' || s === 'feedback2_ready' || s === 'feedback2_failed') {
-            isDraft2Phase = true;
-        }
-        if (submission.released_1 && !submission.draft_2_text && !submission.draft_2_audio_q1 &&
-            s !== 'draft1_submitted' && s !== 'feedback1_processing' && s !== 'feedback1_failed') {
-            isDraft2Phase = true;
-        }
-    }
-
-    if (isDraft2Phase) {
-        var feedback1At = submission ? submission.feedback_1_at : null;
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, feedback1At, ext);
-        renderDeadlineBanner(bannerEl, '2차 마감', dl2);
-    } else {
-        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
-        renderDeadlineBanner(bannerEl, '1차 마감', dl1);
-    }
+    // 배너는 카드별 마감으로 이전돼 숨김(renderDeadlineBanner는 no-op). 2차 마감 계산은 2026-08-31 제거 — 카드/차단이 정본.
+    var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
+    renderDeadlineBanner(bannerEl, '1차 마감', dl1);
 }
 
 /**

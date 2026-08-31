@@ -348,23 +348,16 @@ function getCorrDraft1Deadline(startDate, dayOffset, ext) {
 }
 
 /**
- * 2차 Draft 데드라인: max(스케줄상 마감, feedback_1_at + 24시간)
- * 스케줄상 2차: sessionDate+1일의 다음날 04:00
+ * 2차 Draft 데드라인: 1차 첨삭 **공개** 시각(released_1_at) + 24시간 (+연장). 스케줄 바닥 없음.
+ * 카톡(1차 첨삭 완료 안내)의 "수정본 마감"과 같은 기준이라 앱·카톡 숫자가 일치한다.
+ * 앵커가 없으면 feedback_1_at(레거시 행 예비), 둘 다 없으면 null → 호출처는 null이면 차단·카운트다운을 생략한다.
+ * (2026-08-31 개정: 생성시각 기준 + '1차마감 다음날 04:00' 바닥의 max → 공개시각 기준으로 통일.
+ *  함수명을 바꿔 옛 4인자 호출이 남아 있으면 즉시 오류로 드러나게 했다.)
  */
-function getCorrDraft2Deadline(startDate, dayOffset, feedback1At, ext) {
-    var tz = getUserTimezone();
-    // 스케줄 기반: sessionDate+1일 → 그 다음날 04:00
-    var sessionDatePlus1 = new Date(startDate + 'T00:00:00');
-    sessionDatePlus1.setDate(sessionDatePlus1.getDate() + dayOffset + 1);
-    var base = _applyCorrExt(getTaskDeadline(sessionDatePlus1, tz), ext, 2);
-
-    // feedback_1_at + 24시간
-    if (feedback1At) {
-        var fbDeadline = _applyCorrExt(
-            new Date(new Date(feedback1At).getTime() + 24 * 60 * 60 * 1000), ext, 2);
-        if (fbDeadline > base) return fbDeadline;
-    }
-    return base;
+function getCorrDraft2DeadlineFromRelease(releasedAt, feedback1At, ext) {
+    var anchor = releasedAt || feedback1At;
+    if (!anchor) return null;
+    return _applyCorrExt(new Date(new Date(anchor).getTime() + 24 * 60 * 60 * 1000), ext, 2);
 }
 
 /**
@@ -474,7 +467,8 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
     // --- feedback1_ready + released_1=true (2차 단계) ---
     if (status === 'feedback1_ready' && released1) {
         rows.push({ html: '<i class="fas fa-check-circle"></i> 1차 완료', cls: 'completed' });
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, ext);
+        var dl2 = getCorrDraft2DeadlineFromRelease(submission.released_1_at, submission.feedback_1_at, ext);
+        if (!dl2) return _wrapDeadlineRows(rows);   // 앵커 없음 → 2차 행 생략 (차단도 하지 않음)
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             rows.push({ html: '<i class="fas fa-times-circle"></i> 2차 마감 초과', cls: 'overdue' });
@@ -665,7 +659,8 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
 
     // feedback1_ready + released_1 → 2차 마감 카운트다운
     if (status === 'feedback1_ready' && released1) {
-        var dl2 = getCorrDraft2Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, submission.feedback_1_at, ext);
+        var dl2 = getCorrDraft2DeadlineFromRelease(submission.released_1_at, submission.feedback_1_at, ext);
+        if (!dl2) return false;   // 앵커 없음 → 갱신 중단
         var diff2 = dl2 - now;
         if (diff2 <= 0) {
             deadlineEl.innerHTML =
