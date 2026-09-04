@@ -209,6 +209,9 @@ var ErrorNote = {
             + '<div class="esf-head-text"><span class="esf-title">🎤 스피킹 녹음 파일</span><span class="esf-sub">인터뷰 ' + this.SPEAKING_SLOT_COUNT + '문항 · 각 최대 25MB</span></div>'
             + '<span class="esf-count" id="esfCount">0 / ' + this.SPEAKING_SLOT_COUNT + '</span>'
             + '</div>';
+        if (!deadlinePassed) {
+            html += '<p class="esf-note">제출하기를 누르기 전에 새로고침하거나 페이지를 나가면 선택한 파일이 사라집니다.</p>';
+        }
         html += '<div class="esf-list">';
 
         for (var i = 0; i < this.SPEAKING_SLOT_COUNT; i++) {
