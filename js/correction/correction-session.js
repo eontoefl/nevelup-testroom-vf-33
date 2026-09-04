@@ -314,6 +314,17 @@ function isCorrSelfPaced(scheduleData) {
 }
 
 /**
+ * 이 학생이 연장(13~24세션) 자기주도인지.
+ * general 트랙 + 연장 활성 + 연장 시작일·종료일 존재. 호주는 연장 자체가 없음.
+ * @param {object} scheduleData - correction_schedules 행
+ * @returns {boolean}
+ */
+function isCorrSelfPacedExt(scheduleData) {
+    return getCorrectionTrack() === 'general' &&
+        !!(scheduleData && scheduleData.extension_enabled && scheduleData.extension_start_date && scheduleData.extension_end_date);
+}
+
+/**
  * 저장된 확정 일정표(session_dates) 파싱.
  * 문자열이면 JSON.parse, 객체면 그대로. dates가 길이 12 배열이고 각 원소가 YYYY-MM-DD면 반환, 아니면 null.
  * @param {string|object} raw
@@ -359,7 +370,8 @@ function _corrDaysDiff(aYmd, bYmd) {
 
 /**
  * 세션의 배정 날짜(로컬 00:00 Date) 또는 null.
- *   - phase 1이고 저장된 확정 일정표에 그 세션 날짜가 있으면 그 날짜(자기주도).
+ *   - phase 1이고 저장된 확정 일정표(session_dates)에 그 세션 날짜가 있으면 그 날짜(자기주도).
+ *   - phase 2이고 연장 확정 일정표(extension_session_dates)에 그 세션 날짜가 있으면 그 날짜(연장 자기주도).
  *   - 그 외: (해당 학기 시작일) + dayOffset. (기존 학생·연장·호주 전부 이 줄.)
  * @param {object} scheduleData
  * @param {object} session - CORRECTION_SCHEDULE 항목
@@ -370,6 +382,11 @@ function getCorrSessionDate(scheduleData, session) {
         var parsed = _parseCorrSessionDates(scheduleData && scheduleData.session_dates);
         if (parsed && parsed.dates[session.session - 1]) {
             return new Date(parsed.dates[session.session - 1] + 'T00:00:00');
+        }
+    } else if (session && session.phase === 2) {
+        var parsedExt = _parseCorrSessionDates(scheduleData && scheduleData.extension_session_dates);
+        if (parsedExt && parsedExt.dates[session.session - 13]) {
+            return new Date(parsedExt.dates[session.session - 13] + 'T00:00:00');
         }
     }
     var base = getCorrSessionStartDate(scheduleData, session);

@@ -49,10 +49,14 @@ async function renderCorrectionSchedule() {
     // 개발 모드(localhost): 자기주도(시작·종료일 지정) 주입 — DB 없이 화면 확인용
     if (window.CORR_DEV_SELFPACED) {
         var devStart = null, devEnd = null, devDates = null;
+        var devExtStart = null, devExtEnd = null, devExtDates = null;
         try {
             devStart = sessionStorage.getItem('corrDevStart');
             devEnd = sessionStorage.getItem('corrDevEnd');
             devDates = sessionStorage.getItem('corrDevSessionDates');
+            devExtStart = sessionStorage.getItem('corrDevExtStart');
+            devExtEnd = sessionStorage.getItem('corrDevExtEnd');
+            devExtDates = sessionStorage.getItem('corrDevExtSessionDates');
         } catch (e) {}
         scheduleData = {
             start_date: devStart,
@@ -60,7 +64,15 @@ async function renderCorrectionSchedule() {
             duration_weeks: 4,
             session_dates: devDates || null
         };
-        console.warn('🧪 [Correction] 개발 모드: 자기주도 주입', devStart, '~', devEnd);
+        // 연장(13~24) 자기주도 주입 — corrextstart/corrextend가 있으면 연장 탭까지 열림
+        if (devExtStart && devExtEnd) {
+            scheduleData.extension_enabled = true;
+            scheduleData.extension_start_date = devExtStart;
+            scheduleData.extension_end_date = devExtEnd;
+            scheduleData.extension_session_dates = devExtDates || null;
+        }
+        console.warn('🧪 [Correction] 개발 모드: 자기주도 주입', devStart, '~', devEnd,
+            (devExtStart ? ('/ 연장 ' + devExtStart + '~' + devExtEnd) : ''));
     }
 
     if (!scheduleData || !scheduleData.start_date) {
@@ -223,7 +235,7 @@ function _renderCorrectionPhase(targetEl, phase, ctx) {
 
     var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
-    var selfPaced = isCorrSelfPaced(scheduleData);
+    var selfPaced = (phase === 2) ? isCorrSelfPacedExt(scheduleData) : isCorrSelfPaced(scheduleData);
     var todayYmd = selfPaced ? _corrYmd(getEffectiveToday(getUserTimezone())) : null;
 
     // 해당 phase 세션만 주차별 그룹핑
@@ -398,44 +410,61 @@ function _renderCorrectionNotice(container) {
 // openCorrectionSession()은 js/correction/correction-session.js에서 정의
 
 /**
- * 자기주도면 12세션 확정 일정표를 계산해 correction_schedules.session_dates에 저장(멱등).
- *   - 자기주도가 아니거나 start_date가 없으면 아무것도 안 함(= 기존 학생 무영향).
+ * 자기주도면 12세션 확정 일정표를 계산해 correction_schedules에 저장(멱등).
+ * 1학기(phase 1)와 연장(phase 2)을 순서대로 처리한다. 종료일 없으면 각 학기는 그대로.
+ */
+async function _ensureCorrSessionDates(user, scheduleData) {
+    await _ensureCorrPhaseDates(user, scheduleData, 1);
+    await _ensureCorrPhaseDates(user, scheduleData, 2);
+}
+
+/**
+ * 한 학기(phase)의 확정 일정표를 계산·저장(멱등).
+ *   - 자기주도가 아니거나 시작일이 없으면 아무것도 안 함(= 기존 학생 무영향).
  *   - 저장표가 있고 start·end가 그대로면 아무것도 안 함(멱등).
  *   - 아니면 [오늘~종료일] 재배분(지난 세션 보존)해서 메모리·DB에 반영. DB 실패는 경고만.
  * 개발모드(CORR_DEV_SELFPACED)에서는 DB 대신 sessionStorage에 저장(재배분 테스트용).
+ * @param {number} phase - 1(1~12, start/end/session_dates) | 2(13~24, extension_*)
  */
-async function _ensureCorrSessionDates(user, scheduleData) {
-    if (!isCorrSelfPaced(scheduleData) || !scheduleData.start_date) return;
+async function _ensureCorrPhaseDates(user, scheduleData, phase) {
+    var cols = (phase === 2)
+        ? { start: 'extension_start_date', end: 'extension_end_date', dates: 'extension_session_dates', devKey: 'corrDevExtSessionDates' }
+        : { start: 'start_date', end: 'end_date', dates: 'session_dates', devKey: 'corrDevSessionDates' };
 
-    var stored = _parseCorrSessionDates(scheduleData.session_dates);
-    if (stored && stored.start === scheduleData.start_date && stored.end === scheduleData.end_date) {
+    var gated = (phase === 2) ? isCorrSelfPacedExt(scheduleData) : isCorrSelfPaced(scheduleData);
+    if (!gated || !scheduleData[cols.start]) return;
+
+    var stored = _parseCorrSessionDates(scheduleData[cols.dates]);
+    if (stored && stored.start === scheduleData[cols.start] && stored.end === scheduleData[cols.end]) {
         return; // 멱등 — 이미 최신
     }
 
     var todayYmd = _corrYmd(getEffectiveToday(getUserTimezone()));
     var built = buildCorrSessionDates(
-        scheduleData.start_date,
-        scheduleData.end_date,
+        scheduleData[cols.start],
+        scheduleData[cols.end],
         stored ? stored.dates : null,
         todayYmd
     );
     if (!built) {
-        console.warn('⚠️ [Correction] 자기주도 일정표 생성 실패 (start/end 확인):', scheduleData.start_date, scheduleData.end_date);
+        console.warn('⚠️ [Correction] 자기주도 일정표 생성 실패 (phase ' + phase + ', 시작/종료 확인):', scheduleData[cols.start], scheduleData[cols.end]);
         return;
     }
 
-    scheduleData.session_dates = built; // 메모리 즉시 반영
+    scheduleData[cols.dates] = built; // 메모리 즉시 반영
 
     if (window.CORR_DEV_SELFPACED) {
-        try { sessionStorage.setItem('corrDevSessionDates', JSON.stringify(built)); } catch (e) {}
+        try { sessionStorage.setItem(cols.devKey, JSON.stringify(built)); } catch (e) {}
         return; // 개발모드: DB에 쓰지 않음
     }
 
+    var body = {};
+    body[cols.dates] = JSON.stringify(built);
     try {
-        await supabaseUpdate('correction_schedules', 'user_id=eq.' + user.id, { session_dates: JSON.stringify(built) });
-        console.log('📋 [Correction] 자기주도 일정표 저장:', built.dates[0], '~', built.dates[11]);
+        await supabaseUpdate('correction_schedules', 'user_id=eq.' + user.id, body);
+        console.log('📋 [Correction] 자기주도 일정표 저장(phase ' + phase + '):', built.dates[0], '~', built.dates[11]);
     } catch (e) {
-        console.warn('⚠️ [Correction] session_dates 저장 실패(화면은 계속):', e);
+        console.warn('⚠️ [Correction] ' + cols.dates + ' 저장 실패(화면은 계속):', e);
     }
 }
 

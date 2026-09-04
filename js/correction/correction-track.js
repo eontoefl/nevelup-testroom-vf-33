@@ -23,6 +23,7 @@
 //   ?corrdev=aus        → 호주첨삭 강제 활성화 (일정 미배정이어도 열림)
 //   ?corrdev=selfpaced  → 일반첨삭 자기주도(시작·종료일 지정) 강제 활성화
 //   ?corrstart=YYYY-MM-DD&corrend=YYYY-MM-DD → 자기주도 주입 창(sessionStorage 보관)
+//   ?corrextstart=YYYY-MM-DD&corrextend=YYYY-MM-DD → 연장(13~24) 자기주도 주입 창
 //   ?corrdev=off        → 해제 (aus·selfpaced 모두)
 // 운영 도메인에서는 hostname 체크로 무조건 무시된다.
 
@@ -41,12 +42,20 @@
         if (param === 'off') {
             sessionStorage.removeItem('corrDevAus');
             sessionStorage.removeItem('corrDevSelfpaced');
+            sessionStorage.removeItem('corrDevExtStart');
+            sessionStorage.removeItem('corrDevExtEnd');
+            sessionStorage.removeItem('corrDevExtSessionDates');
         }
         // 자기주도 주입 창 — 새 창 값이 오면 갱신. 저장된 확정표는 유지해 start/end 불일치로 재배분이 일어나게 함
         var cStart = params.get('corrstart');
         var cEnd = params.get('corrend');
         if (cStart) sessionStorage.setItem('corrDevStart', cStart);
         if (cEnd) sessionStorage.setItem('corrDevEnd', cEnd);
+        // 연장(13~24) 자기주도 주입 창 — 새 창 값이 오면 갱신
+        var cExtStart = params.get('corrextstart');
+        var cExtEnd = params.get('corrextend');
+        if (cExtStart) sessionStorage.setItem('corrDevExtStart', cExtStart);
+        if (cExtEnd) sessionStorage.setItem('corrDevExtEnd', cExtEnd);
         window.CORR_DEV_AUS = (sessionStorage.getItem('corrDevAus') === '1');
         window.CORR_DEV_SELFPACED = (sessionStorage.getItem('corrDevSelfpaced') === '1');
     } catch (e) {

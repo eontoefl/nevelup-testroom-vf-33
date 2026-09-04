@@ -19,6 +19,7 @@ vm.runInContext(fs.readFileSync(SRC, 'utf8'), sandbox);
 
 const buildCorrSessionDates = sandbox.buildCorrSessionDates;
 const _parseCorrSessionDates = sandbox._parseCorrSessionDates;
+const getCorrSessionDate = sandbox.getCorrSessionDate;
 
 if (typeof buildCorrSessionDates !== 'function') {
     console.error('❌ buildCorrSessionDates를 로드하지 못했습니다.');
@@ -42,6 +43,11 @@ function allDifferent(arr) {
 }
 function dayDiff(a, b) {
     return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+}
+function ymd(d) {
+    return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
 }
 
 // ── 케이스 1: 12일 (9/13~9/24) ──
@@ -159,6 +165,51 @@ console.log('[6] _parseCorrSessionDates 방어');
     check('길이 11 배열 → null', _parseCorrSessionDates({ dates: good.dates.slice(0, 11) }) === null);
     check('잘못된 포맷 → null', _parseCorrSessionDates({ dates: good.dates.slice(0, 11).concat(['2026/09/24']) }) === null);
     check('깨진 JSON → null', _parseCorrSessionDates('{not json') === null);
+}
+
+// ── 케이스 7: getCorrSessionDate phase 2 — 연장 확정표 우선, 없으면 폴백 ──
+console.log('[7] getCorrSessionDate phase 2 (13~24) — 연장 확정표 우선, 없으면 폴백');
+{
+    const extDates = buildCorrSessionDates('2026-10-01', '2026-10-12', null, '2026-10-01');
+    const sched = {
+        start_date: '2026-09-01',
+        session_dates: null,
+        extension_start_date: '2026-10-01',
+        extension_end_date: '2026-10-12',
+        extension_session_dates: JSON.stringify(extDates)
+    };
+    // 세션13(phase2, index 0) = 연장표[0] = 10/1
+    const s13 = getCorrSessionDate(sched, { session: 13, phase: 2, dayOffset: 0 });
+    check('세션13 = 연장표[0] 10/1', s13 && ymd(s13) === '2026-10-01', s13 && ymd(s13));
+    // 세션24(index 11) = 연장표[11] = 10/12
+    const s24 = getCorrSessionDate(sched, { session: 24, phase: 2, dayOffset: 25 });
+    check('세션24 = 연장표[11] 10/12', s24 && ymd(s24) === '2026-10-12', s24 && ymd(s24));
+
+    // 연장 확정표 없으면 extension_start_date + dayOffset 폴백
+    const sched2 = { start_date: '2026-09-01', extension_start_date: '2026-10-01', extension_end_date: '2026-10-12', extension_session_dates: null };
+    const f13 = getCorrSessionDate(sched2, { session: 13, phase: 2, dayOffset: 0 });
+    check('폴백: 세션13 = 연장시작일 10/1', f13 && ymd(f13) === '2026-10-01', f13 && ymd(f13));
+    const f16 = getCorrSessionDate(sched2, { session: 16, phase: 2, dayOffset: 7 });
+    check('폴백: 세션16 = 10/1 + 7일 = 10/8', f16 && ymd(f16) === '2026-10-08', f16 && ymd(f16));
+}
+
+// ── 케이스 8: getCorrSessionDate phase 1 — extension_session_dates 무시 ──
+console.log('[8] getCorrSessionDate phase 1 — extension_session_dates 무시');
+{
+    const p1Dates = buildCorrSessionDates('2026-09-13', '2026-09-24', null, '2026-09-13');
+    const extDates = buildCorrSessionDates('2026-10-01', '2026-10-12', null, '2026-10-01');
+    const sched = {
+        start_date: '2026-09-13',
+        session_dates: JSON.stringify(p1Dates),
+        extension_start_date: '2026-10-01',
+        extension_session_dates: JSON.stringify(extDates)
+    };
+    // 세션1(phase1) = phase1 표[0] = 9/13, 연장표 무시
+    const s1 = getCorrSessionDate(sched, { session: 1, phase: 1, dayOffset: 0 });
+    check('세션1 = phase1 표[0] 9/13', s1 && ymd(s1) === '2026-09-13', s1 && ymd(s1));
+    // 세션3 = phase1 표[2] (연장표 아님)
+    const s3 = getCorrSessionDate(sched, { session: 3, phase: 1, dayOffset: 4 });
+    check('세션3 = phase1 표[2]', s3 && ymd(s3) === p1Dates.dates[2], s3 && ymd(s3));
 }
 
 console.log('\n=== 결과: ' + pass + ' PASS / ' + fail + ' FAIL ===');
