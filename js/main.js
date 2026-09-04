@@ -43,14 +43,14 @@ function initScheduleScreen() {
     }
     
     if (programBadgeElement) {
-        // 자기주도: 기존 프로그램 뱃지를 그대로 재활용하되 'SELF-PACED'로 표기.
+        // 자기주도: 기존 프로그램 뱃지를 그대로 재활용하되 '자기주도'로 표기.
         if (currentUser.selfPaced) {
-            programBadgeElement.textContent = 'SELF-PACED';
+            programBadgeElement.textContent = '자기주도';
         } else {
             programBadgeElement.textContent = currentUser.program.replace('내벨업챌린지 Australia - ', 'AUS - ').replace('내벨업챌린지 - ', '');
         }
 
-        // (구) 별도 '🎯 자기주도' 칩은 뱃지 자체가 SELF-PACED를 표기하므로 제거.
+        // (구) 별도 '🎯 자기주도' 칩은 뱃지 자체가 자기주도를 표기하므로 제거.
         var spChip = document.getElementById('selfPacedChipSchedule');
         if (spChip) spChip.remove();
     }

@@ -304,14 +304,14 @@ function renderSelfPacedNextTasks(container, programType, totalWeeks) {
     container.innerHTML = html;
 }
 
-// 자기주도 학생: 프로그램 뱃지 자체를 SELF-PACED로 표기 + 완료기한 안내 라인 (표시 전용)
+// 자기주도 학생: 프로그램 뱃지 자체를 자기주도로 표기 + 완료기한 안내 라인 (표시 전용)
 function renderSelfPacedBadge() {
     const badge = document.getElementById('programBadge');
     if (!badge) return;
 
-    // 프로그램 뱃지를 'SELF-PACED'로 표기 (Fast/Standard 대체). 별도 칩은 두지 않음.
+    // 프로그램 뱃지를 '자기주도'로 표기 (Fast/Standard 대체). 별도 칩은 두지 않음.
     // line 41이 매 렌더마다 원본(mpUser.program)으로 원복하므로 여기서 항상 덮어쓴다.
-    badge.textContent = (mpUser.program || '내벨업챌린지').replace(/Fast|Standard/i, 'SELF-PACED');
+    badge.textContent = (mpUser.program || '내벨업챌린지').replace(/Fast|Standard/i, '자기주도');
 
     // 완료기한 안내 라인 (중복 append 방지)
     if (document.getElementById('selfPacedNote')) return;
@@ -1032,9 +1032,9 @@ function setupPlanTabs() {
         if (gwDesc) {
             if (spSched) {
                 const fmt = d => (d.getMonth() + 1) + '/' + d.getDate();
-                gwDesc.textContent = 'SELF-PACED · ' + fmt(spSched.start) + '~' + fmt(spSched.end) + ' · 총 24세트';
+                gwDesc.textContent = '자기주도 · ' + fmt(spSched.start) + '~' + fmt(spSched.end) + ' · 총 24세트';
             } else {
-                gwDesc.textContent = 'SELF-PACED';
+                gwDesc.textContent = '자기주도';
             }
         }
         // 격자 라벨도 통일: 행 'Week N' → 'Set (n-5)-(n)', 열 요일(가짜) → 숨김.
