@@ -46,12 +46,32 @@ async function renderCorrectionSchedule() {
         console.warn('🧪 [Correction] 개발 모드 임시 일정:', scheduleData.start_date);
     }
 
+    // 개발 모드(localhost): 자기주도(시작·종료일 지정) 주입 — DB 없이 화면 확인용
+    if (window.CORR_DEV_SELFPACED) {
+        var devStart = null, devEnd = null, devDates = null;
+        try {
+            devStart = sessionStorage.getItem('corrDevStart');
+            devEnd = sessionStorage.getItem('corrDevEnd');
+            devDates = sessionStorage.getItem('corrDevSessionDates');
+        } catch (e) {}
+        scheduleData = {
+            start_date: devStart,
+            end_date: devEnd,
+            duration_weeks: 4,
+            session_dates: devDates || null
+        };
+        console.warn('🧪 [Correction] 개발 모드: 자기주도 주입', devStart, '~', devEnd);
+    }
+
     if (!scheduleData || !scheduleData.start_date) {
         container.innerHTML = '<div class="correction-empty-msg"><p>아직 첨삭 일정이 배정되지 않았습니다.<br>담당자에게 문의해주세요.</p></div>';
         return;
     }
 
     var durationWeeks = scheduleData.duration_weeks || 4;
+
+    // 1-b. 자기주도면 12세션 확정 일정표를 계산·저장(멱등). 종료일 없으면 아무것도 안 함.
+    await _ensureCorrSessionDates(user, scheduleData);
 
     // 2. correction_submissions에서 전체 제출 내역 조회
     var submissions = [];
@@ -203,6 +223,9 @@ function _renderCorrectionPhase(targetEl, phase, ctx) {
 
     var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
+    var selfPaced = isCorrSelfPaced(scheduleData);
+    var todayYmd = selfPaced ? _corrYmd(getEffectiveToday(getUserTimezone())) : null;
+
     // 해당 phase 세션만 주차별 그룹핑
     var weeks = {};
     schedule.forEach(function(s) {
@@ -225,7 +248,13 @@ function _renderCorrectionPhase(targetEl, phase, ctx) {
 
         var weekTitle = document.createElement('h2');
         weekTitle.className = 'week-title';
-        weekTitle.textContent = 'Week ' + String(weekNum).padStart(2, '0');
+        if (selfPaced) {
+            var firstS = sessions[0].session;
+            var lastS = sessions[sessions.length - 1].session;
+            weekTitle.textContent = 'SESSION ' + String(firstS).padStart(2, '0') + '-' + String(lastS).padStart(2, '0');
+        } else {
+            weekTitle.textContent = 'Week ' + String(weekNum).padStart(2, '0');
+        }
 
         var weekDivider = document.createElement('div');
         weekDivider.className = 'week-divider';
@@ -244,11 +273,11 @@ function _renderCorrectionPhase(targetEl, phase, ctx) {
                 ? (sMeta ? sMeta.label : '?') + ' + ' + (wMeta ? wMeta.label : '?')
                 : (wMeta ? wMeta.label : '?') + ' + ' + (sMeta ? sMeta.label : '?');
 
-            // 세션 날짜 계산: (해당 학기 시작일) + dayOffset
-            var baseDateStr = getCorrSessionStartDate(scheduleData, session);
-            var sessionDate = new Date(baseDateStr + 'T00:00:00');
-            sessionDate.setDate(sessionDate.getDate() + session.dayOffset);
-            var dateStr = monthNames[sessionDate.getMonth()] + ' ' + String(sessionDate.getDate()).padStart(2, '0');
+            // 세션 날짜 계산: 자기주도면 확정 일정표, 아니면 (해당 학기 시작일) + dayOffset
+            var sessionDate = getCorrSessionDate(scheduleData, session);
+            var dateStr = sessionDate
+                ? (monthNames[sessionDate.getMonth()] + ' ' + String(sessionDate.getDate()).padStart(2, '0'))
+                : '';
 
             var writingSub = submissionMap[session.session + '_writing'];
             var speakingSub = submissionMap[session.session + '_speaking'];
@@ -263,6 +292,11 @@ function _renderCorrectionPhase(targetEl, phase, ctx) {
                 '<div class="progress-dot ' + statusInfo.dotClass + '"></div>' +
                 '<span class="day-tasks">' + taskLabel + '</span>' +
                 '<span class="day-tasks" style="font-size:10px;color:#bbb;">' + dateStr + '</span>';
+
+            // 자기주도: 오늘 배정된 세션 카드 강조 (레이아웃 안 밀리게 box-shadow)
+            if (selfPaced && sessionDate && _corrYmd(sessionDate) === todayYmd) {
+                dayButton.style.boxShadow = '0 0 0 2px #6c5ce7';
+            }
 
             dayButton.onclick = function() {
                 console.log('🎯 [Correction] Session ' + session.session + ' 선택');
@@ -362,6 +396,48 @@ function _renderCorrectionNotice(container) {
 }
 
 // openCorrectionSession()은 js/correction/correction-session.js에서 정의
+
+/**
+ * 자기주도면 12세션 확정 일정표를 계산해 correction_schedules.session_dates에 저장(멱등).
+ *   - 자기주도가 아니거나 start_date가 없으면 아무것도 안 함(= 기존 학생 무영향).
+ *   - 저장표가 있고 start·end가 그대로면 아무것도 안 함(멱등).
+ *   - 아니면 [오늘~종료일] 재배분(지난 세션 보존)해서 메모리·DB에 반영. DB 실패는 경고만.
+ * 개발모드(CORR_DEV_SELFPACED)에서는 DB 대신 sessionStorage에 저장(재배분 테스트용).
+ */
+async function _ensureCorrSessionDates(user, scheduleData) {
+    if (!isCorrSelfPaced(scheduleData) || !scheduleData.start_date) return;
+
+    var stored = _parseCorrSessionDates(scheduleData.session_dates);
+    if (stored && stored.start === scheduleData.start_date && stored.end === scheduleData.end_date) {
+        return; // 멱등 — 이미 최신
+    }
+
+    var todayYmd = _corrYmd(getEffectiveToday(getUserTimezone()));
+    var built = buildCorrSessionDates(
+        scheduleData.start_date,
+        scheduleData.end_date,
+        stored ? stored.dates : null,
+        todayYmd
+    );
+    if (!built) {
+        console.warn('⚠️ [Correction] 자기주도 일정표 생성 실패 (start/end 확인):', scheduleData.start_date, scheduleData.end_date);
+        return;
+    }
+
+    scheduleData.session_dates = built; // 메모리 즉시 반영
+
+    if (window.CORR_DEV_SELFPACED) {
+        try { sessionStorage.setItem('corrDevSessionDates', JSON.stringify(built)); } catch (e) {}
+        return; // 개발모드: DB에 쓰지 않음
+    }
+
+    try {
+        await supabaseUpdate('correction_schedules', 'user_id=eq.' + user.id, { session_dates: JSON.stringify(built) });
+        console.log('📋 [Correction] 자기주도 일정표 저장:', built.dates[0], '~', built.dates[11]);
+    } catch (e) {
+        console.warn('⚠️ [Correction] session_dates 저장 실패(화면은 계속):', e);
+    }
+}
 
 /**
  * 개발 모드 전용: 가장 최근 일요일 'YYYY-MM-DD'

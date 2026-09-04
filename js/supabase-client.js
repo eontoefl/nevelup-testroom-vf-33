@@ -584,7 +584,9 @@ async function getCompletedTasksPractice(userId) {
 /**
  * 첨삭 스케줄 조회 (correction_schedules)
  * @param {string} userId - 사용자 ID
- * @returns {Promise<object|null>} { start_date, duration_weeks } 또는 null
+ * @returns {Promise<object|null>} 행 전체(select *) 또는 null.
+ *   start_date, duration_weeks, extension_enabled, extension_start_date 등에 더해
+ *   자기주도용 end_date, session_dates(JSON 문자열)가 있으면 함께 반환된다(컬럼 없으면 undefined).
  */
 async function getCorrectionSchedule(userId) {
     console.log('📋 [Correction] 스케줄 조회:', userId);

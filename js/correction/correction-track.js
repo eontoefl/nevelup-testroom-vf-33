@@ -20,26 +20,44 @@
 // ============================================================
 // 개발용 오버라이드 (localhost 전용 — 운영에서는 항상 꺼짐)
 // ============================================================
-//   ?corrdev=aus  → 호주첨삭 강제 활성화 (일정 미배정이어도 열림)
-//   ?corrdev=off  → 해제
+//   ?corrdev=aus        → 호주첨삭 강제 활성화 (일정 미배정이어도 열림)
+//   ?corrdev=selfpaced  → 일반첨삭 자기주도(시작·종료일 지정) 강제 활성화
+//   ?corrstart=YYYY-MM-DD&corrend=YYYY-MM-DD → 자기주도 주입 창(sessionStorage 보관)
+//   ?corrdev=off        → 해제 (aus·selfpaced 모두)
 // 운영 도메인에서는 hostname 체크로 무조건 무시된다.
 
 (function _initCorrDevFlag() {
     var isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
     if (!isLocal) {
         window.CORR_DEV_AUS = false;
+        window.CORR_DEV_SELFPACED = false;
         return;
     }
     try {
-        var param = new URLSearchParams(location.search).get('corrdev');
+        var params = new URLSearchParams(location.search);
+        var param = params.get('corrdev');
         if (param === 'aus') sessionStorage.setItem('corrDevAus', '1');
-        if (param === 'off') sessionStorage.removeItem('corrDevAus');
+        if (param === 'selfpaced') sessionStorage.setItem('corrDevSelfpaced', '1');
+        if (param === 'off') {
+            sessionStorage.removeItem('corrDevAus');
+            sessionStorage.removeItem('corrDevSelfpaced');
+        }
+        // 자기주도 주입 창 — 새 값이 오면 갱신하고 이전 확정표를 지워 재생성 유도
+        var cStart = params.get('corrstart');
+        var cEnd = params.get('corrend');
+        if (cStart) sessionStorage.setItem('corrDevStart', cStart);
+        if (cEnd) sessionStorage.setItem('corrDevEnd', cEnd);
         window.CORR_DEV_AUS = (sessionStorage.getItem('corrDevAus') === '1');
+        window.CORR_DEV_SELFPACED = (sessionStorage.getItem('corrDevSelfpaced') === '1');
     } catch (e) {
         window.CORR_DEV_AUS = false;
+        window.CORR_DEV_SELFPACED = false;
     }
     if (window.CORR_DEV_AUS) {
         console.warn('🧪 [Correction] 개발 모드: 호주첨삭 강제 활성화 (localhost 전용)');
+    }
+    if (window.CORR_DEV_SELFPACED) {
+        console.warn('🧪 [Correction] 개발 모드: 자기주도 첨삭 강제 활성화 (localhost 전용)');
     }
 })();
 
@@ -56,7 +74,7 @@ function getCorrectionTrack() {
 
 /** FEEDBACK 탭을 띄울지 여부 (개발 오버라이드 포함) */
 function isCorrectionAvailable(user) {
-    if (window.CORR_DEV_AUS) return true;
+    if (window.CORR_DEV_AUS || window.CORR_DEV_SELFPACED) return true;
     return !!(user && (user.correctionEnabled || window.__isAdmin));
 }
 

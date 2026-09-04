@@ -122,8 +122,8 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         var scheduleData = state ? state.scheduleData : null;
         if (scheduleData) {
             var ext = _corrExt(state.extensionMap, session.session, taskType);
-            var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
-            if (new Date() > dl1) {
+            var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
+            if (dl1 && new Date() > dl1) {
                 statusInfo = {
                     text: '마감됨 · 제출 불가',
                     btnText: '마감됨',
@@ -299,6 +299,139 @@ function getCorrSessionStartDate(scheduleData, session) {
     return scheduleData ? scheduleData.start_date : null;
 }
 
+// ============================================================
+// 자기주도(시작·종료일 지정) 첨삭 — 세션 날짜 출처 통합
+// ============================================================
+
+/**
+ * 이 학생이 자기주도(시작·종료일 지정) 첨삭인지.
+ * general 트랙 + scheduleData.end_date 존재. 호주는 end_date가 있어도 false(Q9).
+ * @param {object} scheduleData - correction_schedules 행
+ * @returns {boolean}
+ */
+function isCorrSelfPaced(scheduleData) {
+    return getCorrectionTrack() === 'general' && !!(scheduleData && scheduleData.end_date);
+}
+
+/**
+ * 저장된 확정 일정표(session_dates) 파싱.
+ * 문자열이면 JSON.parse, 객체면 그대로. dates가 길이 12 배열이고 각 원소가 YYYY-MM-DD면 반환, 아니면 null.
+ * @param {string|object} raw
+ * @returns {{start:string, end:string, dates:string[]}|null}
+ */
+function _parseCorrSessionDates(raw) {
+    if (!raw) return null;
+    var obj;
+    if (typeof raw === 'string') {
+        try { obj = JSON.parse(raw); } catch (e) { return null; }
+    } else if (typeof raw === 'object') {
+        obj = raw;
+    } else {
+        return null;
+    }
+    if (!obj || !Array.isArray(obj.dates) || obj.dates.length !== 12) return null;
+    for (var i = 0; i < 12; i++) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(obj.dates[i])) return null;
+    }
+    return { start: obj.start, end: obj.end, dates: obj.dates };
+}
+
+// 'YYYY-MM-DD' 포맷 헬퍼 (이 파일 안 하나만) — 로컬 Date → 문자열
+function _corrYmd(date) {
+    return date.getFullYear() + '-' +
+        String(date.getMonth() + 1).padStart(2, '0') + '-' +
+        String(date.getDate()).padStart(2, '0');
+}
+
+// 'YYYY-MM-DD' 로컬 자정 기준 + n일 → 'YYYY-MM-DD'
+function _corrAddDaysYmd(ymd, n) {
+    var d = new Date(ymd + 'T00:00:00');
+    d.setDate(d.getDate() + n);
+    return _corrYmd(d);
+}
+
+// (bYmd − aYmd) 일수 (양끝 미포함). 로컬 자정 기준.
+function _corrDaysDiff(aYmd, bYmd) {
+    var a = new Date(aYmd + 'T00:00:00');
+    var b = new Date(bYmd + 'T00:00:00');
+    return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+/**
+ * 세션의 배정 날짜(로컬 00:00 Date) 또는 null.
+ *   - phase 1이고 저장된 확정 일정표에 그 세션 날짜가 있으면 그 날짜(자기주도).
+ *   - 그 외: (해당 학기 시작일) + dayOffset. (기존 학생·연장·호주 전부 이 줄.)
+ * @param {object} scheduleData
+ * @param {object} session - CORRECTION_SCHEDULE 항목
+ * @returns {Date|null}
+ */
+function getCorrSessionDate(scheduleData, session) {
+    if (session && session.phase !== 2) {
+        var parsed = _parseCorrSessionDates(scheduleData && scheduleData.session_dates);
+        if (parsed && parsed.dates[session.session - 1]) {
+            return new Date(parsed.dates[session.session - 1] + 'T00:00:00');
+        }
+    }
+    var base = getCorrSessionStartDate(scheduleData, session);
+    if (!base) return null;
+    var d = new Date(base + 'T00:00:00');
+    d.setDate(d.getDate() + session.dayOffset);
+    return d;
+}
+
+/**
+ * 12세션 확정 일정표 생성기. 세션1=시작일, 세션12=종료일, 사이 균등(Q7).
+ * 챌린지 계산기(_distributeSetCounts)와 무관한 첨삭 전용 규칙.
+ * @param {string} startYmd
+ * @param {string} endYmd
+ * @param {string[]|null} prevDates - 기존 확정표(재배분용). 없거나 길이≠12면 첫 생성.
+ * @param {string} todayYmd
+ * @returns {{start:string, end:string, dates:string[]}|null}
+ */
+function buildCorrSessionDates(startYmd, endYmd, prevDates, todayYmd) {
+    if (!startYmd || !endYmd) return null;
+    var D = _corrDaysDiff(startYmd, endYmd) + 1;   // 양끝 포함 일수
+    if (D < 1) return null;
+
+    var dates;
+    var hasPrev = prevDates && prevDates.length === 12;
+
+    if (!hasPrev) {
+        // 첫 생성: i번째(0~11) = start + round(i * (D-1) / 11)
+        dates = [];
+        for (var i = 0; i < 12; i++) {
+            dates.push(_corrAddDaysYmd(startYmd, Math.round(i * (D - 1) / 11)));
+        }
+    } else {
+        // 재배분: 오늘 이전 접두구간 보존, 나머지를 [오늘~종료일]에 같은 규칙으로
+        var P = 0;
+        for (var k = 0; k < 12; k++) {
+            if (prevDates[k] < todayYmd) P++;
+            else break;
+        }
+        var R = 12 - P;
+        dates = prevDates.slice(0, P);
+        if (R > 0) {
+            var D2 = _corrDaysDiff(todayYmd, endYmd) + 1;   // 남은 창 일수(양끝 포함)
+            if (D2 >= 1) {
+                for (var j = 0; j < R; j++) {
+                    if (R === 1) {
+                        dates.push(endYmd);
+                    } else {
+                        dates.push(_corrAddDaysYmd(todayYmd, Math.round(j * (D2 - 1) / (R - 1))));
+                    }
+                }
+            } else {
+                // 남은 창 < 1일(오늘 > 종료일): R개 전부 종료일 (방어)
+                for (var j2 = 0; j2 < R; j2++) dates.push(endYmd);
+            }
+        }
+        // R === 0: prev 그대로 (end만 갱신)
+    }
+
+    return { start: startYmd, end: endYmd, dates: dates };
+}
+
 /**
  * extensionMap에서 해당 세션·과제의 연장 정보를 꺼낸다.
  * @returns {object|null} { hours, at } — 없으면 null
@@ -337,14 +470,16 @@ function _applyCorrExt(base, ext, round) {
 }
 
 /**
- * 1차 Draft 데드라인: sessionDate 다음날 04:00 (학생 타임존 기준)
+ * 1차 Draft 데드라인: sessionDate 다음날 04:00 (학생 타임존 기준) + 연장.
+ * sessionDate(로컬 Date)는 getCorrSessionDate()가 결정한다 — 자기주도/기존/연장/호주 한 출처.
+ * sessionDate가 null이면 null 반환(호출처는 잠금·마감 행을 생략).
+ * @param {Date|null} sessionDate
+ * @param {object} ext
+ * @returns {Date|null}
  */
-function getCorrDraft1Deadline(startDate, dayOffset, ext) {
-    var tz = getUserTimezone();
-    // sessionDate = startDate + dayOffset
-    var sessionDate = new Date(startDate + 'T00:00:00');
-    sessionDate.setDate(sessionDate.getDate() + dayOffset);
-    return _applyCorrExt(getTaskDeadline(sessionDate, tz), ext, 1);
+function getCorrDraft1Deadline(sessionDate, ext) {
+    if (!sessionDate) return null;
+    return _applyCorrExt(getTaskDeadline(sessionDate, getUserTimezone()), ext, 1);
 }
 
 /**
@@ -505,13 +640,15 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
 
     // --- 미제출 (null) ---
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
-        var diff1 = dl1 - now;
-        if (diff1 <= 0) {
-            rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
-        } else {
-            var urgentCls1 = (diff1 / (1000 * 60)) < 10 ? 'urgent' : '';
-            rows.push({ html: '<i class="far fa-calendar-alt"></i> 1차: ' + _formatDeadlineDateTime(dl1) + ' 까지 (' + _formatDeadlineRemaining(diff1) + ')', cls: urgentCls1, dynamic: 'draft1' });
+        var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
+        if (dl1) {   // null(세션 날짜 없음)이면 1차 마감 행 생략
+            var diff1 = dl1 - now;
+            if (diff1 <= 0) {
+                rows.push({ html: '<i class="fas fa-times-circle"></i> 1차 마감 초과', cls: 'overdue' });
+            } else {
+                var urgentCls1 = (diff1 / (1000 * 60)) < 10 ? 'urgent' : '';
+                rows.push({ html: '<i class="far fa-calendar-alt"></i> 1차: ' + _formatDeadlineDateTime(dl1) + ' 까지 (' + _formatDeadlineRemaining(diff1) + ')', cls: urgentCls1, dynamic: 'draft1' });
+            }
         }
         rows.push({ html: '<i class="fas fa-lock"></i> 2차: 1차 완료 후 진행', cls: 'waiting' });
         return _wrapDeadlineRows(rows);
@@ -646,7 +783,8 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
 
     // 미제출 → 1차 마감 카운트다운
     if (!status) {
-        var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
+        var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
+        if (!dl1) return false;   // 세션 날짜 없음 → 카운트다운 생략
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
             deadlineEl.innerHTML = '<div class="task-card-deadline-row overdue"><i class="fas fa-times-circle"></i> 1차 마감 초과</div>';

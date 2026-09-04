@@ -834,7 +834,7 @@ function _renderCorrDetailDeadlineBanner(session, submission, taskType) {
     var ext = _corrExt(sessionState.extensionMap, session.session, taskType);
 
     // 배너는 카드별 마감으로 이전돼 숨김(renderDeadlineBanner는 no-op). 2차 마감 계산은 2026-08-31 제거 — 카드/차단이 정본.
-    var dl1 = getCorrDraft1Deadline(getCorrSessionStartDate(scheduleData, session), session.dayOffset, ext);
+    var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
     renderDeadlineBanner(bannerEl, '1차 마감', dl1);
 }
 

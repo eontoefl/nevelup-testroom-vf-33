@@ -68,13 +68,19 @@ function shouldShowExtensionUpsell(ctx) {
 
 /**
  * 12세션이 속한 주의 토요일 = 신청 마감일 (Date).
- * 마감 = start_date + 25일(세션12 dayOffset=목) 이 속한 주의 토요일.
- * 간단히: 세션12 날짜(start_date+25) 이후 첫 토요일.
+ * 마감 = 세션12 날짜 이후 첫 토요일. 세션12 날짜는 getCorrSessionDate 한 출처
+ * (자기주도면 = 종료일, 아니면 start_date + 25). null이면 기존 start+25 폴백.
  */
 function _ext_deadlineDate(scheduleData) {
-    var start = new Date((scheduleData.start_date) + 'T00:00:00');
-    var s12 = new Date(start.getTime());
-    s12.setDate(s12.getDate() + 25);                 // 세션 12 (dayOffset 25)
+    var s12session = (typeof getCorrectionScheduleData === 'function')
+        ? getCorrectionScheduleData().find(function (s) { return s.session === 12; })
+        : null;
+    var s12 = s12session ? getCorrSessionDate(scheduleData, s12session) : null;
+    if (!s12) {
+        var start = new Date((scheduleData.start_date) + 'T00:00:00');
+        s12 = new Date(start.getTime());
+        s12.setDate(s12.getDate() + 25);             // 세션 12 (dayOffset 25) 폴백
+    }
     var d = new Date(s12.getTime());
     // s12(목요일 기준) 이후 첫 토요일까지: 토요일=6
     var add = (6 - d.getDay() + 7) % 7;
