@@ -42,7 +42,7 @@
             sessionStorage.removeItem('corrDevAus');
             sessionStorage.removeItem('corrDevSelfpaced');
         }
-        // 자기주도 주입 창 — 새 값이 오면 갱신하고 이전 확정표를 지워 재생성 유도
+        // 자기주도 주입 창 — 새 창 값이 오면 갱신. 저장된 확정표는 유지해 start/end 불일치로 재배분이 일어나게 함
         var cStart = params.get('corrstart');
         var cEnd = params.get('corrend');
         if (cStart) sessionStorage.setItem('corrDevStart', cStart);
