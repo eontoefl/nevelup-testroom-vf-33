@@ -461,6 +461,36 @@ async function _ensureSelfPacedSchedule(user, applicationId, timezone) {
 }
 
 /**
+ * 정규(fast/standard) 과제 행의 마감(다음날 04:00, 연장 반영) 계산.
+ *   week/day + 학생 시작일(currentUser.startDate)로 배정 날짜를 구하고 getTaskDeadline 적용.
+ *   계산 불가(시작일/요일 매핑 실패)면 null → 호출부에서 '동결 안 함'으로 안전 처리.
+ */
+function _rowTaskDeadlineNormal(row, tz) {
+    try {
+        var startStr = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.startDate : null;
+        if (!startStr) return null;
+        var w = parseInt(row.week, 10);
+        var dayIdx = ['일', '월', '화', '수', '목', '금'].indexOf(row.day);
+        if (isNaN(w) || dayIdx < 0) return null;
+        var td = new Date(startStr + 'T00:00:00');
+        td.setDate(td.getDate() + (w - 1) * 7 + dayIdx);
+        if (typeof getTaskDeadline !== 'function') return null;
+        var dl = getTaskDeadline(td, tz);
+        // 연장 반영 (original_date === 배정 날짜)
+        var y = td.getFullYear();
+        var m = String(td.getMonth() + 1).padStart(2, '0');
+        var d = String(td.getDate()).padStart(2, '0');
+        var tds = y + '-' + m + '-' + d;
+        var exts = (typeof window !== 'undefined' && window._deadlineExtensions) ? window._deadlineExtensions : [];
+        var ext = exts.find(function (e) { return e.original_date === tds; });
+        if (ext) dl = new Date(dl.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+        return dl;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
  * 밀린 인증률(locked_auth_rate) 일괄 확정
  *
  * locked_auth_rate가 null인 행 = 마감이 지났는데 대시보드 미방문으로 기록 안 된 것
@@ -486,13 +516,11 @@ async function _fillMissingAuthRates(userId) {
             console.log('🔒 [인증률] 자기주도(구, 기한 만료) — 일괄 확정 진행');
         }
 
-        // v2(압축+매일마감)는 세트별 마감 판정이 필요 → 연장정보 최신화 + week/day 확보.
-        if (isSpV2gate && typeof loadDeadlineExtensions === 'function') {
+        // 마감 가드에 필요한 연장정보 최신화 + week/day 확보 (v2뿐 아니라 정규도 per-row 마감 판정).
+        if ((isSpV2gate || !isSp) && typeof loadDeadlineExtensions === 'function') {
             try { await loadDeadlineExtensions(); } catch (e) { /* 무시 */ }
         }
-        var selectCols = isSpV2gate
-            ? 'id,initial_record,error_note_submitted,week,day'
-            : 'id,initial_record,error_note_submitted';
+        var selectCols = 'id,initial_record,error_note_submitted,week,day';
 
         var rows = await supabaseSelect(
             'study_results_v3',
@@ -513,16 +541,23 @@ async function _fillMissingAuthRates(userId) {
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
 
-            // ★ v2: 이 세트의 배정 날짜 마감이 실제로 지났을 때만 동결.
-            //   아직 안 지난(앞서가는) 세트는 절대 건드리지 않음 → 조기 동결 방지(핵심 안전장치).
+            // ★ 마감 가드(유형 무관): 그 행의 배정 날짜 마감이 실제로 지났을 때만 동결.
+            //   아직 마감 전 행은 절대 건드리지 않음 → 조기 동결 방지(핵심 안전장치).
+            //   (정규 과정에 이 가드가 빠져 있어, 마감 전 재로그인 시 50%로 조기 동결되던 버그 수정 2026-09-04)
+            var rowDl = null;
             if (isSpV2gate) {
-                // 세트 마감(연장 반영)은 timezone-utils의 단일 진실원 함수로 계산.
-                var dl = (typeof getSelfPacedSetDeadline === 'function')
+                // 자기주도 v2: 세트 마감(연장 반영) — timezone-utils 단일 진실원.
+                rowDl = (typeof getSelfPacedSetDeadline === 'function')
                     ? getSelfPacedSetDeadline(currentUser, row.week, row.day, window._deadlineExtensions, tz)
                     : null;
-                if (!dl) continue; // 매핑 실패 → 건너뜀(표시는 실시간 계산으로 여전히 정확)
-                if (now <= dl) continue; // 아직 마감 전 → 동결 안 함
+                if (!rowDl) continue; // 매핑 실패 → 건너뜀
+            } else if (!isSp) {
+                // 정규(fast/standard): week/day + 시작일 → 다음날 04:00(연장 반영).
+                rowDl = _rowTaskDeadlineNormal(row, tz);
+                if (!rowDl) continue; // 계산 불가 → 안전하게 동결 안 함(조기 동결 금지)
             }
+            // (구 자기주도 만료분은 rowDl=null → 아래 통과, 전량 동결 = 기존 동작 유지)
+            if (rowDl && now <= rowDl) continue; // 아직 마감 전 → 동결 안 함
 
             var hasInitial = row.initial_record != null;
             var rate = 0;
