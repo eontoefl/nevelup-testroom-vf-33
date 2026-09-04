@@ -403,7 +403,9 @@ function buildCorrSessionDates(startYmd, endYmd, prevDates, todayYmd) {
             dates.push(_corrAddDaysYmd(startYmd, Math.round(i * (D - 1) / 11)));
         }
     } else {
-        // 재배분: 오늘 이전 접두구간 보존, 나머지를 [오늘~종료일]에 같은 규칙으로
+        // 재배분: 오늘 이전 접두구간 보존, 나머지를 남은 창에 같은 규칙으로.
+        // 남은 창 시작 = max(오늘, 시작일) — 시작일이 아직 안 왔으면 [시작일~종료일]
+        // 전체에 다시 나눠(= 첫 생성과 같은 결과) 세션1이 시작일보다 앞당겨지지 않게 한다.
         var P = 0;
         for (var k = 0; k < 12; k++) {
             if (prevDates[k] < todayYmd) P++;
@@ -412,13 +414,14 @@ function buildCorrSessionDates(startYmd, endYmd, prevDates, todayYmd) {
         var R = 12 - P;
         dates = prevDates.slice(0, P);
         if (R > 0) {
-            var D2 = _corrDaysDiff(todayYmd, endYmd) + 1;   // 남은 창 일수(양끝 포함)
+            var winStart = (todayYmd > startYmd) ? todayYmd : startYmd;
+            var D2 = _corrDaysDiff(winStart, endYmd) + 1;   // 남은 창 일수(양끝 포함)
             if (D2 >= 1) {
                 for (var j = 0; j < R; j++) {
                     if (R === 1) {
                         dates.push(endYmd);
                     } else {
-                        dates.push(_corrAddDaysYmd(todayYmd, Math.round(j * (D2 - 1) / (R - 1))));
+                        dates.push(_corrAddDaysYmd(winStart, Math.round(j * (D2 - 1) / (R - 1))));
                     }
                 }
             } else {

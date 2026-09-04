@@ -106,6 +106,22 @@ console.log('[4] 재배분 (prev=18일표, today=9/20, end→10/6)');
     check('12개', r && r.dates.length === 12);
 }
 
+// ── 케이스 4-b: 재배분 전, 시작일 도래 전 (prev=18일표, today=9/04, end→10/6) ──
+// 시작일(9/13)이 아직 안 왔으면 [시작일~종료일] 전체 재배분(= 첫 생성과 동일), 세션1이 앞당겨지지 않음.
+console.log('[4b] 재배분 · 시작 전 (prev=18일표, today=9/04, end→10/6)');
+{
+    const r = buildCorrSessionDates('2026-09-13', '2026-10-06', table18, '2026-09-04');
+    check('null 아님', !!r);
+    check('세션1 = 9/13 (앞당겨지지 않음)', r && r.dates[0] === '2026-09-13', r && r.dates[0]);
+    check('세션12 = 10/6', r && r.dates[11] === '2026-10-06', r && r.dates[11]);
+    check('오름차순·중복 없음', r && isAscendingUnique(r.dates), r && r.dates.join(','));
+    check('12개', r && r.dates.length === 12);
+    // 첫 생성([9/13~10/6])과 완전히 같은 결과여야 함
+    const fresh = buildCorrSessionDates('2026-09-13', '2026-10-06', null, '2026-09-13');
+    check('첫 생성과 동일', r && fresh && r.dates.join(',') === fresh.dates.join(','),
+        r && (r.dates.join(',') + ' vs ' + fresh.dates.join(',')));
+}
+
 // ── 케이스 5-a: 방어 — end < start → null ──
 console.log('[5a] 방어 — end < start → null');
 {
