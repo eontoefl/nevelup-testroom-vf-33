@@ -257,6 +257,19 @@ window.addEventListener('DOMContentLoaded', async () => {
 
                 const user = users[0];
 
+                // 홈페이지 대시보드에서 들어온 입문서 세션이어도,
+                // 본인의 실제 challenge 신청에서 관리자 입금 확인이 끝났는지 구분한다.
+                const confirmedChallengeApps = await supabaseSelect(
+                    'applications',
+                    'user_id=eq.' + encodeURIComponent(user.id)
+                    + '&application_type=eq.challenge'
+                    + '&deposit_confirmed_by_admin=eq.true'
+                    + '&deleted=neq.true'
+                    + '&withdrawn_at=is.null'
+                    + '&select=id'
+                    + '&limit=1'
+                );
+
                 // 3) sessionStorage에 사용자 정보 저장
                 currentUser = {
                     id: user.id,
@@ -265,7 +278,8 @@ window.addEventListener('DOMContentLoaded', async () => {
                     phone: user.phone || '',
                     program: '입문서 무료 신청',
                     programType: 'book_only',
-                    applicationId: null
+                    applicationId: null,
+                    challengeDepositConfirmed: confirmedChallengeApps.length > 0
                 };
                 sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
                 console.log('✅ [TokenAuth] 인증 성공:', currentUser.name);

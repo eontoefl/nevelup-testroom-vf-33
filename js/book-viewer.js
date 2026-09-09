@@ -169,6 +169,7 @@ async function init() {
     }
     BookViewer.userId = user.id;
     BookViewer.isBookOnly = user.programType === 'book_only';
+    BookViewer.challengeDepositConfirmed = user.challengeDepositConfirmed === true;
 
     // book_only 사용자 UI 조정
     if (BookViewer.isBookOnly) {
@@ -1444,6 +1445,11 @@ function setupBookOnlyUI() {
  * - 정규/호주 과정에는 노출되지 않음 (setupBookOnlyUI 안에서만 호출)
  */
 function setupBookOnlyCTA() {
+    if (BookViewer.challengeDepositConfirmed) {
+        console.log('📖 [BookOnly] 관리자 입금 확인 수강생 — 챌린지 신청 버튼 숨김');
+        return;
+    }
+
     const APPLY_URL = 'https://eonfl.com/application-form.html';
 
     const wrap = document.createElement('div');
