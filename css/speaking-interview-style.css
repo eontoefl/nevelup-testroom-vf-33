@@ -265,3 +265,51 @@
         padding: 30px;
     }
 }
+
+/* ============================================
+ * 영상 로드 실패 안내 (인터뷰 실전·첨삭 제출 공용)
+ * DESIGN.md: 선 없이 톤 층으로 구분, 그라데이션 CTA, 부드러운 그림자, 순수 검정 금지
+ * ============================================ */
+.interview-video-retry {
+    max-width: 500px;
+    margin: -10px auto 30px;
+    padding: 22px 24px;
+    background: #f3f4f5;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.interview-video-retry-msg {
+    margin: 0 0 6px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #ba1a1a;
+}
+
+.interview-video-retry-sub {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: #3e484f;
+}
+
+.interview-video-retry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-color, #9480c5), #b9a9e6);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(25, 28, 29, 0.06);
+    transition: transform .15s, box-shadow .15s;
+}
+
+.interview-video-retry-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 32px rgba(25, 28, 29, 0.08);
+}

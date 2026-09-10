@@ -219,6 +219,8 @@ function _startCorrSpkQuestion(qIndex) {
     }
 
     state.currentQuestion = qIndex;
+    // ★ 이전 단계 정리 (타이머·영상 핸들러·안내 패널) — 단계마다 한 곳에서
+    _corrSpkResetStep(state);
     _corrSpkShowSection('corrSpkQuestionSection');
 
     // 문제 번호 업데이트
@@ -242,25 +244,33 @@ function _startCorrSpkQuestion(qIndex) {
         if (videoPlaceholder) videoPlaceholder.style.display = 'none';
         if (videoEl) {
             videoEl.src = videoData.video;
+            videoEl.load();
             videoEl.style.display = 'block';
             videoEl.loop = false;
-            videoEl.play().catch(function(e) {
-                console.warn('⚠️ 질문 영상 재생 실패:', e);
-            });
-            videoEl.onended = function() {
-                if (state.destroyed) return;
+
+            // ★ "다음으로" 신호는 한 단계에 정확히 한 번
+            var fired = false;
+            var fire = function() {
+                if (fired || state.destroyed) return;
+                fired = true;
                 setTimeout(function() {
                     if (state.destroyed) return;
                     _startCorrSpkCountdown(qIndex);
                 }, 700);
             };
-            videoEl.onerror = function() {
-                if (state.destroyed) return;
-                setTimeout(function() {
-                    if (state.destroyed) return;
-                    _startCorrSpkCountdown(qIndex);
-                }, 1000);
+            // ★ 실패하면 자동 진행하지 않고 멈춘다 → "다시 재생" 버튼
+            var fail = function(reason) {
+                if (fired || state.destroyed) return;
+                console.warn('⚠️ 질문 영상 재생 실패:', reason);
+                _showCorrSpkVideoRetryUI(qIndex);
             };
+            videoEl.onended = fire;
+            videoEl.onerror = function() { fail('error event'); };
+            videoEl.play().catch(function(e) {
+                // 우리 쪽 정리(src 교체·제거)로 끊긴 재생은 실패가 아니다
+                if (e && e.name === 'AbortError') return;
+                fail(e);
+            });
         }
     } else {
         // 영상 없으면 플레이스홀더 표시 후 카운트다운
@@ -272,6 +282,58 @@ function _startCorrSpkQuestion(qIndex) {
             _startCorrSpkCountdown(qIndex);
         }, 2000);
     }
+}
+
+/**
+ * 단계 정리 (한 곳): 카운트다운 타이머·영상 핸들러·안내 패널
+ */
+function _corrSpkResetStep(state) {
+    if (state && state.countdownTimer) {
+        clearInterval(state.countdownTimer);
+        state.countdownTimer = null;
+    }
+    var videoEl = document.getElementById('corrSpkVideo');
+    if (videoEl) {
+        videoEl.onended = null;
+        videoEl.onerror = null;
+        videoEl.pause();
+        videoEl.loop = false;
+    }
+    var retry = document.getElementById('corrSpkVideoRetryUI');
+    if (retry) retry.remove();
+}
+
+/**
+ * 영상 로드 실패 안내 + "다시 재생" 버튼 (멱등). 인터뷰 화면과 같은 방식·같은 CSS.
+ */
+function _showCorrSpkVideoRetryUI(qIndex) {
+    if (document.getElementById('corrSpkVideoRetryUI')) return;
+    var section = document.getElementById('corrSpkQuestionSection');
+    var videoEl = document.getElementById('corrSpkVideo');
+    if (!section) return;
+
+    var panel = document.createElement('div');
+    panel.id = 'corrSpkVideoRetryUI';
+    panel.className = 'interview-video-retry';
+    panel.innerHTML =
+        '<p class="interview-video-retry-msg">질문 영상을 불러오지 못했습니다</p>' +
+        '<p class="interview-video-retry-sub">인터넷 연결을 확인한 뒤 다시 재생을 눌러 주세요.</p>' +
+        '<button type="button" class="interview-video-retry-btn"><i class="fas fa-redo-alt"></i> 다시 재생</button>';
+
+    if (videoEl && videoEl.parentNode === section) {
+        section.insertBefore(panel, videoEl.nextSibling);
+    } else {
+        section.appendChild(panel);
+    }
+
+    panel.querySelector('button').onclick = function() {
+        panel.remove();
+        var state = window._correctionSpeakingState;
+        if (!state || state.destroyed) return;
+        console.log('🔄 [Correction Speaking] 질문 영상 다시 재생 시도 Q' + (qIndex + 1));
+        _startCorrSpkQuestion(qIndex);
+    };
+    console.log('⏸️ [Correction Speaking] 영상 실패 → 다시 재생 안내 표시');
 }
 
 function _startCorrSpkCountdown(qIndex) {
@@ -287,6 +349,9 @@ function _startCorrSpkCountdown(qIndex) {
     // Nodding 비디오 반복 재생
     var videoEl = document.getElementById('corrSpkVideo');
     if (videoEl && state.setData.noddingVideo && state.setData.noddingVideo !== 'PLACEHOLDER') {
+        // 질문 영상의 핸들러가 끄덕임 영상에 반응하지 못하게 먼저 지운다
+        videoEl.onended = null;
+        videoEl.onerror = null;
         videoEl.src = state.setData.noddingVideo;
         videoEl.loop = true;
         videoEl.style.display = 'block';
@@ -312,6 +377,11 @@ function _startCorrSpkCountdown(qIndex) {
         circle.style.strokeDashoffset = circumference;
     }
 
+    // ★ 타이머는 항상 하나 — 남아 있는 것이 있으면 먼저 끈다
+    if (state.countdownTimer) {
+        clearInterval(state.countdownTimer);
+        state.countdownTimer = null;
+    }
     state.countdownTimer = setInterval(function() {
         state.countdownRemaining--;
         _updateCorrSpkTimerDisplay();
@@ -618,18 +688,18 @@ function _corrSpkPlayAudio(url, onEnded) {
         return;
     }
     _corrSpkCurrentAudio = new Audio(url);
-    _corrSpkCurrentAudio.addEventListener('ended', function() {
+    // ★ "다음으로" 신호는 한 번만 (ended / error / play 거절 중 첫 것)
+    var fired = false;
+    var done = function(delay) {
+        if (fired) return;
+        fired = true;
         _corrSpkCurrentAudio = null;
-        if (onEnded) onEnded();
-    }, { once: true });
-    _corrSpkCurrentAudio.addEventListener('error', function() {
-        _corrSpkCurrentAudio = null;
-        if (onEnded) setTimeout(onEnded, 1000);
-    }, { once: true });
-    _corrSpkCurrentAudio.play().catch(function() {
-        _corrSpkCurrentAudio = null;
-        if (onEnded) setTimeout(onEnded, 1000);
-    });
+        if (!onEnded) return;
+        if (delay) setTimeout(onEnded, delay); else onEnded();
+    };
+    _corrSpkCurrentAudio.addEventListener('ended', function() { done(0); }, { once: true });
+    _corrSpkCurrentAudio.addEventListener('error', function() { done(1000); }, { once: true });
+    _corrSpkCurrentAudio.play().catch(function() { done(1000); });
 }
 
 // ============================================================
@@ -1143,10 +1213,8 @@ function _cleanupCorrectionSpeaking() {
 
     state.destroyed = true;
 
-    if (state.countdownTimer) {
-        clearInterval(state.countdownTimer);
-        state.countdownTimer = null;
-    }
+    // 카운트다운 타이머·영상 핸들러·안내 패널 정리 (한 곳)
+    _corrSpkResetStep(state);
 
     // 2차 타이머 정리
     if (state._d2TimerState && state._d2TimerState.interval) {

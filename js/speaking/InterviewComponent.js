@@ -236,10 +236,9 @@ class InterviewComponent {
         const totalQuestions = set.videos.length;
         document.getElementById('interviewProgress').textContent = `Question ${questionIndex + 1} of ${totalQuestions}`;
         
-        // 녹음 UI 숨김
-        document.getElementById('interviewRecordingUI').style.display = 'none';
-        document.getElementById('interviewSavingPopup').style.display = 'none';
-        
+        // ★ 이전 단계 정리 (타이머·핸들러·UI) — 단계마다 한 곳에서
+        this._resetQuestionStep();
+
         // 1초 대기 후 interviewer 영상 재생
         console.log('⏳ 화면 표시 후 1초 대기...');
         setTimeout(() => {
@@ -284,37 +283,106 @@ class InterviewComponent {
         }
         
         console.log('🎥 비디오 재생 시작:', videoUrl);
-        
+
+        // ★ 핸들러는 속성 대입으로 덮어쓴다 (addEventListener 누적 금지 — 한 단계에 한 벌)
+        videoElement.onended = null;
+        videoElement.onerror = null;
+
         if (videoPlaceholder) videoPlaceholder.style.display = 'none';
         videoElement.src = videoUrl;
+        videoElement.load();
         videoElement.style.display = 'block';
         videoElement.controls = false; // 컨트롤 제거
         videoElement.removeAttribute('controls'); // 명시적으로 제거
         videoElement.volume = Math.min(this.interviewVolumeLevel, 1.0);
         console.log(`🎵 비디오 볼륨 설정: ${Math.round(this.interviewVolumeLevel * 100)}%`);
-        
-        videoElement.addEventListener('ended', () => {
-            console.log('🔊 영상 재생 완료:', videoUrl);
+
+        // ★ "다음으로" 신호는 한 단계에 정확히 한 번
+        let fired = false;
+        const fire = () => {
+            if (fired || this._destroyed) return;
+            fired = true;
             if (onEnded) onEnded();
-        }, { once: true });
-        
-        videoElement.addEventListener('error', (e) => {
-            console.error('❌ 영상 로드 실패:', videoUrl, e);
-            if (onEnded) {
-                setTimeout(() => { if (!this._destroyed) onEnded(); }, 1000);
-            }
-        }, { once: true });
-        
+        };
+        // ★ 실패하면 자동 진행하지 않고 멈춘다 → "다시 재생" 버튼 (리스닝 화면과 같은 방식)
+        const fail = (reason) => {
+            if (fired || this._destroyed) return;
+            console.error('❌ 영상 로드/재생 실패:', videoUrl, reason);
+            this._showVideoRetryUI(videoUrl, onEnded);
+        };
+
+        videoElement.onended = () => {
+            console.log('🔊 영상 재생 완료:', videoUrl);
+            fire();
+        };
+        videoElement.onerror = () => fail('error event');
+
         videoElement.play().then(() => {
             console.log('✅ 비디오 재생 시작됨');
         }).catch(err => {
-            console.error('❌ 영상 재생 실패:', err);
-            if (onEnded) {
-                setTimeout(() => { if (!this._destroyed) onEnded(); }, 1000);
-            }
+            // 우리 쪽 정리(src 교체·제거)로 끊긴 재생은 실패가 아니다
+            if (err && err.name === 'AbortError') return;
+            fail(err);
         });
     }
-    
+
+    /**
+     * 영상 로드 실패 안내 + "다시 재생" 버튼 (멱등 — 이미 떠 있으면 다시 만들지 않음)
+     * 리스닝 화면(_showAudioRetryUI)과 같은 방식. 인터뷰·첨삭 공용 CSS(.interview-video-retry).
+     */
+    _showVideoRetryUI(videoUrl, onEnded) {
+        if (document.getElementById('interviewVideoRetryUI')) return;
+        const screen = document.getElementById('interviewQuestionScreen');
+        const videoElement = document.getElementById('interviewVideo');
+        if (!screen) return;
+
+        const panel = document.createElement('div');
+        panel.id = 'interviewVideoRetryUI';
+        panel.className = 'interview-video-retry';
+        panel.innerHTML =
+            '<p class="interview-video-retry-msg">질문 영상을 불러오지 못했습니다</p>' +
+            '<p class="interview-video-retry-sub">인터넷 연결을 확인한 뒤 다시 재생을 눌러 주세요.</p>' +
+            '<button type="button" class="interview-video-retry-btn"><i class="fas fa-redo-alt"></i> 다시 재생</button>';
+
+        if (videoElement && videoElement.parentNode === screen) {
+            screen.insertBefore(panel, videoElement.nextSibling);
+        } else {
+            screen.appendChild(panel);
+        }
+
+        panel.querySelector('button').onclick = () => {
+            panel.remove();
+            if (this._destroyed) return;
+            console.log('🔄 질문 영상 다시 재생 시도:', videoUrl);
+            this.playInterviewVideo(videoUrl, onEnded);
+        };
+        console.log('⏸️ 영상 실패 → 다시 재생 안내 표시');
+    }
+
+    /**
+     * 단계 정리 (한 곳): 타이머·영상 핸들러·녹음 UI·팝업·안내 패널
+     * 새 질문을 시작하기 전과 cleanup 때 호출 → 이전 단계의 흐름이 살아남지 못한다.
+     */
+    _resetQuestionStep() {
+        if (this.interviewTimer) {
+            clearInterval(this.interviewTimer);
+            this.interviewTimer = null;
+        }
+        const videoElement = document.getElementById('interviewVideo');
+        if (videoElement) {
+            videoElement.onended = null;
+            videoElement.onerror = null;
+            videoElement.pause();
+            videoElement.loop = false;
+        }
+        const recordingUI = document.getElementById('interviewRecordingUI');
+        if (recordingUI) recordingUI.style.display = 'none';
+        const savingPopup = document.getElementById('interviewSavingPopup');
+        if (savingPopup) savingPopup.style.display = 'none';
+        const retryUI = document.getElementById('interviewVideoRetryUI');
+        if (retryUI) retryUI.remove();
+    }
+
     // ============================================
     // 녹음 기능 함수 (7개)
     // ============================================
@@ -333,7 +401,10 @@ class InterviewComponent {
         const noddingVideoElement = document.getElementById('interviewVideo');
         if (noddingVideoElement && set.noddingVideo && set.noddingVideo !== 'PLACEHOLDER') {
             console.log('🎥 Nodding video 재생 (반복 모드)');
-            
+
+            // 질문 영상의 핸들러가 끄덕임 영상에 반응하지 못하게 먼저 지운다
+            noddingVideoElement.onended = null;
+            noddingVideoElement.onerror = null;
             noddingVideoElement.src = set.noddingVideo;
             noddingVideoElement.loop = true; // 반복 재생
             noddingVideoElement.controls = false;
@@ -374,9 +445,14 @@ class InterviewComponent {
             progressCircle.style.strokeDashoffset = circumference;
         }
         
+        // ★ 타이머는 항상 하나 — 남아 있는 것이 있으면 먼저 끈다
+        if (this.interviewTimer) {
+            clearInterval(this.interviewTimer);
+            this.interviewTimer = null;
+        }
         this.interviewTimer = setInterval(() => {
             timeLeft--;
-            
+
             // 타이머 업데이트
             if (timerElement) {
                 timerElement.textContent = this.formatInterviewTime(timeLeft);
@@ -392,6 +468,7 @@ class InterviewComponent {
             
             if (timeLeft <= 0) {
                 clearInterval(this.interviewTimer);
+                this.interviewTimer = null;
                 this.stopInterviewRecording(set, questionIndex);
             }
         }, 1000);
@@ -640,41 +717,30 @@ class InterviewComponent {
         // ★ 파괴 플래그 — setTimeout 콜백에서 체크
         this._destroyed = true;
         
-        // 타이머 정지
-        if (this.interviewTimer) {
-            clearInterval(this.interviewTimer);
-            this.interviewTimer = null;
-            console.log('✅ 타이머 정지');
-        }
-        
+        // 타이머·영상 핸들러·녹음 UI·팝업·안내 패널 정리 (한 곳)
+        this._resetQuestionStep();
+        console.log('✅ 타이머·단계 정리');
+
         // AudioPlayer 재생 중지 (AudioContext 방식)
         if (this.audioPlayer) {
             this.audioPlayer.stop();
             console.log('✅ AudioPlayer 재생 중지');
         }
-        
-        // nodding video 정지 (interviewVideo 요소를 nodding + 질문 영상 모두에 사용)
+
+        // 영상 소스 해제 (interviewVideo 요소를 nodding + 질문 영상 모두에 사용)
         const noddingVideo = document.getElementById('interviewVideo');
         if (noddingVideo) {
-            noddingVideo.pause();
-            noddingVideo.loop = false;
             noddingVideo.removeAttribute('src');
             noddingVideo.load();
-            console.log('✅ Nodding video 정지');
+            console.log('✅ 영상 소스 해제');
         }
-        
+
         // 기존 Audio 객체 정리 (폴백 방식)
         if (this.currentInterviewAudio) {
             this.currentInterviewAudio.pause();
             this.currentInterviewAudio.currentTime = 0;
             this.currentInterviewAudio = null;
             console.log('✅ 오디오 정지');
-        }
-        
-        // 팝업 숨김
-        const savingPopup = document.getElementById('interviewSavingPopup');
-        if (savingPopup) {
-            savingPopup.style.display = 'none';
         }
         
         // 데이터 초기화
