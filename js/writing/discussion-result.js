@@ -143,7 +143,7 @@ function _showDiscussionOriginal(userAnswer) {
 
         var btn = document.createElement('button');
         btn.className = 'rewrite-start-btn';
-        btn.innerHTML = '<i class="fas fa-pen"></i> ' + (hasAnswer ? '다시 작성하기' : '작성해보기');
+        btn.innerHTML = '<i class="fas fa-pen"></i> ' + (hasAnswer ? '다시 쓰고 모범답안 보기' : '작성해보기');
         btn.addEventListener('click', function() {
             _showDiscussionRewrite(null);
         });
@@ -190,7 +190,7 @@ function _showDiscussionRewrite(prefillText) {
         '<div class="rewrite-actions">' +
             '<span class="rewrite-wordcount" id="discussionRewriteWordCount">0 words</span>' +
             '<button class="rewrite-save-btn" onclick="handleDiscussionRewriteSave()">' +
-                '<i class="fas fa-save"></i> 저장하기' +
+                '<i class="fas fa-save"></i> 저장하고 모범답안 보기' +
             '</button>' +
         '</div>' +
         '<div class="rewrite-feedback" id="discussionRewriteFeedback"></div>';
@@ -414,7 +414,7 @@ async function handleDiscussionRewriteSave() {
             feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 저장에 실패했습니다';
             feedbackEl.className = 'rewrite-feedback rewrite-feedback-warn';
         }
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save"></i> 저장하기'; }
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save"></i> 저장하고 모범답안 보기'; }
     }
 }
 

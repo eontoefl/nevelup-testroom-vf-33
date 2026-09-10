@@ -154,7 +154,7 @@ function _showEmailOriginal(userAnswer) {
         // 다시 작성하기 버튼
         var btn = document.createElement('button');
         btn.className = 'rewrite-start-btn';
-        btn.innerHTML = '<i class="fas fa-pen"></i> ' + (hasAnswer ? '다시 작성하기' : '작성해보기');
+        btn.innerHTML = '<i class="fas fa-pen"></i> ' + (hasAnswer ? '다시 쓰고 모범답안 보기' : '작성해보기');
         btn.addEventListener('click', function() {
             _showEmailRewrite(null);
         });
@@ -201,7 +201,7 @@ function _showEmailRewrite(prefillText) {
         '<div class="rewrite-actions">' +
             '<span class="rewrite-wordcount" id="emailRewriteWordCount">0 words</span>' +
             '<button class="rewrite-save-btn" onclick="handleEmailRewriteSave()">' +
-                '<i class="fas fa-save"></i> 저장하기' +
+                '<i class="fas fa-save"></i> 저장하고 모범답안 보기' +
             '</button>' +
         '</div>' +
         '<div class="rewrite-feedback" id="emailRewriteFeedback"></div>';
@@ -418,7 +418,7 @@ async function handleEmailRewriteSave() {
             feedbackEl.innerHTML = '<i class="fas fa-times-circle"></i> 저장에 실패했습니다';
             feedbackEl.className = 'rewrite-feedback rewrite-feedback-warn';
         }
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save"></i> 저장하기'; }
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save"></i> 저장하고 모범답안 보기'; }
     }
 }
 
