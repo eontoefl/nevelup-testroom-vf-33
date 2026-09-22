@@ -310,7 +310,7 @@ CREATE TABLE correction_submissions (
 
     -- 유니크 제약: 한 사용자의 한 세션에서 같은 task_type은 1행만
     -- ⚠️ 2026-09-22 확인: 실제 DB에는 이 제약이 걸려 있지 않았음(PK만). 중복 6줄 정리(2026-09-22) 뒤
-    --    코드 배포 후 아래 SQL로 적용 예정 — 적용일: (미적용)
+    --    코드 배포 후 아래 SQL로 적용 — 적용일: 2026-09-22 (SQL Editor, pg_constraint로 확인 완료)
     --    ALTER TABLE public.correction_submissions
     --      ADD CONSTRAINT correction_submissions_user_session_task_key UNIQUE (user_id, session_number, task_type);
     UNIQUE(user_id, session_number, task_type)
