@@ -67,7 +67,7 @@ async function _loadCorrectionInterviewSet(setNumber) {
 /**
  * 첨삭 Speaking 시작 (correction-session.js에서 호출)
  */
-async function startCorrectionSpeaking(session, scheduleData, submission) {
+async function startCorrectionSpeaking(session, scheduleData, entry) {
     console.log('\n🎙️ [Correction Speaking] 시작 — Session', session.session);
 
     // 이 파일은 일반첨삭 Interview 전용이다. 호주 스피킹(독스/통스)은
@@ -79,16 +79,12 @@ async function startCorrectionSpeaking(session, scheduleData, submission) {
     }
 
     var setNumber = session.speaking.number;
-    var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 
-    // 2차인데 feedback_1이 없으면 단일 행 다시 조회 (목록 조회는 feedback JSONB 미포함)
-    if (isDraft2 && submission && !submission.feedback_1) {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (user && user.id) {
-            var fullSub = await getCorrectionSubmission(user.id, session.session, 'speaking_interview');
-            if (fullSub) submission = fullSub;
-        }
-    }
+    // 몇 차인지는 서버 줄을 읽어 판정 (correction-session.js). 2차면 전체 줄(feedback_1 포함)이 온다.
+    var e = await resolveCorrDraftEntry(session, 'speaking', entry);
+    if (e.round === 0) { onCorrEntryBlocked(e, session, scheduleData); return; }
+    var isDraft2 = (e.round === 2);
+    var submission = e.submission || null;
 
     window._correctionSpeakingState = {
         session: session,
@@ -592,35 +588,36 @@ async function submitCorrectionSpeaking() {
 
         console.log('✅ [Correction Speaking] 4개 파일 업로드 완료');
 
-        // DB INSERT/UPDATE
-        if (state.isDraft2) {
-            await updateCorrectionSubmission(state.submission.id, {
-                draft_2_audio_q1: audioPaths.q1,
-                draft_2_audio_q2: audioPaths.q2,
-                draft_2_audio_q3: audioPaths.q3,
-                draft_2_audio_q4: audioPaths.q4,
-                status: 'draft2_submitted',
-                draft_2_submitted_at: new Date().toISOString()
-            });
-            console.log('✅ [Correction Speaking] 2차 제출 완료');
-        } else {
-            await insertCorrectionSubmission({
-                user_id: user.id,
-                session_number: state.session.session,
-                task_type: taskType,
-                task_number: state.setNumber,
-                draft_1_audio_q1: audioPaths.q1,
-                draft_1_audio_q2: audioPaths.q2,
-                draft_1_audio_q3: audioPaths.q3,
-                draft_1_audio_q4: audioPaths.q4,
-                status: 'draft1_submitted',
-                draft_1_submitted_at: new Date().toISOString()
-            });
-            console.log('✅ [Correction Speaking] 1차 제출 완료');
-        }
+        // DB 저장 (공용 저장 함수 — 결과가 비면 실패로 본다. 실패해도 "제출되었습니다"를 띄우지 않는다)
+        var fields = state.isDraft2 ? {
+            draft_2_audio_q1: audioPaths.q1,
+            draft_2_audio_q2: audioPaths.q2,
+            draft_2_audio_q3: audioPaths.q3,
+            draft_2_audio_q4: audioPaths.q4,
+            status: 'draft2_submitted',
+            draft_2_submitted_at: new Date().toISOString()
+        } : {
+            draft_1_audio_q1: audioPaths.q1,
+            draft_1_audio_q2: audioPaths.q2,
+            draft_1_audio_q3: audioPaths.q3,
+            draft_1_audio_q4: audioPaths.q4,
+            status: 'draft1_submitted',
+            draft_1_submitted_at: new Date().toISOString()
+        };
+        var saved = await submitCorrectionDraft({
+            round: state.isDraft2 ? 2 : 1,
+            userId: user.id,
+            sessionNumber: state.session.session,
+            taskType: taskType,
+            taskNumber: state.setNumber,
+            submissionId: (state.isDraft2 && state.submission) ? state.submission.id : null,
+            fields: fields
+        });
+        if (!saved.ok) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+        console.log('✅ [Correction Speaking] ' + (state.isDraft2 ? '2차' : '1차') + ' 제출 완료');
 
-        // Webhook (비동기)
-        _sendCorrSpkWebhook(state.isDraft2, {
+        // Webhook (비동기). 응답 유실 후 재조회로 확인된 저장이면 서버 자동 재실행에 맡긴다(중복 첨삭 방지)
+        if (!saved.alreadySaved) _sendCorrSpkWebhook(state.isDraft2, {
             event: state.isDraft2 ? 'draft2_submitted' : 'draft1_submitted',
             user_id: user.id,
             user_name: user.name,
@@ -725,26 +722,8 @@ function backFromCorrectionSpeaking() {
 }
 
 function _returnToCorrectionSessionFromSpeaking() {
-    var sessionState = window._correctionSessionState;
-    if (!sessionState) { showScreen('scheduleScreen'); return; }
-
-    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-    if (user && user.id) {
-        getCorrectionSubmissions(user.id).then(function(submissions) {
-            var newMap = {};
-            submissions.forEach(function(sub) {
-                newMap[sub.session_number + '_' + sub.task_type] = sub;
-                var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-                newMap[sub.session_number + '_' + category] = sub;
-            });
-            sessionState.submissionMap = newMap;
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap, sessionState.extensionMap);
-        }).catch(function() {
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
-        });
-    } else {
-        openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
-    }
+    // 세션 화면이 서버에서 새로 읽는다 (correction-session.js)
+    backToCorrectionSession();
 }
 
 // ============================================================

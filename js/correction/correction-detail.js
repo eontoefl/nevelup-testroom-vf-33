@@ -33,11 +33,21 @@ async function openCorrectionDetail(taskType, session, submission) {
 
     var meta = getCorrTaskMeta(session, taskType);
 
-    // 전체 데이터가 필요하므로 단일 행 다시 조회 (feedback JSONB 포함)
+    // 전체 데이터가 필요하므로 단일 행을 서버에서 다시 조회 (feedback JSONB 포함)
+    // 캐시 줄로 폴백하지 않는다 — 조회 실패면 열지 않고, 줄이 사라졌으면 세션 화면을 새로 읽는다
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-    if (user && user.id && submission) {
+    if (user && user.id) {
         var fullSub = await getCorrectionSubmission(user.id, session.session, meta.taskType);
-        if (fullSub) submission = fullSub;
+        if (fullSub === undefined) {
+            alert('제출 정보를 확인하지 못했어요. 다시 시도해 주세요.');
+            return;
+        }
+        if (fullSub === null) {
+            alert('이 과제 정보가 바뀌었어요. 화면을 새로 불러올게요.');
+            backToCorrectionSession();
+            return;
+        }
+        submission = fullSub;
     }
 
     // 문제 데이터 로드 (문제 보기 아코디언 + Speaking 그리드용)
@@ -747,28 +757,12 @@ function onCorrDetailDraft2Click(taskType) {
     var sessionState = window._correctionSessionState;
     if (!sessionState) return;
 
-    var session = sessionState.session;
-    var scheduleData = sessionState.scheduleData;
-    var submissionMap = sessionState.submissionMap;
-
-    // submission 찾기
-    var subKey = session.session + '_' + taskType;
-    var submission = submissionMap[subKey] || null;
-
-    // 2차 데드라인 초과 체크 — 공개시각 + 24h(+연장). 앵커가 없으면(null) 차단하지 않는다.
-    if (submission) {
-        var ext = _corrExt(sessionState.extensionMap, session.session, taskType);
-        var dl2 = getCorrDraft2DeadlineFromRelease(submission.released_1_at, submission.feedback_1_at, ext);
-        if (dl2 && new Date() > dl2) {
-            alert('2차 수정 마감이 지났습니다.');
-            return;
-        }
-    }
-
+    // 어느 줄인지·2차 가능한지·2차 마감이 지났는지는 제출 화면 진입 판정(resolveCorrDraftEntry)이
+    // 서버 줄을 읽어 결정한다. 여기서 캐시 줄로 판단하지 않는다.
     if (taskType === 'writing') {
-        _startCorrectionWritingByType(session, scheduleData, submission);
+        _startCorrectionWritingByType(sessionState.session, sessionState.scheduleData, 'detail');
     } else {
-        _startCorrectionSpeakingByType(session, scheduleData, submission);
+        _startCorrectionSpeakingByType(sessionState.session, sessionState.scheduleData, 'detail');
     }
 }
 
@@ -777,31 +771,8 @@ function onCorrDetailDraft2Click(taskType) {
 // ============================================================
 
 function backFromCorrectionDetail() {
-    _stopCorrDeadlineTimer();
-    var sessionState = window._correctionSessionState;
-    if (!sessionState) {
-        showScreen('scheduleScreen');
-        return;
-    }
-
-    // submission 데이터 갱신 후 세션 상세로 복귀
-    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-    if (user && user.id) {
-        getCorrectionSubmissions(user.id).then(function(submissions) {
-            var newMap = {};
-            submissions.forEach(function(sub) {
-                newMap[sub.session_number + '_' + sub.task_type] = sub;
-                var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-                newMap[sub.session_number + '_' + category] = sub;
-            });
-            sessionState.submissionMap = newMap;
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap, sessionState.extensionMap);
-        }).catch(function() {
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
-        });
-    } else {
-        openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
-    }
+    // 세션 화면이 서버에서 새로 읽는다 (correction-session.js)
+    backToCorrectionSession();
 }
 
 // ============================================================

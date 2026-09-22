@@ -56,7 +56,7 @@
 | 스케줄 관리 | `correction_schedules` 테이블 (user_id UNIQUE, start_date DATE 일요일만, duration_weeks INT 기본값 4) |
 | 문제 데이터 | `correction_tasks` 단일 테이블 폐기 → 3개 테이블: `correction_writing_email`, `correction_writing_discussion`, `correction_speaking_interview` (각 기존 `tr_*` 복제 + `model_answer_text`, `model_answer_audio_url` 컬럼 추가) |
 | 제출 기록 | `correction_submissions` (한 세션에 Writing 행 1개 + Speaking 행 1개 = 별도 2행) |
-| 행 생성 시점 | 실제 제출 시 INSERT (not_started 행 미리 생성 안 함). 행이 없으면 미시작으로 판단 |
+| 행 생성 시점 | 1차 제출 시 INSERT (not_started 행 미리 생성 안 함). 행이 없으면 미시작으로 판단. **제출 화면 진입 시 서버 줄을 읽어 차수를 판정**(`resolveCorrDraftEntry`, correction-session.js) — 줄이 있으면 1차로 들어가지 않는다. 저장은 `submitCorrectionDraft`(supabase-client.js) 한 곳. (2026-09-22 CORR-DUP-001 수리) |
 | Draft 구조 | 한 행에 1차/2차 모두 담음 (draft_1_*, draft_2_* 별도 컬럼) |
 | 오디오 파일 | JSONB 대신 개별 컬럼: draft_1_audio_q1~q4, draft_2_audio_q1~q4 (총 8개) |
 | STT 결과 | stt_text_1, stt_text_2 (JSONB, {"q1":"...","q2":"...","q3":"...","q4":"..."}) |
@@ -309,6 +309,10 @@ CREATE TABLE correction_submissions (
     released_2_at TIMESTAMPTZ,                       -- 최종 승인 시각
 
     -- 유니크 제약: 한 사용자의 한 세션에서 같은 task_type은 1행만
+    -- ⚠️ 2026-09-22 확인: 실제 DB에는 이 제약이 걸려 있지 않았음(PK만). 중복 6줄 정리(2026-09-22) 뒤
+    --    코드 배포 후 아래 SQL로 적용 예정 — 적용일: (미적용)
+    --    ALTER TABLE public.correction_submissions
+    --      ADD CONSTRAINT correction_submissions_user_session_task_key UNIQUE (user_id, session_number, task_type);
     UNIQUE(user_id, session_number, task_type)
 );
 
@@ -712,8 +716,8 @@ scheduleScreen
 ### 7.2 프론트엔드에서 변경하는 상태
 | 상태 변경 | 트리거 |
 |-----------|--------|
-| (없음) → `draft1_submitted` | 1차 제출 시 INSERT |
-| `feedback1_ready` → `draft2_submitted` | 2차 제출 시 UPDATE |
+| (없음) → `draft1_submitted` | 1차 제출 시 INSERT (`submitCorrectionDraft` round 1 — 진입 시 서버에 줄이 없을 때만) |
+| `feedback1_ready` → `draft2_submitted` | 2차 제출 시 UPDATE (`submitCorrectionDraft` round 2 — 진입 시 서버 줄이 released_1이고 2차 마감 전일 때만) |
 
 ### 7.3 n8n에서 변경하는 상태
 | 상태 변경 | 트리거 |
@@ -1079,7 +1083,14 @@ async function getCorrectionSubmissions(userId) { ... }
 // correction_submissions 단일 조회
 async function getCorrectionSubmission(userId, sessionNumber, taskType) { ... }
 
-// correction_submissions INSERT
+// 제출 맵·마감 연장 맵 로더 (메인·세션 화면 공용, 조회 실패는 null로 구분)
+async function loadCorrectionSubmissionMap(userId) { ... }
+async function loadCorrectionExtensionMap(userId) { ... }
+
+// 첨삭 답안 저장 (5개 제출 화면 공용, round 1=INSERT / round 2=UPDATE, 응답 유실 시 재조회로 멱등)
+async function submitCorrectionDraft(opts) { ... }
+
+// correction_submissions INSERT (submitCorrectionDraft 내부 전용)
 async function insertCorrectionSubmission(data) { ... }
 
 // correction_submissions UPDATE

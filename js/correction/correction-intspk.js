@@ -86,19 +86,16 @@ async function _loadCorrectionIntSpkSet(setNumber) {
 // 2. 진입점
 // ============================================================
 
-async function startCorrectionIntSpk(session, scheduleData, submission) {
+async function startCorrectionIntSpk(session, scheduleData, entry) {
     console.log('\n🎙️ [Correction IntSpk] 시작 — Session', session.session);
 
     var meta = getCorrTaskMeta(session, 'speaking');
-    var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 
-    if (isDraft2 && submission && !submission.feedback_1) {
-        var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (u && u.id) {
-            var fullSub = await getCorrectionSubmission(u.id, session.session, meta.taskType);
-            if (fullSub) submission = fullSub;
-        }
-    }
+    // 몇 차인지는 서버 줄을 읽어 판정 (correction-session.js). 2차면 전체 줄(feedback_1 포함)이 온다.
+    var e = await resolveCorrDraftEntry(session, 'speaking', entry);
+    if (e.round === 0) { onCorrEntryBlocked(e, session, scheduleData); return; }
+    var isDraft2 = (e.round === 2);
+    var submission = e.submission || null;
 
     window._correctionIntSpkState = {
         session: session,
@@ -649,30 +646,29 @@ async function _corrIsDoSubmit() {
         var uploaded = await supabaseStorageUpload('correction-audio', storagePath, file);
         if (!uploaded) throw new Error('파일 업로드 실패');
 
-        var saved;
-        if (state.isDraft2) {
-            saved = await updateCorrectionSubmission(state.submission.id, {
+        // DB 저장 (공용 저장 함수 — 결과가 비면 실패)
+        var saved = await submitCorrectionDraft({
+            round: state.isDraft2 ? 2 : 1,
+            userId: user.id,
+            sessionNumber: state.session.session,
+            taskType: state.taskType,
+            taskNumber: state.setNumber,
+            submissionId: (state.isDraft2 && state.submission) ? state.submission.id : null,
+            fields: state.isDraft2 ? {
                 draft_2_audio_q1: uploaded,
                 status: 'draft2_submitted',
                 draft_2_submitted_at: new Date().toISOString()
-            });
-        } else {
-            saved = await insertCorrectionSubmission({
-                user_id: user.id,
-                session_number: state.session.session,
-                task_type: state.taskType,
-                task_number: state.setNumber,
+            } : {
                 draft_1_audio_q1: uploaded,
                 status: 'draft1_submitted',
                 draft_1_submitted_at: new Date().toISOString()
-            });
-        }
-
-        // supabaseRequest()는 실패해도 throw하지 않고 null을 반환한다.
-        if (!saved) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+            }
+        });
+        if (!saved.ok) throw new Error('저장 결과가 비어 있음 (DB 거부)');
 
         // n8n 전송 — 미개통 유형이면 getCorrWebhookUrl()이 null을 돌려줘 보내지 않는다
-        if (typeof _sendCorrectionWebhook === 'function') {
+        // 응답 유실 후 재조회로 확인된 저장이면 서버 자동 재실행에 맡긴다(중복 첨삭 방지)
+        if (!saved.alreadySaved && typeof _sendCorrectionWebhook === 'function') {
             _sendCorrectionWebhook(state.isDraft2, {
                 event: state.isDraft2 ? 'draft2_submitted' : 'draft1_submitted',
                 user_id: user.id,
@@ -699,36 +695,9 @@ async function _corrIsDoSubmit() {
     }
 }
 
-async function _returnToCorrIsSession() {
-    var sessionState = window._correctionSessionState;
-    if (!sessionState) {
-        showScreen('scheduleScreen');
-        return;
-    }
-
-    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-    var submissionMap = sessionState.submissionMap || {};
-
-    if (user && user.id) {
-        try {
-            var submissions = await getCorrectionSubmissions(user.id);
-            submissionMap = {};
-            submissions.forEach(function(sub) {
-                submissionMap[sub.session_number + '_' + sub.task_type] = sub;
-                var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-                submissionMap[sub.session_number + '_' + category] = sub;
-            });
-        } catch (e) {
-            console.warn('⚠️ [Correction IntSpk] 제출 내역 재조회 실패:', e);
-        }
-    }
-
-    openCorrectionSession(
-        sessionState.session,
-        sessionState.scheduleData,
-        submissionMap,
-        sessionState.extensionMap
-    );
+function _returnToCorrIsSession() {
+    // 세션 화면이 서버에서 새로 읽는다 (correction-session.js)
+    backToCorrectionSession();
 }
 
 // ============================================================

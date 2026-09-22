@@ -605,40 +605,128 @@ async function getCorrectionSchedule(userId) {
 /**
  * 첨삭 제출 전체 조회 (correction_submissions)
  * 해당 사용자의 모든 제출 행 반환 (세션 카드 상태 매핑용)
+ *
+ * 조회 "실패"(통신·서버 오류)와 "줄 없음"을 구분한다.
+ *   실패를 빈 배열로 뭉개면 전 세션이 "미제출·시작하기"로 보여 학생이 1차를 또 내게 된다.
+ * created_at 오름차순 — 같은 과제 줄이 (과거 사고로) 여러 개 남아 있어도 항상 같은 줄을 본다.
  * @param {string} userId - 사용자 ID
- * @returns {Promise<Array>} 제출 행 배열
+ * @returns {Promise<Array|null>} 제출 행 배열, 조회 실패면 null
  */
 async function getCorrectionSubmissions(userId) {
     console.log('📋 [Correction] 제출 내역 조회:', userId);
-    var rows = await supabaseSelect(
-        'correction_submissions',
-        'user_id=eq.' + userId + '&select=id,session_number,task_type,task_number,status,feedback_1_status,feedback_2_status,released_1,released_2,released_1_at,draft_1_submitted_at,feedback_1_at,draft_2_submitted_at,feedback_2_at'
+    var rows = await supabaseRequest(
+        '/rest/v1/correction_submissions?user_id=eq.' + userId
+        + '&select=id,session_number,task_type,task_number,status,feedback_1_status,feedback_2_status,released_1,released_2,released_1_at,draft_1_submitted_at,feedback_1_at,draft_2_submitted_at,feedback_2_at,created_at'
+        + '&order=created_at.asc'
     );
-    console.log('📋 [Correction] 제출 내역:', (rows ? rows.length : 0) + '건');
-    return rows || [];
+    if (!Array.isArray(rows)) {
+        console.warn('⚠️ [Correction] 제출 내역 조회 실패');
+        return null;
+    }
+    console.log('📋 [Correction] 제출 내역:', rows.length + '건');
+    return rows;
 }
 
 /**
- * 첨삭 제출 단일 행 조회
+ * 첨삭 제출 단일 행 조회 (전체 컬럼 — feedback JSONB 포함)
  * @param {string} userId
  * @param {number} sessionNumber
- * @param {string} taskType - 'writing' | 'speaking'
- * @returns {Promise<object|null>}
+ * @param {string} taskType - DB task_type ('writing_email', 'speaking_interview', ...)
+ * @returns {Promise<object|null|undefined>} 줄 / 없으면 null / 조회 실패면 undefined
  */
 async function getCorrectionSubmission(userId, sessionNumber, taskType) {
     console.log('📋 [Correction] 제출 조회:', 'S' + sessionNumber, taskType);
-    var rows = await supabaseSelect(
-        'correction_submissions',
-        'user_id=eq.' + userId
+    var rows = await supabaseRequest(
+        '/rest/v1/correction_submissions?user_id=eq.' + userId
         + '&session_number=eq.' + sessionNumber
         + '&task_type=eq.' + encodeURIComponent(taskType)
-        + '&limit=1'
+        + '&order=created_at.asc&limit=1'
     );
-    return (rows && rows.length > 0) ? rows[0] : null;
+    if (!Array.isArray(rows)) {
+        console.warn('⚠️ [Correction] 제출 조회 실패:', 'S' + sessionNumber, taskType);
+        return undefined;
+    }
+    return rows.length > 0 ? rows[0] : null;
 }
 
 /**
- * 첨삭 제출 INSERT
+ * 제출 행 배열 → 화면용 맵
+ *   키 두 벌: "1_writing_email"(원본 task_type) + "1_writing"(카테고리, 카드·상세·마감이 읽는 키)
+ *   같은 키가 이미 있으면 덮어쓰지 않는다(먼저 만들어진 줄 우선) — 단일 조회(order asc, limit 1)와 같은 기준.
+ * @param {Array} rows
+ * @returns {object}
+ */
+function buildCorrectionSubmissionMap(rows) {
+    var map = {};
+    (rows || []).forEach(function(sub) {
+        var rawKey = sub.session_number + '_' + sub.task_type;
+        var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
+        var catKey = sub.session_number + '_' + category;
+        if (!map[rawKey]) map[rawKey] = sub;
+        if (!map[catKey]) map[catKey] = sub;
+    });
+    return map;
+}
+
+/**
+ * 제출 맵 로드 (조회 + 매핑). 첨삭 메인·세션 화면이 공통으로 쓴다.
+ * @param {string} userId
+ * @returns {Promise<object|null>} 맵, 조회 실패면 null
+ */
+async function loadCorrectionSubmissionMap(userId) {
+    var rows = await getCorrectionSubmissions(userId);
+    if (rows === null) return null;
+    return buildCorrectionSubmissionMap(rows);
+}
+
+/**
+ * 마감 연장 맵 로드 (correction_deadline_extensions 조회 + 매핑)
+ *   키 두 벌(원본 + 카테고리), 값 { r1: {hours, at}|null, r2: {hours, at}|null }
+ *   draft_round: 1=1차만, 2=2차만, null=둘 다(구버전 행)
+ *   draft_round 컬럼이 없는 환경이면(마이그레이션 전) 차수 없이 재조회한다.
+ * @param {string} userId
+ * @returns {Promise<object|null>} 맵, 조회 실패면 null
+ */
+async function loadCorrectionExtensionMap(userId) {
+    var base = '/rest/v1/correction_deadline_extensions?user_id=eq.' + userId
+        + '&select=session_number,task_type,extended_hours,created_at';
+    var rows = await supabaseRequest(base + ',draft_round');
+    if (!Array.isArray(rows)) {
+        console.warn('⚠️ [Correction] 마감 연장 조회 실패, draft_round 없이 재시도');
+        rows = await supabaseRequest(base);
+        if (!Array.isArray(rows)) {
+            console.warn('⚠️ [Correction] 마감 연장 조회 실패');
+            return null;
+        }
+    }
+
+    var extensionMap = {};
+    rows.forEach(function(ext) {
+        // 연장을 건 시각도 함께 보관 — 마감이 지난 뒤 연장한 경우의 기준점이 된다
+        var entry = {
+            hours: ext.extended_hours,
+            at: ext.created_at ? new Date(ext.created_at) : null
+        };
+        var round = ext.draft_round;
+
+        function put(key) {
+            var slot = extensionMap[key];
+            if (!slot) { slot = { r1: null, r2: null }; extensionMap[key] = slot; }
+            if (round === 1) slot.r1 = entry;
+            else if (round === 2) slot.r2 = entry;
+            else { slot.r1 = entry; slot.r2 = entry; }
+        }
+
+        put(ext.session_number + '_' + ext.task_type);
+        var category = ext.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
+        put(ext.session_number + '_' + category);
+    });
+    if (rows.length > 0) console.log('📋 [Correction] 마감 연장:', Object.keys(extensionMap).length + '건');
+    return extensionMap;
+}
+
+/**
+ * 첨삭 제출 INSERT (submitCorrectionDraft 내부 전용)
  * @param {object} data - 제출 데이터
  * @returns {Promise<object|null>}
  */
@@ -648,7 +736,7 @@ async function insertCorrectionSubmission(data) {
 }
 
 /**
- * 첨삭 제출 UPDATE
+ * 첨삭 제출 UPDATE (submitCorrectionDraft 내부 전용)
  * @param {string} id - 제출 행 ID
  * @param {object} data - 업데이트 데이터
  * @returns {Promise<object|null>}
@@ -656,6 +744,56 @@ async function insertCorrectionSubmission(data) {
 async function updateCorrectionSubmission(id, data) {
     console.log('💾 [Correction] 제출 업데이트:', id);
     return await supabaseUpdate('correction_submissions', 'id=eq.' + id, data);
+}
+
+/**
+ * 첨삭 답안 저장 — 5개 제출 화면(일반 라이팅·인터뷰, 호주 독스·통스·통라)이 공통으로 쓴다.
+ *   round 1: 새 줄 INSERT / round 2: 기존 줄(submissionId) UPDATE
+ *   "이미 있나" 확인은 여기서 하지 않는다 — 제출 화면에 들어갈 때(resolveCorrDraftEntry) 서버를 읽어 판정하고,
+ *   두 기기 동시 제출은 DB의 (user_id, session_number, task_type) UNIQUE 제약이 막는다.
+ *
+ *   멱등: 저장 응답이 비어 있어도(응답 끊김, DB 거부) 한 번 재조회해서 방금(2분 내) 같은 차수가
+ *   저장돼 있으면 성공으로 본다(alreadySaved). 그 경우 호출부는 웹훅을 보내지 않는다 —
+ *   줄이 draft*_submitted 상태로 남아 있으면 서버 자동 재실행 크론이 n8n을 부른다.
+ *
+ * @param {object} opts { round, userId, sessionNumber, taskType, taskNumber, submissionId, fields }
+ * @returns {Promise<{ok:boolean, row?:object, alreadySaved?:boolean}>}
+ */
+async function submitCorrectionDraft(opts) {
+    var saved = null;
+    if (opts.round === 2) {
+        if (!opts.submissionId) {
+            console.error('❌ [Correction] 2차 저장인데 줄 id 없음');
+            return { ok: false };
+        }
+        saved = await updateCorrectionSubmission(opts.submissionId, opts.fields);
+    } else {
+        var data = {
+            user_id: opts.userId,
+            session_number: opts.sessionNumber,
+            task_type: opts.taskType,
+            task_number: opts.taskNumber
+        };
+        Object.keys(opts.fields || {}).forEach(function(k) { data[k] = opts.fields[k]; });
+        saved = await insertCorrectionSubmission(data);
+    }
+    if (saved) return { ok: true, row: saved };
+
+    // 응답이 비었다 → 실제로 저장됐는지 한 번 확인
+    var row = await getCorrectionSubmission(opts.userId, opts.sessionNumber, opts.taskType);
+    if (row) {
+        var stampField = (opts.round === 2) ? 'draft_2_submitted_at' : 'draft_1_submitted_at';
+        var expectStatus = (opts.round === 2) ? 'draft2_submitted' : 'draft1_submitted';
+        var sameRow = (opts.round === 2) ? (row.id === opts.submissionId) : true;
+        var stamp = row[stampField] ? new Date(row[stampField]).getTime() : 0;
+        var fresh = stamp && (Date.now() - stamp) < 2 * 60 * 1000;
+        if (sameRow && row.status === expectStatus && fresh) {
+            console.warn('⚠️ [Correction] 저장 응답은 비었지만 서버에 방금 저장됨 → 성공 처리(웹훅은 서버 재실행에 맡김)');
+            return { ok: true, row: row, alreadySaved: true };
+        }
+    }
+    console.error('❌ [Correction] 저장 실패 (응답 없음, 재조회로도 확인 안 됨)');
+    return { ok: false };
 }
 
 // ================================================

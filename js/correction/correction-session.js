@@ -12,23 +12,56 @@
 // 현재 열린 세션 정보 (전역 상태)
 window._correctionSessionState = null;
 
+// 세션 열기 요청 번호 — 연타 시 늦게 온 응답을 버리고, 제출 진입 판정 중 학생이 나갔는지 감지한다
+var _corrOpenSeq = 0;
+
 /**
  * 세션 상세 화면 열기
- * correction-main.js의 openCorrectionSession()에서 호출
- * 
- * @param {object} session - CORRECTION_SCHEDULE 항목
- * @param {object} scheduleData - correction_schedules 행 { start_date, duration_weeks }
- * @param {object} submissionMap - 전체 제출 상태 맵
+ * 메인 카드 클릭·제출 완료 복귀·상세 뒤로가기 등 모든 진입이 이 함수 하나를 쓴다.
+ * 열릴 때마다 제출 내역과 마감 연장을 서버에서 새로 읽는다 — 옛 캐시로 판단해서 생긴 사고(CORR-DUP-001) 방지.
+ *
+ * @param {object} opts { session: CORRECTION_SCHEDULE 항목, scheduleData: correction_schedules 행 }
  */
-function openCorrectionSession(session, scheduleData, submissionMap, extensionMap) {
+async function openCorrectionSession(opts) {
+    if (!opts || !opts.session || typeof opts.session !== 'object') {
+        console.error('❌ [Correction] openCorrectionSession: 잘못된 인자', opts);
+        return;
+    }
+    var session = opts.session;
+    var scheduleData = opts.scheduleData;
     console.log('📋 [Correction] 세션 상세 열기: Session', session.session);
 
-    // 상태 저장
+    // 옛 타이머부터 정지 — 조회 중에 옛 state를 읽지 않게
+    _stopCorrDeadlineTimer();
+    var token = ++_corrOpenSeq;
+
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+    if (!user || !user.id) {
+        alert('로그인 정보를 확인할 수 없습니다.');
+        backToCorrectionMain();
+        return;
+    }
+
+    var maps = await Promise.all([
+        loadCorrectionSubmissionMap(user.id),
+        loadCorrectionExtensionMap(user.id)
+    ]);
+    if (token !== _corrOpenSeq) return;   // 그 사이 다른 세션을 열었음 → 이 응답은 버림
+
+    var submissionMap = maps[0];
+    var extensionMap = maps[1];
+    if (!submissionMap || !extensionMap) {
+        alert('화면 정보를 불러오지 못해 처음 화면으로 돌아갑니다.');
+        backToCorrectionMain();
+        return;
+    }
+
+    // 상태 저장 — 완성된 객체로 한 번에 교체 (중간 상태를 전역에 올리지 않는다)
     window._correctionSessionState = {
         session: session,
         scheduleData: scheduleData,
         submissionMap: submissionMap,
-        extensionMap: extensionMap || {}
+        extensionMap: extensionMap
     };
 
     // 화면 전환
@@ -218,14 +251,17 @@ function _getCorrectionCardStatus(sub) {
 function _onCorrectionTaskClick(taskType, session, submission, action) {
     console.log('🎯 [Correction] 태스크 클릭:', taskType, action, 'Session', session.session);
 
+    // 세션 화면을 떠나므로 카드 마감 타이머 정지 (안 끄면 제출·상세 화면에서도 1초마다 돈다)
+    _stopCorrDeadlineTimer();
+
     var sessionState = window._correctionSessionState;
     var scheduleData = sessionState ? sessionState.scheduleData : null;
 
     if (action === 'write') {
         if (taskType === 'writing') {
-            _startCorrectionWritingByType(session, scheduleData, submission);
+            _startCorrectionWritingByType(session, scheduleData, 'card');
         } else {
-            _startCorrectionSpeakingByType(session, scheduleData, submission);
+            _startCorrectionSpeakingByType(session, scheduleData, 'card');
         }
         return;
     }
@@ -239,18 +275,19 @@ function _onCorrectionTaskClick(taskType, session, submission, action) {
  *   email / discussion → 일반첨삭
  *   aus_discussion     → 호주첨삭 DISCUSSION (일반 Discussion과 화면 동일 → 같은 함수)
  *   aus_intwrt         → 호주첨삭 INT WRT
+ * @param {'card'|'detail'} entry - 어디서 들어왔나 (카드 '시작하기' / 상세 '수정하기')
  */
-function _startCorrectionWritingByType(session, scheduleData, submission) {
+function _startCorrectionWritingByType(session, scheduleData, entry) {
     var meta = getCorrTaskMeta(session, 'writing');
     var type = meta ? meta.type : 'email';
 
     if (type === 'aus_intwrt') {
-        startCorrectionIntWrt(session, scheduleData, submission);
+        startCorrectionIntWrt(session, scheduleData, entry);
         return;
     }
 
     // email / discussion / aus_discussion
-    startCorrectionWriting(session, scheduleData, submission);
+    startCorrectionWriting(session, scheduleData, entry);
 }
 
 /**
@@ -258,25 +295,104 @@ function _startCorrectionWritingByType(session, scheduleData, submission) {
  *   interview       → 일반첨삭 인터뷰 (4문항)
  *   aus_indspk      → 호주첨삭 IND SPK
  *   aus_intspk2/3/4 → 호주첨삭 INT SPK
+ * @param {'card'|'detail'} entry
  */
-function _startCorrectionSpeakingByType(session, scheduleData, submission) {
+function _startCorrectionSpeakingByType(session, scheduleData, entry) {
     var meta = getCorrTaskMeta(session, 'speaking');
     var type = meta ? meta.type : 'interview';
 
     if (type === 'aus_indspk') {
-        startCorrectionIndSpk(session, scheduleData, submission);
+        startCorrectionIndSpk(session, scheduleData, entry);
         return;
     }
     if (type === 'aus_intspk2' || type === 'aus_intspk3' || type === 'aus_intspk4') {
-        startCorrectionIntSpk(session, scheduleData, submission);
+        startCorrectionIntSpk(session, scheduleData, entry);
         return;
     }
     if (type === 'interview') {
-        startCorrectionSpeaking(session, scheduleData, submission);
+        startCorrectionSpeaking(session, scheduleData, entry);
         return;
     }
 
     alert('아직 준비 중인 유형입니다.');
+}
+
+// ============================================================
+// 제출 화면 진입 판정 (5개 제출 화면 공통)
+// ============================================================
+
+// 진입 판정 중 잠금 (키: "세션_카테고리") — 같은 카드 연타 방지
+var _corrEntryLocks = {};
+
+// 진입 차단 사유별 안내문
+var CORR_ENTRY_MSG = {
+    fetch: '제출 정보를 확인하지 못했어요. 다시 시도해 주세요.',
+    state: '지금은 제출할 수 있는 단계가 아니에요. 화면을 새로 불러올게요.',
+    deadline1: '1차 제출 마감이 지났습니다.',
+    deadline2: '2차 수정 마감이 지났습니다.'
+};
+
+/**
+ * 제출 화면에 들어가도 되는지, 들어간다면 몇 차인지 — 서버의 실제 줄을 읽어 판정한다.
+ * 화면 캐시(카드·목록)는 믿지 않는다. 낡은 캐시가 "미제출"이라 해도 서버에 줄이 있으면 1차로 보내지 않는다.
+ *
+ * @param {object} session - CORRECTION_SCHEDULE 항목
+ * @param {'writing'|'speaking'} category
+ * @param {'card'|'detail'} entry - 카드 '시작하기'는 1차 가능, 상세 '수정하기'는 2차만
+ * @returns {Promise<{round:0|1|2, reason?:string, submission?:object}>}
+ *   round 0 사유: busy(판정 중 재클릭) / left(판정 중 세션 화면을 떠남) / fetch / state / deadline1 / deadline2
+ *   round 2면 submission에 전체 줄(feedback_1 포함)이 들어 있다.
+ */
+async function resolveCorrDraftEntry(session, category, entry) {
+    var key = session.session + '_' + category;
+    if (_corrEntryLocks[key]) return { round: 0, reason: 'busy' };
+    _corrEntryLocks[key] = true;
+    try {
+        var st = window._correctionSessionState;
+        if (!st) return { round: 0, reason: 'left' };
+        var myToken = _corrOpenSeq;
+        var scheduleData = st.scheduleData;
+        var slot = _corrExt(st.extensionMap, session.session, category);
+
+        var meta = getCorrTaskMeta(session, category);
+        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+        if (!meta || !meta.taskType || !user || !user.id) return { round: 0, reason: 'state' };
+
+        var row = await getCorrectionSubmission(user.id, session.session, meta.taskType);
+
+        // 조회하는 사이 학생이 세션 화면을 떠났거나 다른 세션을 열었음
+        if (!window._correctionSessionState || _corrOpenSeq !== myToken) return { round: 0, reason: 'left' };
+
+        if (row === undefined) return { round: 0, reason: 'fetch' };
+
+        if (row === null) {
+            // 줄 없음 = 1차 가능. 단 상세 화면에서 왔으면(2차 하러) 1차로 보내지 않는다.
+            if (entry === 'detail') return { round: 0, reason: 'state' };
+            var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), slot);
+            if (dl1 && new Date() > dl1) return { round: 0, reason: 'deadline1' };
+            return { round: 1 };
+        }
+
+        if (row.status === 'feedback1_ready' && row.released_1) {
+            var dl2 = getCorrDraft2DeadlineFromRelease(row.released_1_at, row.feedback_1_at, slot);
+            if (dl2 && new Date() > dl2) return { round: 0, reason: 'deadline2' };
+            return { round: 2, submission: row };
+        }
+
+        return { round: 0, reason: 'state' };
+    } finally {
+        delete _corrEntryLocks[key];
+    }
+}
+
+/**
+ * 진입 차단 시 공통 처리 — busy/left는 조용히, 나머지는 안내 후 세션 화면을 새로 읽는다.
+ * @param {{round:0, reason:string}} e - resolveCorrDraftEntry 결과
+ */
+function onCorrEntryBlocked(e, session, scheduleData) {
+    if (e.reason === 'busy' || e.reason === 'left') return;
+    alert(CORR_ENTRY_MSG[e.reason] || CORR_ENTRY_MSG.state);
+    openCorrectionSession({ session: session, scheduleData: scheduleData });
 }
 
 // ============================================================
@@ -860,6 +976,20 @@ function backToCorrectionMain() {
     showScreen('scheduleScreen');
     // scheduleScreen에서 correction 모드를 다시 렌더링
     // showScreen이 initScheduleScreen을 호출하므로 자동으로 _renderCorrectionMode() 실행
+}
+
+/**
+ * 제출·상세 화면에서 세션 화면으로 복귀 (모든 제출 화면·상세 뒤로가기가 이걸 쓴다)
+ * openCorrectionSession이 서버에서 새로 읽으므로 여기서 따로 조회하지 않는다.
+ */
+function backToCorrectionSession() {
+    _stopCorrDeadlineTimer();
+    var sessionState = window._correctionSessionState;
+    if (!sessionState) {
+        showScreen('scheduleScreen');
+        return;
+    }
+    openCorrectionSession({ session: sessionState.session, scheduleData: sessionState.scheduleData });
 }
 
 console.log('✅ correction-session.js 로드 완료');

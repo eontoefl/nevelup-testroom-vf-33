@@ -85,68 +85,21 @@ async function renderCorrectionSchedule() {
     // 1-b. 자기주도면 12세션 확정 일정표를 계산·저장(멱등). 종료일 없으면 아무것도 안 함.
     await _ensureCorrSessionDates(user, scheduleData);
 
-    // 2. correction_submissions에서 전체 제출 내역 조회
-    var submissions = [];
-    try {
-        submissions = await getCorrectionSubmissions(user.id);
-    } catch (e) {
-        console.warn('⚠️ [Correction] 제출 내역 조회 실패:', e);
-    }
-
-    // 세션별 상태 매핑
-    // DB task_type: writing_email, writing_discussion, speaking_interview
-    // 카드 조회 키: session_writing, session_speaking
-    var submissionMap = {};
-    submissions.forEach(function(sub) {
-        // 원본 키 (detail 조회용)
-        submissionMap[sub.session_number + '_' + sub.task_type] = sub;
-        // 카테고리 키 (카드 상태용)
-        var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-        submissionMap[sub.session_number + '_' + category] = sub;
-    });
-
-    // 3. correction_deadline_extensions에서 마감 연장 조회
-    var extensions = [];
-    var extBase = 'user_id=eq.' + user.id + '&select=session_number,task_type,extended_hours,created_at';
-    try {
-        extensions = await supabaseSelect('correction_deadline_extensions', extBase + ',draft_round');
-    } catch (e) {
-        // draft_round 마이그레이션 전이면 컬럼이 없어 실패한다 → 차수 없이 재조회 (연장이 전부 무효가 되는 것 방지)
-        console.warn('⚠️ [Correction] 마감 연장 조회 실패, draft_round 없이 재시도:', e);
-        try {
-            extensions = await supabaseSelect('correction_deadline_extensions', extBase);
-        } catch (e2) {
-            console.warn('⚠️ [Correction] 마감 연장 조회 실패:', e2);
-        }
-    }
-
-    // extensionMap 빌드 (이중 키: 원본 + 카테고리)
-    var extensionMap = {};
-    if (extensions && extensions.length > 0) {
-        extensions.forEach(function(ext) {
-            // 연장을 건 시각도 함께 보관 — 마감이 지난 뒤 연장한 경우의 기준점이 된다
-            var entry = {
-                hours: ext.extended_hours,
-                at: ext.created_at ? new Date(ext.created_at) : null
-            };
-            // draft_round: 1=1차만, 2=2차만, null=둘 다(구버전 행)
-            var round = ext.draft_round;
-
-            function put(key) {
-                var slot = extensionMap[key];
-                if (!slot) { slot = { r1: null, r2: null }; extensionMap[key] = slot; }
-                if (round === 1) slot.r1 = entry;
-                else if (round === 2) slot.r2 = entry;
-                else { slot.r1 = entry; slot.r2 = entry; }
-            }
-
-            // 원본 키: "1_writing_email"
-            put(ext.session_number + '_' + ext.task_type);
-            // 카테고리 키: "1_writing"
-            var category = ext.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-            put(ext.session_number + '_' + category);
-        });
-        console.log('📋 [Correction] 마감 연장:', Object.keys(extensionMap).length + '건');
+    // 2. 제출 내역 맵 + 3. 마감 연장 맵 (supabase-client.js 공용 로더 — 세션 화면도 같은 함수를 쓴다)
+    //    조회 실패면 빈 화면으로 폴백하지 않는다 — 전 세션이 "미제출·시작하기"로 보이는 사고(CORR-DUP-001) 방지
+    var maps = await Promise.all([
+        loadCorrectionSubmissionMap(user.id),
+        loadCorrectionExtensionMap(user.id)
+    ]);
+    var submissionMap = maps[0];
+    var extensionMap = maps[1];
+    if (!submissionMap || !extensionMap) {
+        container.innerHTML =
+            '<div class="correction-empty-msg">' +
+                '<p>화면 정보를 불러오지 못했습니다. 새로고침해 주세요.</p>' +
+                '<button class="btn btn-secondary" style="margin-top:12px;" onclick="renderCorrectionSchedule()">다시 시도</button>' +
+            '</div>';
+        return;
     }
 
     console.log('📋 [Correction] 렌더링 시작 — start_date:', scheduleData.start_date, ', sessions:', schedule.length);
@@ -312,7 +265,7 @@ function _renderCorrectionPhase(targetEl, phase, ctx) {
 
             dayButton.onclick = function() {
                 console.log('🎯 [Correction] Session ' + session.session + ' 선택');
-                openCorrectionSession(session, scheduleData, submissionMap, extensionMap);
+                openCorrectionSession({ session: session, scheduleData: scheduleData });
             };
 
             daysGrid.appendChild(dayButton);

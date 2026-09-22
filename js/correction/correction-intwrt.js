@@ -68,19 +68,16 @@ async function _loadCorrectionIntWrtSet(setNumber) {
 // 2. 진입점
 // ============================================================
 
-async function startCorrectionIntWrt(session, scheduleData, submission) {
+async function startCorrectionIntWrt(session, scheduleData, entry) {
     console.log('\n✍️ [Correction IntWrt] 시작 — Session', session.session);
 
     var meta = getCorrTaskMeta(session, 'writing');
-    var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 
-    if (isDraft2 && submission && !submission.feedback_1) {
-        var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (u && u.id) {
-            var fullSub = await getCorrectionSubmission(u.id, session.session, meta.taskType);
-            if (fullSub) submission = fullSub;
-        }
-    }
+    // 몇 차인지는 서버 줄을 읽어 판정 (correction-session.js). 2차면 전체 줄(feedback_1 포함)이 온다.
+    var e = await resolveCorrDraftEntry(session, 'writing', entry);
+    if (e.round === 0) { onCorrEntryBlocked(e, session, scheduleData); return; }
+    var isDraft2 = (e.round === 2);
+    var submission = e.submission || null;
 
     window._correctionIntWrtState = {
         session: session,
@@ -575,37 +572,35 @@ async function _corrIwDoSubmit(text, wordCount) {
     if (overlay) overlay.style.display = 'flex';
 
     try {
-        var saved;
-        if (state.isDraft2) {
-            saved = await updateCorrectionSubmission(state.submission.id, {
+        // DB 저장 (공용 저장 함수 — 결과가 비면 실패. 임시저장본은 성공 뒤에만 지운다)
+        var saved = await submitCorrectionDraft({
+            round: state.isDraft2 ? 2 : 1,
+            userId: user.id,
+            sessionNumber: state.session.session,
+            taskType: state.taskType,
+            taskNumber: state.setNumber,
+            submissionId: (state.isDraft2 && state.submission) ? state.submission.id : null,
+            fields: state.isDraft2 ? {
                 draft_2_text: text,
                 draft_2_word_count: wordCount,
                 status: 'draft2_submitted',
                 draft_2_submitted_at: new Date().toISOString()
-            });
-        } else {
-            saved = await insertCorrectionSubmission({
-                user_id: user.id,
-                session_number: state.session.session,
-                task_type: state.taskType,
-                task_number: state.setNumber,
+            } : {
                 draft_1_text: text,
                 draft_1_word_count: wordCount,
                 status: 'draft1_submitted',
                 draft_1_submitted_at: new Date().toISOString()
-            });
-        }
-
-        // supabaseRequest()는 실패해도 throw하지 않고 null을 반환한다.
-        // 반환값을 확인하지 않으면 저장이 거부돼도 "제출되었습니다"가 뜨고 답안이 사라진다.
-        if (!saved) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+            }
+        });
+        if (!saved.ok) throw new Error('저장 결과가 비어 있음 (DB 거부)');
 
         // 저장 확인 후에만 임시저장본을 지운다
         _corrIwClearDraft();
 
         // n8n 전송. 통라가 아직 개통 전이면 getCorrWebhookUrl()이 null을 돌려줘
         // 전송하지 않고 넘어간다(제출은 이미 저장됨 → 첨삭은 소급 처리).
-        if (typeof _sendCorrectionWebhook === 'function') {
+        // 응답 유실 후 재조회로 확인된 저장이면 서버 자동 재실행에 맡긴다(중복 첨삭 방지)
+        if (!saved.alreadySaved && typeof _sendCorrectionWebhook === 'function') {
             _sendCorrectionWebhook(state.isDraft2, {
                 event: state.isDraft2 ? 'draft2_submitted' : 'draft1_submitted',
                 user_id: user.id,
@@ -663,36 +658,9 @@ function _corrIwClearDraft() {
     try { localStorage.removeItem(_corrIwDraftKey()); } catch (e) {}
 }
 
-async function _returnToCorrIwSession() {
-    var sessionState = window._correctionSessionState;
-    if (!sessionState) {
-        showScreen('scheduleScreen');
-        return;
-    }
-
-    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-    var submissionMap = sessionState.submissionMap || {};
-
-    if (user && user.id) {
-        try {
-            var submissions = await getCorrectionSubmissions(user.id);
-            submissionMap = {};
-            submissions.forEach(function(sub) {
-                submissionMap[sub.session_number + '_' + sub.task_type] = sub;
-                var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-                submissionMap[sub.session_number + '_' + category] = sub;
-            });
-        } catch (e) {
-            console.warn('⚠️ [Correction IntWrt] 제출 내역 재조회 실패:', e);
-        }
-    }
-
-    openCorrectionSession(
-        sessionState.session,
-        sessionState.scheduleData,
-        submissionMap,
-        sessionState.extensionMap
-    );
+function _returnToCorrIwSession() {
+    // 세션 화면이 서버에서 새로 읽는다 (correction-session.js)
+    backToCorrectionSession();
 }
 
 // ============================================================

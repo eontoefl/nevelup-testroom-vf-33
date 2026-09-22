@@ -165,7 +165,7 @@ function _corrReplaceNames(text, profiles) {
  * @param {object} scheduleData - correction_schedules 행
  * @param {object|null} submission - 기존 제출 행 (2차 작성 시 사용)
  */
-async function startCorrectionWriting(session, scheduleData, submission) {
+async function startCorrectionWriting(session, scheduleData, entry) {
     console.log('\n✍️ [Correction Writing] 시작 — Session', session.session);
 
     var meta = getCorrTaskMeta(session, 'writing');
@@ -175,16 +175,12 @@ async function startCorrectionWriting(session, scheduleData, submission) {
     // task_type만 트랙별로 구분한다.
     var writingType = (meta.type === 'aus_discussion') ? 'discussion' : meta.type;  // 'email' | 'discussion'
     var setNumber = meta.number;
-    var isDraft2 = !!(submission && submission.status === 'feedback1_ready' && submission.released_1);
 
-    // 2차 작성인데 feedback_1이 없으면 단일 행 다시 조회 (목록 조회는 feedback JSONB 미포함)
-    if (isDraft2 && submission && !submission.feedback_1) {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (user && user.id) {
-            var fullSub = await getCorrectionSubmission(user.id, session.session, meta.taskType);
-            if (fullSub) submission = fullSub;
-        }
-    }
+    // 몇 차인지는 서버 줄을 읽어 판정 (correction-session.js). 2차면 전체 줄(feedback_1 포함)이 온다.
+    var e = await resolveCorrDraftEntry(session, 'writing', entry);
+    if (e.round === 0) { onCorrEntryBlocked(e, session, scheduleData); return; }
+    var isDraft2 = (e.round === 2);
+    var submission = e.submission || null;
 
     window._correctionWritingState = {
         session: session,
@@ -567,32 +563,32 @@ async function submitCorrectionWriting() {
     var taskType = state.taskType;
 
     try {
-        if (state.isDraft2) {
-            // ── 2차 제출 (UPDATE) ──
-            await updateCorrectionSubmission(state.submission.id, {
-                draft_2_text: userAnswer,
-                draft_2_word_count: wordCount,
-                status: 'draft2_submitted',
-                draft_2_submitted_at: new Date().toISOString()
-            });
-            console.log('✅ [Correction Writing] 2차 제출 완료');
-        } else {
-            // ── 1차 제출 (INSERT) ──
-            await insertCorrectionSubmission({
-                user_id: user.id,
-                session_number: state.session.session,
-                task_type: taskType,
-                task_number: state.setNumber,
-                draft_1_text: userAnswer,
-                draft_1_word_count: wordCount,
-                status: 'draft1_submitted',
-                draft_1_submitted_at: new Date().toISOString()
-            });
-            console.log('✅ [Correction Writing] 1차 제출 완료');
-        }
+        // DB 저장 (공용 저장 함수 — 결과가 비면 실패로 본다. 실패해도 "제출되었습니다"를 띄우지 않고 답안은 화면에 남는다)
+        var fields = state.isDraft2 ? {
+            draft_2_text: userAnswer,
+            draft_2_word_count: wordCount,
+            status: 'draft2_submitted',
+            draft_2_submitted_at: new Date().toISOString()
+        } : {
+            draft_1_text: userAnswer,
+            draft_1_word_count: wordCount,
+            status: 'draft1_submitted',
+            draft_1_submitted_at: new Date().toISOString()
+        };
+        var saved = await submitCorrectionDraft({
+            round: state.isDraft2 ? 2 : 1,
+            userId: user.id,
+            sessionNumber: state.session.session,
+            taskType: taskType,
+            taskNumber: state.setNumber,
+            submissionId: (state.isDraft2 && state.submission) ? state.submission.id : null,
+            fields: fields
+        });
+        if (!saved.ok) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+        console.log('✅ [Correction Writing] ' + (state.isDraft2 ? '2차' : '1차') + ' 제출 완료');
 
-        // Webhook 호출 (비동기, 실패해도 제출은 성공)
-        _sendCorrectionWebhook(state.isDraft2, {
+        // Webhook 호출 (비동기, 실패해도 제출은 성공). 응답 유실 후 재조회로 확인된 저장이면 서버 자동 재실행에 맡긴다
+        if (!saved.alreadySaved) _sendCorrectionWebhook(state.isDraft2, {
             event: state.isDraft2 ? 'draft2_submitted' : 'draft1_submitted',
             user_id: user.id,
             user_name: user.name,
@@ -789,46 +785,11 @@ function backFromCorrectionWriting() {
     backToCorrectionSession();
 }
 
-function backToCorrectionSession() {
-    var sessionState = window._correctionSessionState;
-    if (sessionState) {
-        openCorrectionSession(
-            sessionState.session,
-            sessionState.scheduleData,
-            sessionState.submissionMap,
-            sessionState.extensionMap
-        );
-    } else {
-        showScreen('scheduleScreen');
-    }
-}
+// backToCorrectionSession()은 correction-session.js로 이동 (모든 제출 화면 공용)
 
 function _returnToCorrectionSession() {
-    // 세션 상세로 복귀하되, 최신 submissionMap을 다시 로드
-    var sessionState = window._correctionSessionState;
-    if (!sessionState) {
-        showScreen('scheduleScreen');
-        return;
-    }
-
-    // submissionMap 갱신 후 세션 화면 재렌더링
-    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-    if (user && user.id) {
-        getCorrectionSubmissions(user.id).then(function(submissions) {
-            var newMap = {};
-            submissions.forEach(function(sub) {
-                newMap[sub.session_number + '_' + sub.task_type] = sub;
-                var category = sub.task_type.indexOf('writing') === 0 ? 'writing' : 'speaking';
-                newMap[sub.session_number + '_' + category] = sub;
-            });
-            sessionState.submissionMap = newMap;
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, newMap, sessionState.extensionMap);
-        }).catch(function() {
-            openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
-        });
-    } else {
-        openCorrectionSession(sessionState.session, sessionState.scheduleData, sessionState.submissionMap, sessionState.extensionMap);
-    }
+    // 세션 화면이 서버에서 새로 읽는다 (correction-session.js)
+    backToCorrectionSession();
 }
 
 function _cleanupCorrectionWriting() {
