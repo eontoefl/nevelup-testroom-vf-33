@@ -1,3 +1,9 @@
 node_modules/
 package.json
 package-lock.json
+
+# Private book source data must never enter a public release
+assets/book-migration/
+assets/book-samples/
+book-editor-src/samples/
+**/mango-*.json
