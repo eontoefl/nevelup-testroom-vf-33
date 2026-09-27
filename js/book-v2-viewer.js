@@ -123,6 +123,7 @@ function buildToc() {
 function render() {
   const p = V2.pages[V2.idx];
   document.getElementById("content").innerHTML = p ? p.html || "" : "";
+  window.BookPageFooter?.decorateReader(document.getElementById("content"));
   enableMedia();
   document.getElementById("curPage").textContent = V2.idx + 1;
 
