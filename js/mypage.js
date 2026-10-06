@@ -357,6 +357,12 @@ function renderTodayTasks() {
         return;
     }
 
+    // 일시정지 중이면 오늘 과제 없음 (자기주도 포함 — 정지 중엔 새 과제를 풀 수 없다)
+    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(mpUser)) {
+        container.innerHTML = '<p class="today-task-empty">⏸️ 일시정지 중 — 재개 후 과제가 이어집니다</p>';
+        return;
+    }
+
     // 자기주도: 캘린더상 '오늘' 대신 아직 안 한 과제를 순서대로 표시
     if (mpUser.selfPaced) {
         renderSelfPacedNextTasks(container, programType, totalWeeks);
@@ -365,12 +371,6 @@ function renderTodayTasks() {
 
     // 오늘 날짜 계산 (학생 타임존 기준 새벽 4시)
     const effectiveToday = getEffectiveToday(getUserTimezone());
-
-    // 일시정지 중이면 오늘 과제 없음
-    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(mpUser)) {
-        container.innerHTML = '<p class="today-task-empty">⏸️ 일시정지 중 — 재개 후 과제가 이어집니다</p>';
-        return;
-    }
 
     // 오늘이 몇 주차 무슨 요일인지 — 일정 계산 단일 출처(timezone-utils.js). 요일은 시작일 기준 7일째(6)=휴무. 정지 기간은 경과일에서 뺀다.
     const pos = getChallengeDayPosition(mpUser.startDate, effectiveToday, mpUser.challengePauses);
