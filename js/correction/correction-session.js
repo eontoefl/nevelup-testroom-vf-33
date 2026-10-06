@@ -149,18 +149,7 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         };
     }
 
-    // 일시정지 중 + 미제출 → 새 회차 시작 차단(정지 전 제출한 회차의 2차는 그대로 — R3)
-    if (statusInfo.action === 'write' && typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
-        statusInfo = {
-            text: '일시정지 중 · 재개 후 진행',
-            btnText: '일시정지 중',
-            btnClass: 'btn-disabled',
-            disabled: true,
-            action: 'none'
-        };
-    }
-
-    // 데드라인 지남 + 미제출 → 시작 차단
+    // 데드라인 지남 + 미제출 → 시작 차단 (정지 전에 이미 마감된 회차는 정지와 무관하게 '마감됨')
     if (statusInfo.action === 'write') {
         var state = window._correctionSessionState;
         var scheduleData = state ? state.scheduleData : null;
@@ -177,6 +166,17 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
                 };
             }
         }
+    }
+
+    // 일시정지 중 + 미제출(아직 마감 전) → 새 회차 시작 차단(정지 전 제출한 회차의 2차는 그대로 — R3)
+    if (statusInfo.action === 'write' && typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
+        statusInfo = {
+            text: '일시정지 중 · 재개 후 진행',
+            btnText: '일시정지 중',
+            btnClass: 'btn-disabled',
+            disabled: true,
+            action: 'none'
+        };
     }
 
     var iconClass = taskType === 'writing' ? 'fas fa-pen' : 'fas fa-microphone';
@@ -380,10 +380,10 @@ async function resolveCorrDraftEntry(session, category, entry) {
         if (row === null) {
             // 줄 없음 = 1차 가능. 단 상세 화면에서 왔으면(2차 하러) 1차로 보내지 않는다.
             if (entry === 'detail') return { round: 0, reason: 'state' };
-            // 일시정지 중엔 새 회차(1차) 진입 불가 — 서버 판정(correction_release_blocked)과 같은 기준
-            if (typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(user)) return { round: 0, reason: 'paused' };
             var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), slot);
             if (dl1 && new Date() > dl1) return { round: 0, reason: 'deadline1' };
+            // 일시정지 중엔 새 회차(1차) 진입 불가 — 서버 판정(correction_release_blocked)과 같은 기준
+            if (typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(user)) return { round: 0, reason: 'paused' };
             return { round: 1 };
         }
 
@@ -521,6 +521,12 @@ function getCorrSessionDate(scheduleData, session, pauses) {
     var pz = pauses || (scheduleData && scheduleData.correction_pauses) || _corrCurrentUserPauses();
     var adj = pauseAdjustedYmd(addDaysYmd(base, session.dayOffset), pz);
     return adj ? parseYmdLocal(adj) : null;   // 무기한 정지 구간이면 null(미정)
+}
+
+// 첨삭 일시정지 중이고 1차 마감이 아직 안 지났거나(또는 날짜 미정) → 카드에 마감 대신 정지 안내를 보일 조건
+function _corrPausedNoDeadline(dl1, now) {
+    if (typeof isCorrectionPausedNow !== 'function' || !isCorrectionPausedNow(null)) return false;
+    return !dl1 || (now || new Date()) <= dl1;
 }
 
 function _corrCurrentUserPauses() {
@@ -792,12 +798,13 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
 
     // --- 미제출 (null) ---
     if (!status) {
-        if (typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
+        var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
+        // 일시정지 중이고 아직 마감 전(또는 날짜 미정)이면 마감 대신 정지 안내. 정지 전에 지난 마감은 그대로 '초과'.
+        if (_corrPausedNoDeadline(dl1, now)) {
             rows.push({ html: '<i class="fas fa-pause-circle"></i> 일시정지 중 — 재개 후 1차 마감이 다시 계산됩니다', cls: 'waiting' });
             rows.push({ html: '<i class="fas fa-lock"></i> 2차: 1차 완료 후 진행', cls: 'waiting' });
             return _wrapDeadlineRows(rows);
         }
-        var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
         if (dl1) {   // null(세션 날짜 없음)이면 1차 마감 행 생략
             var diff1 = dl1 - now;
             if (diff1 <= 0) {
@@ -941,6 +948,7 @@ function _updateCardDeadlineEl(containerId, submission, session, scheduleData, t
     // 미제출 → 1차 마감 카운트다운
     if (!status) {
         var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
+        if (_corrPausedNoDeadline(dl1, now)) return false;   // 일시정지 중(마감 전) → 정지 안내 행 유지, 타이머 생략
         if (!dl1) return false;   // 세션 날짜 없음 → 카운트다운 생략
         var diff1 = dl1 - now;
         if (diff1 <= 0) {
