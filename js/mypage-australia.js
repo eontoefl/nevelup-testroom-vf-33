@@ -455,7 +455,9 @@ function renderSummaryCards() {
         document.getElementById('challengeSub').textContent = `${startStr} 시작 예정`;
         document.getElementById('challengeStartDate').textContent = `시작일: ${formatFullDate(startDateStr)}`;
     } else {
-        const dplus = Math.min(diffDaysLocal(startDateStr, today), totalCalendarDays);   // 달력 경과일(단일 출처)
+        // 달력 경과일(단일 출처) — 정지로 멈춘 날수는 뺀다(정규 마이페이지와 같은 규칙)
+        const pausedDaysAus = (typeof pausedDaysUntil === 'function') ? pausedDaysUntil(mpUser.challengePauses, fmtYmd(today)) : 0;
+        const dplus = Math.min(diffDaysLocal(startDateStr, today) - pausedDaysAus, totalCalendarDays);
         const remainingDays = Math.max(0, totalCalendarDays - dplus);
         const elapsedPct = Math.min(100, Math.round((dplus / totalCalendarDays) * 100));
         document.getElementById('challengeStatus').textContent = `D+${dplus} / ${totalCalendarDays}일`;
