@@ -14,9 +14,15 @@
  * 첨삭 스케줄 렌더링 (FEEDBACK 탭 메인)
  * main.js의 _renderCorrectionMode()에서 호출
  */
+// 같은 화면을 두 번 그리라는 요청이 겹치면(초기 렌더 + 세션 동기화 후 재렌더) 늦게 시작한 쪽만 그린다.
+//   조회(await) 사이에 다른 렌더가 시작되면 먼저 시작한 쪽은 중단 — 블록이 두 벌 붙는 문제 방지(2026-10-07).
+var _corrScheduleRenderSeq = 0;
+
 async function renderCorrectionSchedule() {
     var container = document.getElementById('correctionScheduleContainer');
     if (!container) return;
+    var myRun = ++_corrScheduleRenderSeq;
+    var stale = function () { return myRun !== _corrScheduleRenderSeq; };
     container.innerHTML = '';
 
     var track = getCorrectionTrack();
@@ -39,6 +45,7 @@ async function renderCorrectionSchedule() {
     } catch (e) {
         console.warn('⚠️ [Correction] 스케줄 조회 실패:', e);
     }
+    if (stale()) return;
 
     // 개발 모드(localhost): 일정이 배정 안 돼 있으면 지난 일요일을 시작일로 가정
     if (window.CORR_DEV_AUS && (!scheduleData || !scheduleData.start_date)) {
@@ -87,6 +94,7 @@ async function renderCorrectionSchedule() {
 
     // 1-b. 자기주도면 12세션 확정 일정표를 계산·저장(멱등). 종료일 없으면 아무것도 안 함.
     await _ensureCorrSessionDates(user, scheduleData);
+    if (stale()) return;
 
     // 2. 제출 내역 맵 + 3. 마감 연장 맵 (supabase-client.js 공용 로더 — 세션 화면도 같은 함수를 쓴다)
     //    조회 실패면 빈 화면으로 폴백하지 않는다 — 전 세션이 "미제출·시작하기"로 보이는 사고(CORR-DUP-001) 방지
@@ -94,6 +102,7 @@ async function renderCorrectionSchedule() {
         loadCorrectionSubmissionMap(user.id),
         loadCorrectionExtensionMap(user.id)
     ]);
+    if (stale()) return;
     var submissionMap = maps[0];
     var extensionMap = maps[1];
     if (!submissionMap || !extensionMap) {
