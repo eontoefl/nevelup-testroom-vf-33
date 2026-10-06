@@ -68,6 +68,31 @@ function initScheduleScreen() {
     }
 }
 
+/**
+ * 내챌 일시정지 배너 (2026-10-06) — 정규·호주 일정 화면 상단. 정지 중이 아니면 아무것도 안 붙인다.
+ *   "정지 중"의 판정과 날짜 보정은 supabase-client.js / timezone-utils.js가 한 출처로 맡는다.
+ */
+function _appendChallengePauseBanner(container) {
+    var p = (typeof getActiveChallengePause === 'function') ? getActiveChallengePause(currentUser) : null;
+    if (!p || !container) return;
+    function lbl(ymd) {
+        var d = parseYmdLocal(ymd);
+        if (!d) return ymd;
+        return (d.getMonth() + 1) + '월 ' + d.getDate() + '일(' + ['일', '월', '화', '수', '목', '금', '토'][d.getDay()] + ')';
+    }
+    var range = lbl(p.paused_from) + '부터 ' + (p.resume_on ? lbl(p.resume_on) + ' 재개' : '재개일 미정');
+    var box = document.createElement('div');
+    box.className = 'correction-notice';
+    box.innerHTML =
+        '<i class="fas fa-pause-circle correction-notice-icon"></i>' +
+        '<div class="correction-notice-content">' +
+            '<div class="correction-notice-title">일시정지 중</div>' +
+            '<div class="correction-notice-body">' + range +
+            '<br>정지 기간에는 새 과제를 풀 수 없고, 이미 완료한 과제만 다시풀기로 복습할 수 있어요. 남은 일정은 정지한 기간만큼 뒤로 밀려요.</div>' +
+        '</div>';
+    container.appendChild(box);
+}
+
 /** 정규코스 렌더링 */
 function _renderRegularMode() {
     // 정규코스 컨테이너 표시 / 연습·첨삭·호주 컨테이너 숨김
@@ -185,7 +210,10 @@ function renderAustraliaSchedule(program) {
     var startDate = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
     console.log('[Australia] startDate:', startDateStr, ausDate ? '(호주전용)' : '(정규 fallback)');
     var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    
+
+    // 일시정지 배너 (정지 중일 때만)
+    _appendChallengePauseBanner(container);
+
     for (var week = 1; week <= totalWeeks; week++) {
         (function(w) {
             var weekBlock = document.createElement('div');
@@ -225,8 +253,9 @@ function renderAustraliaSchedule(program) {
                 
                 var dateStr = '';
                 if (startDate) {
-                    var d = getChallengeTaskDate(startDate, w, dayIndex);   // 일정 계산 단일 출처(timezone-utils.js)
+                    var d = getChallengeTaskDate(startDate, w, dayIndex, currentUser && currentUser.challengePauses);   // 일정 계산 단일 출처(+정지 보정)
                     if (d) dateStr = monthNames[d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0');
+                    else dateStr = '정지 중';   // 무기한 정지 구간 → 날짜 미정
                 }
                 
                 dayButton.innerHTML =
@@ -444,6 +473,11 @@ function _createOmrCard(opts) {
         '<i class="fas fa-chevron-right omr-card-arrow"></i>';
 
     card.onclick = function() {
+        // 일시정지 중엔 OMR(실전 기록 전용) 제출 불가
+        if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(null)) {
+            alert(typeof PAUSED_TASK_MSG !== 'undefined' ? PAUSED_TASK_MSG : '지금은 일시정지 중이에요.');
+            return;
+        }
         var url = 'omr-card.html?type=' + opts.type
             + '&modules=' + opts.modules.join(',')
             + '&week=' + encodeURIComponent(opts.week)
@@ -1079,6 +1113,11 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
             _showAusGuideRequiredAlert();
             return;
         }
+        // 일시정지 중엔 호주 과제(외부 링크·제출) 새로 시작 불가
+        if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(null)) {
+            alert(typeof PAUSED_TASK_MSG !== 'undefined' ? PAUSED_TASK_MSG : '지금은 일시정지 중이에요.');
+            return;
+        }
         actionFn();
     }
     
@@ -1258,6 +1297,9 @@ function renderSchedule(program) {
     // 월 영문 약어
     const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
+    // 일시정지 배너 (정지 중일 때만, 주차 블록 위)
+    _appendChallengePauseBanner(container);
+
     // 자기주도 v2: 세트별 배정 날짜(계산기) + 오늘 배정 세트(강조용)
     const isSpV2 = (typeof isSelfPacedV2 === 'function') && isSelfPacedV2(currentUser);
     const spTodaySets = (isSpV2 && typeof getSelfPacedTodaySets === 'function') ? getSelfPacedTodaySets(currentUser) : [];
@@ -1320,8 +1362,8 @@ function renderSchedule(program) {
                 const sd = (typeof getSelfPacedSetDate === 'function') ? getSelfPacedSetDate(currentUser, week, dayKr) : null;
                 if (sd) dateStr = `${monthNames[sd.getMonth()]} ${String(sd.getDate()).padStart(2, '0')}`;
             } else if (startDate && !(currentUser && currentUser.selfPaced)) {
-                const d = getChallengeTaskDate(startDate, week, dayIndex);   // 일정 계산 단일 출처(timezone-utils.js)
-                if (d) dateStr = `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
+                const d = getChallengeTaskDate(startDate, week, dayIndex, currentUser && currentUser.challengePauses);   // 일정 계산 단일 출처(+정지 보정)
+                dateStr = d ? `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}` : '정지 중';
             }
             
             // 진도율 dot (ProgressTracker가 로드됐으면)
@@ -1966,13 +2008,21 @@ function _renderDeadlineBanner(week, dayKr) {
     var dayOffset = dayMap[dayKr];
     if (dayOffset === undefined) return;
 
-    // 과제 마감(다음날 04:00 + 연장) — 일정 계산 단일 출처(timezone-utils.js). 시작일 형식 오류면 표시 안 함.
-    var deadline = getChallengeTaskDeadline(user.startDate, week, dayOffset, window._deadlineExtensions, getUserTimezone());
-    if (!deadline) return;
-
+    // 과제 마감(다음날 04:00 + 연장 + 정지 보정) — 일정 계산 단일 출처(timezone-utils.js). 시작일 형식 오류면 표시 안 함.
+    var deadline = getChallengeTaskDeadline(user.startDate, week, dayOffset, window._deadlineExtensions, getUserTimezone(), user.challengePauses || []);
     var now = new Date();
     var banner = document.createElement('div');
     banner.id = 'taskListDeadlineBanner';
+
+    // 일시정지 중이면 마감 대신 정지 안내
+    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(user)) {
+        banner.className = 'task-deadline-banner deadline-passed';
+        banner.innerHTML = '<i class="fas fa-pause"></i> 일시정지 중 — 완료한 과제만 다시풀기 가능';
+        var wh0 = document.querySelector('#taskListScreen .welcome-header');
+        if (wh0) wh0.parentNode.insertBefore(banner, wh0.nextSibling);
+        return;
+    }
+    if (!deadline) return;
 
     if (now > deadline) {
         banner.className = 'task-deadline-banner deadline-passed';

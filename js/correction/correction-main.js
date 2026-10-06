@@ -80,6 +80,9 @@ async function renderCorrectionSchedule() {
         return;
     }
 
+    // 일시정지 이력(2026-10-06): 세션 날짜 계산(getCorrSessionDate)이 쓰도록 일정 데이터에 실어 둔다
+    scheduleData.correction_pauses = user.correctionPauses || [];
+
     var durationWeeks = scheduleData.duration_weeks || 4;
 
     // 1-b. 자기주도면 12세션 확정 일정표를 계산·저장(멱등). 종료일 없으면 아무것도 안 함.
@@ -106,6 +109,9 @@ async function renderCorrectionSchedule() {
 
     // 0. 공지사항 배너 (첨삭 전용 — 메인 코스와 무관)
     _renderCorrectionNotice(container);
+
+    // 0-b. 일시정지 배너 (정지 중일 때만)
+    _renderCorrectionPauseBanner(container, user);
 
     // 연장(2학기) 활성화 여부 / 시작 여부
     // 호주첨삭은 12세션만 운영 — 연장(13~24세션) 미도입
@@ -312,6 +318,34 @@ function _getSessionStatus(writingSub, speakingSub) {
 
     // 하나라도 진행중이면
     return { dotClass: 'dot-partial', label: '진행중' };
+}
+
+/**
+ * 첨삭 일시정지 배너 (정지 중일 때만, 공지 아래)
+ */
+function _renderCorrectionPauseBanner(container, user) {
+    var p = (typeof getActiveCorrectionPause === 'function') ? getActiveCorrectionPause(user) : null;
+    if (!p) return;
+    var box = document.createElement('div');
+    box.className = 'correction-notice';
+    box.innerHTML =
+        '<i class="fas fa-pause-circle correction-notice-icon"></i>' +
+        '<div class="correction-notice-content">' +
+            '<div class="correction-notice-title">첨삭 일시정지 중</div>' +
+            '<div class="correction-notice-body">' + _pauseRangeLabel(p) +
+            '<br>정지 전에 제출한 회차는 끝까지 진행되고, 새 회차는 재개 후 열려요.</div>' +
+        '</div>';
+    container.appendChild(box);
+}
+
+// 정지 기간 문구: "10월 6일(화)부터 10월 20일(화) 재개" / "10월 6일(화)부터 재개일 미정"
+function _pauseRangeLabel(p) {
+    function lbl(ymd) {
+        var d = parseYmdLocal(ymd);
+        if (!d) return ymd;
+        return (d.getMonth() + 1) + '월 ' + d.getDate() + '일(' + ['일', '월', '화', '수', '목', '금', '토'][d.getDay()] + ')';
+    }
+    return lbl(p.paused_from) + '부터 ' + (p.resume_on ? lbl(p.resume_on) + ' 재개' : '재개일 미정');
 }
 
 /**

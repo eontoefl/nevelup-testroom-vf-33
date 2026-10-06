@@ -777,8 +777,8 @@ async function saveVocabRecord(correctCount, totalCount, percentage) {
                 return;
             }
             console.log('📝 [Vocab] 연습코스 기록 저장 완료');
-        } else if (window._deadlinePassedMode) {
-            // 마감 후 제출 → current_record에 저장 (연습 기록, 인증률 무관)
+        } else if (window._deadlinePassedMode || window._pausedMode) {
+            // 마감 후 제출(또는 일시정지 중 다시풀기) → current_record에 저장 (연습 기록, 인증률 무관)
             await upsertCurrentRecord(user.id, 'vocab', 1, scheduleInfo.week, scheduleInfo.day, recordJson);
             console.log('📝 [Vocab] 마감 후 제출 — current_record 저장 완료');
         } else {

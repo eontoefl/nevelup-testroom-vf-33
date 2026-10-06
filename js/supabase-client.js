@@ -245,6 +245,16 @@ async function getStudentProgram(userEmail) {
         } catch (e) { /* 컬럼 미존재 → 미저장으로 간주 */ }
     }
 
+    // 일시정지 이력(2026-10-06): 칸이 아직 없는 환경에서도 로그인이 깨지지 않게 별도 조회(자기주도 칸과 같은 관례).
+    let challengePauses = [], correctionPauses = [];
+    try {
+        const pzRows = await supabaseSelect('applications', `id=eq.${app.id}&select=challenge_pauses,correction_pauses`);
+        if (pzRows && pzRows[0]) {
+            challengePauses = _pauseEntriesOf(pzRows[0].challenge_pauses);
+            correctionPauses = _pauseEntriesOf(pzRows[0].correction_pauses);
+        }
+    } catch (e) { /* 칸 미존재 → 정지 없음으로 */ }
+
     return {
         program: app.assigned_program || app.preferred_program || '내벨업챌린지 - Standard',
         startDate: app.schedule_start || app.preferred_start_date,
@@ -258,8 +268,79 @@ async function getStudentProgram(userEmail) {
         selfPaced: selfPaced,  // 자기주도 모드 여부
         selfPacedWeeks: selfPacedWeeks,  // (구) 완료 기한(주). 시작일+N주 = 만료일
         selfPacedEndDate: selfPacedEndDate,  // (v2) 종료일 YYYY-MM-DD. 있으면 압축+매일마감 모드로 gate
-        selfPacedSchedule: selfPacedSchedule  // (v2) 저장된 확정 일정표(JSON) 또는 null
+        selfPacedSchedule: selfPacedSchedule,  // (v2) 저장된 확정 일정표(JSON) 또는 null
+        challengePauses: challengePauses,    // 내챌 일시정지 이력(배열)
+        correctionPauses: correctionPauses   // 첨삭 일시정지 이력(배열)
     };
+}
+
+// ================================================
+// 일시정지 상태 (2026-10-06, 2단계)
+//   "정지 중인가" 판정은 여기(모든 화면에 로드되는 파일)에, 날짜 보정은 timezone-utils.js에 둔다.
+//   항목 = { paused_from, resume_on(무기한 null), shift_days, status 'open'|'resumed'|'canceled' }
+// ================================================
+function _pauseEntriesOf(raw) {
+    if (!raw) return [];
+    var arr = raw;
+    if (typeof raw === 'string') { try { arr = JSON.parse(raw); } catch (e) { return []; } }
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (e) { return e && e.paused_from; });
+}
+// 오늘('YYYY-MM-DD'): 학생 시간대 + 새벽 4시 규칙(getEffectiveToday)이 있으면 그것, 없으면 브라우저 날짜
+function _pauseTodayYmdFor(user) {
+    var d = (typeof getEffectiveToday === 'function') ? getEffectiveToday(user && user.timezone) : new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+/** todayYmd 기준 정지 중인 항목(status open, paused_from ≤ 오늘 < resume_on|∞) 또는 null */
+function getActivePauseOn(pauses, todayYmd) {
+    var list = _pauseEntriesOf(pauses);
+    for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (e.status === 'open' && todayYmd >= e.paused_from && (!e.resume_on || todayYmd < e.resume_on)) return e;
+    }
+    return null;
+}
+function _pauseUserOrCurrent(user) {
+    if (user) return user;
+    if (typeof getCurrentUser === 'function') return getCurrentUser();
+    return window.currentUser || null;
+}
+function getActiveChallengePause(user) {
+    var u = _pauseUserOrCurrent(user);
+    return u ? getActivePauseOn(u.challengePauses, _pauseTodayYmdFor(u)) : null;
+}
+function getActiveCorrectionPause(user) {
+    var u = _pauseUserOrCurrent(user);
+    return u ? getActivePauseOn(u.correctionPauses, _pauseTodayYmdFor(u)) : null;
+}
+function isChallengePausedNow(user) { return !!getActiveChallengePause(user); }
+function isCorrectionPausedNow(user) { return !!getActiveCorrectionPause(user); }
+
+/**
+ * 세션 복원·마이페이지 진입 때 DB에서 최신값을 다시 읽는다(관리자가 정지를 걸어도 열린 탭이 옛 상태로 돌지 않게).
+ *   갱신: startDate·australiaStartDate·정지 이력 2종·첨삭 사용 여부·첨삭 시작일·(자기주도) 종료일·확정표. sessionStorage에도 저장.
+ *   실패하면 기존 값을 유지하고 그대로 돌려준다.
+ */
+async function refreshPauseState(user) {
+    if (!user || !user.applicationId) return user;
+    var rows = await supabaseSelect('applications',
+        'id=eq.' + user.applicationId + '&select=schedule_start,australia_schedule_start,correction_enabled,correction_start_date,challenge_pauses,correction_pauses,self_paced_end_date,self_paced_schedule');
+    if (!rows || !rows[0]) return user;
+    var r = rows[0];
+    if (r.schedule_start) user.startDate = r.schedule_start;
+    user.australiaStartDate = r.australia_schedule_start || null;
+    user.challengePauses = _pauseEntriesOf(r.challenge_pauses);
+    user.correctionPauses = _pauseEntriesOf(r.correction_pauses);
+    user.correctionStartDate = r.correction_start_date || null;
+    if (typeof isCorrectionActiveNow === 'function') {
+        user.correctionEnabled = isCorrectionActiveNow({ correctionEnabled: !!r.correction_enabled, correctionStartDate: r.correction_start_date || null }, user.timezone || 'Asia/Seoul');
+    }
+    if (user.selfPaced) {
+        if (r.self_paced_end_date) user.selfPacedEndDate = r.self_paced_end_date;
+        if (r.self_paced_schedule) user.selfPacedSchedule = r.self_paced_schedule;
+    }
+    try { sessionStorage.setItem('currentUser', JSON.stringify(user)); } catch (e) {}
+    return user;
 }
 
 // ================================================
@@ -761,6 +842,11 @@ async function updateCorrectionSubmission(id, data) {
  */
 async function submitCorrectionDraft(opts) {
     var saved = null;
+    // 일시정지 마지막 방어(2026-10-06): 정지 중 새 회차 1차 저장 금지(정지 전 제출한 회차의 2차는 허용 — R3)
+    if (opts.round !== 2 && typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
+        console.warn('⏸️ [Correction] 첨삭 일시정지 중 — 1차 저장 차단');
+        return { ok: false, reason: 'paused' };
+    }
     if (opts.round === 2) {
         if (!opts.submissionId) {
             console.error('❌ [Correction] 2차 저장인데 줄 id 없음');

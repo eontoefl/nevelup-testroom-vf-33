@@ -509,28 +509,78 @@ function diffDaysLocal(a, b) {
     return Math.round((ub - ua) / 86400000);
 }
 
-/**
- * 내챌 과제 날짜 = 시작일 + (주차−1)×7 + 요일 번호(일=0…토=6). 로컬 자정 Date. 시작일 없으면 null.
- * @param {string|Date} startYmd - 시작일(호출처가 쓰던 출처 그대로: 정규 startDate / 호주 australiaStartDate 등)
- */
-function getChallengeTaskDate(startYmd, week, dayIndex) {
-    var start = parseYmdLocal(startYmd);
-    if (!start || !week || dayIndex == null || dayIndex < 0) return null;
-    return addDaysLocal(start, (week - 1) * 7 + dayIndex);
+// ---------- 일시정지 보정 (2026-10-06, 2단계) ----------
+// 정지 이력(applications.challenge_pauses / correction_pauses 배열)을 받아 "시작일+오프셋" 날짜에 정지 기간을 더한다.
+//   항목 = { paused_from, resume_on(무기한 null), shift_days(7의 배수), status 'open'|'resumed'|'canceled' }
+//   서버 pause_adjusted_date / 공홈 pauseAdjustedYmd와 같은 규칙. 저장된 날짜(자기주도 확정표·첨삭 회차표)는
+//   재개 때 서버가 이미 밀어 두므로 여기서 다시 보정하지 않는다.
+//   "정지 중인가" 판정은 supabase-client.js(getActivePauseOn 등 — 모든 화면에 로드됨)에 있다.
+function normalizePauses(raw) {
+    if (!raw) return [];
+    var arr = raw;
+    if (typeof raw === 'string') { try { arr = JSON.parse(raw); } catch (e) { return []; } }
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (e) { return e && e.paused_from; });
 }
 
-function getChallengeTaskYmd(startYmd, week, dayIndex) {
-    return fmtYmd(getChallengeTaskDate(startYmd, week, dayIndex));
+/** 'YYYY-MM-DD' + 정지 기간 → 'YYYY-MM-DD'. 무기한 정지 구간에 걸리면 null(미정). 이력 없으면 그대로. */
+function pauseAdjustedYmd(ymd, pauses) {
+    var list = normalizePauses(pauses).filter(function (e) { return e.status !== 'canceled'; })
+        .sort(function (a, b) { return a.paused_from < b.paused_from ? -1 : 1; });
+    if (!ymd || list.length === 0) return ymd;
+    var v = ymd;
+    for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (v >= e.paused_from) {
+            if (e.shift_days == null || e.shift_days === '') return null;
+            v = addDaysYmd(v, Number(e.shift_days));
+        }
+    }
+    return v;
+}
+
+/** 시작일~today 사이에 정지로 멈춰 있던 날수 (경과일·주차 계산에서 뺀다) */
+function pausedDaysUntil(pauses, todayYmd) {
+    var list = normalizePauses(pauses).filter(function (e) { return e.status !== 'canceled'; });
+    if (!todayYmd || list.length === 0) return 0;
+    var days = 0;
+    for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (todayYmd < e.paused_from) continue;
+        var elapsed = diffDaysLocal(e.paused_from, todayYmd);
+        if (elapsed == null) continue;
+        days += (e.shift_days == null || e.shift_days === '') ? elapsed : Math.min(Number(e.shift_days), elapsed);
+    }
+    return days;
+}
+
+/**
+ * 내챌 과제 날짜 = 시작일 + (주차−1)×7 + 요일 번호(일=0…토=6) + 일시정지 기간. 로컬 자정 Date.
+ *   시작일 없으면 null. 무기한 정지 구간에 걸린 과제도 null(미정).
+ * @param {string|Date} startYmd - 시작일(호출처가 쓰던 출처 그대로: 정규 startDate / 호주 australiaStartDate 등)
+ * @param {Array} [pauses] - 정지 이력(challenge_pauses). 없으면 보정 없음.
+ */
+function getChallengeTaskDate(startYmd, week, dayIndex, pauses) {
+    var start = parseYmdLocal(startYmd);
+    if (!start || !week || dayIndex == null || dayIndex < 0) return null;
+    var nominal = addDaysLocal(start, (week - 1) * 7 + dayIndex);
+    var adj = pauseAdjustedYmd(fmtYmd(nominal), pauses);
+    return adj ? parseYmdLocal(adj) : null;
+}
+
+function getChallengeTaskYmd(startYmd, week, dayIndex, pauses) {
+    return fmtYmd(getChallengeTaskDate(startYmd, week, dayIndex, pauses));
 }
 
 /**
  * 내챌 과제 마감 = 과제 날짜 다음날 04:00(학생 시간대) + tr_deadline_extensions 연장(original_date === 과제 날짜).
  * @param {Array} [extensions] - { original_date, extra_days } 목록 (호출자가 보유한 배열)
  * @param {string} [timezone] - IANA (미지정 시 getUserTimezone())
+ * @param {Array} [pauses] - 정지 이력. 무기한 정지 구간이면 null(마감 없음 = 잠그지 않음)
  * @returns {Date|null}
  */
-function getChallengeTaskDeadline(startYmd, week, dayIndex, extensions, timezone) {
-    var taskDate = getChallengeTaskDate(startYmd, week, dayIndex);
+function getChallengeTaskDeadline(startYmd, week, dayIndex, extensions, timezone, pauses) {
+    var taskDate = getChallengeTaskDate(startYmd, week, dayIndex, pauses);
     if (!taskDate) return null;
     var tz = timezone || getUserTimezone();
     var deadline = getTaskDeadline(taskDate, tz);
@@ -545,9 +595,10 @@ function getChallengeTaskDeadline(startYmd, week, dayIndex, extensions, timezone
  *   diffDays = 달력 경과일(시작일 당일 0), weekNum = floor(diffDays/7)+1, dayIndex = diffDays % 7 (6 = 7일째 = 휴무).
  *   보정(상한·하한)은 호출처가 한다. 시작일 없으면 null.
  */
-function getChallengeDayPosition(startYmd, today) {
+function getChallengeDayPosition(startYmd, today, pauses) {
     var diffDays = diffDaysLocal(startYmd, today);
     if (diffDays == null) return null;
+    diffDays -= pausedDaysUntil(pauses, fmtYmd(parseYmdLocal(today)));   // 정지로 멈춘 날수는 경과일에서 뺀다
     return { diffDays: diffDays, weekNum: Math.floor(diffDays / 7) + 1, dayIndex: ((diffDays % 7) + 7) % 7 };
 }
 

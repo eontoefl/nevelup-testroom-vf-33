@@ -84,7 +84,9 @@ var ErrorNote = {
 
         var row = this._dbRow;
         var tab = this._activeTab;
-        var deadlinePassed = window._deadlinePassedMode || false;
+        var pausedMode = window._pausedMode || false;                       // 일시정지 중(2026-10-06): 실전 탭 잠금
+        var deadlinePassed = (window._deadlinePassedMode || pausedMode) || false;
+        var lockWhy = pausedMode ? '일시정지 중에는' : '마감으로 인해';
 
         // ── 실전풀이 탭 ──
         if (tab === 'initial') {
@@ -92,11 +94,11 @@ var ErrorNote = {
             var existingText = (row && row.error_note_text) || '';
 
             if (deadlinePassed) {
-                // 마감 지남 → 제출 여부 무관하게 잠김
+                // 마감 지남(또는 일시정지) → 제출 여부 무관하게 잠김
                 if (existingText) {
-                    this._showReadonly(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, existingText, '마감으로 인해 수정이 불가합니다.');
+                    this._showReadonly(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, existingText, lockWhy + ' 수정이 불가합니다.');
                 } else {
-                    this._showLocked(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, '마감으로 인해 작성이 불가합니다.');
+                    this._showLocked(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, lockWhy + ' 작성이 불가합니다.');
                 }
             } else if (!hasInitial) {
                 // 실전풀이 안 함 → 잠김
@@ -176,7 +178,7 @@ var ErrorNote = {
 
         var isSpeaking = this._sectionType === 'speaking';
         var isInitialTab = this._activeTab === 'initial';
-        var deadlinePassed = window._deadlinePassedMode || false;
+        var deadlinePassed = (window._deadlinePassedMode || window._pausedMode) || false;   // 일시정지 중도 실전 파일 잠금
 
         this._selectedFiles = [null, null, null, null];
         this._existingFiles = [null, null, null, null];

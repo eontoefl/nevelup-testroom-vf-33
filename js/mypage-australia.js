@@ -38,6 +38,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     mpUser = JSON.parse(saved);
     console.log('📊 [MyPage-AUS] 유저:', mpUser.name, mpUser.programType);
 
+    // 시작일·일시정지 이력 최신값 동기화(2026-10-06) — 실패하면 세션 값 그대로
+    if (typeof refreshPauseState === 'function') {
+        try { mpUser = await refreshPauseState(mpUser); } catch (e) { console.warn('⚠️ [MyPage-AUS] 동기화 실패:', e); }
+    }
+
     document.getElementById('userName').textContent = mpUser.name;
     document.getElementById('programBadge').textContent = '호주과정';
 
@@ -162,7 +167,7 @@ function renderAusGrass() {
             // 이 날 마감 = 시작일 + (주-1)*7 + 요일 → 다음날 04:00 (호주 정규와 동일, 연장 없음)
             let past = false;
             if (startDate && typeof getChallengeTaskDeadline === 'function') {
-                const dl = getChallengeTaskDeadline(startDateStr, w, di, null, tz);   // 연장 없음(호주) — 단일 출처
+                const dl = getChallengeTaskDeadline(startDateStr, w, di, null, tz, mpUser.challengePauses);   // 연장 없음(호주) — 단일 출처(+정지 보정)
                 past = !!(dl && now >= dl);
             }
 
@@ -373,7 +378,14 @@ function renderTodayTasks() {
     }
 
     const effectiveToday = getEffectiveToday(getUserTimezone());
-    const pos = getChallengeDayPosition(getAusStartDate(), effectiveToday);   // 일정 계산 단일 출처(timezone-utils.js)
+
+    // 일시정지 중이면 오늘 과제 없음
+    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(mpUser)) {
+        container.innerHTML = '<p class="today-task-empty">⏸️ 일시정지 중 — 재개 후 과제가 이어집니다</p>';
+        return;
+    }
+
+    const pos = getChallengeDayPosition(getAusStartDate(), effectiveToday, mpUser.challengePauses);   // 일정 계산 단일 출처(+정지 기간 차감)
     if (!pos) {
         container.innerHTML = '<p class="today-task-empty">시작일 정보 없음</p>';
         return;
@@ -528,7 +540,8 @@ function _countAusTasksDue(programType, totalWeeks, startDateStr) {
 
     for (let w = 1; w <= totalWeeks; w++) {
         for (let d = 0; d < dayOrder.length; d++) {
-            const taskDate = getChallengeTaskDate(startDateStr, w, d);   // 일정 계산 단일 출처
+            const taskDate = getChallengeTaskDate(startDateStr, w, d, mpUser.challengePauses);   // 일정 계산 단일 출처(+정지 보정)
+            if (!taskDate) continue;   // 무기한 정지 구간 → 아직 배정 안 됨
             // 과제 날짜가 오늘 이하면 분모 포함 (오늘 과제는 마감 전이라도 포함 — 정규와 동일)
             if (taskDate <= effectiveToday) {
                 const tasks = getAusDayTasks(programType, w, dayOrder[d]) || [];

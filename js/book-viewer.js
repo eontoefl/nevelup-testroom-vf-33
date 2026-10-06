@@ -1251,6 +1251,7 @@ function parseTaskParams() {
         week: params.get('week') || '1',
         day: params.get('day') || '월',
         deadline: params.get('deadline') || null,
+        paused: params.get('paused') === '1',   // 일시정지 중 '계속 읽기'(이미 인증된 날만 진입) — 인증 저장 생략
         mode: mode || null
     };
     BookViewer.requiredMemos = current * 2;
@@ -1306,6 +1307,9 @@ function updateTaskBar() {
     if (BookViewer.isCertified) {
         DOM.taskBarText.textContent = '✅ 오늘 과제 인증 완료';
         DOM.taskBar.classList.add('certified');
+    } else if (BookViewer.taskParams.paused) {
+        DOM.taskBarText.textContent = '⏸️ 일시정지 중 — 메모 작성은 가능하지만 인증 불가';
+        DOM.taskBar.classList.add('deadline-passed');
     } else if (BookViewer.taskParams.deadline === 'passed') {
         DOM.taskBarText.textContent = '⚠️ 마감 지남 — 메모 작성은 가능하지만 인증 불가';
         DOM.taskBar.classList.add('deadline-passed');
@@ -1332,6 +1336,7 @@ async function checkAndCertify() {
     if (!BookViewer.taskParams) return;
     if (BookViewer.isCertified) return;
     if (BookViewer.taskParams.deadline === 'passed') return;
+    if (BookViewer.taskParams.paused) return;   // 일시정지 중엔 인증 저장 안 함
 
     var memoCount = getMemoCount();
     var required = BookViewer.requiredMemos;

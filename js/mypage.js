@@ -36,6 +36,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     mpUser = JSON.parse(saved);
     console.log('📊 [MyPage] 유저:', mpUser.name, mpUser.programType);
 
+    // 1-b. 시작일·일시정지 이력 최신값 동기화(2026-10-06) — 실패하면 세션 값 그대로
+    if (typeof refreshPauseState === 'function') {
+        try { mpUser = await refreshPauseState(mpUser); } catch (e) { console.warn('⚠️ [MyPage] 동기화 실패:', e); }
+    }
+
     // 2. UI 기본 세팅
     document.getElementById('userName').textContent = mpUser.name;
     document.getElementById('programBadge').textContent = mpUser.program || '내벨업챌린지';
@@ -361,8 +366,14 @@ function renderTodayTasks() {
     // 오늘 날짜 계산 (학생 타임존 기준 새벽 4시)
     const effectiveToday = getEffectiveToday(getUserTimezone());
 
-    // 오늘이 몇 주차 무슨 요일인지 — 일정 계산 단일 출처(timezone-utils.js). 요일은 시작일 기준 7일째(6)=휴무.
-    const pos = getChallengeDayPosition(mpUser.startDate, effectiveToday);
+    // 일시정지 중이면 오늘 과제 없음
+    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(mpUser)) {
+        container.innerHTML = '<p class="today-task-empty">⏸️ 일시정지 중 — 재개 후 과제가 이어집니다</p>';
+        return;
+    }
+
+    // 오늘이 몇 주차 무슨 요일인지 — 일정 계산 단일 출처(timezone-utils.js). 요일은 시작일 기준 7일째(6)=휴무. 정지 기간은 경과일에서 뺀다.
+    const pos = getChallengeDayPosition(mpUser.startDate, effectiveToday, mpUser.challengePauses);
     if (!pos) {
         container.innerHTML = '<p class="today-task-empty">시작일 정보 없음</p>';
         return;
@@ -454,7 +465,9 @@ function renderSummaryCards() {
             ? `완료 기한: ${formatFullDate(spLastDay)}`
             : `시작일: ${formatFullDate(mpUser.startDate)}`;
     } else {
-        const dplus = Math.min(diffDaysLocal(mpUser.startDate, today), totalCalendarDays);   // 달력 경과일(단일 출처)
+        // 달력 경과일(단일 출처) — 정지로 멈춘 날수는 뺀다
+        const pausedDays = (typeof pausedDaysUntil === 'function') ? pausedDaysUntil(mpUser.challengePauses, fmtYmd(today)) : 0;
+        const dplus = Math.min(diffDaysLocal(mpUser.startDate, today) - pausedDays, totalCalendarDays);
         const remainingDays = Math.max(0, totalCalendarDays - dplus);
         const elapsedPct = Math.min(100, Math.round((dplus / totalCalendarDays) * 100));
         document.getElementById('challengeStatus').textContent = `D+${dplus} / ${totalCalendarDays}일`;
@@ -573,13 +586,14 @@ function countTasksDueToday(programType, totalWeeks) {
 
     for (let w = 1; w <= totalWeeks; w++) {
         for (let d = 0; d < dayOrder.length; d++) {
-            // 과제 날짜·연장 — 일정 계산 단일 출처(timezone-utils.js)
-            const taskDate = getChallengeTaskDate(mpUser.startDate, w, d);
+            // 과제 날짜·연장 — 일정 계산 단일 출처(timezone-utils.js). 무기한 정지 구간 과제(null)는 아직 배정 안 된 것 → 분모 제외
+            const taskDate = getChallengeTaskDate(mpUser.startDate, w, d, mpUser.challengePauses);
+            if (!taskDate) continue;
             const ext = (mpDeadlineExtensions || []).find(e => e.original_date === fmtYmd(taskDate));
 
             // 연장된 과제: 연장된 마감이 아직 안 지났으면 분모에서 제외
             if (ext) {
-                const extDeadline = getChallengeTaskDeadline(mpUser.startDate, w, d, mpDeadlineExtensions, tz);
+                const extDeadline = getChallengeTaskDeadline(mpUser.startDate, w, d, mpDeadlineExtensions, tz, mpUser.challengePauses);
                 if (now < extDeadline) continue;
             }
 
@@ -733,8 +747,8 @@ function getDeadlineForDayNum(dayNum) {
     const weekIndex = Math.floor(zeroIndex / 6); // 몇 번째 주 (0-based)
     const dayIndex = zeroIndex % 6;              // 주 내 몇 번째 날 (0=일, 5=금)
 
-    // 기본 마감(다음날 04:00, 연장 없음 — 연장은 buildExtendedDeadlineMap이 따로 처리) — 일정 계산 단일 출처
-    return getChallengeTaskDeadline(mpUser.startDate, weekIndex + 1, dayIndex, null, getUserTimezone());
+    // 기본 마감(다음날 04:00, 연장 없음 — 연장은 buildExtendedDeadlineMap이 따로 처리) — 일정 계산 단일 출처(+정지 보정)
+    return getChallengeTaskDeadline(mpUser.startDate, weekIndex + 1, dayIndex, null, getUserTimezone(), mpUser.challengePauses);
 }
 
 /**
@@ -758,7 +772,9 @@ function buildExtendedDeadlineMap() {
 
         // 아직 마감 전이면 → dayNum 계산해서 맵에 추가
         if (now < extDeadline) {
-            const diffDays = diffDaysLocal(mpUser.startDate, ext.original_date);   // 달력 일수(단일 출처)
+            // 달력 일수(단일 출처) − 그 날짜까지 정지로 멈춘 날수 = 시작일 기준 몇째 날인지
+            const pausedDays = (typeof pausedDaysUntil === 'function') ? pausedDaysUntil(mpUser.challengePauses, ext.original_date) : 0;
+            const diffDays = diffDaysLocal(mpUser.startDate, ext.original_date) - pausedDays;
             const weekIndex = Math.floor(diffDays / 7);
             const dayIndex = diffDays % 7;
             if (dayIndex < dayOrder.length) {

@@ -140,16 +140,17 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
     const hasInitial = record && record.initial_record != null;
     const hasCurrent = record && record.current_record != null;
     const deadlinePassed = (!inPractice) && (window._deadlinePassedMode || false);
-    
-    console.log('📋 [대시보드] 상태:', { hasInitial, hasCurrent, deadlinePassed });
-    
-    // ── 고정인증률 확정 저장 (마감 지남 + 아직 미확정) — 정규코스만
-    if (!inPractice && deadlinePassed && record && record.locked_auth_rate == null) {
+    const pausedMode = (!inPractice) && (window._pausedMode || false);   // 일시정지 중(task-router가 설정)
+
+    console.log('📋 [대시보드] 상태:', { hasInitial, hasCurrent, deadlinePassed, pausedMode });
+
+    // ── 고정인증률 확정 저장 (마감 지남 + 아직 미확정) — 정규코스만. 정지 중엔 확정하지 않는다.
+    if (!inPractice && deadlinePassed && !pausedMode && record && record.locked_auth_rate == null) {
         await _lockAuthRate(record, hasInitial);
     }
-    
+
     // ── 버튼 상태 적용 (v3-design-spec.md §2-4-1) ──
-    _applyButtonStates(hasInitial, hasCurrent, deadlinePassed);
+    _applyButtonStates(hasInitial, hasCurrent, deadlinePassed, pausedMode);
     
     // ── 채점 대시보드 표시 ──
     _renderScorePanel(record, hasInitial, hasCurrent);
@@ -173,16 +174,22 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
  * | 마감 지남 + initial 있음            | 🔄 다시 풀기 (활성) | 📖 해설 보기 (활성)  |
  * | 마감 지남 + current만 있음          | 🔄 다시 풀기 (활성) | 📖 해설 보기 (활성)  |
  */
-function _applyButtonStates(hasInitial, hasCurrent, deadlinePassed) {
+function _applyButtonStates(hasInitial, hasCurrent, deadlinePassed, pausedMode) {
     const btnPractice = document.getElementById('taskBtnPractice');
     const btnPracticeIcon = document.getElementById('taskBtnPracticeIcon');
     const btnPracticeText = document.getElementById('taskBtnPracticeText');
     const btnPracticeStatus = document.getElementById('taskBtnPracticeStatus');
     const btnExplain = document.getElementById('taskBtnExplain');
     const btnExplainStatus = document.getElementById('taskBtnExplainStatus');
-    
+
     // ── 풀이 버튼 ──
-    if (hasInitial || (deadlinePassed && !hasInitial)) {
+    if (pausedMode && !hasInitial) {
+        // 일시정지 중 + 실전 기록 없음 → 새 풀이 불가(잠금). 실전 기록이 있으면 아래 다시풀기 모드로.
+        if (btnPracticeIcon) btnPracticeIcon.className = 'fa-solid fa-pause';
+        if (btnPracticeText) btnPracticeText.textContent = '일시정지 중';
+        if (btnPracticeStatus) btnPracticeStatus.textContent = '정지 기간에는 새 풀이 불가';
+        if (btnPractice) btnPractice.disabled = true;
+    } else if (hasInitial || (deadlinePassed && !hasInitial)) {
         // 다시 풀기 모드
         if (btnPracticeIcon) btnPracticeIcon.className = 'fa-solid fa-arrows-rotate';
         if (btnPracticeText) btnPracticeText.textContent = '다시 풀기';

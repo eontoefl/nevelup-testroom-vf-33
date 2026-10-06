@@ -63,7 +63,7 @@ async function startWritingModule(moduleNumber) {
     // 다시풀기 여부 확인
     // 기준: initial_record 존재 OR 마감 지남 → current_record에 저장
     var state = window._taskDashboardState;
-    var deadlinePassed = window._deadlinePassedMode || false;
+    var deadlinePassed = (window._deadlinePassedMode || window._pausedMode) || false;   // 일시정지 중(실전 기록 있는 과제)도 다시풀기 모드
     if (deadlinePassed) {
         window.currentWritingModule.isRetake = true;
         console.log('🔄 다시풀기 모드 (마감 지남)');

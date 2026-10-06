@@ -149,6 +149,17 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         };
     }
 
+    // 일시정지 중 + 미제출 → 새 회차 시작 차단(정지 전 제출한 회차의 2차는 그대로 — R3)
+    if (statusInfo.action === 'write' && typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
+        statusInfo = {
+            text: '일시정지 중 · 재개 후 진행',
+            btnText: '일시정지 중',
+            btnClass: 'btn-disabled',
+            disabled: true,
+            action: 'none'
+        };
+    }
+
     // 데드라인 지남 + 미제출 → 시작 차단
     if (statusInfo.action === 'write') {
         var state = window._correctionSessionState;
@@ -329,7 +340,8 @@ var CORR_ENTRY_MSG = {
     fetch: '제출 정보를 확인하지 못했어요. 다시 시도해 주세요.',
     state: '지금은 제출할 수 있는 단계가 아니에요. 화면을 새로 불러올게요.',
     deadline1: '1차 제출 마감이 지났습니다.',
-    deadline2: '2차 수정 마감이 지났습니다.'
+    deadline2: '2차 수정 마감이 지났습니다.',
+    paused: '지금은 첨삭 일시정지 중이에요. 재개 후 새 회차를 제출할 수 있어요.'
 };
 
 /**
@@ -368,6 +380,8 @@ async function resolveCorrDraftEntry(session, category, entry) {
         if (row === null) {
             // 줄 없음 = 1차 가능. 단 상세 화면에서 왔으면(2차 하러) 1차로 보내지 않는다.
             if (entry === 'detail') return { round: 0, reason: 'state' };
+            // 일시정지 중엔 새 회차(1차) 진입 불가 — 서버 판정(correction_release_blocked)과 같은 기준
+            if (typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(user)) return { round: 0, reason: 'paused' };
             var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), slot);
             if (dl1 && new Date() > dl1) return { round: 0, reason: 'deadline1' };
             return { round: 1 };
@@ -489,11 +503,11 @@ function _corrDaysDiff(aYmd, bYmd) {
  * @param {object} session - CORRECTION_SCHEDULE 항목
  * @returns {Date|null}
  */
-function getCorrSessionDate(scheduleData, session) {
+function getCorrSessionDate(scheduleData, session, pauses) {
     if (session && session.phase !== 2) {
         var parsed = _parseCorrSessionDates(scheduleData && scheduleData.session_dates);
         if (parsed && parsed.dates[session.session - 1]) {
-            return new Date(parsed.dates[session.session - 1] + 'T00:00:00');
+            return new Date(parsed.dates[session.session - 1] + 'T00:00:00');   // 자기주도 확정표(재개 때 서버가 이미 밀어 둠)
         }
     } else if (session && session.phase === 2) {
         var parsedExt = _parseCorrSessionDates(scheduleData && scheduleData.extension_session_dates);
@@ -503,7 +517,15 @@ function getCorrSessionDate(scheduleData, session) {
     }
     var base = getCorrSessionStartDate(scheduleData, session);
     if (!base) return null;
-    return addDaysLocal(parseYmdLocal(base), session.dayOffset);   // 시작일 + dayOffset (단일 출처 도구)
+    // 시작일 + dayOffset + 일시정지 기간(2026-10-06). 정지 이력은 인자 → scheduleData.correction_pauses(correction-main이 주입) → 로그인 사용자 순.
+    var pz = pauses || (scheduleData && scheduleData.correction_pauses) || _corrCurrentUserPauses();
+    var adj = pauseAdjustedYmd(addDaysYmd(base, session.dayOffset), pz);
+    return adj ? parseYmdLocal(adj) : null;   // 무기한 정지 구간이면 null(미정)
+}
+
+function _corrCurrentUserPauses() {
+    var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+    return (u && u.correctionPauses) || [];
 }
 
 /**
@@ -770,6 +792,11 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
 
     // --- 미제출 (null) ---
     if (!status) {
+        if (typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
+            rows.push({ html: '<i class="fas fa-pause-circle"></i> 일시정지 중 — 재개 후 1차 마감이 다시 계산됩니다', cls: 'waiting' });
+            rows.push({ html: '<i class="fas fa-lock"></i> 2차: 1차 완료 후 진행', cls: 'waiting' });
+            return _wrapDeadlineRows(rows);
+        }
         var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
         if (dl1) {   // null(세션 날짜 없음)이면 1차 마감 행 생략
             var diff1 = dl1 - now;

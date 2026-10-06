@@ -41,6 +41,9 @@ async function loadDeadlineExtensions() {
  * 
  * @returns {boolean} true면 마감 지남 (과제 시작 불가)
  */
+// 일시정지 중 새 과제 시도 시 안내문 (main.js 호주 과제·OMR 카드도 같은 문구)
+var PAUSED_TASK_MSG = '지금은 일시정지 중이에요.\n정지 기간에는 새 과제를 풀 수 없고, 이미 완료한 과제만 다시풀기로 복습할 수 있어요.';
+
 function isTaskDeadlinePassed() {
     // 연습코스는 마감 없음
     if (typeof isPracticeMode === 'function' && isPracticeMode()) {
@@ -98,13 +101,14 @@ function isTaskDeadlinePassed() {
         return false;
     }
 
-    // 과제 날짜·마감(다음날 04:00 + tr_deadline_extensions 연장) — 일정 계산 단일 출처(timezone-utils.js)
-    var taskDate = getChallengeTaskDate(effectiveStartDate, ct.currentWeek, dayOffset);
+    // 과제 날짜·마감(다음날 04:00 + tr_deadline_extensions 연장 + 일시정지 기간) — 일정 계산 단일 출처(timezone-utils.js)
+    var pauses = user.challengePauses || [];
+    var taskDate = getChallengeTaskDate(effectiveStartDate, ct.currentWeek, dayOffset, pauses);
     if (!taskDate) {
-        console.log('⏰ [마감] 날짜 파싱 실패:', user.startDate);
+        console.log('⏰ [마감] 날짜 없음(시작일 파싱 실패 또는 무기한 정지 구간) — 마감 없음으로 처리:', user.startDate);
         return false;
     }
-    var deadline = getChallengeTaskDeadline(effectiveStartDate, ct.currentWeek, dayOffset, window._deadlineExtensions, getUserTimezone());
+    var deadline = getChallengeTaskDeadline(effectiveStartDate, ct.currentWeek, dayOffset, window._deadlineExtensions, getUserTimezone(), pauses);
 
     var now = new Date();
     var passed = now > deadline;
@@ -146,8 +150,13 @@ async function openIntroBookGuide(params) {
     // ── 메모 기준 계산 ──
     var requiredMemos = current * 2;
 
+    // ── 일시정지 체크(2026-10-06): 정지 중엔 이미 인증된 날만 '계속 읽기', 미인증이면 차단 ──
+    var pausedBook = (typeof isPracticeMode === 'function' && isPracticeMode()) ? false
+        : ((typeof isChallengePausedNow === 'function') && isChallengePausedNow((typeof getCurrentUser === 'function') ? getCurrentUser() : null));
+    window._pausedMode = !!pausedBook;
+
     // ── 마감 체크 ──
-    var deadlinePassed = isTaskDeadlinePassed();
+    var deadlinePassed = !pausedBook && isTaskDeadlinePassed();
     if (deadlinePassed) {
         window._deadlinePassedMode = true;
     } else {
@@ -168,6 +177,10 @@ async function openIntroBookGuide(params) {
             var result = await getStudyResultV3(user.id, sectionType, current, week, day);
             if (result && result.locked_auth_rate === 100) {
                 alreadyCertified = true;
+            }
+            if (pausedBook && !alreadyCertified) {
+                alert(PAUSED_TASK_MSG);
+                return;
             }
             // 누적 메모 수 조회 — 호주 모드면 sort_order=1 (호주 입문서)
             if (typeof supabaseSelect === 'function') {
@@ -264,6 +277,7 @@ async function openIntroBookGuide(params) {
             + '&week=' + week
             + '&day=' + encodeURIComponent(day);
         if (deadlinePassed) url += '&deadline=passed';
+        if (pausedBook) url += '&paused=1';   // 정지 중 '계속 읽기' → 뷰어가 인증 저장 생략
         // Australia 모드면 mode 파라미터 추가 → book-viewer.js가 Australia 입문서 로드
         if (window.courseMode === 'australia') url += '&mode=australia';
         window.location.href = url;
@@ -372,8 +386,32 @@ function executeTask(taskName) {
  * 과제 실제 실행 (팝업 확인 후 호출)
  */
 function _executeTaskCore(taskName) {
+    // ── 일시정지 가드 (2026-10-06) — 정지 중엔 실전 기록이 있는 과제만 다시풀기, 없으면 안내 ──
+    var pauseUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+    var inPracticeP = (typeof isPracticeMode === 'function' && isPracticeMode());
+    var pausedNow = !inPracticeP && (typeof isChallengePausedNow === 'function') && isChallengePausedNow(pauseUser);
+    window._pausedMode = !!pausedNow;
+    if (pausedNow) {
+        var parsedP = parseTaskName(taskName);
+        if (parsedP.type === 'vocab') {
+            // 보카는 대시보드 없이 바로 시작 → 실전 기록이 있을 때만(다시풀기 기록으로 저장)
+            var ctP = (typeof currentTest !== 'undefined') ? currentTest : window.currentTest;
+            getStudyResultV3(pauseUser.id, 'vocab', 1, ctP && ctP.currentWeek, ctP && ctP.currentDay).then(function (r) {
+                if (r && r.initial_record != null) {
+                    window._deadlinePassedMode = false;
+                    _launchVocabModule(parsedP.params.pages);
+                } else {
+                    alert(PAUSED_TASK_MSG);
+                }
+            }).catch(function () { alert(PAUSED_TASK_MSG); });
+            return;
+        }
+        // 4섹션은 과제 대시보드가 실전 기록 여부로 버튼을 잠근다(아래로 진행). 마감 모드는 쓰지 않는다.
+        window._deadlinePassedMode = false;
+    }
+
     // ── 4시 마감 체크 ──
-    if (isTaskDeadlinePassed()) {
+    if (!pausedNow && isTaskDeadlinePassed()) {
         alert('마감 시간(새벽 4시)이 지났습니다.\n연습용으로 풀 수 있지만, 인증률에는 반영되지 않습니다.');
         window._deadlinePassedMode = true;
     } else {

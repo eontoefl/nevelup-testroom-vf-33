@@ -127,6 +127,9 @@ async function handleLogin(event) {
             selfPacedWeeks: programInfo.selfPacedWeeks || null,  // (구) 완료 기한(주). 시작일+N주 = 만료일
             selfPacedEndDate: programInfo.selfPacedEndDate || null,  // (v2) 종료일. 있으면 압축+매일마감 모드
             selfPacedSchedule: programInfo.selfPacedSchedule || null,  // (v2) 저장된 확정 일정표(JSON/객체)
+            challengePauses: programInfo.challengePauses || [],   // 내챌 일시정지 이력
+            correctionPauses: programInfo.correctionPauses || [], // 첨삭 일시정지 이력
+            correctionStartDate: programInfo.correctionStartDate || null,
             timezone: userTimezone  // 학생별 타임존 (IANA)
         };
 
@@ -337,22 +340,19 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (typeof Sentry !== 'undefined' && Sentry.setUser) {
             Sentry.setUser({ id: currentUser.id, email: currentUser.email, username: currentUser.name });
         }
-        // startDate 최신값 동기화 (DB 변경 반영)
-        if (currentUser.applicationId) {
-            supabaseSelect('applications', `id=eq.${currentUser.applicationId}&select=schedule_start,australia_schedule_start`)
-                .then(rows => {
-                    if (rows && rows[0]) {
-                        if (rows[0].schedule_start) {
-                            currentUser.startDate = rows[0].schedule_start;
-                        }
-                        currentUser.australiaStartDate = rows[0].australia_schedule_start || null;
-                        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                        console.log('📋 startDate 동기화 완료:', currentUser.startDate, '/ australia:', currentUser.australiaStartDate);
-                    }
-                });
-        }
-        // 밀린 인증률 일괄 확정 (백그라운드 처리)
-        _fillMissingAuthRates(currentUser.id);
+        // 시작일·정지 이력·첨삭 상태 최신값 동기화(DB 변경 반영). 2026-10-06: 동기화가 끝난 뒤에 인증률 확정을 돌린다
+        // (옛 세션 정보로 정지 기간 과제를 확정하지 않도록). 동기화 실패 시 기존 값 그대로 진행.
+        var _restoreSync = (currentUser.applicationId && typeof refreshPauseState === 'function')
+            ? refreshPauseState(currentUser).then(function (u) {
+                console.log('📋 세션 동기화 완료:', u.startDate, '/ australia:', u.australiaStartDate,
+                    '/ 정지 이력:', (u.challengePauses || []).length, (u.correctionPauses || []).length);
+                // 정지·첨삭 상태가 바뀌었을 수 있으니 탭·일정 화면을 다시 그린다(index.html에서만 존재)
+                if (typeof _initSegmentControl === 'function') { try { _initSegmentControl(); } catch (e) {} }
+                if (typeof initScheduleScreen === 'function' && document.getElementById('scheduleScreen')) { try { initScheduleScreen(); } catch (e) {} }
+            }).catch(function (e) { console.warn('⚠️ 세션 동기화 실패(기존 값 유지):', e); })
+            : Promise.resolve();
+        // 밀린 인증률 일괄 확정 (백그라운드 처리) — 동기화 뒤에
+        _restoreSync.then(function () { _fillMissingAuthRates(currentUser.id); });
         // book.html에서 일반 사용자 → authReady 발행 (뷰어 초기화용)
         if (isBookPage) {
             window.dispatchEvent(new Event('authReady'));
@@ -488,7 +488,8 @@ function _rowTaskDeadlineNormal(row, tz) {
         // 과제 마감(다음날 04:00 + 연장) — 일정 계산 단일 출처(timezone-utils.js). 없으면(book.html 등) 동결 안 함.
         if (typeof getChallengeTaskDeadline !== 'function') return null;
         var exts = (typeof window !== 'undefined' && window._deadlineExtensions) ? window._deadlineExtensions : [];
-        return getChallengeTaskDeadline(startStr, w, dayIdx, exts, tz);
+        // 정지 이력 반영: 무기한 정지 구간 과제는 마감 null → 호출부가 '동결 안 함'(조기 동결 금지)
+        return getChallengeTaskDeadline(startStr, w, dayIdx, exts, tz, currentUser.challengePauses || []);
     } catch (e) {
         return null;
     }
