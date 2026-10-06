@@ -77,9 +77,7 @@ function _ext_deadlineDate(scheduleData) {
         : null;
     var s12 = s12session ? getCorrSessionDate(scheduleData, s12session) : null;
     if (!s12) {
-        var start = new Date((scheduleData.start_date) + 'T00:00:00');
-        s12 = new Date(start.getTime());
-        s12.setDate(s12.getDate() + 25);             // 세션 12 (dayOffset 25) 폴백
+        s12 = addDaysLocal(parseYmdLocal(scheduleData.start_date), 25);   // 세션 12 (dayOffset 25) 폴백 — 단일 출처 도구
     }
     var d = new Date(s12.getTime());
     // s12(목요일 기준) 이후 첫 토요일까지: 토요일=6
@@ -95,7 +93,7 @@ function _ext_fmtDate(d) {
 }
 
 function _ext_ymd(d) {
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return fmtYmd(d);   // timezone-utils.js 단일 출처 도구
 }
 
 // 'YYYY-MM-DD' → 'M/D'

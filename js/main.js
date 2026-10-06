@@ -225,9 +225,8 @@ function renderAustraliaSchedule(program) {
                 
                 var dateStr = '';
                 if (startDate) {
-                    var d = new Date(startDate);
-                    d.setDate(d.getDate() + (w - 1) * 7 + dayIndex);
-                    dateStr = monthNames[d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0');
+                    var d = getChallengeTaskDate(startDate, w, dayIndex);   // 일정 계산 단일 출처(timezone-utils.js)
+                    if (d) dateStr = monthNames[d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0');
                 }
                 
                 dayButton.innerHTML =
@@ -1321,9 +1320,8 @@ function renderSchedule(program) {
                 const sd = (typeof getSelfPacedSetDate === 'function') ? getSelfPacedSetDate(currentUser, week, dayKr) : null;
                 if (sd) dateStr = `${monthNames[sd.getMonth()]} ${String(sd.getDate()).padStart(2, '0')}`;
             } else if (startDate && !(currentUser && currentUser.selfPaced)) {
-                const d = new Date(startDate);
-                d.setDate(d.getDate() + (week - 1) * 7 + dayIndex);
-                dateStr = `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
+                const d = getChallengeTaskDate(startDate, week, dayIndex);   // 일정 계산 단일 출처(timezone-utils.js)
+                if (d) dateStr = `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`;
             }
             
             // 진도율 dot (ProgressTracker가 로드됐으면)
@@ -1968,24 +1966,9 @@ function _renderDeadlineBanner(week, dayKr) {
     var dayOffset = dayMap[dayKr];
     if (dayOffset === undefined) return;
 
-    var startDate = new Date(user.startDate + 'T00:00:00');
-    if (isNaN(startDate.getTime())) return;
-
-    var taskDate = new Date(startDate);
-    taskDate.setDate(taskDate.getDate() + (week - 1) * 7 + dayOffset);
-
-    var tz = getUserTimezone();
-    var deadline = getTaskDeadline(taskDate, tz);
-
-    // 연장 체크
-    var taskDateStr = taskDate.getFullYear() + '-' +
-        String(taskDate.getMonth() + 1).padStart(2, '0') + '-' +
-        String(taskDate.getDate()).padStart(2, '0');
-    var extensions = window._deadlineExtensions || [];
-    var ext = extensions.find(function(e) { return e.original_date === taskDateStr; });
-    if (ext) {
-        deadline = new Date(deadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
-    }
+    // 과제 마감(다음날 04:00 + 연장) — 일정 계산 단일 출처(timezone-utils.js). 시작일 형식 오류면 표시 안 함.
+    var deadline = getChallengeTaskDeadline(user.startDate, week, dayOffset, window._deadlineExtensions, getUserTimezone());
+    if (!deadline) return;
 
     var now = new Date();
     var banner = document.createElement('div');

@@ -13,8 +13,10 @@ const vm = require('vm');
 const path = require('path');
 
 const SRC = path.join(__dirname, '..', 'js', 'correction', 'correction-session.js');
-const sandbox = { window: {}, console: { log() {}, warn() {}, error() {} } };
+const TZ_UTILS = path.join(__dirname, '..', 'js', 'timezone-utils.js');   // 날짜 기본 도구(단일 출처) — index.html과 같은 순서로 먼저 로드
+const sandbox = { window: {}, console: { log() {}, warn() {}, error() {} }, sessionStorage: { getItem() { return null; } } };
 vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(TZ_UTILS, 'utf8'), sandbox);
 vm.runInContext(fs.readFileSync(SRC, 'utf8'), sandbox);
 
 const buildCorrSessionDates = sandbox.buildCorrSessionDates;

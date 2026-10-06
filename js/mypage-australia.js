@@ -135,7 +135,7 @@ function renderAusGrass() {
     grid.className = 'grass-grid ' + (programType === 'standard' ? 'grass-std-grid' : 'grass-fast-grid');
 
     const startDateStr = getAusStartDate();
-    const startDate = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
+    const startDate = parseYmdLocal(startDateStr);
     const now = new Date();
     const tz = getUserTimezone();
 
@@ -161,10 +161,8 @@ function renderAusGrass() {
 
             // 이 날 마감 = 시작일 + (주-1)*7 + 요일 → 다음날 04:00 (호주 정규와 동일, 연장 없음)
             let past = false;
-            if (startDate && typeof getTaskDeadline === 'function') {
-                const taskDate = new Date(startDate);
-                taskDate.setDate(taskDate.getDate() + (w - 1) * 7 + di);
-                const dl = getTaskDeadline(taskDate, tz);
+            if (startDate && typeof getChallengeTaskDeadline === 'function') {
+                const dl = getChallengeTaskDeadline(startDateStr, w, di, null, tz);   // 연장 없음(호주) — 단일 출처
                 past = !!(dl && now >= dl);
             }
 
@@ -326,29 +324,27 @@ function _isAusCollectCohort() {
     return !!(start && String(start).slice(0, 10) >= cutoff);
 }
 
+// 시작일 문자열은 로컬 자정으로 해석(parseYmdLocal) — mypage.js와 같은 2026-10-06 수정(미주 시간대 하루 어긋남).
 function isBeforeStart() {
-    const sd = getAusStartDate();
-    if (!sd) return false;
-    const start = new Date(sd);
-    start.setHours(0, 0, 0, 0);
+    const start = parseYmdLocal(getAusStartDate());
+    if (!start) return false;
     return getEffectiveToday(getUserTimezone()) < start;
 }
 
 function getDaysUntilStart() {
     const sd = getAusStartDate();
     if (!sd) return 0;
-    const start = new Date(sd);
-    start.setHours(0, 0, 0, 0);
-    return Math.ceil((start - getEffectiveToday(getUserTimezone())) / (1000 * 60 * 60 * 24));
+    const diff = diffDaysLocal(getEffectiveToday(getUserTimezone()), sd);   // 달력 일수
+    return diff == null ? 0 : diff;
 }
 
 function formatStartDate(dateStr) {
-    const d = new Date(dateStr);
+    const d = parseYmdLocal(dateStr) || new Date(dateStr);
     return `${d.getMonth() + 1}/${d.getDate()} (${DAY_KR[d.getDay()]})`;
 }
 
 function formatFullDate(dateStr) {
-    const d = new Date(dateStr);
+    const d = parseYmdLocal(dateStr) || new Date(dateStr);
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
@@ -377,18 +373,15 @@ function renderTodayTasks() {
     }
 
     const effectiveToday = getEffectiveToday(getUserTimezone());
-    const startDateStr = getAusStartDate();
-    const startDate = new Date(startDateStr + 'T00:00:00');
-    if (isNaN(startDate.getTime())) {
+    const pos = getChallengeDayPosition(getAusStartDate(), effectiveToday);   // 일정 계산 단일 출처(timezone-utils.js)
+    if (!pos) {
         container.innerHTML = '<p class="today-task-empty">시작일 정보 없음</p>';
         return;
     }
 
-    const diffDays = Math.floor((effectiveToday - startDate) / (1000 * 60 * 60 * 24));
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const weekNum = Math.floor(diffDays / 7) + 1;
-    const dayIndex = diffDays % 7;
-    const dayEn = dayOrder[dayIndex];
+    const weekNum = pos.weekNum;
+    const dayEn = dayOrder[pos.dayIndex];
 
     if (weekNum > totalWeeks || dayEn === 'saturday') {
         container.innerHTML = '<p class="today-task-empty">오늘은 휴무입니다 😊</p>';
@@ -438,8 +431,6 @@ function renderSummaryCards() {
     const startDateStr = getAusStartDate();
     if (!startDateStr) return;
 
-    const startDate = new Date(startDateStr);
-    startDate.setHours(0, 0, 0, 0);
     const today = getEffectiveToday(getUserTimezone());
     const beforeStart = isBeforeStart();
 
@@ -452,7 +443,7 @@ function renderSummaryCards() {
         document.getElementById('challengeSub').textContent = `${startStr} 시작 예정`;
         document.getElementById('challengeStartDate').textContent = `시작일: ${formatFullDate(startDateStr)}`;
     } else {
-        const dplus = Math.min(Math.floor((today - startDate) / (1000 * 60 * 60 * 24)), totalCalendarDays);
+        const dplus = Math.min(diffDaysLocal(startDateStr, today), totalCalendarDays);   // 달력 경과일(단일 출처)
         const remainingDays = Math.max(0, totalCalendarDays - dplus);
         const elapsedPct = Math.min(100, Math.round((dplus / totalCalendarDays) * 100));
         document.getElementById('challengeStatus').textContent = `D+${dplus} / ${totalCalendarDays}일`;
@@ -529,8 +520,7 @@ function _ausTaskAuth(r) {
 // 오늘까지 도래한 과제 수 (분모). 호주 스케줄·시작일 기준.
 function _countAusTasksDue(programType, totalWeeks, startDateStr) {
     if (!startDateStr || typeof getAusDayTasks !== 'function') return 0;
-    const startDate = new Date(startDateStr + 'T00:00:00');
-    if (isNaN(startDate.getTime())) return 0;
+    if (!parseYmdLocal(startDateStr)) return 0;
 
     const effectiveToday = getEffectiveToday(getUserTimezone());
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']; // 토요일 휴무
@@ -538,9 +528,7 @@ function _countAusTasksDue(programType, totalWeeks, startDateStr) {
 
     for (let w = 1; w <= totalWeeks; w++) {
         for (let d = 0; d < dayOrder.length; d++) {
-            const taskDate = new Date(startDate);
-            taskDate.setDate(taskDate.getDate() + (w - 1) * 7 + d);
-            taskDate.setHours(0, 0, 0, 0);
+            const taskDate = getChallengeTaskDate(startDateStr, w, d);   // 일정 계산 단일 출처
             // 과제 날짜가 오늘 이하면 분모 포함 (오늘 과제는 마감 전이라도 포함 — 정규와 동일)
             if (taskDate <= effectiveToday) {
                 const tasks = getAusDayTasks(programType, w, dayOrder[d]) || [];

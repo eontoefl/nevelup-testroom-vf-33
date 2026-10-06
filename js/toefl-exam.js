@@ -94,10 +94,7 @@ function getToeflPastExams() {
 function getToeflRegDeadline() {
     if (!mpUser || !mpUser.startDate) return null;
     var days = TOEFL_REG_DEADLINE_DAYS[mpUser.programType] || TOEFL_REG_DEADLINE_DAYS.standard;
-    var d = new Date(mpUser.startDate + 'T00:00:00');
-    if (isNaN(d.getTime())) return null;
-    d.setDate(d.getDate() + days);
-    return d;
+    return addDaysLocal(parseYmdLocal(mpUser.startDate), days);   // 일정 계산 단일 출처(timezone-utils.js). 시작일 형식 오류면 null
 }
 
 /** 오늘 기준 남은 일수 (음수면 지남) */

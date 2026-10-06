@@ -463,25 +463,21 @@ function _parseCorrSessionDates(raw) {
     return { start: obj.start, end: obj.end, dates: obj.dates };
 }
 
-// 'YYYY-MM-DD' 포맷 헬퍼 (이 파일 안 하나만) — 로컬 Date → 문자열
+// 날짜 기본 도구는 timezone-utils.js의 일정 계산 단일 출처(fmtYmd / addDaysYmd / diffDaysLocal)에 위임한다(2026-10-06).
+//   첨삭 회차 배분 규칙(buildCorrSessionDates)은 그대로 — 도구만 공통.
+// 'YYYY-MM-DD' 포맷 헬퍼 — 로컬 Date → 문자열
 function _corrYmd(date) {
-    return date.getFullYear() + '-' +
-        String(date.getMonth() + 1).padStart(2, '0') + '-' +
-        String(date.getDate()).padStart(2, '0');
+    return fmtYmd(date);
 }
 
 // 'YYYY-MM-DD' 로컬 자정 기준 + n일 → 'YYYY-MM-DD'
 function _corrAddDaysYmd(ymd, n) {
-    var d = new Date(ymd + 'T00:00:00');
-    d.setDate(d.getDate() + n);
-    return _corrYmd(d);
+    return addDaysYmd(ymd, n);
 }
 
-// (bYmd − aYmd) 일수 (양끝 미포함). 로컬 자정 기준.
+// (bYmd − aYmd) 일수 (양끝 미포함). 달력 날짜 기준.
 function _corrDaysDiff(aYmd, bYmd) {
-    var a = new Date(aYmd + 'T00:00:00');
-    var b = new Date(bYmd + 'T00:00:00');
-    return Math.round((b.getTime() - a.getTime()) / 86400000);
+    return diffDaysLocal(aYmd, bYmd);
 }
 
 /**
@@ -507,9 +503,7 @@ function getCorrSessionDate(scheduleData, session) {
     }
     var base = getCorrSessionStartDate(scheduleData, session);
     if (!base) return null;
-    var d = new Date(base + 'T00:00:00');
-    d.setDate(d.getDate() + session.dayOffset);
-    return d;
+    return addDaysLocal(parseYmdLocal(base), session.dayOffset);   // 시작일 + dayOffset (단일 출처 도구)
 }
 
 /**

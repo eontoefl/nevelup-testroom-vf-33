@@ -98,34 +98,18 @@ function isTaskDeadlinePassed() {
         return false;
     }
 
-    var startDate = new Date(effectiveStartDate + 'T00:00:00');
-    if (isNaN(startDate.getTime())) {
+    // 과제 날짜·마감(다음날 04:00 + tr_deadline_extensions 연장) — 일정 계산 단일 출처(timezone-utils.js)
+    var taskDate = getChallengeTaskDate(effectiveStartDate, ct.currentWeek, dayOffset);
+    if (!taskDate) {
         console.log('⏰ [마감] 날짜 파싱 실패:', user.startDate);
         return false;
     }
-
-    var taskDate = new Date(startDate);
-    taskDate.setDate(taskDate.getDate() + (ct.currentWeek - 1) * 7 + dayOffset);
-
-    var tz = getUserTimezone();
-    var deadline = getTaskDeadline(taskDate, tz);
-
-    // ★ tr_deadline_extensions 연장 체크
-    var taskDateStr = taskDate.getFullYear() + '-' +
-        String(taskDate.getMonth() + 1).padStart(2, '0') + '-' +
-        String(taskDate.getDate()).padStart(2, '0');
-    var extensions = window._deadlineExtensions || [];
-    var ext = extensions.find(function(e) { return e.original_date === taskDateStr; });
-    if (ext) {
-        var extraDays = ext.extra_days || 1;
-        deadline = new Date(deadline.getTime() + extraDays * 24 * 60 * 60 * 1000);
-        console.log('📅 [연장] ' + taskDateStr + ' → +' + extraDays + '일 → 새 마감:', deadline.toLocaleString());
-    }
+    var deadline = getChallengeTaskDeadline(effectiveStartDate, ct.currentWeek, dayOffset, window._deadlineExtensions, getUserTimezone());
 
     var now = new Date();
     var passed = now > deadline;
-    
-    console.log('⏰ [마감]', 
+
+    console.log('⏰ [마감]',
         'start:', effectiveStartDate,
         'week:', ct.currentWeek, 'day:', ct.currentDay,
         '→ taskDate:', taskDate.toLocaleDateString(),

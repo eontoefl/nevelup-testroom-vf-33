@@ -185,11 +185,7 @@ function getSelfPacedDeadlineDay(user) {
     }
     // v1(구 무마감): 시작일 + N주.
     if (!user.selfPacedWeeks) return null;
-    var start = new Date(user.startDate + 'T00:00:00');
-    if (isNaN(start.getTime())) return null;
-    var lastDay = new Date(start);
-    lastDay.setDate(lastDay.getDate() + (user.selfPacedWeeks * 7));
-    return lastDay;
+    return addDaysLocal(parseYmdLocal(user.startDate), user.selfPacedWeeks * 7);   // 시작일 없거나 형식 오류면 null
 }
 
 /**
@@ -316,14 +312,14 @@ function getSelfPacedSchedule(user) {
             var sEnd = new Date((stored.end || user.selfPacedEndDate) + 'T00:00:00');
             if (isNaN(sEnd.getTime())) sEnd = end;
             var sStart = sdates[0];
-            var sDays = Math.floor((sEnd - sStart) / 86400000) + 1;
+            var sDays = diffDaysLocal(sStart, sEnd) + 1;   // 달력 일수(서머타임 안전)
             return { dates: sdates, counts: null, start: sStart, end: sEnd, days: sDays, materialized: true };
         }
         // 저장표 손상 시 아래 실시간 계산으로 폴백
     }
 
     // 2) 실시간 계산 (fallback)
-    var D = Math.floor((end - start) / 86400000) + 1; // 양끝 포함 일수
+    var D = diffDaysLocal(start, end) + 1; // 양끝 포함 일수(달력 기준)
     if (D < 1) return null; // 종료일 < 시작일 → 방어
     var counts = _distributeSetCounts(SELF_PACED_SET_COUNT, D);
     var dates = _datesFromCounts(start, counts, SELF_PACED_SET_COUNT);
@@ -352,7 +348,7 @@ function buildMaterializedSelfPacedSchedule(user, prevDates, boundary) {
 
     // 첫 생성: 전체 균등 분배
     if (!prevDates || prevDates.length !== N) {
-        var D = Math.floor((end - start) / 86400000) + 1;
+        var D = diffDaysLocal(start, end) + 1;
         if (D < 1) return null;
         var counts = _distributeSetCounts(N, D);
         return { end: fmt(end), dates: _datesFromCounts(start, counts, N).map(fmt) };
@@ -369,7 +365,7 @@ function buildMaterializedSelfPacedSchedule(user, prevDates, boundary) {
     if (P >= N) return { end: fmt(end), dates: prevDates.slice() }; // 전부 과거 → 보존만
     var R = N - P;
     var wStart = new Date(boundary);
-    var D2 = Math.floor((end - wStart) / 86400000) + 1;
+    var D2 = diffDaysLocal(wStart, end) + 1;
     var remDates;
     if (D2 < 1) {
         // 창 붕괴(종료일이 오늘 이전) → 남은 세트를 종료일에 몰아 배치(방어)
@@ -460,6 +456,99 @@ function isEffectiveTodayOnOrAfter(targetDateStr, timezone) {
     var target = new Date(targetDateStr + 'T00:00:00');
     target.setHours(0, 0, 0, 0);
     return effective >= target;
+}
+
+// ================================================================
+// 일정 계산 단일 출처 (2026-10-06, 일시정지 1단계)
+//   시작일에서 파생되는 날짜(내챌 과제 날짜·마감·오늘 위치)는 여기서만 계산한다.
+//   - 모든 산술은 "달력 날짜" 단위(setDate / Date.UTC 날짜 성분)라 서머타임 전환일에도 하루가 어긋나지 않는다.
+//     (예전엔 ms÷86400000 floor 계산이 23시간짜리 날에 하루를 덜 셌다 — 2026-10-06 수정)
+//   - 'YYYY-MM-DD'는 항상 로컬 자정으로 해석한다(parseYmdLocal). new Date('YYYY-MM-DD')는 UTC 자정이라
+//     UTC보다 서쪽(미주) 브라우저에서 전날로 밀리던 버그가 있었다 — 2026-10-06 수정.
+//   - "오늘" 기준은 호출처가 넘긴다(getEffectiveToday 등 각자 규칙 유지).
+//   - 2단계(일시정지): 정지 기간을 건너뛰는 계산은 이 함수들 안에만 들어간다.
+// ================================================================
+
+/** 'YYYY-MM-DD'(앞부분만 봄) → 로컬 자정 Date. Date면 로컬 자정으로 정규화한 복사본. 빈값·형식 오류면 null. */
+function parseYmdLocal(ymd) {
+    if (ymd == null || ymd === '') return null;
+    if (typeof ymd === 'object' && typeof ymd.getTime === 'function') {   // Date (다른 realm의 Date도 포함)
+        return isNaN(ymd.getTime()) ? null : new Date(ymd.getFullYear(), ymd.getMonth(), ymd.getDate());
+    }
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ymd));
+    if (!m) return null;
+    var d = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    return isNaN(d.getTime()) ? null : d;
+}
+
+/** 로컬 Date → 'YYYY-MM-DD' */
+function fmtYmd(d) {
+    if (!d || isNaN(d.getTime())) return null;
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/** 로컬 Date + n일 → 새 로컬 자정 Date (달력 산술) */
+function addDaysLocal(d, n) {
+    var x = parseYmdLocal(d);
+    if (!x) return null;
+    x.setDate(x.getDate() + n);
+    return x;
+}
+
+/** 'YYYY-MM-DD' + n일 → 'YYYY-MM-DD' */
+function addDaysYmd(ymd, n) {
+    return fmtYmd(addDaysLocal(parseYmdLocal(ymd), n));
+}
+
+/** 달력 일수 차이 b − a (양끝 미포함, 정수). 시간 성분·서머타임 무시. 둘 중 하나라도 없으면 null. */
+function diffDaysLocal(a, b) {
+    var da = parseYmdLocal(a), db = parseYmdLocal(b);
+    if (!da || !db) return null;
+    var ua = Date.UTC(da.getFullYear(), da.getMonth(), da.getDate());
+    var ub = Date.UTC(db.getFullYear(), db.getMonth(), db.getDate());
+    return Math.round((ub - ua) / 86400000);
+}
+
+/**
+ * 내챌 과제 날짜 = 시작일 + (주차−1)×7 + 요일 번호(일=0…토=6). 로컬 자정 Date. 시작일 없으면 null.
+ * @param {string|Date} startYmd - 시작일(호출처가 쓰던 출처 그대로: 정규 startDate / 호주 australiaStartDate 등)
+ */
+function getChallengeTaskDate(startYmd, week, dayIndex) {
+    var start = parseYmdLocal(startYmd);
+    if (!start || !week || dayIndex == null || dayIndex < 0) return null;
+    return addDaysLocal(start, (week - 1) * 7 + dayIndex);
+}
+
+function getChallengeTaskYmd(startYmd, week, dayIndex) {
+    return fmtYmd(getChallengeTaskDate(startYmd, week, dayIndex));
+}
+
+/**
+ * 내챌 과제 마감 = 과제 날짜 다음날 04:00(학생 시간대) + tr_deadline_extensions 연장(original_date === 과제 날짜).
+ * @param {Array} [extensions] - { original_date, extra_days } 목록 (호출자가 보유한 배열)
+ * @param {string} [timezone] - IANA (미지정 시 getUserTimezone())
+ * @returns {Date|null}
+ */
+function getChallengeTaskDeadline(startYmd, week, dayIndex, extensions, timezone) {
+    var taskDate = getChallengeTaskDate(startYmd, week, dayIndex);
+    if (!taskDate) return null;
+    var tz = timezone || getUserTimezone();
+    var deadline = getTaskDeadline(taskDate, tz);
+    var ymd = fmtYmd(taskDate);
+    var ext = (extensions || []).find(function (e) { return e && e.original_date === ymd; });
+    if (ext) deadline = new Date(deadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+    return deadline;
+}
+
+/**
+ * 오늘(로컬 자정 Date)이 시작일 기준 며칠째·몇 주차·주 안에서 몇 번째 날인지.
+ *   diffDays = 달력 경과일(시작일 당일 0), weekNum = floor(diffDays/7)+1, dayIndex = diffDays % 7 (6 = 7일째 = 휴무).
+ *   보정(상한·하한)은 호출처가 한다. 시작일 없으면 null.
+ */
+function getChallengeDayPosition(startYmd, today) {
+    var diffDays = diffDaysLocal(startYmd, today);
+    if (diffDays == null) return null;
+    return { diffDays: diffDays, weekNum: Math.floor(diffDays / 7) + 1, dayIndex: ((diffDays % 7) + 7) % 7 };
 }
 
 console.log('✅ timezone-utils.js 로드 완료');

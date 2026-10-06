@@ -186,33 +186,32 @@ function renderDeadlineExtensionBanner() {
 // ================================================
 // 시작 전 여부 판별
 // ================================================
+// 시작일 문자열은 로컬 자정으로 해석(parseYmdLocal). 예전 new Date('YYYY-MM-DD')는 UTC 자정이라
+// 미주 시간대 브라우저에서 시작 전 판정·D+·표시가 하루 어긋나던 버그가 있었다(2026-10-06 수정).
 function isBeforeStart() {
-    if (!mpUser.startDate) return false;
-    const start = new Date(mpUser.startDate);
-    start.setHours(0, 0, 0, 0);
+    const start = parseYmdLocal(mpUser.startDate);
+    if (!start) return false;
     const effective = getEffectiveToday(getUserTimezone());
     return effective < start;
 }
 
 // 등급/환급 산정 전 여부: 시작일 다음날부터 산정 (시작일 당일 포함 = 산정 전)
 function isGradeBeforeStart() {
-    if (!mpUser.startDate) return false;
-    const start = new Date(mpUser.startDate);
-    start.setHours(0, 0, 0, 0);
+    const start = parseYmdLocal(mpUser.startDate);
+    if (!start) return false;
     const effective = getEffectiveToday(getUserTimezone());
     return effective <= start;
 }
 
 function getDaysUntilStart() {
     if (!mpUser.startDate) return 0;
-    const start = new Date(mpUser.startDate);
-    start.setHours(0, 0, 0, 0);
     const effective = getEffectiveToday(getUserTimezone());
-    return Math.ceil((start - effective) / (1000 * 60 * 60 * 24));
+    const diff = diffDaysLocal(effective, mpUser.startDate);   // 달력 일수(서머타임 안전)
+    return diff == null ? 0 : diff;
 }
 
 function formatStartDate(dateStr) {
-    const d = new Date(dateStr);
+    const d = parseYmdLocal(dateStr) || new Date(dateStr);
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     return `${d.getMonth() + 1}/${d.getDate()} (${days[d.getDay()]})`;
 }
@@ -221,7 +220,7 @@ function formatStartDate(dateStr) {
  * 시작일 전체 포맷: "2026-02-22(일)"
  */
 function formatFullDate(dateStr) {
-    const d = new Date(dateStr);
+    const d = parseYmdLocal(dateStr) || new Date(dateStr);
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -362,18 +361,15 @@ function renderTodayTasks() {
     // 오늘 날짜 계산 (학생 타임존 기준 새벽 4시)
     const effectiveToday = getEffectiveToday(getUserTimezone());
 
-    const startDate = new Date(mpUser.startDate + 'T00:00:00');
-    if (isNaN(startDate.getTime())) {
+    // 오늘이 몇 주차 무슨 요일인지 — 일정 계산 단일 출처(timezone-utils.js). 요일은 시작일 기준 7일째(6)=휴무.
+    const pos = getChallengeDayPosition(mpUser.startDate, effectiveToday);
+    if (!pos) {
         container.innerHTML = '<p class="today-task-empty">시작일 정보 없음</p>';
         return;
     }
-
-    // 오늘이 몇 주차 무슨 요일인지 계산
-    const diffDays = Math.floor((effectiveToday - startDate) / (1000 * 60 * 60 * 24));
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const weekNum = Math.floor(diffDays / 7) + 1;
-    const dayIndex = diffDays % 7;
-    const dayEn = dayOrder[dayIndex];
+    const weekNum = pos.weekNum;
+    const dayEn = dayOrder[pos.dayIndex];
 
     // 챌린지 종료 또는 토요일 체크
     if (weekNum > totalWeeks || dayEn === 'saturday') {
@@ -432,8 +428,6 @@ function renderSummaryCards() {
     const totalCalendarDays = totalWeeks * 7; // 총 달력 일수
 
     // ── 경과일 / 잔여일 / 전체일 계산 ──
-    const startDate = new Date(mpUser.startDate);
-    startDate.setHours(0, 0, 0, 0);
     const today = getEffectiveToday(getUserTimezone());
 
     const beforeStart = isBeforeStart();
@@ -460,7 +454,7 @@ function renderSummaryCards() {
             ? `완료 기한: ${formatFullDate(spLastDay)}`
             : `시작일: ${formatFullDate(mpUser.startDate)}`;
     } else {
-        const dplus = Math.min(Math.floor((today - startDate) / (1000 * 60 * 60 * 24)), totalCalendarDays);
+        const dplus = Math.min(diffDaysLocal(mpUser.startDate, today), totalCalendarDays);   // 달력 경과일(단일 출처)
         const remainingDays = Math.max(0, totalCalendarDays - dplus);
         const elapsedPct = Math.min(100, Math.round((dplus / totalCalendarDays) * 100));
         document.getElementById('challengeStatus').textContent = `D+${dplus} / ${totalCalendarDays}일`;
@@ -569,8 +563,7 @@ function countTasksDueToday(programType, totalWeeks) {
 
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     const dayEnToKr = { sunday: '일', monday: '월', tuesday: '화', wednesday: '수', thursday: '목', friday: '금' };
-    const startDate = new Date(mpUser.startDate + 'T00:00:00');
-    if (isNaN(startDate.getTime())) return { due: 0, completed: 0 };
+    if (!parseYmdLocal(mpUser.startDate)) return { due: 0, completed: 0 };
 
     const tz = getUserTimezone();
     const now = new Date();
@@ -580,20 +573,13 @@ function countTasksDueToday(programType, totalWeeks) {
 
     for (let w = 1; w <= totalWeeks; w++) {
         for (let d = 0; d < dayOrder.length; d++) {
-            const taskDate = new Date(startDate);
-            taskDate.setDate(taskDate.getDate() + (w - 1) * 7 + d);
-            taskDate.setHours(0, 0, 0, 0);
+            // 과제 날짜·연장 — 일정 계산 단일 출처(timezone-utils.js)
+            const taskDate = getChallengeTaskDate(mpUser.startDate, w, d);
+            const ext = (mpDeadlineExtensions || []).find(e => e.original_date === fmtYmd(taskDate));
 
-            // ★ 데드라인 연장 체크
-            const taskDateStr = taskDate.getFullYear() + '-' +
-                String(taskDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(taskDate.getDate()).padStart(2, '0');
-            const ext = (mpDeadlineExtensions || []).find(e => e.original_date === taskDateStr);
-            
             // 연장된 과제: 연장된 마감이 아직 안 지났으면 분모에서 제외
             if (ext) {
-                let extDeadline = getTaskDeadline(taskDate, tz);
-                extDeadline = new Date(extDeadline.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
+                const extDeadline = getChallengeTaskDeadline(mpUser.startDate, w, d, mpDeadlineExtensions, tz);
                 if (now < extDeadline) continue;
             }
 
@@ -742,20 +728,13 @@ function getDeadlineForDayNum(dayNum) {
             : null;
     }
 
-    const startDate = new Date(mpUser.startDate + 'T00:00:00');
-    if (isNaN(startDate.getTime())) return null;
-
-    // dayNum → 시작일 기준 실제 날짜 역산
-    // 6일 학습 + 1일 휴무(토) = 7일 주기
+    // dayNum → (주, 주 내 요일) 역산. 6일 학습 + 1일 휴무(토) = 7일 주기
     const zeroIndex = dayNum - 1;              // 0-based
     const weekIndex = Math.floor(zeroIndex / 6); // 몇 번째 주 (0-based)
     const dayIndex = zeroIndex % 6;              // 주 내 몇 번째 날 (0=일, 5=금)
-    const calendarDays = weekIndex * 7 + dayIndex; // 시작일 기준 경과 일수
 
-    const taskDate = new Date(startDate);
-    taskDate.setDate(taskDate.getDate() + calendarDays);
-
-    return getTaskDeadline(taskDate, getUserTimezone());
+    // 기본 마감(다음날 04:00, 연장 없음 — 연장은 buildExtendedDeadlineMap이 따로 처리) — 일정 계산 단일 출처
+    return getChallengeTaskDeadline(mpUser.startDate, weekIndex + 1, dayIndex, null, getUserTimezone());
 }
 
 /**
@@ -765,15 +744,13 @@ function buildExtendedDeadlineMap() {
     const map = new Map();
     if (!mpUser.startDate || !mpDeadlineExtensions || mpDeadlineExtensions.length === 0) return map;
 
-    const startDate = new Date(mpUser.startDate + 'T00:00:00');
-    if (isNaN(startDate.getTime())) return map;
+    if (!parseYmdLocal(mpUser.startDate)) return map;
 
     const now = new Date();
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
     mpDeadlineExtensions.forEach(ext => {
-        const origDate = new Date(ext.original_date + 'T00:00:00');
-        if (isNaN(origDate.getTime())) return;
+        if (!parseYmdLocal(ext.original_date)) return;
 
         // 연장된 마감 계산 (타임존 기반)
         let extDeadline = getTaskDeadline(ext.original_date, getUserTimezone());
@@ -781,8 +758,7 @@ function buildExtendedDeadlineMap() {
 
         // 아직 마감 전이면 → dayNum 계산해서 맵에 추가
         if (now < extDeadline) {
-            const diffMs = origDate - startDate;
-            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            const diffDays = diffDaysLocal(mpUser.startDate, ext.original_date);   // 달력 일수(단일 출처)
             const weekIndex = Math.floor(diffDays / 7);
             const dayIndex = diffDays % 7;
             if (dayIndex < dayOrder.length) {

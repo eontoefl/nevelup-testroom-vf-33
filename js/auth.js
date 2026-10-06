@@ -18,11 +18,10 @@ function isCorrectionActiveNow(programInfo, timezone) {
     if (!programInfo.correctionEnabled) return false;
     if (!programInfo.correctionStartDate) return false;
 
-    var start = new Date(programInfo.correctionStartDate);
-    start.setDate(start.getDate() - 1);
-    var startStr = start.getFullYear() + '-' +
-        String(start.getMonth() + 1).padStart(2, '0') + '-' +
-        String(start.getDate()).padStart(2, '0');
+    // 시작일 하루 전 — 'YYYY-MM-DD'를 로컬 자정으로 해석(timezone-utils.js). 예전 new Date(문자열)은 UTC 자정이라
+    // 미주 시간대 브라우저에서 하루 빨리 열리던 버그가 있었다(2026-10-06 수정).
+    var startStr = (typeof addDaysYmd === 'function') ? addDaysYmd(programInfo.correctionStartDate, -1) : null;
+    if (!startStr) return false;
 
     return isEffectiveTodayOnOrAfter(startStr, timezone || 'Asia/Seoul');
 }
@@ -486,19 +485,10 @@ function _rowTaskDeadlineNormal(row, tz) {
         var w = parseInt(row.week, 10);
         var dayIdx = ['일', '월', '화', '수', '목', '금'].indexOf(row.day);
         if (isNaN(w) || dayIdx < 0) return null;
-        var td = new Date(startStr + 'T00:00:00');
-        td.setDate(td.getDate() + (w - 1) * 7 + dayIdx);
-        if (typeof getTaskDeadline !== 'function') return null;
-        var dl = getTaskDeadline(td, tz);
-        // 연장 반영 (original_date === 배정 날짜)
-        var y = td.getFullYear();
-        var m = String(td.getMonth() + 1).padStart(2, '0');
-        var d = String(td.getDate()).padStart(2, '0');
-        var tds = y + '-' + m + '-' + d;
+        // 과제 마감(다음날 04:00 + 연장) — 일정 계산 단일 출처(timezone-utils.js). 없으면(book.html 등) 동결 안 함.
+        if (typeof getChallengeTaskDeadline !== 'function') return null;
         var exts = (typeof window !== 'undefined' && window._deadlineExtensions) ? window._deadlineExtensions : [];
-        var ext = exts.find(function (e) { return e.original_date === tds; });
-        if (ext) dl = new Date(dl.getTime() + (ext.extra_days || 1) * 24 * 60 * 60 * 1000);
-        return dl;
+        return getChallengeTaskDeadline(startStr, w, dayIdx, exts, tz);
     } catch (e) {
         return null;
     }
