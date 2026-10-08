@@ -375,11 +375,43 @@ function executeTask(taskName) {
         _executeTaskCore(taskName);
         return;
     }
-    
+
+    // ── 일시정지 중(2026-10-08): "제한시간 시작" 확인창을 띄우지 않는다.
+    //    실전 기록이 있는 과제만 확인창 없이 다시풀기 대시보드로, 없으면 정지 안내로 끝.
+    var pauseUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(pauseUser)) {
+        _executeTaskWhilePaused(taskName, parsed, pauseUser);
+        return;
+    }
+
     // ── 정규코스: 시작 확인 팝업 → "시작하기" 누르면 실제 실행 ──
     confirmTaskStart(taskName, function() {
         _executeTaskCore(taskName);
     });
+}
+
+/**
+ * 정지 중 과제 실행: 실전 기록(initial_record)이 있으면 _executeTaskCore로(정지 모드 → 다시풀기만), 없으면 안내창.
+ *   기록 조회 기준은 과제 대시보드(task-dashboard.js)와 같다: section_type, module(또는 number), 현재 주차·요일.
+ */
+async function _executeTaskWhilePaused(taskName, parsed, user) {
+    var ct = window.currentTest || {};
+    var sectionType = parsed && parsed.type;
+    if (['reading', 'listening', 'writing', 'speaking', 'vocab'].indexOf(sectionType) < 0 || !user || !user.id) {
+        alert(PAUSED_TASK_MSG);
+        return;
+    }
+    var moduleNumber = (parsed.params && (parsed.params.module || parsed.params.number)) || 1;
+    try {
+        var rec = await getStudyResultV3(user.id, sectionType, moduleNumber, ct.currentWeek, ct.currentDay);
+        if (rec && rec.initial_record != null) {
+            _executeTaskCore(taskName);   // 안에서 정지 모드(_pausedMode) 설정 → 대시보드는 '다시 풀기'만
+            return;
+        }
+    } catch (e) {
+        console.warn('⏸️ [정지] 기록 조회 실패 — 안내로 처리:', e);
+    }
+    alert(PAUSED_TASK_MSG);
 }
 
 /**
