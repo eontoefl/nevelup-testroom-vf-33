@@ -667,18 +667,22 @@ function renderVocabResult(results, correctCount, totalCount, percentage) {
         result.synonyms.forEach((syn, synIndex) => {
             const userAnswerClass = syn.isCorrect ? 'correct' : (syn.userAnswer ? 'wrong' : 'empty');
 
-            // 오답이면서 학생이 뭔가 쓴 경우에만 글자단위 diff로 어디가 틀렸는지 표시
-            let mineHtml, answerHtml, hintHtml = '';
-            if (userAnswerClass === 'wrong') {
-                const ops = _vocabAlign(syn.userAnswer, syn.correctAnswer);
+            // 오답 칸: 정답과 가까우면(다른 글자 수가 정답 길이의 절반 이하) 글자단위 diff + 원인 힌트,
+            // 아예 다른 답이면 글자 그대로 + "정답과 다른 단어예요". 빈칸은 "답을 적지 않았어요". 정답은 힌트 없음.
+            let mineHtml, answerHtml, hint = '';
+            const ops = (userAnswerClass === 'wrong') ? _vocabAlign(syn.userAnswer, syn.correctAnswer) : null;
+            const isClose = ops && ops.filter(o => o.t !== 'eq').length * 2 <= syn.correctAnswer.length;
+            if (isClose) {
                 mineHtml = _renderDiffMine(ops);
                 answerHtml = _renderDiffAnswer(ops);
-                const hint = _vocabHint(ops);
-                if (hint) hintHtml = `<div class="syn-hint">${hint}</div>`;
+                hint = _vocabHint(ops);
             } else {
                 mineHtml = _vocabEsc(syn.userAnswer || '-');
                 answerHtml = _vocabEsc(syn.correctAnswer);
+                if (userAnswerClass === 'wrong') hint = '정답과 다른 단어예요';
+                else if (userAnswerClass === 'empty') hint = '답을 적지 않았어요';
             }
+            const hintHtml = hint ? `<div class="syn-hint">${hint}</div>` : '';
 
             resultsList += `
                 <div class="vocab-synonym-row">
