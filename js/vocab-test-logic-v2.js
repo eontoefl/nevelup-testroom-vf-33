@@ -500,7 +500,7 @@ async function showVocabTestResult() {
     
     // ── Supabase에 보카 학습 기록 저장 ──
     try {
-        await saveVocabRecord(correctCount, totalCount, percentage);
+        await saveVocabRecord(correctCount, totalCount, percentage, results);
     } catch(e) {
         console.error('📝 [Vocab] 저장 에러:', e);
     }
@@ -718,7 +718,7 @@ function cleanupVocabTest() {
 // ========================================
 // Supabase 보카 기록 저장
 // ========================================
-async function saveVocabRecord(correctCount, totalCount, percentage) {
+async function saveVocabRecord(correctCount, totalCount, percentage, results) {
     console.log('📝 [Vocab] saveVocabRecord 시작:', correctCount, '/', totalCount, '=', percentage + '%');
     
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
@@ -749,7 +749,8 @@ async function saveVocabRecord(correctCount, totalCount, percentage) {
         total: totalCount,
         accuracy: percentage,
         pages: currentPages,
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
+        words: results || []   // 단어별 답안: [{ headword, synonyms: [{ userAnswer, correctAnswer, isCorrect }], allCorrect }]
     };
 
     try {
