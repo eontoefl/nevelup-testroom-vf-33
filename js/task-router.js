@@ -186,7 +186,8 @@ async function openIntroBookGuide(params) {
             if (result && result.locked_auth_rate === 100) {
                 alreadyCertified = true;
             }
-            if (pausedBook && !alreadyCertified) {
+            // 정지는 이미 인증한 날만 열림. 환불(보기만)은 인증 여부와 상관없이 열림 — 인증 저장은 뷰어(_canCertifyNow)가 막는다.
+            if (pausedBook && !alreadyCertified && !(typeof isViewOnlyStop === 'function' && isViewOnlyStop(bookStop))) {
                 alert(_stopTaskMsg(bookUser));
                 return;
             }
@@ -216,8 +217,14 @@ async function openIntroBookGuide(params) {
     // ── 팝업 본문 결정 ──
     var bodyHtml = '';
     var btnLabel = '시작하기';
+    var viewOnlyBook = (typeof isViewOnlyStop === 'function') && isViewOnlyStop(bookStop);   // 환불: 인증·과제 안내 없음
 
-    if (alreadyCertified) {
+    if (viewOnlyBook) {
+        bodyHtml =
+            '<p style="font-size:14px;color:#333;line-height:1.7;margin:0;">'
+            + '🚫 수강이 종료된 계정이에요.<br>입문서는 계속 읽을 수 있어요.</p>';
+        btnLabel = '읽기';
+    } else if (alreadyCertified) {
         bodyHtml =
             '<p style="font-size:15px;color:#16a34a;font-weight:600;margin:0 0 8px;">'
             + '✅ 오늘 과제는 이미 인증되었습니다.</p>'
@@ -259,7 +266,7 @@ async function openIntroBookGuide(params) {
     popup.innerHTML =
         '<div style="font-size:36px;margin-bottom:8px;">📖</div>'
         + '<h3 style="margin:0 0 16px;font-size:17px;color:#1a1a1a;line-height:1.5;">'
-        + '입문서 정독 (' + current + '/' + total + '일차)</h3>'
+        + (viewOnlyBook ? '입문서 (' : '입문서 정독 (') + current + '/' + total + '일차)</h3>'
         + '<div style="margin-bottom:24px;">' + bodyHtml + '</div>'
         + '<div style="display:flex;gap:10px;">'
         + '  <button id="introBookGuideBack" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:14px;font-weight:600;color:#666;cursor:pointer;">돌아가기</button>'
@@ -285,7 +292,6 @@ async function openIntroBookGuide(params) {
             + '&week=' + week
             + '&day=' + encodeURIComponent(day);
         if (deadlinePassed) url += '&deadline=passed';
-        if (pausedBook) url += '&paused=1';   // 정지 중 '계속 읽기' → 뷰어가 인증 저장 생략
         // Australia 모드면 mode 파라미터 추가 → book-viewer.js가 Australia 입문서 로드
         if (window.courseMode === 'australia') url += '&mode=australia';
         window.location.href = url;
@@ -414,8 +420,10 @@ async function _executeTaskWhilePaused(taskName, parsed, user) {
     var moduleNumber = (parsed.params && (parsed.params.module || parsed.params.number)) || 1;
     try {
         var rec = await getStudyResultV3(user.id, sectionType, moduleNumber, ct.currentWeek, ct.currentDay);
-        if (rec && rec.initial_record != null) {
-            _executeTaskCore(taskName);   // 안에서 정지 모드(_pausedMode) 설정 → 대시보드는 '다시 풀기'만
+        // 환불(열람만)은 다시풀기 기록만 있어도 들어가 해설을 본다(풀이 버튼은 대시보드가 잠금). 정지는 실전 기록이 있을 때만.
+        var viewOnly = (typeof isViewOnlyStop === 'function') && isViewOnlyStop(_challengeStopReasonSafe(user));
+        if (rec && (rec.initial_record != null || (viewOnly && rec.current_record != null))) {
+            _executeTaskCore(taskName);   // 안에서 정지 모드(_pausedMode) 설정 → 대시보드는 '다시 풀기'만(환불은 해설만)
             return;
         }
     } catch (e) {
@@ -437,7 +445,8 @@ function _executeTaskCore(taskName) {
     if (pausedNow) {
         var parsedP = parseTaskName(taskName);
         if (parsedP.type === 'vocab') {
-            // 보카는 대시보드 없이 바로 시작 → 실전 기록이 있을 때만(다시풀기 기록으로 저장)
+            // 보카는 대시보드 없이 바로 시작 → 실전 기록이 있을 때만(다시풀기 기록으로 저장). 환불(열람만)은 다시풀기도 없음.
+            if (typeof isViewOnlyStop === 'function' && isViewOnlyStop(stopReasonP)) { alert(_stopTaskMsg(pauseUser)); return; }
             var ctP = (typeof currentTest !== 'undefined') ? currentTest : window.currentTest;
             getStudyResultV3(pauseUser.id, 'vocab', 1, ctP && ctP.currentWeek, ctP && ctP.currentDay).then(function (r) {
                 if (r && r.initial_record != null) {

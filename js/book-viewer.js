@@ -169,6 +169,8 @@ async function init() {
     }
     BookViewer.userId = user.id;
     BookViewer.isBookOnly = user.programType === 'book_only';
+    // 멈춤 사유(정지·환불) — 과제 띠 문구용. 인증 저장 여부는 저장 직전에 다시 읽어 판단(_canCertifyNow)
+    BookViewer.stopReason = (typeof challengeStopReason === 'function') ? challengeStopReason(user) : null;
     BookViewer.challengeDepositConfirmed = user.challengeDepositConfirmed === true;
 
     // book_only 사용자 UI 조정
@@ -1251,7 +1253,6 @@ function parseTaskParams() {
         week: params.get('week') || '1',
         day: params.get('day') || '월',
         deadline: params.get('deadline') || null,
-        paused: params.get('paused') === '1',   // 일시정지 중 '계속 읽기'(이미 인증된 날만 진입) — 인증 저장 생략
         mode: mode || null
     };
     BookViewer.requiredMemos = current * 2;
@@ -1304,10 +1305,14 @@ function updateTaskBar() {
     // 클래스 초기화
     DOM.taskBar.classList.remove('certified', 'deadline-passed');
 
-    if (BookViewer.isCertified) {
+    if (BookViewer.stopReason === 'refund') {
+        // 환불(보기만): 인증·과제 얘기 없이 상태만
+        DOM.taskBarText.textContent = '🚫 수강이 종료된 계정이에요';
+        DOM.taskBar.classList.add('deadline-passed');
+    } else if (BookViewer.isCertified) {
         DOM.taskBarText.textContent = '✅ 오늘 과제 인증 완료';
         DOM.taskBar.classList.add('certified');
-    } else if (BookViewer.taskParams.paused) {
+    } else if (BookViewer.stopReason) {
         DOM.taskBarText.textContent = '⏸️ 일시정지 중 — 메모 작성은 가능하지만 인증 불가';
         DOM.taskBar.classList.add('deadline-passed');
     } else if (BookViewer.taskParams.deadline === 'passed') {
@@ -1326,6 +1331,21 @@ function getMemoCount() {
 }
 
 /**
+ * 지금 인증을 저장해도 되나: 신청서가 있는 학생(무료 입문서 학생 제외)이고 내챌이 멈춰 있지 않을 때만.
+ * 학생 상태는 서버에서 다시 읽는다(이 화면은 상태 동기화 전에 열리므로). 읽기 실패 시 세션 값으로 판단.
+ */
+async function _canCertifyNow() {
+    var u = null;
+    try { u = JSON.parse(sessionStorage.getItem('currentUser') || 'null'); } catch (e) { u = null; }
+    if (!u || !u.applicationId) return false;
+    if (typeof refreshPauseState === 'function') {
+        try { u = await refreshPauseState(u); } catch (e) { /* 세션 값 유지 */ }
+    }
+    BookViewer.stopReason = (typeof challengeStopReason === 'function') ? challengeStopReason(u) : null;
+    return !BookViewer.stopReason;
+}
+
+/**
  * 메모 저장 후 인증 판정
  * - 과제 파라미터 없으면 무시
  * - 이미 인증됐으면 무시
@@ -1336,7 +1356,6 @@ async function checkAndCertify() {
     if (!BookViewer.taskParams) return;
     if (BookViewer.isCertified) return;
     if (BookViewer.taskParams.deadline === 'passed') return;
-    if (BookViewer.taskParams.paused) return;   // 일시정지 중엔 인증 저장 안 함
 
     var memoCount = getMemoCount();
     var required = BookViewer.requiredMemos;
@@ -1353,6 +1372,13 @@ async function checkAndCertify() {
         BookViewer.isCertified = true;
         updateTaskBar();
         showToast('🎉 오늘 과제가 인증되었습니다!');
+        return;
+    }
+
+    // 인증은 신청서가 있고 멈춰 있지 않은 학생만 — 주소 표시가 아니라 학생 상태로 판단(2026-10-12)
+    if (!(await _canCertifyNow())) {
+        console.log('📖 [TaskBar] 인증 대상 아님(신청서 없음 또는 정지·환불) — 저장 생략');
+        updateTaskBar();
         return;
     }
 

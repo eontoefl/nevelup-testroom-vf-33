@@ -480,6 +480,9 @@
         <button class="omr-submit-btn" id="omrSubmitBtn" onclick="handleSubmit()">제출하기</button>
     </div>
 
+    <!-- 정지·환불 판정(테스트룸 공통 규칙) — 새 제출 전 검사용. 2026-10-12 -->
+    <script src="js/timezone-utils.js?v=20261012_viewonly"></script>
+    <script src="js/supabase-client.js?v=20261012_viewonly"></script>
     <script>
     // ── Supabase 설정 ──
     var SUPABASE_URL = 'https://qpqjevecjejvbeuogtbx.supabase.co';
@@ -551,11 +554,38 @@
             return;
         }
 
+        // 정지·환불 중이면 새 제출 불가 — 일정 화면 카드와 같은 관문. 주소로 바로 열어도 막는다(2026-10-12)
+        var stopMsg = await getOmrStopMessage();
+        if (stopMsg) {
+            document.getElementById('omrLoading').innerHTML = '<p>' + stopMsg.replace(/\n/g, '<br>') + '</p>';
+            return;
+        }
+
         // OMR 폼 렌더링
         renderOMRForm();
         document.getElementById('omrLoading').style.display = 'none';
         document.getElementById('omrForm').style.display = 'block';
         document.getElementById('omrSubmitArea').style.display = 'flex';
+    }
+
+    // 이 학생의 내챌이 멈춰 있으면(정지·환불) 안내문, 아니면 null.
+    //   학생 = 테스트룸 세션(창을 열 때 복사됨), 없거나 다른 학생이면 userId의 최근 신청서. 상태는 서버에서 다시 읽는다.
+    async function getOmrStopMessage() {
+        if (typeof refreshPauseState !== 'function' || typeof challengeStopReason !== 'function') return null;
+        var u = null;
+        try { u = JSON.parse(sessionStorage.getItem('currentUser') || 'null'); } catch (e) { u = null; }
+        if (!u || u.id !== userId) u = { id: userId };
+        if (!u.applicationId && userId) {
+            try {
+                var apps = await supabaseSelect('applications', 'user_id=eq.' + encodeURIComponent(userId) + '&order=created_at.desc&limit=1&select=id');
+                if (apps && apps[0]) u.applicationId = apps[0].id;
+            } catch (e) { /* 못 찾으면 판정 없음 */ }
+        }
+        if (u.applicationId) {
+            try { u = await refreshPauseState(u); } catch (e) { /* 세션 값 유지 */ }
+        }
+        var reason = challengeStopReason(u);
+        return reason ? STOP_TASK_MSG[reason] : null;
     }
 
     async function checkAlreadySubmitted() {

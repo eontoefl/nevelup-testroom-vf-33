@@ -338,7 +338,7 @@ function isCorrectionPausedNow(user) { return !!getActiveCorrectionPause(user); 
 // ================================================
 var STOP_TASK_MSG = {
     pause: '지금은 일시정지 중이에요.\n정지 기간에는 새 과제를 풀 수 없고, 이미 완료한 과제만 다시풀기로 복습할 수 있어요.',
-    refund: '수강이 종료된 계정이에요(환불·중도포기 처리).\n새 과제는 풀 수 없고, 이미 완료한 과제만 다시풀기로 볼 수 있어요. 문의는 카카오톡 채널로 남겨주세요.'
+    refund: '수강이 종료된 계정이에요(환불·중도포기 처리).\n새 과제와 다시풀기는 할 수 없어요. 문의는 카카오톡 채널로 남겨주세요.'
 };
 function _stopEntriesOf(raw) {
     if (!raw) return [];
@@ -372,6 +372,8 @@ function isCorrectionStoppedNow(user) { return isCorrectionRefundedNow(user) || 
 function challengeStopReason(user) { return isChallengeRefundedNow(user) ? 'refund' : (isChallengePausedNow(user) ? 'pause' : null); }
 function correctionStopReason(user) { return isCorrectionRefundedNow(user) ? 'refund' : (isCorrectionPausedNow(user) ? 'pause' : null); }
 function stopTaskMsgFor(user) { return STOP_TASK_MSG[challengeStopReason(user) || 'pause']; }
+/** 멈춘 사유가 '기록 열람만'인가 — 정지는 다시풀기(복습) 허용, 환불·중도포기는 보기만(2026-10-12). 기준은 여기 한 곳. */
+function isViewOnlyStop(reason) { return reason === 'refund'; }
 /**
  * 첨삭 기준시각(ms): 환불 요청일 00:00 KST(옛 기록은 refund_at, 없으면 -∞)와 정지 기준(정지 시작일 00:00 KST 와 등록 시각 중 늦은 쪽) 중 이른 쪽.
  * 둘 다 없으면 null. 서버 correction_release_blocked 와 같은 계산.

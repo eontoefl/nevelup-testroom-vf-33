@@ -83,7 +83,7 @@ function _appendChallengePauseBanner(container) {
             '<i class="fas fa-ban correction-notice-icon"></i>' +
             '<div class="correction-notice-content">' +
                 '<div class="correction-notice-title">수강이 종료된 계정이에요' + (stop.kind === 'dropped' ? '(중도포기 처리)' : '(환불 처리)') + '</div>' +
-                '<div class="correction-notice-body">새 과제는 풀 수 없고, 이미 완료한 과제만 다시풀기로 볼 수 있어요.<br>문의는 카카오톡 채널로 남겨주세요.</div>' +
+                '<div class="correction-notice-body">새 과제와 다시풀기는 할 수 없고, 이미 완료한 과제의 기록만 볼 수 있어요.<br>문의는 카카오톡 채널로 남겨주세요.</div>' +
             '</div>';
         container.appendChild(sbox);
         return;
@@ -2036,7 +2036,7 @@ function _renderDeadlineBanner(week, dayKr) {
         var stopR = (typeof challengeStopReason === 'function') ? challengeStopReason(user) : 'pause';
         banner.className = 'task-deadline-banner deadline-passed';
         banner.innerHTML = (stopR === 'refund')
-            ? '<i class="fas fa-ban"></i> 수강 종료(환불·중도포기) — 완료한 과제만 다시풀기 가능'
+            ? '<i class="fas fa-ban"></i> 수강 종료(환불·중도포기) — 새 과제·다시풀기 불가, 완료한 과제는 기록만 보기'
             : '<i class="fas fa-pause"></i> 일시정지 중 — 완료한 과제만 다시풀기 가능';
         var wh0 = document.querySelector('#taskListScreen .welcome-header');
         if (wh0) wh0.parentNode.insertBefore(banner, wh0.nextSibling);

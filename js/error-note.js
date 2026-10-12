@@ -113,7 +113,14 @@ var ErrorNote = {
             var hasCurrent = row && row.current_record != null;
             var existingCurrentText = (row && row.current_error_note_text) || '';
 
-            if (!hasCurrent) {
+            var viewOnly = (typeof isViewOnlyStop === 'function') && isViewOnlyStop(pausedMode);   // 환불·중도포기: 기록 열람만(2026-10-12)
+            if (viewOnly) {
+                if (existingCurrentText) {
+                    this._showReadonly(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, existingCurrentText, lockWhy + ' 수정이 불가합니다.');
+                } else {
+                    this._showLocked(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, lockWhy + ' 작성이 불가합니다.');
+                }
+            } else if (!hasCurrent) {
                 // 다시풀기 안 함 → 잠김
                 this._showLocked(textarea, submitBtn, statusArea, statusMsg, bodyArea, footerArea, '다시풀기를 완료한 후 작성할 수 있습니다.');
             } else {

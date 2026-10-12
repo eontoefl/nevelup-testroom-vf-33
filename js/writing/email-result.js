@@ -112,10 +112,15 @@ function showEmailResult(data, mode) {
     }
 
     // ── 단계 분기 ──
+    // 환불·중도포기(기록 열람만, 2026-10-12): 다시 쓰기 없이 보기만
+    var viewOnly = (typeof isViewOnlyStop === 'function') && isViewOnlyStop(window._pausedMode);
     if (mode === 'initial') {
         if (existingRewrite) {
             // 이미 재작성 있음 → 바로 ③ 비교
-            _showEmailCompare(data.userAnswer, existingRewrite.text);
+            _showEmailCompare(data.userAnswer, existingRewrite.text, viewOnly);
+        } else if (viewOnly) {
+            // 열람만 → 다시풀기 해설과 같은 화면(원본 + 모범답안)
+            _showEmailDraft(data.userAnswer);
         } else {
             // 재작성 없음 → ① 원본 보기
             _showEmailOriginal(data.userAnswer);
@@ -232,7 +237,7 @@ function _showEmailRewrite(prefillText) {
 // ③ 비교 화면 (원본 vs 재작성 + 모범답안)
 // ============================================================
 
-function _showEmailCompare(userAnswer, rewriteText) {
+function _showEmailCompare(userAnswer, rewriteText, hideAgain) {
     var container = document.getElementById('emailResultUserAnswer');
     var answersRow = document.querySelector('#emailExplainScreen .email-answers-row');
     var draftLabel = answersRow ? answersRow.querySelector('.email-result-section:first-child .email-result-label') : null;
@@ -252,9 +257,9 @@ function _showEmailCompare(userAnswer, rewriteText) {
                 '<div class="compare-label">Your Rewrite</div>' +
                 '<pre class="compare-text">' + _escapeHtmlEmail(rewriteText || '(답안이 없습니다)') + '</pre>' +
             '</div>' +
-            '<button class="rewrite-start-btn" onclick="_emailRewriteAgain()">' +
+            (hideAgain ? '' : '<button class="rewrite-start-btn" onclick="_emailRewriteAgain()">' +
                 '<i class="fas fa-pen"></i> 다시 작성하기' +
-            '</button>';
+            '</button>');   // 열람만(환불)이면 다시 작성하기 없음
     }
 
     // 모범답안 + Bullet 표시

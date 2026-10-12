@@ -219,6 +219,21 @@ console.log('[7] refreshPauseState — DB 재조회로 user 갱신 (모의 fetch
     if (la === lb) sameS++; else dS.push('legacy');
     check('getActiveServiceStop ' + sameS + '건 공홈 getActiveStop 과 일치', dS.length === 0, dS.join(', '));
 
+    console.log('[12] 환불 = 기록 열람만(2026-10-12) — isViewOnlyStop / 안내문 / 주소 표시 제거 / OMR 관문');
+    check('열람만: 환불 사유만 true(정지·없음 false)', T.isViewOnlyStop('refund') === true && T.isViewOnlyStop('pause') === false && T.isViewOnlyStop(false) === false && T.isViewOnlyStop(null) === false);
+    check('사유 → 열람만: 환불 true / 정지 false / 둘 다(환불 우선) true / 첨삭만 환불 false',
+        T.isViewOnlyStop(T.challengeStopReason({ serviceStops: S_BOTH, challengePauses: [] })) === true
+        && T.isViewOnlyStop(T.challengeStopReason({ serviceStops: [], challengePauses: [{ paused_from: '2000-01-01', resume_on: null, status: 'open' }], timezone: 'Asia/Seoul' })) === false
+        && T.isViewOnlyStop(T.challengeStopReason(uBoth)) === true
+        && T.isViewOnlyStop(T.challengeStopReason(uCorr)) === false);
+    check('환불 안내문에 "다시풀기로 볼 수 있어요" 약속 없음', T.STOP_TASK_MSG.refund.indexOf('다시풀기로') < 0 && T.STOP_TASK_MSG.pause.indexOf('다시풀기로 복습') >= 0);
+    const srcRouter = fs.readFileSync(path.join(ROOT, 'js', 'task-router.js'), 'utf8');
+    const srcBook = fs.readFileSync(path.join(ROOT, 'js', 'book-viewer.js'), 'utf8');
+    const srcOmr = fs.readFileSync(path.join(ROOT, 'omr-card.html'), 'utf8');
+    check('입문서: 주소 paused 표시를 만들지도 읽지도 않음', srcRouter.indexOf('paused=1') < 0 && srcBook.indexOf("get('paused')") < 0);
+    check('입문서: 인증 저장 전에 _canCertifyNow 판정', /await _canCertifyNow\(\)[\s\S]*upsertInitialRecord\(\s*BookViewer\.userId/.test(srcBook));
+    check('OMR: 공통 판정 파일을 인라인 스크립트보다 먼저 로드 + 새 제출 전 검사', srcOmr.indexOf('js/supabase-client.js') > 0 && srcOmr.indexOf('js/supabase-client.js') < srcOmr.indexOf('var SUPABASE_URL') && /getOmrStopMessage\(\)[\s\S]*renderOMRForm\(\);\s*\r?\n\s*document\.getElementById\('omrLoading'\)\.style\.display = 'none';\s*\r?\n\s*document\.getElementById\('omrForm'\)\.style\.display = 'block';\s*\r?\n\s*document\.getElementById\('omrSubmitArea'\)/.test(srcOmr));
+
     console.log('\n' + pass + ' passed, ' + fail + ' failed');
     process.exit(fail ? 1 : 0);
 })();
