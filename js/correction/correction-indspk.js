@@ -454,7 +454,15 @@ async function _corrIdsDoSubmit() {
                 draft_1_submitted_at: new Date().toISOString()
             }
         });
-        if (!saved.ok) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+        if (!saved.ok) {
+            // 멈춤(정지·환불)으로 막힌 경우는 정확한 안내 후 세션 화면으로(2026-10-12)
+            if (saved.reason === 'paused' || saved.reason === 'refunded') {
+                alert((typeof CORR_ENTRY_MSG !== 'undefined' && CORR_ENTRY_MSG[saved.reason]) || '지금은 제출할 수 없어요.');
+                if (typeof _returnToCorrectionSession === 'function') { try { _returnToCorrectionSession(); } catch (e2) {} }
+                return;
+            }
+            throw new Error('저장 결과가 비어 있음 (DB 거부)');
+        }
 
         // n8n 전송 — 아직 개통 안 된 유형이면 getCorrWebhookUrl()이 null을 돌려줘
         // 보내지 않고 넘어간다 (제출은 저장됨 → 첨삭은 소급 처리)

@@ -185,9 +185,10 @@ function _applyButtonStates(hasInitial, hasCurrent, deadlinePassed, pausedMode) 
     // ── 풀이 버튼 ──
     if (pausedMode && !hasInitial) {
         // 일시정지 중 + 실전 기록 없음 → 새 풀이 불가(잠금). 실전 기록이 있으면 아래 다시풀기 모드로.
-        if (btnPracticeIcon) btnPracticeIcon.className = 'fa-solid fa-pause';
-        if (btnPracticeText) btnPracticeText.textContent = '일시정지 중';
-        if (btnPracticeStatus) btnPracticeStatus.textContent = '정지 기간에는 새 풀이 불가';
+        var refundedMode = (pausedMode === 'refund');   // 환불·중도포기(2026-10-12) — 잠금은 같고 문구만
+        if (btnPracticeIcon) btnPracticeIcon.className = refundedMode ? 'fa-solid fa-ban' : 'fa-solid fa-pause';
+        if (btnPracticeText) btnPracticeText.textContent = refundedMode ? '수강 종료' : '일시정지 중';
+        if (btnPracticeStatus) btnPracticeStatus.textContent = refundedMode ? '환불·중도포기로 새 풀이 불가' : '정지 기간에는 새 풀이 불가';
         if (btnPractice) btnPractice.disabled = true;
     } else if (hasInitial || (deadlinePassed && !hasInitial)) {
         // 다시 풀기 모드

@@ -86,7 +86,7 @@ var ErrorNote = {
         var tab = this._activeTab;
         var pausedMode = window._pausedMode || false;                       // 일시정지 중(2026-10-06): 실전 탭 잠금
         var deadlinePassed = (window._deadlinePassedMode || pausedMode) || false;
-        var lockWhy = pausedMode ? '일시정지 중에는' : '마감으로 인해';
+        var lockWhy = (pausedMode === 'refund') ? '수강 종료(환불·중도포기) 상태에서는' : (pausedMode ? '일시정지 중에는' : '마감으로 인해');
 
         // ── 실전풀이 탭 ──
         if (tab === 'initial') {

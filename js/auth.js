@@ -129,6 +129,9 @@ async function handleLogin(event) {
             selfPacedSchedule: programInfo.selfPacedSchedule || null,  // (v2) 저장된 확정 일정표(JSON/객체)
             challengePauses: programInfo.challengePauses || [],   // 내챌 일시정지 이력
             correctionPauses: programInfo.correctionPauses || [], // 첨삭 일시정지 이력
+            serviceStops: programInfo.serviceStops || [],         // 환불·중도포기 기록(2026-10-12)
+            appStatus: programInfo.appStatus || null,             // 옛 방식 환불 표시
+            refundAt: programInfo.refundAt || null,
             correctionStartDate: programInfo.correctionStartDate || null,
             timezone: userTimezone  // 학생별 타임존 (IANA)
         };

@@ -168,15 +168,20 @@ function _renderCorrectionTaskCard(containerId, taskType, taskTitle, submission,
         }
     }
 
-    // 일시정지 중 + 미제출(아직 마감 전) → 새 회차 시작 차단(정지 전 제출한 회차의 2차는 그대로 — R3)
-    if (statusInfo.action === 'write' && typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
-        statusInfo = {
-            text: '일시정지 중 · 재개 후 진행',
-            btnText: '일시정지 중',
-            btnClass: 'btn-disabled',
-            disabled: true,
-            action: 'none'
-        };
+    // 일시정지·환불 중 + 미제출(아직 마감 전) → 새 회차 시작 차단(기준 전 제출한 회차의 2차는 그대로 — R3)
+    if (statusInfo.action === 'write' && typeof isCorrectionStoppedNow === 'function' && isCorrectionStoppedNow(null)) {
+        var stopR = (typeof correctionStopReason === 'function') ? correctionStopReason(null) : 'pause';
+        statusInfo = (stopR === 'refund')
+            ? { text: '환불됨 · 수강 종료', btnText: '환불됨', btnClass: 'btn-disabled', disabled: true, action: 'none' }
+            : { text: '일시정지 중 · 재개 후 진행', btnText: '일시정지 중', btnClass: 'btn-disabled', disabled: true, action: 'none' };
+    }
+    // 환불 기준 이후에 1차를 낸 회차(서버가 공개를 막는다, correction_release_blocked) → "곧 도착" 대신 닫힘 표시(2026-10-12)
+    if (submission && !submission.released_1 && statusInfo.action === 'view'
+        && typeof isCorrRowStopClosed === 'function' && isCorrRowStopClosed(null, submission)) {
+        var stopR2 = (typeof correctionStopReason === 'function') ? correctionStopReason(null) : 'pause';
+        statusInfo = (stopR2 === 'refund')
+            ? { text: '환불됨 · 첨삭 진행 안 됨', btnText: '환불됨', btnClass: 'btn-disabled', disabled: true, action: 'none' }
+            : { text: '일시정지 중 · 재개 후 첨삭 진행', btnText: '일시정지 중', btnClass: 'btn-disabled', disabled: true, action: 'none' };
     }
 
     var iconClass = taskType === 'writing' ? 'fas fa-pen' : 'fas fa-microphone';
@@ -341,7 +346,8 @@ var CORR_ENTRY_MSG = {
     state: '지금은 제출할 수 있는 단계가 아니에요. 화면을 새로 불러올게요.',
     deadline1: '1차 제출 마감이 지났습니다.',
     deadline2: '2차 수정 마감이 지났습니다.',
-    paused: '지금은 첨삭 일시정지 중이에요. 재개 후 새 회차를 제출할 수 있어요.'
+    paused: '지금은 첨삭 일시정지 중이에요. 재개 후 새 회차를 제출할 수 있어요.',
+    refunded: '스라첨삭이 종료된 계정이에요(환불·중도포기 처리). 새 회차는 제출할 수 없어요. 문의는 카카오톡 채널로 남겨주세요.'
 };
 
 /**
@@ -382,8 +388,9 @@ async function resolveCorrDraftEntry(session, category, entry) {
             if (entry === 'detail') return { round: 0, reason: 'state' };
             var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), slot);
             if (dl1 && new Date() > dl1) return { round: 0, reason: 'deadline1' };
-            // 일시정지 중엔 새 회차(1차) 진입 불가 — 서버 판정(correction_release_blocked)과 같은 기준
-            if (typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(user)) return { round: 0, reason: 'paused' };
+            // 일시정지·환불 중엔 새 회차(1차) 진입 불가 — 서버 판정(correction_release_blocked)과 같은 기준
+            var stopReasonE = (typeof correctionStopReason === 'function') ? correctionStopReason(user) : null;
+            if (stopReasonE) return { round: 0, reason: stopReasonE === 'refund' ? 'refunded' : 'paused' };
             return { round: 1 };
         }
 
@@ -525,7 +532,7 @@ function getCorrSessionDate(scheduleData, session, pauses) {
 
 // 첨삭 일시정지 중이고 1차 마감이 아직 안 지났거나(또는 날짜 미정) → 카드에 마감 대신 정지 안내를 보일 조건
 function _corrPausedNoDeadline(dl1, now) {
-    if (typeof isCorrectionPausedNow !== 'function' || !isCorrectionPausedNow(null)) return false;
+    if (typeof isCorrectionStoppedNow !== 'function' || !isCorrectionStoppedNow(null)) return false;
     return !dl1 || (now || new Date()) <= dl1;
 }
 
@@ -801,7 +808,10 @@ function _buildCardDeadlineHtml(submission, session, taskType) {
         var dl1 = getCorrDraft1Deadline(getCorrSessionDate(scheduleData, session), ext);
         // 일시정지 중이고 아직 마감 전(또는 날짜 미정)이면 마감 대신 정지 안내. 정지 전에 지난 마감은 그대로 '초과'.
         if (_corrPausedNoDeadline(dl1, now)) {
-            rows.push({ html: '<i class="fas fa-pause-circle"></i> 일시정지 중 — 재개 후 1차 마감이 다시 계산됩니다', cls: 'waiting' });
+            var stopR3 = (typeof correctionStopReason === 'function') ? correctionStopReason(null) : 'pause';
+            rows.push({ html: (stopR3 === 'refund')
+                ? '<i class="fas fa-ban"></i> 환불·중도포기 — 이 회차는 열리지 않습니다'
+                : '<i class="fas fa-pause-circle"></i> 일시정지 중 — 재개 후 1차 마감이 다시 계산됩니다', cls: 'waiting' });
             rows.push({ html: '<i class="fas fa-lock"></i> 2차: 1차 완료 후 진행', cls: 'waiting' });
             return _wrapDeadlineRows(rows);
         }

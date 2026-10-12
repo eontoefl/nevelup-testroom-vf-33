@@ -179,6 +179,46 @@ console.log('[7] refreshPauseState — DB 재조회로 user 갱신 (모의 fetch
     }
     check('pausedDaysUntil ' + sameDays + '건 일치', dd.length === 0, dd.join(', '));
 
+    console.log('[11] 환불·중도포기(2026-10-12) — getActiveServiceStop / 멈춤 판정 / 기준시각 / 공홈 getActiveStop 과 같은 답');
+    const S_CORR = [{ id: 's1', kind: 'refund', target: 'correction', requested_on: '2026-09-16', status: 'active', created_at: '2026-09-20T05:00:00Z' }];
+    const S_BOTH = [{ id: 's2', kind: 'dropped', target: 'both', requested_on: '2026-09-29', status: 'active', created_at: '2026-09-29T13:00:00Z' }];
+    const S_WD = [{ id: 's3', kind: 'refund', target: 'both', requested_on: '2026-09-16', status: 'withdrawn' }];
+    const uCorr = { serviceStops: S_CORR, challengePauses: [], correctionPauses: [], correctionEnabled: true, timezone: 'Asia/Seoul' };
+    check('첨삭만 환불: 첨삭 멈춤 true, 내챌 멈춤 false', T.isCorrectionStoppedNow(uCorr) === true && T.isChallengeStoppedNow(uCorr) === false && T.correctionStopReason(uCorr) === 'refund' && T.challengeStopReason(uCorr) === null);
+    const uBoth = { serviceStops: S_BOTH, challengePauses: nowPause, correctionPauses: [], correctionEnabled: true, timezone: 'Asia/Seoul' };
+    check('둘 다 중도포기 + 정지 중: 사유는 환불 우선', T.challengeStopReason(uBoth) === 'refund' && T.isChallengeRefundedNow(uBoth) && T.stopTaskMsgFor(uBoth) === T.STOP_TASK_MSG.refund);
+    check('철회된 항목은 무시', T.isChallengeStoppedNow({ serviceStops: S_WD, challengePauses: [] }) === false && T.getActiveServiceStop({ serviceStops: S_WD }, 'challenge') === null);
+    check('문자열 JSON 도 판정', T.isCorrectionRefundedNow({ serviceStops: JSON.stringify(S_CORR), correctionEnabled: true }) === true);
+    const uLegacy = { serviceStops: [], appStatus: 'refunded', refundAt: 1790687291401, correctionEnabled: true, challengePauses: [], correctionPauses: [] };
+    check('옛 방식 표시(app_status): 둘 다 멈춤, legacy 표시', T.isChallengeRefundedNow(uLegacy) && T.isCorrectionRefundedNow(uLegacy) && T.getActiveServiceStop(uLegacy, 'challenge').legacy === true);
+    check('옛 방식 + 첨삭 없던 학생: 첨삭은 아님', T.isCorrectionRefundedNow({ serviceStops: [], appStatus: 'dropped', correctionEnabled: false, correctionStartDate: null }) === false);
+    const cutCorr = T.getCorrStopCut(uCorr);
+    check('환불 기준시각 = 요청일 00:00 KST', cutCorr === Date.parse('2026-09-16T00:00:00+09:00'));
+    check('기준 전 1차 제출 행은 열림, 기준 후·미제출은 닫힘', T.isCorrRowStopClosed(uCorr, { draft_1_submitted_at: '2026-09-15T10:00:00Z' }) === false && T.isCorrRowStopClosed(uCorr, { draft_1_submitted_at: '2026-09-16T10:00:00Z' }) === true && T.isCorrRowStopClosed(uCorr, null) === true);
+    check('멈춤 없으면 닫힘 아님', T.isCorrRowStopClosed({ serviceStops: [], correctionPauses: [] }, null) === false && T.getCorrStopCut({ serviceStops: [], correctionPauses: [] }) === null);
+    const pauseLate = [{ id: 'q', paused_from: '2026-09-20', resume_on: null, shift_days: null, status: 'open', created_at: '2026-09-20T02:00:00Z' }];
+    const uMix = { serviceStops: S_CORR, challengePauses: [], correctionPauses: pauseLate, correctionEnabled: true, timezone: 'Asia/Seoul' };
+    const realToday = T.getEffectiveToday;
+    T.getEffectiveToday = () => new Date('2026-09-25T03:00:00+09:00');
+    try {
+        check('정지(9/20 02:00Z)와 환불(9/16) 중 이른 쪽 = 환불', T.getCorrStopCut(uMix) === Date.parse('2026-09-16T00:00:00+09:00'));
+        const uPauseOnly = { serviceStops: [], challengePauses: [], correctionPauses: pauseLate, correctionEnabled: true, timezone: 'Asia/Seoul' };
+        check('정지만: 기준 = max(정지 시작 00:00 KST, 등록 시각)', T.getCorrStopCut(uPauseOnly) === Date.parse('2026-09-20T02:00:00Z'));
+    } finally { T.getEffectiveToday = realToday; }
+    check('옛 방식 기준시각 = refund_at', T.getCorrStopCut(uLegacy) === 1790687291401);
+    T.currentUser = { id: 'u9', serviceStops: S_CORR, correctionPauses: [], correctionEnabled: true, timezone: 'Asia/Seoul' };
+    const r9 = await T.submitCorrectionDraft({ round: 1, userId: 'u9' });
+    check('환불 중 1차 → {ok:false, reason:"refunded"}', r9 && r9.ok === false && r9.reason === 'refunded');
+    let sameS = 0, dS = [];
+    for (const S of [[], S_CORR, S_BOTH, S_WD]) for (const kind of ['challenge', 'correction']) {
+        const a = !!T.getActiveServiceStop({ serviceStops: S, correctionEnabled: true }, kind);
+        const b = !!H.getActiveStop({ service_stops: S, correction_enabled: true }, kind);
+        if (a === b) sameS++; else dS.push(kind + ':' + JSON.stringify(S));
+    }
+    const la = !!T.getActiveServiceStop(uLegacy, 'correction'), lb = !!H.getActiveStop({ service_stops: [], app_status: 'refunded', correction_enabled: true }, 'correction');
+    if (la === lb) sameS++; else dS.push('legacy');
+    check('getActiveServiceStop ' + sameS + '건 공홈 getActiveStop 과 일치', dS.length === 0, dS.join(', '));
+
     console.log('\n' + pass + ' passed, ' + fail + ' failed');
     process.exit(fail ? 1 : 0);
 })();

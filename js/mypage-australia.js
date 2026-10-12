@@ -380,8 +380,11 @@ function renderTodayTasks() {
     const effectiveToday = getEffectiveToday(getUserTimezone());
 
     // 일시정지 중이면 오늘 과제 없음
-    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(mpUser)) {
-        container.innerHTML = '<p class="today-task-empty">⏸️ 일시정지 중 — 재개 후 과제가 이어집니다</p>';
+    if (typeof isChallengeStoppedNow === 'function' && isChallengeStoppedNow(mpUser)) {
+        var mpStop = (typeof challengeStopReason === 'function') ? challengeStopReason(mpUser) : 'pause';
+        container.innerHTML = (mpStop === 'refund')
+            ? '<p class="today-task-empty">🚫 수강이 종료된 계정이에요(환불·중도포기) — 문의는 카카오톡 채널로</p>'
+            : '<p class="today-task-empty">⏸️ 일시정지 중 — 재개 후 과제가 이어집니다</p>';
         return;
     }
 

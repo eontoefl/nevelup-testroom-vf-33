@@ -63,6 +63,7 @@ function shouldShowExtensionUpsell(ctx) {
     var sd = ctx && ctx.scheduleData;
     if (!sd) return false;
     if (sd.extension_enabled && sd.extension_start_date) return false;  // 이미 연장된 학생
+    if (typeof isCorrectionRefundedNow === 'function' && isCorrectionRefundedNow(null)) return false;   // 첨삭 환불·중도포기(2026-10-12)
     return _ext_isSession9Done(ctx.submissionMap || {});
 }
 

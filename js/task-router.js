@@ -43,6 +43,13 @@ async function loadDeadlineExtensions() {
  */
 // 일시정지 중 새 과제 시도 시 안내문 (main.js 호주 과제·OMR 카드도 같은 문구)
 var PAUSED_TASK_MSG = '지금은 일시정지 중이에요.\n정지 기간에는 새 과제를 풀 수 없고, 이미 완료한 과제만 다시풀기로 복습할 수 있어요.';
+// 멈춤(정지·환불) 사유별 안내문 — supabase-client.js STOP_TASK_MSG(환불 우선). 환불처리 2단계(2026-10-12)
+function _stopTaskMsg(user) {
+    return (typeof stopTaskMsgFor === 'function') ? stopTaskMsgFor(user) : PAUSED_TASK_MSG;
+}
+function _challengeStopReasonSafe(user) {
+    return (typeof challengeStopReason === 'function') ? challengeStopReason(user) : ((typeof isChallengePausedNow === 'function' && isChallengePausedNow(user)) ? 'pause' : null);
+}
 
 function isTaskDeadlinePassed() {
     // 연습코스는 마감 없음
@@ -150,10 +157,11 @@ async function openIntroBookGuide(params) {
     // ── 메모 기준 계산 ──
     var requiredMemos = current * 2;
 
-    // ── 일시정지 체크(2026-10-06): 정지 중엔 이미 인증된 날만 '계속 읽기', 미인증이면 차단 ──
-    var pausedBook = (typeof isPracticeMode === 'function' && isPracticeMode()) ? false
-        : ((typeof isChallengePausedNow === 'function') && isChallengePausedNow((typeof getCurrentUser === 'function') ? getCurrentUser() : null));
-    window._pausedMode = !!pausedBook;
+    // ── 일시정지·환불 체크(2026-10-06/10-12): 멈춤 중엔 이미 인증된 날만 '계속 읽기', 미인증이면 차단 ──
+    var bookUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    var bookStop = (typeof isPracticeMode === 'function' && isPracticeMode()) ? null : _challengeStopReasonSafe(bookUser);
+    var pausedBook = !!bookStop;
+    window._pausedMode = bookStop || false;   // 'refund' | 'pause' | false (읽는 쪽은 참/거짓 + 문구 분기)
 
     // ── 마감 체크 ──
     var deadlinePassed = !pausedBook && isTaskDeadlinePassed();
@@ -179,7 +187,7 @@ async function openIntroBookGuide(params) {
                 alreadyCertified = true;
             }
             if (pausedBook && !alreadyCertified) {
-                alert(PAUSED_TASK_MSG);
+                alert(_stopTaskMsg(bookUser));
                 return;
             }
             // 누적 메모 수 조회 — 호주 모드면 sort_order=1 (호주 입문서)
@@ -371,15 +379,17 @@ function executeTask(taskName) {
     
     // ── 연습코스: 확인 팝업 없이 바로 실행 (부담 없는 연습 UX) ──
     var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+    var pauseUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
     if (inPractice) {
+        // 내챌 환불·중도포기면 연습코스도 수강 종료(대표 결정 E1, 2026-10-12)
+        if (typeof isChallengeRefundedNow === 'function' && isChallengeRefundedNow(pauseUser)) { alert(STOP_TASK_MSG.refund); return; }
         _executeTaskCore(taskName);
         return;
     }
 
-    // ── 일시정지 중(2026-10-08): "제한시간 시작" 확인창을 띄우지 않는다.
-    //    실전 기록이 있는 과제만 확인창 없이 다시풀기 대시보드로, 없으면 정지 안내로 끝.
-    var pauseUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(pauseUser)) {
+    // ── 일시정지·환불 중(2026-10-08/10-12): "제한시간 시작" 확인창을 띄우지 않는다.
+    //    실전 기록이 있는 과제만 확인창 없이 다시풀기 대시보드로, 없으면 멈춤 안내로 끝.
+    if (typeof isChallengeStoppedNow === 'function' && isChallengeStoppedNow(pauseUser)) {
         _executeTaskWhilePaused(taskName, parsed, pauseUser);
         return;
     }
@@ -398,7 +408,7 @@ async function _executeTaskWhilePaused(taskName, parsed, user) {
     var ct = window.currentTest || {};
     var sectionType = parsed && parsed.type;
     if (['reading', 'listening', 'writing', 'speaking', 'vocab'].indexOf(sectionType) < 0 || !user || !user.id) {
-        alert(PAUSED_TASK_MSG);
+        alert(_stopTaskMsg(user));
         return;
     }
     var moduleNumber = (parsed.params && (parsed.params.module || parsed.params.number)) || 1;
@@ -411,18 +421,19 @@ async function _executeTaskWhilePaused(taskName, parsed, user) {
     } catch (e) {
         console.warn('⏸️ [정지] 기록 조회 실패 — 안내로 처리:', e);
     }
-    alert(PAUSED_TASK_MSG);
+    alert(_stopTaskMsg(user));
 }
 
 /**
  * 과제 실제 실행 (팝업 확인 후 호출)
  */
 function _executeTaskCore(taskName) {
-    // ── 일시정지 가드 (2026-10-06) — 정지 중엔 실전 기록이 있는 과제만 다시풀기, 없으면 안내 ──
+    // ── 일시정지·환불 가드 (2026-10-06/10-12) — 멈춤 중엔 실전 기록이 있는 과제만 다시풀기, 없으면 안내 ──
     var pauseUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
     var inPracticeP = (typeof isPracticeMode === 'function' && isPracticeMode());
-    var pausedNow = !inPracticeP && (typeof isChallengePausedNow === 'function') && isChallengePausedNow(pauseUser);
-    window._pausedMode = !!pausedNow;
+    var stopReasonP = inPracticeP ? null : _challengeStopReasonSafe(pauseUser);
+    var pausedNow = !!stopReasonP;
+    window._pausedMode = stopReasonP || false;   // 'refund' | 'pause' | false
     if (pausedNow) {
         var parsedP = parseTaskName(taskName);
         if (parsedP.type === 'vocab') {
@@ -433,9 +444,9 @@ function _executeTaskCore(taskName) {
                     window._deadlinePassedMode = false;
                     _launchVocabModule(parsedP.params.pages);
                 } else {
-                    alert(PAUSED_TASK_MSG);
+                    alert(_stopTaskMsg(pauseUser));
                 }
-            }).catch(function () { alert(PAUSED_TASK_MSG); });
+            }).catch(function () { alert(_stopTaskMsg(pauseUser)); });
             return;
         }
         // 4섹션은 과제 대시보드가 실전 기록 여부로 버튼을 잠근다(아래로 진행). 마감 모드는 쓰지 않는다.

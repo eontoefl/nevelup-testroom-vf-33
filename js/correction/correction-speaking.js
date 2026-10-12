@@ -613,7 +613,15 @@ async function submitCorrectionSpeaking() {
             submissionId: (state.isDraft2 && state.submission) ? state.submission.id : null,
             fields: fields
         });
-        if (!saved.ok) throw new Error('저장 결과가 비어 있음 (DB 거부)');
+        if (!saved.ok) {
+            // 멈춤(정지·환불)으로 막힌 경우는 정확한 안내 후 세션 화면으로(2026-10-12)
+            if (saved.reason === 'paused' || saved.reason === 'refunded') {
+                alert((typeof CORR_ENTRY_MSG !== 'undefined' && CORR_ENTRY_MSG[saved.reason]) || '지금은 제출할 수 없어요.');
+                if (typeof _returnToCorrectionSession === 'function') { try { _returnToCorrectionSession(); } catch (e2) {} }
+                return;
+            }
+            throw new Error('저장 결과가 비어 있음 (DB 거부)');
+        }
         console.log('✅ [Correction Speaking] ' + (state.isDraft2 ? '2차' : '1차') + ' 제출 완료');
 
         // Webhook (비동기). 응답 유실 후 재조회로 확인된 저장이면 서버 자동 재실행에 맡긴다(중복 첨삭 방지)

@@ -255,6 +255,17 @@ async function getStudentProgram(userEmail) {
         }
     } catch (e) { /* 칸 미존재 → 정지 없음으로 */ }
 
+    // 환불·중도포기 기록(2026-10-12, 환불처리 2단계): 정지 칸과 같은 관례로 별도 조회. 옛 방식 표시(app_status)도 함께 읽는다.
+    let serviceStops = [], appStatus = null, refundAt = null;
+    try {
+        const stRows = await supabaseSelect('applications', `id=eq.${app.id}&select=service_stops,app_status,refund_at`);
+        if (stRows && stRows[0]) {
+            serviceStops = _stopEntriesOf(stRows[0].service_stops);
+            appStatus = stRows[0].app_status || null;
+            refundAt = stRows[0].refund_at || null;
+        }
+    } catch (e) { /* 칸 미존재 → 환불 없음으로 */ }
+
     return {
         program: app.assigned_program || app.preferred_program || '내벨업챌린지 - Standard',
         startDate: app.schedule_start || app.preferred_start_date,
@@ -270,7 +281,10 @@ async function getStudentProgram(userEmail) {
         selfPacedEndDate: selfPacedEndDate,  // (v2) 종료일 YYYY-MM-DD. 있으면 압축+매일마감 모드로 gate
         selfPacedSchedule: selfPacedSchedule,  // (v2) 저장된 확정 일정표(JSON) 또는 null
         challengePauses: challengePauses,    // 내챌 일시정지 이력(배열)
-        correctionPauses: correctionPauses   // 첨삭 일시정지 이력(배열)
+        correctionPauses: correctionPauses,  // 첨삭 일시정지 이력(배열)
+        serviceStops: serviceStops,          // 환불·중도포기 기록(배열)
+        appStatus: appStatus,                // 옛 방식 환불 표시(refunded|dropped) — 기록이 비어 있을 때만 의미
+        refundAt: refundAt                   // 옛 방식 환불 시각(ms)
     };
 }
 
@@ -316,6 +330,79 @@ function getActiveCorrectionPause(user) {
 function isChallengePausedNow(user) { return !!getActiveChallengePause(user); }
 function isCorrectionPausedNow(user) { return !!getActiveCorrectionPause(user); }
 
+// ================================================
+// 환불·중도포기 (2026-10-12, 환불처리 2단계) — "돌아오지 않는 일시정지"
+//   서버 service_stop_at / is_service_stopped / correction_release_blocked 와 같은 규칙. 공홈 getActiveStop 과 같은 판정.
+//   항목 = { kind 'refund'|'dropped', target 'challenge'|'correction'|'both', requested_on 'YYYY-MM-DD', status 'active'|'withdrawn', ... }
+//   환불은 날짜를 밀지 않는다(보정 함수에 관여 없음). 판정은 "active 항목이 있는가"뿐(요청일은 오늘 이전만 허용되므로 날짜 비교 불필요).
+// ================================================
+var STOP_TASK_MSG = {
+    pause: '지금은 일시정지 중이에요.\n정지 기간에는 새 과제를 풀 수 없고, 이미 완료한 과제만 다시풀기로 복습할 수 있어요.',
+    refund: '수강이 종료된 계정이에요(환불·중도포기 처리).\n새 과제는 풀 수 없고, 이미 완료한 과제만 다시풀기로 볼 수 있어요. 문의는 카카오톡 채널로 남겨주세요.'
+};
+function _stopEntriesOf(raw) {
+    if (!raw) return [];
+    var arr = raw;
+    if (typeof raw === 'string') { try { arr = JSON.parse(raw); } catch (e) { return []; } }
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (e) { return e && e.target; });
+}
+/** 그 상품(challenge|correction)을 덮는 active 환불 항목. 없으면 null. 옛 방식 표시(app_status)는 legacy:true 로 합성. */
+function getActiveServiceStop(user, kind) {
+    var u = _pauseUserOrCurrent(user);
+    if (!u) return null;
+    var list = _stopEntriesOf(u.serviceStops);
+    for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (e.status === 'active' && (e.target === 'both' || e.target === kind)) return e;
+    }
+    if (list.length === 0 && (u.appStatus === 'refunded' || u.appStatus === 'dropped')) {
+        // 옛 기록: 첨삭이 있던 학생만 첨삭도 중단으로 본다
+        if (kind === 'correction' && !(u.correctionEnabled || u.correctionStartDate)) return null;
+        return { legacy: true, kind: u.appStatus, target: 'both', requested_on: null, refund_at: u.refundAt || null, status: 'active' };
+    }
+    return null;
+}
+function isChallengeRefundedNow(user) { return !!getActiveServiceStop(user, 'challenge'); }
+function isCorrectionRefundedNow(user) { return !!getActiveServiceStop(user, 'correction'); }
+/** 멈춰 있나 = 환불 OR 정지 (서버 is_service_stopped) — 관문은 이것을 본다 */
+function isChallengeStoppedNow(user) { return isChallengeRefundedNow(user) || isChallengePausedNow(user); }
+function isCorrectionStoppedNow(user) { return isCorrectionRefundedNow(user) || isCorrectionPausedNow(user); }
+/** 멈춘 사유: 'refund'(환불 우선) | 'pause' | null — 문구 분기용 */
+function challengeStopReason(user) { return isChallengeRefundedNow(user) ? 'refund' : (isChallengePausedNow(user) ? 'pause' : null); }
+function correctionStopReason(user) { return isCorrectionRefundedNow(user) ? 'refund' : (isCorrectionPausedNow(user) ? 'pause' : null); }
+function stopTaskMsgFor(user) { return STOP_TASK_MSG[challengeStopReason(user) || 'pause']; }
+/**
+ * 첨삭 기준시각(ms): 환불 요청일 00:00 KST(옛 기록은 refund_at, 없으면 -∞)와 정지 기준(정지 시작일 00:00 KST 와 등록 시각 중 늦은 쪽) 중 이른 쪽.
+ * 둘 다 없으면 null. 서버 correction_release_blocked 와 같은 계산.
+ */
+function getCorrStopCut(user) {
+    var u = _pauseUserOrCurrent(user);
+    if (!u) return null;
+    var cut = null;
+    var stop = getActiveServiceStop(u, 'correction');
+    if (stop) {
+        var sc = stop.legacy ? (stop.refund_at ? Number(stop.refund_at) : -Infinity)
+                             : (stop.requested_on ? Date.parse(stop.requested_on + 'T00:00:00+09:00') : -Infinity);
+        if (!isNaN(sc)) cut = sc;
+    }
+    var p = getActiveCorrectionPause(u);
+    if (p) {
+        var pc = Date.parse(p.paused_from + 'T00:00:00+09:00');
+        var ca = p.created_at ? Date.parse(p.created_at) : -Infinity;
+        if (!isNaN(pc)) { var pcut = Math.max(pc, isNaN(ca) ? -Infinity : ca); cut = (cut == null) ? pcut : Math.min(cut, pcut); }
+    }
+    return cut;
+}
+/** 이 회차 행이 닫혔나 = 멈춤 AND (행 없음 OR 1차 제출 ≥ 기준). 기준 전에 1차를 낸 회차는 끝까지 정상(R3). */
+function isCorrRowStopClosed(user, row) {
+    var cut = getCorrStopCut(user);
+    if (cut == null) return false;
+    if (!row) return true;
+    var d = row.draft_1_submitted_at ? Date.parse(row.draft_1_submitted_at) : NaN;
+    return isNaN(d) || d >= cut;
+}
+
 /**
  * 세션 복원·마이페이지 진입 때 DB에서 최신값을 다시 읽는다(관리자가 정지를 걸어도 열린 탭이 옛 상태로 돌지 않게).
  *   갱신: startDate·australiaStartDate·정지 이력 2종·첨삭 사용 여부·첨삭 시작일·(자기주도) 종료일·확정표. sessionStorage에도 저장.
@@ -324,13 +411,16 @@ function isCorrectionPausedNow(user) { return !!getActiveCorrectionPause(user); 
 async function refreshPauseState(user) {
     if (!user || !user.applicationId) return user;
     var rows = await supabaseSelect('applications',
-        'id=eq.' + user.applicationId + '&select=schedule_start,australia_schedule_start,correction_enabled,correction_start_date,challenge_pauses,correction_pauses,self_paced_end_date,self_paced_schedule');
+        'id=eq.' + user.applicationId + '&select=schedule_start,australia_schedule_start,correction_enabled,correction_start_date,challenge_pauses,correction_pauses,self_paced_end_date,self_paced_schedule,service_stops,app_status,refund_at');
     if (!rows || !rows[0]) return user;
     var r = rows[0];
     if (r.schedule_start) user.startDate = r.schedule_start;
     user.australiaStartDate = r.australia_schedule_start || null;
     user.challengePauses = _pauseEntriesOf(r.challenge_pauses);
     user.correctionPauses = _pauseEntriesOf(r.correction_pauses);
+    user.serviceStops = _stopEntriesOf(r.service_stops);      // 환불·중도포기 기록(2026-10-12)
+    user.appStatus = r.app_status || null;
+    user.refundAt = r.refund_at || null;
     user.correctionStartDate = r.correction_start_date || null;
     if (typeof isCorrectionActiveNow === 'function') {
         user.correctionEnabled = isCorrectionActiveNow({ correctionEnabled: !!r.correction_enabled, correctionStartDate: r.correction_start_date || null }, user.timezone || 'Asia/Seoul');
@@ -842,10 +932,11 @@ async function updateCorrectionSubmission(id, data) {
  */
 async function submitCorrectionDraft(opts) {
     var saved = null;
-    // 일시정지 마지막 방어(2026-10-06): 정지 중 새 회차 1차 저장 금지(정지 전 제출한 회차의 2차는 허용 — R3)
-    if (opts.round !== 2 && typeof isCorrectionPausedNow === 'function' && isCorrectionPausedNow(null)) {
-        console.warn('⏸️ [Correction] 첨삭 일시정지 중 — 1차 저장 차단');
-        return { ok: false, reason: 'paused' };
+    // 일시정지·환불 마지막 방어(2026-10-06/10-12): 멈춤 중 새 회차 1차 저장 금지(기준 전 제출한 회차의 2차는 허용 — R3)
+    var stopReason = (opts.round !== 2 && typeof correctionStopReason === 'function') ? correctionStopReason(null) : null;
+    if (stopReason) {
+        console.warn('⏸️ [Correction] 첨삭 ' + (stopReason === 'refund' ? '환불·중도포기' : '일시정지') + ' 중 — 1차 저장 차단');
+        return { ok: false, reason: stopReason === 'refund' ? 'refunded' : 'paused' };
     }
     if (opts.round === 2) {
         if (!opts.submissionId) {

@@ -333,6 +333,20 @@ function _getSessionStatus(writingSub, speakingSub) {
  * 첨삭 일시정지 배너 (정지 중일 때만, 공지 아래)
  */
 function _renderCorrectionPauseBanner(container, user) {
+    // 환불·중도포기(2026-10-12)가 정지보다 우선
+    var stop = (typeof getActiveServiceStop === 'function') ? getActiveServiceStop(user, 'correction') : null;
+    if (stop) {
+        var sbox = document.createElement('div');
+        sbox.className = 'correction-notice';
+        sbox.innerHTML =
+            '<i class="fas fa-ban correction-notice-icon"></i>' +
+            '<div class="correction-notice-content">' +
+                '<div class="correction-notice-title">스라첨삭이 종료됐어요' + (stop.kind === 'dropped' ? '(중도포기 처리)' : '(환불 처리)') + '</div>' +
+                '<div class="correction-notice-body">이미 제출한 회차는 끝까지 진행되고, 새 회차는 열리지 않아요. 문의는 카카오톡 채널로 남겨주세요.</div>' +
+            '</div>';
+        container.appendChild(sbox);
+        return;
+    }
     var p = (typeof getActiveCorrectionPause === 'function') ? getActiveCorrectionPause(user) : null;
     if (!p) return;
     var box = document.createElement('div');

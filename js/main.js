@@ -73,8 +73,23 @@ function initScheduleScreen() {
  *   "정지 중"의 판정과 날짜 보정은 supabase-client.js / timezone-utils.js가 한 출처로 맡는다.
  */
 function _appendChallengePauseBanner(container) {
+    if (!container) return;
+    // 환불·중도포기(2026-10-12)가 정지보다 우선 — "돌아오지 않는 정지" 배너
+    var stop = (typeof getActiveServiceStop === 'function') ? getActiveServiceStop(currentUser, 'challenge') : null;
+    if (stop) {
+        var sbox = document.createElement('div');
+        sbox.className = 'correction-notice';
+        sbox.innerHTML =
+            '<i class="fas fa-ban correction-notice-icon"></i>' +
+            '<div class="correction-notice-content">' +
+                '<div class="correction-notice-title">수강이 종료된 계정이에요' + (stop.kind === 'dropped' ? '(중도포기 처리)' : '(환불 처리)') + '</div>' +
+                '<div class="correction-notice-body">새 과제는 풀 수 없고, 이미 완료한 과제만 다시풀기로 볼 수 있어요.<br>문의는 카카오톡 채널로 남겨주세요.</div>' +
+            '</div>';
+        container.appendChild(sbox);
+        return;
+    }
     var p = (typeof getActiveChallengePause === 'function') ? getActiveChallengePause(currentUser) : null;
-    if (!p || !container) return;
+    if (!p) return;
     function lbl(ymd) {
         var d = parseYmdLocal(ymd);
         if (!d) return ymd;
@@ -473,9 +488,9 @@ function _createOmrCard(opts) {
         '<i class="fas fa-chevron-right omr-card-arrow"></i>';
 
     card.onclick = function() {
-        // 일시정지 중엔 OMR(실전 기록 전용) 제출 불가
-        if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(null)) {
-            alert(typeof PAUSED_TASK_MSG !== 'undefined' ? PAUSED_TASK_MSG : '지금은 일시정지 중이에요.');
+        // 일시정지·환불 중엔 OMR(실전 기록 전용) 제출 불가
+        if (typeof isChallengeStoppedNow === 'function' && isChallengeStoppedNow(null)) {
+            alert(typeof stopTaskMsgFor === 'function' ? stopTaskMsgFor(null) : (typeof PAUSED_TASK_MSG !== 'undefined' ? PAUSED_TASK_MSG : '지금은 일시정지 중이에요.'));
             return;
         }
         var url = 'omr-card.html?type=' + opts.type
@@ -1113,9 +1128,9 @@ function _showAusTaskSelectScreen(taskName, week, dayKr) {
             _showAusGuideRequiredAlert();
             return;
         }
-        // 일시정지 중엔 호주 과제(외부 링크·제출) 새로 시작 불가
-        if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(null)) {
-            alert(typeof PAUSED_TASK_MSG !== 'undefined' ? PAUSED_TASK_MSG : '지금은 일시정지 중이에요.');
+        // 일시정지·환불 중엔 호주 과제(외부 링크·제출) 새로 시작 불가
+        if (typeof isChallengeStoppedNow === 'function' && isChallengeStoppedNow(null)) {
+            alert(typeof stopTaskMsgFor === 'function' ? stopTaskMsgFor(null) : (typeof PAUSED_TASK_MSG !== 'undefined' ? PAUSED_TASK_MSG : '지금은 일시정지 중이에요.'));
             return;
         }
         actionFn();
@@ -1882,7 +1897,9 @@ function _initSegmentControl() {
     var btnPractice = document.getElementById('segBtnPractice');
     var btnFeedback = document.getElementById('segBtnFeedback');
     
-    var hasPractice = currentUser && currentUser.practiceEnabled;
+    // 연습코스: 내챌 환불·중도포기면 수강 종료로 탭을 숨긴다(대표 결정 E1, 2026-10-12)
+    var hasPractice = currentUser && currentUser.practiceEnabled
+        && !((typeof isChallengeRefundedNow === 'function') && isChallengeRefundedNow(currentUser));
     var hasCorrection = (typeof isCorrectionAvailable === 'function')
         ? isCorrectionAvailable(currentUser)
         : (currentUser && (currentUser.correctionEnabled || window.__isAdmin));
@@ -2014,10 +2031,13 @@ function _renderDeadlineBanner(week, dayKr) {
     var banner = document.createElement('div');
     banner.id = 'taskListDeadlineBanner';
 
-    // 일시정지 중이면 마감 대신 정지 안내
-    if (typeof isChallengePausedNow === 'function' && isChallengePausedNow(user)) {
+    // 일시정지·환불 중이면 마감 대신 멈춤 안내
+    if (typeof isChallengeStoppedNow === 'function' && isChallengeStoppedNow(user)) {
+        var stopR = (typeof challengeStopReason === 'function') ? challengeStopReason(user) : 'pause';
         banner.className = 'task-deadline-banner deadline-passed';
-        banner.innerHTML = '<i class="fas fa-pause"></i> 일시정지 중 — 완료한 과제만 다시풀기 가능';
+        banner.innerHTML = (stopR === 'refund')
+            ? '<i class="fas fa-ban"></i> 수강 종료(환불·중도포기) — 완료한 과제만 다시풀기 가능'
+            : '<i class="fas fa-pause"></i> 일시정지 중 — 완료한 과제만 다시풀기 가능';
         var wh0 = document.querySelector('#taskListScreen .welcome-header');
         if (wh0) wh0.parentNode.insertBefore(banner, wh0.nextSibling);
         return;
