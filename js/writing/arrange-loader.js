@@ -65,16 +65,27 @@ async function _loadArrangeFromSupabase() {
                     questions: []
                 };
             }
+            // 정답 벌 목록: 1벌(정답1)은 항상, 2벌(정답2)은 correct_answer_2가 있을 때만
+            const answerSets = [{
+                answer: (row.correct_answer || '').split('|'),
+                translation: row.correct_translation || '',
+                explanation: row.explanation || ''
+            }];
+            if ((row.correct_answer_2 || '').trim()) {
+                answerSets.push({
+                    answer: row.correct_answer_2.split('|'),
+                    translation: row.correct_translation_2 || '',
+                    explanation: row.explanation_2 || ''
+                });
+            }
             setsMap[setId].questions.push({
                 questionNum: parseInt(row.question_num) || 1,
                 givenSentence: row.given_sentence || '',
                 givenTranslation: row.given_translation || '',
-                correctAnswer: (row.correct_answer || '').split('|'),
-                correctTranslation: row.correct_translation || '',
                 presentedWords: (row.presented_words || '').split('|'),
                 optionWords: (row.option_words || '').split('|'),
                 endPunctuation: row.end_punctuation || '.',
-                explanation: row.explanation || ''
+                answerSets: answerSets
             });
         });
         

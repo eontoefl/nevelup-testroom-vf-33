@@ -372,18 +372,14 @@ class ArrangeComponent {
                 }
             });
             
-            // 정답 확인 (빈칸 답만 정답 목록과 순서대로 비교)
-            let isCorrect = true;
-            if (userBlankAnswers.length !== question.correctAnswer.length) {
-                isCorrect = false;
-            } else {
-                for (let i = 0; i < question.correctAnswer.length; i++) {
-                    if (userBlankAnswers[i].toLowerCase() !== question.correctAnswer[i].toLowerCase()) {
-                        isCorrect = false;
-                        break;
-                    }
-                }
-            }
+            // 정답 확인 (빈칸 답을 정답 벌마다 순서대로 비교, 하나라도 일치하면 정답)
+            const matchedIdx = question.answerSets.findIndex(set =>
+                userBlankAnswers.length === set.answer.length &&
+                set.answer.every((w, i) => userBlankAnswers[i].toLowerCase() === w.toLowerCase())
+            );
+            const isCorrect = matchedIdx !== -1;
+            // 정답이면 맞힌 벌, 오답이면 1벌을 기록에 남긴다
+            const shownSet = question.answerSets[isCorrect ? matchedIdx : 0];
             
             // 결과 표시용 전체 문장 조합
             const userFullAnswer = question.presentedWords.map((word, idx) => {
@@ -403,17 +399,19 @@ class ArrangeComponent {
                 questionNum: question.questionNum,
                 givenSentence: question.givenSentence,
                 givenTranslation: question.givenTranslation,
-                correctAnswer: question.correctAnswer.join(' ') + question.endPunctuation,
-                correctAnswerArray: question.correctAnswer,
-                correctTranslation: question.correctTranslation,
+                correctAnswer: shownSet.answer.join(' ') + question.endPunctuation,
+                correctAnswerArray: shownSet.answer,
+                correctTranslation: shownSet.translation,
                 userAnswer: userFullAnswer.join(' ') + question.endPunctuation,
-                explanation: question.explanation,
+                explanation: shownSet.explanation,
                 isCorrect: isCorrect,
                 profilePair: this.profilePairs[questionKey],
                 presentedWords: question.presentedWords,
                 userFilledWords: userAnswer || {},
                 optionWords: question.optionWords,
-                endPunctuation: question.endPunctuation
+                endPunctuation: question.endPunctuation,
+                answerSets: question.answerSets.map(set => ({ answer: set.answer })),
+                matchedAnswerIndex: isCorrect ? matchedIdx : null
             };
         });
         
