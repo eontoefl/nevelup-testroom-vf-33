@@ -531,6 +531,7 @@ async function _updateOmrSubmitStatus(section, week, dayKr, readingTasks, listen
             + '&week=eq.' + encodeURIComponent(String(week))
             + '&day=eq.' + encodeURIComponent(dayKr)
             + '&initial_record=not.is.null'
+            + ((typeof enrollmentQuery === 'function') ? enrollmentQuery() : '')   // 재시작: 지금 수강의 기록만
             + '&select=initial_record'
             + '&limit=1';
         var rows = await supabaseSelect('aus_study_results', q);

@@ -19,6 +19,15 @@
   <link rel="stylesheet" href="css/mypage-grass-fast.css" />
   <link rel="stylesheet" href="css/mypage-grass-standard.css" />
   <link rel="stylesheet" href="css/toefl-score.css?v=031_readonly" />
+<style>
+  /* 지난 수강 기록 카드 (재시작, 2026-10-16) */
+  .pe-note { font-size: 13px; color: #6b6b7b; margin: -4px 0 12px; }
+  .past-enroll-card { background: #faf7fa; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .pe-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .pe-badge { background: #e7dce7; color: #5b4a7d; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+  .pe-program { font-size: 14px; font-weight: 600; color: #2a2a35; }
+  .pe-body { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: #4a4a58; }
+</style>
 </head>
 <body>
 
@@ -80,6 +89,9 @@
     </div><!-- /mp-head -->
 
     <div class="mp-panel active" id="panel-status">
+
+    <!-- 지난 수강 기록 (재시작 학생만 — mypage.js renderPastEnrollments가 채움) -->
+    <section class="section-block" id="pastEnrollments" style="display:none;"></section>
 
     <!-- ① 학습 현황 요약 카드 -->
     <section class="section-block">
@@ -483,7 +495,7 @@
 
   </main>
 
-  <script src="js/supabase-client.js?v=20261012_viewonly"></script>
+  <script src="js/supabase-client.js?v=20261016_restart"></script>
   <script src="js/timezone-utils.js?v=20261006_pause"></script>
   <!-- 스케줄 데이터 (과제 수 계산용) -->
   <script src="js/schedule-data.js?v=001"></script>
@@ -493,6 +505,6 @@
   <!-- 탭 + 지금 할 일 배너 -->
   <script src="js/mypage-nav.js?v=001"></script>
   <!-- 마이페이지 전용 로직 -->
-  <script src="js/mypage.js?v=20261012_refund"></script>
+  <script src="js/mypage.js?v=20261016_restart"></script>
 </body>
 </html>

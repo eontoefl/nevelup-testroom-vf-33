@@ -199,11 +199,20 @@ async function loginWithCredentials(email, password) {
 async function getStudentProgram(userEmail) {
     console.log('📋 [Supabase] 프로그램 정보 조회:', userEmail);
 
-    // applications 테이블에서 가장 최근 신청서 조회 (입금확인 포함)
-    const apps = await supabaseSelect(
+    // 재시작(수강 2, 2026-10-16): "지금 수강" = 가장 최근에 **입금 확인된** 신청서.
+    //   수강 2 신청서를 제출하고 입금 확인 전까지는 수강 1(끝난 과정)이 그대로 보여야 한다.
+    //   입금 확인된 신청서가 하나도 없으면 예전처럼 가장 최근 신청서로 '입금 미확인/신청서 없음'을 판정한다.
+    const _appCols = 'id,preferred_program,assigned_program,preferred_start_date,schedule_start,australia_schedule_start,current_step,status,deposit_confirmed_by_admin,practice_enabled,correction_enabled,correction_start_date,enrollment_no';
+    let apps = await supabaseSelect(
         'applications',
-        `email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1&select=id,preferred_program,assigned_program,preferred_start_date,schedule_start,australia_schedule_start,current_step,status,deposit_confirmed_by_admin,practice_enabled,correction_enabled,correction_start_date`
+        `email=eq.${encodeURIComponent(userEmail)}&deposit_confirmed_by_admin=eq.true&order=created_at.desc&limit=1&select=${_appCols}`
     );
+    if (!apps || apps.length === 0) {
+        apps = await supabaseSelect(
+            'applications',
+            `email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1&select=${_appCols}`
+        );
+    }
 
     if (!apps || apps.length === 0) {
         console.log('⚠️ [Supabase] 신청서 없음');
@@ -271,6 +280,7 @@ async function getStudentProgram(userEmail) {
         startDate: app.schedule_start || app.preferred_start_date,
         australiaStartDate: app.australia_schedule_start || null,
         applicationId: app.id,
+        enrollmentNo: app.enrollment_no || 1,   // 수강 번호(1=첫 수강, 2=재시작). 기록 꼬리표는 applicationId를 쓴다.
         currentStep: app.current_step,
         status: app.status,
         practiceEnabled: !!app.practice_enabled,
@@ -438,8 +448,55 @@ async function refreshPauseState(user) {
 // ================================================
 // V3 학습 결과 함수들 (study_results_v3 / aus_study_results)
 // ================================================
-// 유니크 키: (user_id, section_type, module_number, week, day)
+// 유니크 키: (user_id, section_type, module_number, week, day, enrollment_id)   ← 재시작(2026-10-16)부터 수강 꼬리표 포함
 // v3-design-spec.md §3-2 참조
+//
+// 수강 꼬리표(enrollment_id) = 지금 수강의 신청서 id(currentUser.applicationId).
+//   같은 사람이 재시작(수강 2)하면 신청서가 2장이 되고, 기록은 꼬리표로 갈라진다.
+//   읽기: 그 수강의 기록만 본다. 쓰기: 꼬리표를 함께 저장한다.
+//   꼬리표를 알 수 없을 때(개발 계정 등)는 예전처럼 사람 기준으로 동작한다.
+
+function getCurrentEnrollmentId() {
+    var u = window.currentUser || null;
+    if (!u || !u.applicationId) {
+        try { u = JSON.parse(sessionStorage.getItem('currentUser') || 'null'); } catch (e) { u = null; }
+    }
+    return (u && u.applicationId) ? String(u.applicationId) : null;
+}
+
+/** 조회 주소에 붙일 '&enrollment_id=eq.…' (꼬리표 없으면 빈 문자열) */
+function enrollmentQuery(enrollmentId) {
+    var id = enrollmentId || getCurrentEnrollmentId();
+    return id ? '&enrollment_id=eq.' + encodeURIComponent(id) : '';
+}
+
+var V3_CONFLICT_COLS = 'user_id,section_type,module_number,week,day,enrollment_id';
+var V3_CONFLICT_COLS_LEGACY = 'user_id,section_type,module_number,week,day';
+
+/** 기록 저장(UPSERT): 꼬리표를 넣어 저장. 새 고유 제약이 아직 없으면(배포 당일 전환 중) 옛 열 목록으로 한 번 더 시도. */
+async function _upsertV3Record(table, data) {
+    var eid = getCurrentEnrollmentId();
+    if (eid) data.enrollment_id = eid;
+    var result = await supabaseUpsert(table, data, eid ? V3_CONFLICT_COLS : V3_CONFLICT_COLS_LEGACY);
+    if (!result && eid) {
+        // 새 고유 제약(꼬리표 포함)이 아직 없으면 옛 열 목록으로 저장한다.
+        // 단, 같은 자리(사람·영역·모듈·주차·요일)에 "다른 수강"의 기록이 이미 있으면 그 기록을 덮어쓰게 되므로 저장하지 않는다.
+        var legacyRows = await supabaseSelect(table, 'user_id=eq.' + encodeURIComponent(data.user_id)
+            + '&section_type=eq.' + encodeURIComponent(data.section_type)
+            + '&module_number=eq.' + encodeURIComponent(data.module_number)
+            + '&week=eq.' + encodeURIComponent(String(data.week))
+            + '&day=eq.' + encodeURIComponent(data.day)
+            + '&select=id,enrollment_id&limit=1');
+        var other = (legacyRows && legacyRows[0] && legacyRows[0].enrollment_id) ? String(legacyRows[0].enrollment_id) : null;
+        if (other && other !== eid && other !== '00000000-0000-0000-0000-000000000000') {
+            console.error('❌ [V3] 같은 자리에 다른 수강의 기록이 있어 저장하지 않음 (새 고유 제약 적용 전). 관리자에게 알려주세요.');
+            return null;
+        }
+        console.warn('⚠️ [V3] 꼬리표 포함 저장 실패 → 옛 고유 제약으로 재시도');
+        result = await supabaseUpsert(table, data, V3_CONFLICT_COLS_LEGACY);
+    }
+    return result;
+}
 
 function _getV3Table(sectionType) {
     if (window.courseMode === 'australia' && (sectionType === 'intro-book-aus' || sectionType === 'vocab' || sectionType === 'reading' || sectionType === 'listening' || sectionType === 'brainstorming' || sectionType === 'intwrt' || sectionType === 'aus-discussion' || sectionType === 'ind-spk' || sectionType === 'intspk')) {
@@ -467,6 +524,7 @@ async function getStudyResultV3(userId, sectionType, moduleNumber, week, day) {
         + '&module_number=eq.' + moduleNumber
         + '&week=eq.' + encodeURIComponent(String(week))
         + '&day=eq.' + encodeURIComponent(day)
+        + enrollmentQuery()
         + '&limit=1';
     
     var rows = await supabaseSelect(_getV3Table(sectionType), query);
@@ -518,11 +576,7 @@ async function upsertInitialRecord(userId, sectionType, moduleNumber, week, day,
         Object.assign(data, extras);
     }
     
-    var result = await supabaseUpsert(
-        _getV3Table(sectionType),
-        data,
-        'user_id,section_type,module_number,week,day'
-    );
+    var result = await _upsertV3Record(_getV3Table(sectionType), data);
 
     if (result) {
         console.log('✅ [V3] initial_record 저장 완료:', result.id);
@@ -554,11 +608,7 @@ async function upsertCurrentRecord(userId, sectionType, moduleNumber, week, day,
         current_record: recordJson
     };
     
-    var result = await supabaseUpsert(
-        _getV3Table(sectionType),
-        data,
-        'user_id,section_type,module_number,week,day'
-    );
+    var result = await _upsertV3Record(_getV3Table(sectionType), data);
 
     if (result) {
         console.log('✅ [V3] current_record 저장 완료:', result.id);
@@ -582,11 +632,7 @@ async function upsertRewriteRecord(userId, sectionType, moduleNumber, week, day,
         rewrite_record: rewriteJson
     };
 
-    var result = await supabaseUpsert(
-        'study_results_v3',
-        data,
-        'user_id,section_type,module_number,week,day'
-    );
+    var result = await _upsertV3Record('study_results_v3', data);
 
     if (result) {
         console.log('✅ [V3] rewrite_record 저장 완료:', result.id);
@@ -638,6 +684,7 @@ async function getCompletedTasksV3(userId) {
 
     var query = 'user_id=eq.' + userId
         + '&initial_record=not.is.null'
+        + enrollmentQuery()
         + '&select=' + select;
     var rows = await supabaseSelect(table, query);
     console.log('📊 [V3] 완료 과제:', (rows ? rows.length : 0) + '건');

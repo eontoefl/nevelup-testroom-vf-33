@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await loadAllData();
         renderAll();
+        renderPastEnrollments().catch(e => console.warn('⚠️ [MyPage] 지난 수강 표시 실패:', e));   // 재시작 학생만 보임
     } catch (err) {
         console.error('❌ [MyPage] 데이터 로드 실패:', err);
     }
@@ -71,10 +72,11 @@ async function loadAllData() {
     const userId = mpUser.id;
     console.log('📊 [MyPage] 데이터 로드 시작 - userId:', userId);
 
-    // V3 학습 결과 로드
+    // V3 학습 결과 로드 — 재시작(2026-10-16): 지금 수강(신청서)의 기록만. 지난 수강은 renderPastEnrollments()가 따로 보여준다.
+    const mpEnrollQ = (typeof enrollmentQuery === 'function') ? enrollmentQuery(mpUser.applicationId) : '';
     mpV3Results = await supabaseSelect(
         'study_results_v3',
-        `user_id=eq.${userId}&order=completed_at.desc&select=id,user_id,section_type,module_number,week,day,initial_record,current_record,error_note_submitted,initial_level,locked_auth_rate,completed_at`
+        `user_id=eq.${userId}${mpEnrollQ}&order=completed_at.desc&select=id,user_id,section_type,module_number,week,day,initial_record,current_record,error_note_submitted,initial_level,locked_auth_rate,completed_at`
     ) || [];
 
     // 등급/환급 기준표 로드
@@ -1052,6 +1054,61 @@ function setupPlanTabs() {
 //    - 연습코스 마이페이지: practiceEnabled인 학생만.
 //    둘 다 해당 없으면 영역 자체를 감춘다.
 // ================================================
+// ================================================
+// 지난 수강 기록 (재시작 학생, 2026-10-16)
+//   같은 사람의 입금 확인된 다른 신청서(수강 1)가 있으면 요약 카드로 보여준다. 기록은 지우지 않고 따로 본다.
+// ================================================
+async function renderPastEnrollments() {
+    const wrap = document.getElementById('pastEnrollments');
+    if (!wrap || !mpUser || !mpUser.email || !mpUser.applicationId) return;
+    let apps = [];
+    try {
+        apps = await supabaseSelect(
+            'applications',
+            `email=eq.${encodeURIComponent(mpUser.email)}&deposit_confirmed_by_admin=eq.true&deleted=not.is.true&order=created_at.desc&select=id,enrollment_no,assigned_program,preferred_program,schedule_start,schedule_end,self_paced,self_paced_end_date,course_track,created_at`
+        ) || [];
+    } catch (e) { console.warn('⚠️ [MyPage] 지난 수강 조회 실패:', e); return; }
+    const past = apps.filter(a => String(a.id) !== String(mpUser.applicationId));
+    if (past.length === 0) { wrap.style.display = 'none'; return; }
+
+    const cards = [];
+    for (const a of past) {
+        const isAus = a.course_track === 'australia' || String(a.assigned_program || '').includes('Australia');
+        const program = a.assigned_program || a.preferred_program || '내벨업챌린지';
+        const programType = (/fast/i.test(program) || a.self_paced) ? 'fast' : 'standard';
+        const totalWeeks = programType === 'standard' ? 8 : 4;
+        const endStr = [a.schedule_end, a.self_paced_end_date].filter(Boolean).sort().slice(-1)[0] || '';
+        let done = 0, rate = null;
+        try {
+            const rows = await supabaseSelect(
+                isAus ? 'aus_study_results' : 'study_results_v3',
+                `user_id=eq.${mpUser.id}&enrollment_id=eq.${a.id}&select=initial_record,error_note_submitted,locked_auth_rate`
+            ) || [];
+            done = rows.filter(r => r.initial_record != null).length;
+            if (!isAus) {
+                let sum = 0;
+                rows.forEach(r => {
+                    if (r.locked_auth_rate != null) sum += Number(r.locked_auth_rate);
+                    else if (r.initial_record) sum += r.error_note_submitted ? 100 : 50;
+                });
+                const total = countTotalTasks(programType, totalWeeks);
+                rate = total > 0 ? Math.round(sum / total) : null;   // 끝난 수강이므로 전체 과제 기준
+            }
+        } catch (e) { console.warn('⚠️ [MyPage] 지난 수강 기록 조회 실패:', e); }
+        cards.push(
+            '<div class="past-enroll-card">' +
+              '<div class="pe-head"><span class="pe-badge">수강 ' + (a.enrollment_no || 1) + '</span><span class="pe-program">' + program + '</span></div>' +
+              '<div class="pe-body"><span>' + String(a.schedule_start || '').slice(0, 10) + ' ~ ' + endStr.slice(0, 10) + '</span>' +
+              '<span>완료 과제 ' + done + '개</span>' + (rate != null ? '<span>인증률 ' + rate + '%</span>' : '') + '</div>' +
+            '</div>');
+    }
+    wrap.innerHTML =
+        '<h2 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> 지난 수강 기록</h2>' +
+        '<p class="pe-note">지난 수강의 기록은 그대로 보관돼 있어요. 지금 수강의 인증률·등급에는 들어가지 않아요.</p>' +
+        cards.join('');
+    wrap.style.display = 'block';
+}
+
 async function showV2RecordsLink() {
     let shown = 0;
 

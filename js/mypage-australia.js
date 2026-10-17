@@ -76,7 +76,7 @@ async function loadAllData() {
         ),
         userId ? supabaseSelect(
             'aus_study_results',
-            `user_id=eq.${userId}&initial_record=not.is.null&order=completed_at.asc&select=user_id,section_type,module_number,week,day,initial_record,current_record,locked_auth_rate,completed_at`
+            `user_id=eq.${userId}${(typeof enrollmentQuery === 'function') ? enrollmentQuery(mpUser.applicationId) : ''}&initial_record=not.is.null&order=completed_at.asc&select=user_id,section_type,module_number,week,day,initial_record,current_record,locked_auth_rate,completed_at`
         ) : Promise.resolve([]),
         supabaseSelect(
             'tr_grade_rules',

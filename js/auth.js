@@ -119,6 +119,7 @@ async function handleLogin(event) {
             program: programInfo.program,
             programType: programType,  // 'fast' = 4주, 'standard' = 8주
             applicationId: programInfo.applicationId,
+            enrollmentNo: programInfo.enrollmentNo || 1,   // 수강 번호(2=재시작). 기록 꼬리표는 applicationId
             startDate: programInfo.startDate,
             australiaStartDate: programInfo.australiaStartDate || null,  // 호주과정 시작일 (별도)
             practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부
@@ -535,6 +536,7 @@ async function _fillMissingAuthRates(userId) {
             'user_id=eq.' + userId
             + '&locked_auth_rate=is.null'
             + '&completed_at=not.is.null'
+            + ((typeof enrollmentQuery === 'function') ? enrollmentQuery(currentUser && currentUser.applicationId) : '')   // 재시작: 지금 수강의 기록만 확정
             + '&select=' + selectCols
         );
 
