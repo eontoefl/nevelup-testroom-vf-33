@@ -27,6 +27,12 @@ function showScreen(screenId) {
         if (userNameElement) {
             userNameElement.textContent = currentUser.name;
         }
+        // 정규코스: 과제 목록으로 돌아올 때 완료 기록 다시 조회 → 뱃지 즉시 갱신
+        if (window.courseMode === 'regular' && typeof ProgressTracker !== 'undefined') {
+            ProgressTracker.loadCompletedTasks().then(function() {
+                ProgressTracker.updateTaskCards();
+            });
+        }
     }
 }
 

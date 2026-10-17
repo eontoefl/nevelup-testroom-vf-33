@@ -100,6 +100,11 @@ TOEFL 4개 영역(Reading, Listening, Writing, Speaking) 학습 및 해설 뷰�
 - **initial_record**: 실전풀이 결과
 - **current_record**: 다시풀기 결과
 - DB 테이블: `study_results_v3`
+- **진도(완료) 표시**
+  - 흐름: DB(`study_results_v3`) → `ProgressTracker._completedTasks` 캐시 → 과제 목록 카드 뱃지 / 주차 화면 요일 점
+  - 캐시 다시 조회: scheduleScreen이 보일 때마다(`initScheduleScreen` → `loadCompletedTasks`)
+  - 캐시 다시 조회: 정규코스에서 taskListScreen이 보일 때(`showScreen('taskListScreen')`)
+  - 저장 지점에서 직접 갱신(`markCompleted`) 7곳은 화면을 떠나지 않는 과제용(단어시험·OMR·intwrt·intspk·ind-spk·aus-discussion·brainstorming)
 
 ---
 

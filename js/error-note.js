@@ -28,6 +28,7 @@ var ErrorNote = {
     _moduleNumber: null,
     _dbRow: null,             // study_results_v3 레코드
     _isSubmitted: false,      // 현재 탭에서 제출 완료 여부
+    _savedText: '',           // 현재 탭의 마지막 저장 글 (버튼 '제출 완료' 판정용)
     _autoSaveTimer: null,
     _autoSaveKey: null,       // localStorage 키
 
@@ -55,6 +56,7 @@ var ErrorNote = {
         this._sectionType = sectionType;
         this._moduleNumber = moduleNumber;
         this._isSubmitted = false;
+        this._savedText = '';
         this._selectedFiles = [null, null, null, null];
         this._existingFiles = [null, null, null, null];
 
@@ -92,6 +94,7 @@ var ErrorNote = {
         if (tab === 'initial') {
             var hasInitial = row && row.initial_record != null;
             var existingText = (row && row.error_note_text) || '';
+            this._savedText = (row && row.error_note_submitted && row.error_note_text) || '';
 
             if (deadlinePassed) {
                 // 마감 지남(또는 일시정지) → 제출 여부 무관하게 잠김
@@ -112,6 +115,7 @@ var ErrorNote = {
         } else {
             var hasCurrent = row && row.current_record != null;
             var existingCurrentText = (row && row.current_error_note_text) || '';
+            this._savedText = (row && row.current_error_note_text) || '';
 
             var viewOnly = (typeof isViewOnlyStop === 'function') && isViewOnlyStop(pausedMode);   // 환불·중도포기: 기록 열람만(2026-10-12)
             if (viewOnly) {
@@ -330,9 +334,6 @@ var ErrorNote = {
         textarea.readOnly = false;
         textarea.disabled = false;
         submitBtn.style.display = '';
-        submitBtn.disabled = false;
-        submitBtn.textContent = '제출하기';
-        submitBtn.classList.remove('submitted');
     },
 
     // ========================================
@@ -416,6 +417,23 @@ var ErrorNote = {
         var submitBtn = document.getElementById('explainMemoSubmitBtn');
         if (!textarea || !submitBtn || textarea.readOnly) return;
 
+        // 저장된 글과 같고 새로 고른 파일이 없으면 → 완료 상태
+        var saved = this._savedText || '';
+        var hasNewFile = false;
+        for (var i = 0; i < this.SPEAKING_SLOT_COUNT; i++) {
+            if (this._selectedFiles && this._selectedFiles[i]) { hasNewFile = true; break; }
+        }
+        var dirty = textarea.value.trim() !== saved.trim() || hasNewFile;
+        if (!dirty && saved !== '') {
+            submitBtn.textContent = '제출 완료';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('submitted');
+            return;
+        }
+
+        // 대기 상태
+        submitBtn.textContent = '제출하기';
+        submitBtn.classList.remove('submitted');
         var wordCount = this.countWords(textarea.value);
         var textOk = wordCount >= 20;
 
@@ -510,6 +528,7 @@ var ErrorNote = {
     // ========================================
     _submitToDb: async function(text, wordCount) {
         var row = this._dbRow;
+        var tabAtStart = this._activeTab;
         if (!row || !row.id) {
             console.error('📝 [메모장] DB 레코드 없음 — 저장 불가');
             alert('저장할 수 없습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
@@ -602,33 +621,15 @@ var ErrorNote = {
 
             // 제출 완료 UI
             this._isSubmitted = true;
-
-            if (this._activeTab === 'initial') {
-                // 실전풀이 오답노트 → 제출 완료 표시 (마감 전이면 수정·재제출 가능)
-                if (submitBtn) {
-                    submitBtn.textContent = '제출 완료';
-                    submitBtn.classList.add('submitted');
-                    // 3초 후 재제출 가능하도록 복원
-                    setTimeout(function() {
-                        if (submitBtn) {
-                            submitBtn.textContent = '제출하기';
-                            submitBtn.classList.remove('submitted');
-                            submitBtn.disabled = false;
-                        }
-                    }, 3000);
-                }
-                console.log('📝 [메모장] 실전풀이 오답노트 제출 완료 (마감 전 수정·재제출 가능)');
-            } else {
-                // 다시풀기 오답노트 → 제출 완료 표시 (재수정 가능)
-                if (submitBtn) {
-                    submitBtn.textContent = '제출 완료';
-                    submitBtn.classList.add('submitted');
-                }
-                console.log('📝 [메모장] 다시풀기 오답노트 제출 완료');
+            if (this._dbRow === row && this._activeTab === tabAtStart) {   // 저장 중 다른 기록/탭으로 바뀌었으면 버튼 갱신 생략 (콜드아이즈 2)
+                this._savedText = text;
+                this._updateSubmitState();
             }
+            console.log('📝 [메모장] 오답노트 제출 완료 (' + this._activeTab + ', 마감 전 수정·재제출 가능)');
 
         } catch (e) {
             console.error('📝 [메모장] 저장 실패:', e);
+            this._savedText = '';   // 저장 실패 → 성공한 저장 전까지 '제출 완료' 금지 (콜드아이즈 1)
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '저장 실패 — 다시 시도';
@@ -652,6 +653,7 @@ var ErrorNote = {
         this._sectionType = null;
         this._moduleNumber = null;
         this._isSubmitted = false;
+        this._savedText = '';
         this._autoSaveKey = null;
         this._selectedFiles = [null, null, null, null];
         this._existingFiles = [null, null, null, null];

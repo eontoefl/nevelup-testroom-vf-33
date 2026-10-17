@@ -421,6 +421,9 @@
     box-shadow: none;
 }
 
+.explain-memo-submit-btn.submitted:disabled { background: #e8f6ea; color: #3f8a47; cursor: default; box-shadow: none; }
+.explain-memo-submit-btn.submitted::before { content: '✓ '; }
+
 /* ============================= */
 /* 스피킹 파일 첨부                */
 /* ============================= */
