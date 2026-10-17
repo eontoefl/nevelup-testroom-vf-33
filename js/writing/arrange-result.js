@@ -191,8 +191,12 @@ function _renderArrangeRetry(result, index, retryId, profilePair) {
             '</button>';
     });
 
-    // 정답 배열을 data 속성에 저장 (큰따옴표를 &quot;로 치환해야 HTML 속성 충돌 방지)
-    var correctJSON = JSON.stringify(result.correctAnswerArray || []).replace(/"/g, '&quot;');
+    // 정답 벌들의 단어 배열 목록을 data 속성에 저장 (큰따옴표를 &quot;로 치환해야 HTML 속성 충돌 방지)
+    // answerSets가 없는 옛 기록은 correctAnswerArray 한 벌로 처리
+    var correctSets = (result.answerSets && result.answerSets.length)
+        ? result.answerSets.map(function(set) { return set.answer || []; })
+        : [result.correctAnswerArray || []];
+    var correctJSON = JSON.stringify(correctSets).replace(/"/g, '&quot;');
 
     return '<div class="ar-retry-area" id="' + retryId + '" data-correct="' + correctJSON + '" data-blank-count="' + blankCount + '">' +
             '<div class="ar-retry-first-answer">' +
@@ -298,7 +302,7 @@ function handleArrangeRetrySubmit(retryId) {
     if (!area) return;
 
     var blankCount = parseInt(area.getAttribute('data-blank-count'));
-    var correctArr = JSON.parse(area.getAttribute('data-correct'));
+    var correctSets = JSON.parse(area.getAttribute('data-correct'));
     var feedbackEl = document.getElementById(retryId + '-feedback');
 
     // 슬롯에서 답변 수집
@@ -324,14 +328,15 @@ function handleArrangeRetrySubmit(retryId) {
         return;
     }
 
-    // 정답 비교
-    var isCorrect = true;
-    for (var j = 0; j < correctArr.length; j++) {
-        if ((userArr[j] || '').toLowerCase() !== (correctArr[j] || '').toLowerCase()) {
-            isCorrect = false;
-            break;
+    // 정답 비교 (정답 벌 중 하나와 일치하면 통과)
+    var isCorrect = correctSets.some(function(correctArr) {
+        for (var j = 0; j < correctArr.length; j++) {
+            if ((userArr[j] || '').toLowerCase() !== (correctArr[j] || '').toLowerCase()) {
+                return false;
+            }
         }
-    }
+        return true;
+    });
 
     if (isCorrect) {
         if (feedbackEl) {
@@ -438,7 +443,7 @@ function handleArrangeRevealAnswer(retryId) {
     var area = document.getElementById(retryId);
     if (!area) return;
 
-    var correctArr = JSON.parse(area.getAttribute('data-correct'));
+    var correctArr = JSON.parse(area.getAttribute('data-correct'))[0]; // 1벌(정답1)
     var slots = document.querySelectorAll('.ar-retry-slot[data-retry-id="' + retryId + '"]');
     var wordBtns = document.querySelectorAll('.ar-retry-word[data-retry-id="' + retryId + '"]');
 
