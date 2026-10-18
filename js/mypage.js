@@ -16,6 +16,7 @@ let mpUser = null;           // sessionStorage에서 로드한 유저 정보
 let mpV3Results = [];        // study_results_v3
 let mpGradeRules = [];       // tr_grade_rules (등급/환급 기준표)
 let mpDeadlineExtensions = []; // tr_deadline_extensions (데드라인 연장)
+let mpAuth = null;           // 디비 enrollment_auth 결과(지금 수강의 인증률). 실패 시 null
 
 // section_type을 요일 매핑하기 위한 한→영 변환
 const DAY_MAP_KR_TO_NUM = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5 };
@@ -90,6 +91,10 @@ async function loadAllData() {
         'tr_deadline_extensions',
         `user_id=eq.${userId}&select=original_date,extra_days`
     ) || [];
+
+    // 인증률: 디비 한 곳에서 계산(공홈 관리자 화면과 같은 숫자, 2026-10-18 인증률통일)
+    const authRows = mpUser.applicationId ? await loadEnrollmentAuth([mpUser.applicationId]) : [];
+    mpAuth = authRows[0] || null;
 
     // 실제 TOEFL 시험 일정 + 성적 + 목표점수
     await loadToeflExams();
@@ -481,56 +486,23 @@ function renderSummaryCards() {
         document.getElementById('challengeStartDate').textContent = `시작일: ${formatFullDate(mpUser.startDate)}`;
     }
 
-    // ── 오늘까지 할당된 과제 수 계산 ──
-    const taskStats = countTasksDueToday(programType, totalWeeks);
-    const tasksDueToday = taskStats.due;
-
-    // ── 인증률 계산 (V3: locked_auth_rate 우선 → 미확정 시 실시간 계산) ──
-    // ★ 다시 풀기 시스템: locked_auth_rate 우선 사용
-    let authRateSum = 0;
-    
-    // study_results_v3에서 과제별 인증률 계산
-    mpV3Results.forEach(r => {
-        let taskAuth = 0;
-        
-        // ★ locked_auth_rate 확정값이 있으면 그대로 사용
-        if (r.locked_auth_rate != null) {
-            taskAuth = Number(r.locked_auth_rate);
-        }
-        // 미확정(4섹션 마감 전): initial_record 존재=50%, error_note_submitted=100%
-        else {
-            if (r.initial_record) taskAuth = 50;
-            if (r.initial_record && r.error_note_submitted) taskAuth = 100;
-        }
-        
-        authRateSum += taskAuth;
-    });
-
-    // 분모 결정
-    // 자기주도(self-paced): 캘린더 무관 → 전체 과제 대비(B). "전체 N개 중 M개 진행"
-    let authDenominator, authRatePct, authSubText;
-    if (mpUser.selfPaced) {
-        const totalTasks = countTotalTasks(programType, totalWeeks);
-        authDenominator = totalTasks > 0 ? totalTasks : mpV3Results.length;
-        authRatePct = authDenominator > 0 ? Math.round(authRateSum / authDenominator) : 0;
-        authSubText = totalTasks > 0
-            ? `전체 ${totalTasks}개 중 ${mpV3Results.length}개 진행`
-            : '데이터 없음';
+    // ── 인증률: 디비 enrollment_auth가 계산한 값(공홈 관리자 목록·상세와 같은 한 곳, 2026-10-18 인증률통일) ──
+    //   정규·자기주도 모두 "오늘까지 할당된 과제" 기준(자기주도는 개별분석에서 정한 시작~종료 일정표, 연장은 연장 마감이 지나야 셈).
+    //   아직 셀 과제가 없으면(시작 전) "-".
+    let authRatePct = null, authSubText;
+    if (!mpAuth) {
+        authSubText = '인증률을 불러오지 못했어요';
+    } else if (mpAuth.rate == null) {
+        authSubText = '시작 전';
     } else {
-        authDenominator = tasksDueToday > 0 ? tasksDueToday : mpV3Results.length;
-        if (authDenominator > 0) {
-            authRatePct = Math.round(authRateSum / authDenominator);
-            authSubText = tasksDueToday === 0 ? `시작 전` : `오늘까지 할당된 과제 ${tasksDueToday}건 기준`;
-        } else {
-            authRatePct = 0;
-            authSubText = '데이터 없음';
-        }
+        authRatePct = mpAuth.rate;
+        authSubText = `오늘까지 할당된 과제 ${mpAuth.dueCount}건 기준`;
     }
 
     // 인증률 카드
-    document.getElementById('authRate').textContent = authRatePct;
-    document.getElementById('authRateUnit').textContent = '%';
-    document.getElementById('authBar').style.width = `${Math.min(authRatePct, 100)}%`;
+    document.getElementById('authRate').textContent = authRatePct == null ? '-' : authRatePct;
+    document.getElementById('authRateUnit').textContent = authRatePct == null ? '' : '%';
+    document.getElementById('authBar').style.width = `${Math.min(authRatePct || 0, 100)}%`;
     document.getElementById('authSub').textContent = authSubText;
 
     // ── 등급 & 환급 계산 (tr_grade_rules 테이블 연동) ──
@@ -541,8 +513,8 @@ function renderSummaryCards() {
     const spCompleteForGrade = mpUser.selfPaced && spTotalForGrade > 0 && mpV3Results.length >= spTotalForGrade;
     const spGradeFinalized = spExpiredForGrade || spCompleteForGrade;
 
-    // 시작 전이면 무조건 등급 미산정
-    if (isGradeBeforeStart()) {
+    // 시작 전이면 무조건 등급 미산정 (인증률을 아직 셀 수 없을 때도 같음)
+    if (isGradeBeforeStart() || authRatePct == null) {
         document.getElementById('currentGrade').textContent = '-';
         document.getElementById('gradeRefund').textContent = '시작 후 산정';
     } else if (mpUser.selfPaced && !spGradeFinalized) {
@@ -564,66 +536,21 @@ function renderSummaryCards() {
 }
 
 /**
- * 오늘까지 할당된 과제 수 계산
- * 
- * 기준 (2/22 예시):
- * - 오늘의 마감: 2/23 새벽 4시
- * - 도래일: 마감(다음날 04:00)이 현재보다 과거인 과제
- * - 오늘: 과제 날짜가 오늘인 것 (마감 전이라도 분모에 포함)
- * - 미도래일: 과제 날짜가 내일 이후
- * - 분모 = 도래일 + 오늘
- * 
- * ※ 제출된 과제(분자)는 도래/미도래/오늘 상관없이 무조건 반영
+ * 수강별 인증률을 디비에서 받는다(enrollment_auth — 공홈 관리자 목록·상세와 같은 계산, 2026-10-18 인증률통일).
+ *   예전에는 여기서 countTasksDueToday로 분모를 따로 셌다(자기주도는 전체 74개).
+ * @param {string[]} appIds - 신청서 id(수강 꼬리표)
+ * @returns {Promise<Array>} [{ appId, rate(지금, 시작 전 null), dueCount, rateFinal(과정 전체 기준), ... }] — 실패 시 []
  */
-function countTasksDueToday(programType, totalWeeks) {
-    if (!mpUser.startDate) return { due: 0, completed: 0 };
-    if (typeof getDayTasks !== 'function') return { due: 0, completed: 0 };
-
-    const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    const dayEnToKr = { sunday: '일', monday: '월', tuesday: '화', wednesday: '수', thursday: '목', friday: '금' };
-    if (!parseYmdLocal(mpUser.startDate)) return { due: 0, completed: 0 };
-
-    const tz = getUserTimezone();
-    const now = new Date();
-    const effectiveToday = getEffectiveToday(tz);
-
-    let totalTasks = 0;
-
-    for (let w = 1; w <= totalWeeks; w++) {
-        for (let d = 0; d < dayOrder.length; d++) {
-            // 과제 날짜·연장 — 일정 계산 단일 출처(timezone-utils.js). 무기한 정지 구간 과제(null)는 아직 배정 안 된 것 → 분모 제외
-            const taskDate = getChallengeTaskDate(mpUser.startDate, w, d, mpUser.challengePauses);
-            if (!taskDate) continue;
-            const ext = (mpDeadlineExtensions || []).find(e => e.original_date === fmtYmd(taskDate));
-
-            // 연장된 과제: 연장된 마감이 아직 안 지났으면 분모에서 제외
-            if (ext) {
-                const extDeadline = getChallengeTaskDeadline(mpUser.startDate, w, d, mpDeadlineExtensions, tz, mpUser.challengePauses);
-                if (now < extDeadline) continue;
-            }
-
-            // 과제 날짜가 오늘(effective) 이하면 분모에 포함
-            if (taskDate <= effectiveToday) {
-                const dayEn = dayOrder[d];
-                const dayKr = dayEnToKr[dayEn];
-                const tasks = getDayTasks(programType, w, dayEn);
-                
-                tasks.forEach(function(taskName) {
-                    const parsed = (typeof parseTaskName === 'function') ? parseTaskName(taskName) : null;
-                    if (!parsed || parsed.type === 'unknown') return;
-
-                    totalTasks++;
-                });
-            }
-        }
-    }
-
-    return { due: totalTasks };
+async function loadEnrollmentAuth(appIds) {
+    const ids = (appIds || []).filter(Boolean);
+    if (ids.length === 0) return [];
+    const rows = await supabaseRequest('/rest/v1/rpc/enrollment_auth', { method: 'POST', body: { p_app_ids: ids } });
+    return Array.isArray(rows) ? rows : [];
 }
 
 /**
- * 전체 과제 수 계산 (날짜 무관, 자기주도 인증률/완료율 분모용)
- * countTasksDueToday와 동일한 과제 집합(parseTaskName이 인식하는 것)을 세되 날짜 게이트 없음
+ * 전체 과제 수 계산 (날짜 무관 — 자기주도 완료율·등급 공개 시점 판단용. 인증률은 디비 enrollment_auth)
+ * parseTaskName이 인식하는 과제만 센다
  */
 function countTotalTasks(programType, totalWeeks) {
     if (typeof getDayTasks !== 'function') return 0;
@@ -1075,8 +1002,6 @@ async function renderPastEnrollments() {
     for (const a of past) {
         const isAus = a.course_track === 'australia' || String(a.assigned_program || '').includes('Australia');
         const program = a.assigned_program || a.preferred_program || '내벨업챌린지';
-        const programType = (/fast/i.test(program) || a.self_paced) ? 'fast' : 'standard';
-        const totalWeeks = programType === 'standard' ? 8 : 4;
         const endStr = [a.schedule_end, a.self_paced_end_date].filter(Boolean).sort().slice(-1)[0] || '';
         let done = 0, rate = null;
         try {
@@ -1086,13 +1011,9 @@ async function renderPastEnrollments() {
             ) || [];
             done = rows.filter(r => r.initial_record != null).length;
             if (!isAus) {
-                let sum = 0;
-                rows.forEach(r => {
-                    if (r.locked_auth_rate != null) sum += Number(r.locked_auth_rate);
-                    else if (r.initial_record) sum += r.error_note_submitted ? 100 : 50;
-                });
-                const total = countTotalTasks(programType, totalWeeks);
-                rate = total > 0 ? Math.round(sum / total) : null;   // 끝난 수강이므로 전체 과제 기준
+                // 끝난 수강이므로 "최종"(과정 전체 과제 기준) — 디비 enrollment_auth, 2026-10-18 인증률통일
+                const auth = (await loadEnrollmentAuth([a.id]))[0];
+                rate = (auth && auth.rateFinal != null) ? auth.rateFinal : null;
             }
         } catch (e) { console.warn('⚠️ [MyPage] 지난 수강 기록 조회 실패:', e); }
         cards.push(
