@@ -436,63 +436,85 @@ async function showVocabTestResult() {
     let correctCount = 0;
     let totalCount = vocabTestData.length;
     
+    // 결과 줄은 "학생이 쓴 칸" 순서 그대로, 칸마다 한 줄. 채점(점수)은 칸 순서와 무관하게 정답 목록과 대조한다.
+    // 칸 상태: ok(맞힘) / typo(어느 정답의 오타) / wrong(어느 정답과도 안 비슷함) / blank(비움) / dup(이미 맞힌 정답을 또 씀).
+    // 틀린 칸(typo·wrong·blank·dup)에는 못 맞힌 교재 정답을 하나씩 붙인다 — typo는 가장 비슷한 정답, 나머지는 남은 정답을 교재 순서대로.
     vocabTestData.forEach((item, index) => {
         const userAnswer = vocabUserAnswers[index] || {};
-        const synonymResults = [];
-        let allCorrect = true;
-        
-        // 정답 배열 (소문자) — 각 칸은 '|'로 구분된 허용 답안 배열 (정오표/과도기 복수정답 지원)
-        const correctAnswers = item.synonyms.map(s =>
-            s.trim().toLowerCase().split('|').map(x => x.trim()).filter(Boolean)
-        );
-        
-        // 순서 무관 채점 (중복 방지)
-        const usedCorrectIndices = new Set();
-        
-        item.synonyms.forEach((correctSynonym, synIndex) => {
-            const userSynonym = (userAnswer[synIndex] || '').trim();
-            const userLower = userSynonym.toLowerCase();
-            
-            // 이 칸의 답이 아직 매칭 안 된 정답 중 하나와 일치하는지 확인
-            let isCorrect = false;
-            for (let cIdx = 0; cIdx < correctAnswers.length; cIdx++) {
-                if (!usedCorrectIndices.has(cIdx) && correctAnswers[cIdx].includes(userLower)) {
-                    usedCorrectIndices.add(cIdx);
-                    isCorrect = true;
-                    break;
-                }
-            }
-            
-            if (!isCorrect) {
-                allCorrect = false;
-            }
-            
-            // 정답란 표시: 맞혔으면 학생이 매칭한 답을, 틀렸으면 학생 답과 가장 가까운 변형을 보여줌
-            // (복수정답이 없으면 항상 주 정답. 복수정답이면 diff가 의미있도록 가장 가까운 답을 기준으로)
-            const variants = correctSynonym.split('|').map(x => x.trim()).filter(Boolean);
-            let displayCorrect = variants[0] || correctSynonym.trim();
-            if (isCorrect) {
-                const matched = variants.find(v => v.toLowerCase() === userLower);
-                if (matched) displayCorrect = matched;
-            } else if (userSynonym && variants.length > 1) {
-                displayCorrect = _vocabClosestVariant(userSynonym, variants);
-            }
 
-            synonymResults.push({
-                userAnswer: userAnswer[synIndex] || '',
-                correctAnswer: displayCorrect,
-                isCorrect: isCorrect
+        // 정답 칸마다 허용 변형 목록 ('|' 구분, 정오표/과도기 복수정답 지원) + 소문자 비교용
+        //   하이픈 든 정답은 하이픈 자리에 '-' / 띄어쓰기 / 없음 전부 인정 (man-made ← man made, manmade). 화면은 교재 표기.
+        const answerSlots = item.synonyms.map(s => {
+            const variants = s.split('|').map(x => x.trim()).filter(Boolean);
+            const vs = variants.length ? variants : [s.trim()];
+            const lower = [];
+            vs.forEach(v => {
+                const l = v.toLowerCase();
+                lower.push(l);
+                if (l.includes('-')) lower.push(l.replace(/-/g, ' '), l.replace(/-/g, ''));
             });
+            return { variants: vs, lower: lower };
         });
-        
+
+        // 칸마다 학생 답 정리본(앞뒤 공백 제거, 겹띄어쓰기는 한 칸, 끝의 문장부호 제거). 빈칸은 ''.
+        const rows = item.synonyms.map((_, synIndex) => ({
+            userAnswer: _vocabCleanInput(userAnswer[synIndex] || ''),
+            status: null,
+            answer: null
+        }));
+
+        // ① 순서 무관 채점 — 각 답을 아직 안 쓰인 정답과 정확히 대조. 점수는 여기서만 정해진다(기존과 동일).
+        const matchedAnswer = new Array(answerSlots.length).fill(null); // 정답 칸 → 맞힌 학생 답
+        rows.forEach(r => {
+            if (!r.userAnswer) { r.status = 'blank'; return; }
+            const low = r.userAnswer.toLowerCase();
+            const cIdx = answerSlots.findIndex((slot, i) => matchedAnswer[i] === null && slot.lower.includes(low));
+            if (cIdx >= 0) {
+                matchedAnswer[cIdx] = r.userAnswer;
+                r.status = 'ok';
+                r.answer = answerSlots[cIdx].variants.find(v => v.toLowerCase() === low) || answerSlots[cIdx].variants[0];
+            }
+        });
+        const matchedCount = matchedAnswer.filter(a => a !== null).length;
+        const allCorrect = matchedCount === answerSlots.length;
         if (allCorrect) {
             correctCount++;
         }
-        
+
+        // ② 못 맞힌 칸 분류 — 이미 맞힌 정답과 같은 답은 dup, 나머지는 남은 정답과 오타 짝맞춤 후보
+        const candidates = [];                               // { row, text }
+        rows.forEach(r => {
+            if (r.status) return;
+            const low = r.userAnswer.toLowerCase();
+            const dupOf = answerSlots.findIndex((slot, i) => matchedAnswer[i] !== null && slot.lower.includes(low));
+            if (dupOf >= 0) r.status = 'dup'; else candidates.push(r);
+        });
+        const openIdx = answerSlots.map((_, i) => i).filter(i => matchedAnswer[i] === null);
+        const pairing = _vocabPairLeftovers(candidates.map(c => c.userAnswer), openIdx.map(i => answerSlots[i].variants));
+        const openUsed = new Array(openIdx.length).fill(false);
+        pairing.pairs.forEach(p => {
+            candidates[p.t].status = 'typo';
+            candidates[p.t].answer = p.variant;
+            openUsed[p.a] = true;
+        });
+        pairing.extras.forEach(ti => { candidates[ti].status = 'wrong'; });
+
+        // ③ 아직 정답이 안 붙은 틀린 칸(wrong·blank·dup)에 남은 정답을 교재 순서대로 하나씩.
+        //    틀린 칸 수 = 못 맞힌 정답 수라서 항상 1:1로 떨어진다.
+        let next = 0;
+        rows.forEach(r => {
+            if (r.answer !== null) return;
+            while (next < openIdx.length && openUsed[next]) next++;
+            r.answer = next < openIdx.length ? answerSlots[openIdx[next]].variants[0] : '';
+            if (next < openIdx.length) openUsed[next] = true;
+        });
+
         results.push({
             headword: item.headword,
-            synonyms: synonymResults,
-            allCorrect: allCorrect
+            total: answerSlots.length,
+            matched: matchedCount,
+            allCorrect: allCorrect,
+            answers: rows
         });
     });
     
@@ -581,38 +603,61 @@ function _vocabClosestVariant(userAnswer, variants) {
     return best;
 }
 
-// "내 답안" 박스용: 맞은 글자 그대로 · 틀린 글자 밑줄 · 불필요 글자 취소선 · 빠진 자리 '_'
+// 학생 답 정리: 앞뒤 공백 제거 · 겹띄어쓰기는 한 칸 · 끝의 마침표/쉼표 등 문장부호 제거 (대표 결정: 손가락 실수는 봐줌)
+function _vocabCleanInput(raw) {
+    return String(raw).replace(/\s+/g, ' ').trim().replace(/[.,;:!?]+$/, '').trim();
+}
+
+// 남은 학생 답 ↔ 남은 정답 오타 짝맞춤 (표시 전용, 점수와 무관)
+//   후보: 정답 변형 중 가장 가까운 것과의 편집거리 d가 d×2 ≤ 변형 길이 (10/08 "가까운 오타" 기준과 동일)
+//   목표: 짝 수 최대 → 그다음 거리 합 최소. 동의어가 최대 8개라 전수 탐색으로 충분.
+//   반환: { pairs: [{ t: typed 인덱스, a: openVariants 인덱스, variant }], extras: [짝 못 지은 typed 인덱스] }
+function _vocabPairLeftovers(typed, openVariants) {
+    const cand = typed.map(t => openVariants.map(vs => {
+        let best = null;
+        vs.forEach(v => {
+            const d = _vocabEditDistance(t, v);
+            if (d * 2 <= v.length && (!best || d < best.d)) best = { d: d, variant: v };
+        });
+        return best;
+    }));
+    let best = { pairs: [], score: Infinity };
+    const used = new Array(openVariants.length).fill(false);
+    const cur = [];
+    (function go(ti, dist) {
+        if (ti === typed.length) {
+            const score = -cur.length * 1000 + dist;
+            if (score < best.score) best = { pairs: cur.slice(), score: score };
+            return;
+        }
+        cand[ti].forEach((c, ai) => {                       // 짝 짓는 쪽을 먼저 봐서, 동점이면 앞 칸이 짝을 가져간다
+            if (!c || used[ai]) return;
+            used[ai] = true; cur.push({ t: ti, a: ai, variant: c.variant });
+            go(ti + 1, dist + c.d);
+            cur.pop(); used[ai] = false;
+        });
+        go(ti + 1, dist);                                   // 이 답은 짝 안 지음
+    })(0, 0);
+    const paired = new Set(best.pairs.map(p => p.t));
+    return { pairs: best.pairs, extras: typed.map((_, i) => i).filter(i => !paired.has(i)) };
+}
+
+// diff 박스 안 글자 하나 — 공백은 강조 칸이 보이도록 &nbsp;로
+function _vocabDiffChar(c) {
+    return c === ' ' ? '&nbsp;' : _vocabEsc(c);
+}
+
+// "내가 쓴 답" 박스용: 맞은 글자 그대로 · 다른 글자 형광펜 · 불필요 글자 형광펜+취소선 · 빠진 자리 형광펜 '_'
+// (틀린 데 표시는 내가 쓴 답 위에만. 정답은 교재 표기 그대로 보여준다)
 function _renderDiffMine(ops) {
     let html = '';
     for (const o of ops) {
-        if (o.t === 'eq')       html += _vocabEsc(o.a);
-        else if (o.t === 'sub') html += `<span class="dc-wrong">${_vocabEsc(o.a)}</span>`;
-        else if (o.t === 'del') html += `<span class="dc-extra">${_vocabEsc(o.a)}</span>`;
+        if (o.t === 'eq')       html += _vocabDiffChar(o.a);
+        else if (o.t === 'sub') html += `<span class="dc-wrong">${_vocabDiffChar(o.a)}</span>`;
+        else if (o.t === 'del') html += `<span class="dc-extra">${_vocabDiffChar(o.a)}</span>`;
         else if (o.t === 'ins') html += `<span class="dc-gap">_</span>`;
     }
     return html;
-}
-
-// "정답" 박스용: 맞은 글자 그대로 · 학생이 놓치거나 틀린 글자 강조
-function _renderDiffAnswer(ops) {
-    let html = '';
-    for (const o of ops) {
-        if (o.t === 'eq')                       html += _vocabEsc(o.b);
-        else if (o.t === 'sub' || o.t === 'ins') html += `<span class="dc-miss">${_vocabEsc(o.b)}</span>`;
-    }
-    return html;
-}
-
-// 오답 원인 한 줄 힌트 자동 생성
-function _vocabHint(ops) {
-    const miss = ops.filter(o => o.t === 'ins').map(o => o.b);
-    const sub  = ops.filter(o => o.t === 'sub');
-    const ext  = ops.filter(o => o.t === 'del').map(o => o.a);
-    const parts = [];
-    if (miss.length) parts.push(`‘${_vocabEsc(miss.join(''))}’ 글자가 빠졌어요`);
-    if (sub.length)  parts.push(`${sub.length}글자가 달라요`);
-    if (ext.length)  parts.push(`‘${_vocabEsc(ext.join(''))}’는 불필요해요`);
-    return parts.join(' · ');
 }
 
 // 결과 렌더링
@@ -645,59 +690,48 @@ function renderVocabResult(results, correctCount, totalCount, percentage) {
     let resultsList = '<div class="vocab-results-list">';
     resultsList += '<div class="vocab-results-header">문제별 결과</div>';
     
+    // 줄 조립: [내가 쓴 답(입력칸 모양)] [✓/✗] → [교재 정답]. 문구는 "같은 답을 두 번 썼어요" 하나만(형광펜으로 못 보여주는 유일한 경우).
+    const okMark  = '<span class="ans-mark ok"><i class="fas fa-check"></i></span>';
+    const badMark = '<span class="ans-mark bad"><i class="fas fa-times"></i></span>';
+    const inBox   = html => `<span class="ans-in">${html}</span>`;
+    const emptyBox = text => `<span class="ans-in empty">${text}</span>`;
+    const answerPart = answer => `<span class="ans-arrow">→</span><span class="ans-word">${_vocabEsc(answer)}</span>`;
+
     results.forEach((result) => {
         const statusClass = result.allCorrect ? 'correct' : 'wrong';
-        const statusIcon = result.allCorrect 
-            ? '<div class="status-icon-o"><i class="fas fa-check"></i></div>' 
-            : '<div class="status-icon-x"><i class="fas fa-times"></i></div>';
         const statusText = result.allCorrect ? '정답' : '오답';
-        
+        // "N개 중 M개" — 동의어 2개 이상인 단어만. 점수와 무관한 정보 표시.
+        const countHtml = result.total >= 2
+            ? `<span class="vocab-result-count">${result.total}개 중 ${result.matched}개</span>`
+            : '';
+
+        // 학생이 쓴 칸 순서로 한 줄씩. 맞힘은 내 답 + ✓. 틀림은 내 답(오타면 틀린 글자 형광펜, 빈칸은 "(비워 둠)") ✗ → 정답.
+        let rows = '';
+        result.answers.forEach(a => {
+            if (a.status === 'ok') {
+                rows += `<div class="ans-row ok">${inBox(_vocabEsc(a.userAnswer))}${okMark}</div>`;
+            } else if (a.status === 'typo') {
+                rows += `<div class="ans-row bad">${inBox(_renderDiffMine(_vocabAlign(a.userAnswer, a.answer)))}${badMark}${answerPart(a.answer)}</div>`;
+            } else if (a.status === 'blank') {
+                rows += `<div class="ans-row bad">${emptyBox('(비워 둠)')}${badMark}${answerPart(a.answer)}</div>`;
+            } else if (a.status === 'dup') {
+                rows += `<div class="ans-row bad">${inBox(_vocabEsc(a.userAnswer))}${badMark}${answerPart(a.answer)}<span class="syn-hint">같은 답을 두 번 썼어요</span></div>`;
+            } else {
+                rows += `<div class="ans-row bad">${inBox(_vocabEsc(a.userAnswer))}${badMark}${answerPart(a.answer)}</div>`;
+            }
+        });
+
         resultsList += `
             <div class="vocab-result-item ${statusClass}">
                 <div class="vocab-result-header">
                     <div class="vocab-result-headword">
-                        ${statusIcon}
                         <div class="vocab-result-headword-text">${result.headword}</div>
+                        ${countHtml}
                     </div>
                     <div class="vocab-result-status ${statusClass}">${statusText}</div>
                 </div>
-                <div class="vocab-result-synonyms">
-        `;
-        
-        result.synonyms.forEach((syn, synIndex) => {
-            const userAnswerClass = syn.isCorrect ? 'correct' : (syn.userAnswer ? 'wrong' : 'empty');
-
-            // 오답 칸: 정답과 가까우면(다른 글자 수가 정답 길이의 절반 이하) 글자단위 diff + 원인 힌트,
-            // 아예 다른 답이면 글자 그대로 + "정답과 다른 단어예요". 빈칸은 "답을 적지 않았어요". 정답은 힌트 없음.
-            let mineHtml, answerHtml, hint = '';
-            const ops = (userAnswerClass === 'wrong') ? _vocabAlign(syn.userAnswer, syn.correctAnswer) : null;
-            const isClose = ops && ops.filter(o => o.t !== 'eq').length * 2 <= syn.correctAnswer.length;
-            if (isClose) {
-                mineHtml = _renderDiffMine(ops);
-                answerHtml = _renderDiffAnswer(ops);
-                hint = _vocabHint(ops);
-            } else {
-                mineHtml = _vocabEsc(syn.userAnswer || '-');
-                answerHtml = _vocabEsc(syn.correctAnswer);
-                if (userAnswerClass === 'wrong') hint = '정답과 다른 단어예요';
-                else if (userAnswerClass === 'empty') hint = '답을 적지 않았어요';
-            }
-            const hintHtml = hint ? `<div class="syn-hint">${hint}</div>` : '';
-
-            resultsList += `
-                <div class="vocab-synonym-row">
-                    <div class="syn-label">동의어 ${synIndex + 1}</div>
-                    <div class="syn-my-label">내 답안</div>
-                    <div class="syn-user-box">${mineHtml}</div>
-                    <div class="syn-arrow">→</div>
-                    <div class="syn-correct-label">정답</div>
-                    <div class="syn-correct ${userAnswerClass}">${answerHtml}</div>
-                </div>
-                ${hintHtml}
-            `;
-        });
-        
-        resultsList += `
+                <div class="vocab-result-answers">
+                    ${rows}
                 </div>
             </div>
         `;
@@ -754,7 +788,7 @@ async function saveVocabRecord(correctCount, totalCount, percentage, results) {
         accuracy: percentage,
         pages: currentPages,
         completedAt: new Date().toISOString(),
-        words: results || []   // 단어별 답안: [{ headword, synonyms: [{ userAnswer, correctAnswer, isCorrect }], allCorrect }]
+        words: results || []   // 단어별 답안(학생이 쓴 칸 순서): [{ headword, total, matched, allCorrect, answers: [{ userAnswer, status: ok|typo|wrong|blank|dup, answer: 그 칸에 붙은 교재 정답 }] }]
     };
 
     try {

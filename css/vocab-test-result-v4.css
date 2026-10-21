@@ -69,33 +69,6 @@
     border-bottom: 2px solid #e2e8f0;
 }
 
-/* 🎯 O/X 아이콘 - 동그라미 안에 체크/X */
-.status-icon-o {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #70aa64;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.status-icon-x {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #e66e78;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-}
-
 /* 개별 결과 아이템 */
 .vocab-result-item {
     background: white;
@@ -148,119 +121,120 @@
     color: #742a2a;
 }
 
-/* 🎯 동의어 비교 - 새로운 레이아웃 */
-.vocab-result-synonyms {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.vocab-synonym-row {
-    display: grid;
-    grid-template-columns: 80px 70px 1fr 40px 60px 1fr;
-    gap: 12px;
-    align-items: center;
-    padding: 10px 0; /* 🎯 배경 제거 */
-    font-size: 14px;
-}
-
-/* 동의어 N - 텍스트만 */
-.syn-label {
+/* 🎯 "N개 중 M개" — 표제어 옆 개수 (동의어 2개 이상만) */
+.vocab-result-count {
     font-size: 13px;
     color: #718096;
     font-weight: 600;
 }
 
-/* "내 답안" 라벨 - 텍스트만 */
-.syn-my-label {
-    font-size: 12px;
-    color: #a0aec0;
-    font-weight: 500;
+/* ── 결과 행 (학생이 쓴 칸 순서) ─────────────────────── */
+/* 한 줄 = [내가 쓴 답(입력칸 모양)] [✓/✗] → [교재 정답]. 문구는 "같은 답을 두 번 썼어요"만. */
+.vocab-result-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-/* 🎯 내 답안 박스 - Italic + #f5f8fd 배경 */
-.syn-user-box {
-    font-weight: 600;
-    font-style: italic; /* 🎯 Italic */
+.ans-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.ans-row.ok { background: #f2f8f1; }
+.ans-row.bad { background: #fff7f7; }
+
+/* 내가 쓴 답 — 입력칸 모양, 글자 폭이 같은 글꼴(글자 자리 비교용) */
+.ans-in {
+    display: inline-block;
+    min-width: 150px;
+    background: white;
+    border: 1.5px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 5px 10px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+    font-family: Consolas, "Courier New", monospace;
+    font-weight: 700;
+    font-size: 15.5px;
     color: #2d3748;
-    background: #f5f8fd; /* 🎯 연한 파랑 배경 */
-    padding: 6px 12px;
-    border-radius: 4px;
-    text-align: center;
+    word-break: break-word;
 }
 
-/* 🎯 화살표 */
-.syn-arrow {
-    text-align: center;
-    color: #cbd5e0; /* 🎯 연한 회색 */
+/* 비워 둔 칸 */
+.ans-in.empty {
+    border-style: dashed;
+    color: #a0aec0;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 13.5px;
+}
+
+/* ✓/✗ 작은 동그라미 */
+.ans-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: white;
+    flex: none;
+}
+.ans-mark.ok  { background: #70aa64; }
+.ans-mark.bad { background: #e66e78; }
+
+.ans-arrow {
+    color: #cbd5e0;
     font-size: 16px;
 }
 
-/* "정답" 라벨 - 텍스트만 */
-.syn-correct-label {
-    font-size: 12px;
-    color: #a0aec0;
-    font-weight: 500;
-    text-align: right;
-}
-
-/* 🎯 정답 단어 - 정오답에 따라 배경색 변경 */
-.syn-correct {
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-weight: 600;
-    text-align: center;
-}
-
-.syn-correct.correct {
-    background: #e9f4e8; /* 🎯 연한 초록 배경 */
-    color: #698d54; /* 🎯 진한 초록 텍스트 */
-}
-
-.syn-correct.wrong {
-    background: #fde8e8; /* 🎯 연한 빨강 배경 */
-    color: #c53030; /* 🎯 진한 빨강 텍스트 */
-}
-
-.syn-correct.empty {
-    background: #fde8e8; /* 🎯 미입력도 오답 처리 */
+/* 교재 정답 (틀린 줄에만 나옴) */
+.ans-word {
+    font-weight: 700;
+    font-size: 16px;
     color: #c53030;
+    word-break: break-word;
 }
 
-/* ── 오답 글자단위 diff 강조 ───────────────────────────── */
-/* 정답 박스: 학생이 놓치거나 틀린 글자 (노랑 강조) */
-.dc-miss {
-    background: #ffe08a;
-    color: #7a4e00;
-    font-weight: 800;
-    border-radius: 3px;
-    padding: 0 1px;
-}
-/* 내 답안 박스: 자리가 틀린 글자 (빨강 물결 밑줄) */
+/* ── 내가 쓴 답 위 틀린 글자 표시 (연한 붉은 형광펜) ───── */
+/* 다른 글자를 쓴 자리 */
 .dc-wrong {
-    color: #c53030;
-    font-weight: 800;
-    text-decoration: underline wavy #e66e78;
+    background: #fecaca;
+    color: #991b1b;
+    border-radius: 1px;
+    display: inline-block;
+    line-height: 1.05;
 }
-/* 내 답안 박스: 불필요하게 더 쓴 글자 (취소선) */
+/* 불필요하게 더 쓴 글자 (형광펜 + 취소선) */
 .dc-extra {
-    color: #c53030;
+    background: #fecaca;
+    color: #991b1b;
+    border-radius: 1px;
+    display: inline-block;
+    line-height: 1.05;
     text-decoration: line-through;
-    opacity: .75;
 }
-/* 내 답안 박스: 빠진 자리 표시 '_' */
+/* 글자가 빠진 자리 '_' */
 .dc-gap {
-    color: #e66e78;
-    font-weight: 800;
+    background: #fecaca;
+    color: #b91c1c;
+    border-radius: 1px;
+    display: inline-block;
+    line-height: 1.05;
 }
-/* 오답 원인 한 줄 힌트 */
+/* "같은 답을 두 번 썼어요" 문구 */
 .syn-hint {
     font-size: 12.5px;
     color: #a15c00;
     background: #fff7e6;
-    border-radius: 8px;
-    padding: 6px 11px;
-    margin: -2px 0 2px;
+    border-radius: 6px;
+    padding: 4px 10px;
 }
 
 /* 버튼 영역 */
@@ -311,13 +285,10 @@
 
 /* 반응형 */
 @media (max-width: 768px) {
-    .vocab-synonym-row {
-        grid-template-columns: 1fr;
-        gap: 6px;
-    }
-    
-    .syn-correct-label {
-        text-align: left;
+    /* 좁은 화면: 입력칸이 줄 폭을 다 쓰지 않게, 정답·힌트는 자연스럽게 다음 줄로 */
+    .ans-in {
+        min-width: 120px;
+        max-width: 100%;
     }
     
     .vocab-score-stats {
