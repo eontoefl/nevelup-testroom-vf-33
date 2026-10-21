@@ -199,19 +199,50 @@ var WRITING_TIME_LIMITS = {
     'discussion': 600   // 10분
 };
 
+// 시간초과 잠금 대상 입력칸 (유형 → 입력칸 ID)
+// 이 화면 요소들은 시도마다 새로 만들어지지 않고 재사용되므로,
+// 잠금 상태를 직접 켜고 끄지 말고 _syncWritingInputLock()으로만 맞춘다.
+var WRITING_INPUT_IDS = {
+    'email':      'emailTextarea',
+    'discussion': 'discussionTextarea'
+};
+
+/**
+ * 입력칸 잠금 상태를 "이번 시도의 타이머 상태"에 맞춘다
+ * - 지금 푸는 유형의 입력칸이고, 이번 시도의 시간이 끝났으면 → 잠금
+ * - 그 외 → 열림
+ * 시도(유형 시작) / 시간 종료 / 라이팅 종료 시점에 호출한다.
+ */
+function _syncWritingInputLock() {
+    Object.keys(WRITING_INPUT_IDS).forEach(function(type) {
+        var textarea = document.getElementById(WRITING_INPUT_IDS[type]);
+        if (!textarea) return;
+
+        var locked = (_writingTimerState.currentType === type) && _writingTimerState.expired;
+        textarea.disabled = locked;
+        textarea.style.opacity = locked ? '0.7' : '';
+    });
+}
+
 /**
  * 유형별 타이머 시작
+ * (이번 시도의 타이머 상태를 먼저 초기화한 뒤 입력칸 잠금을 맞춘다)
  */
 function _startWritingTimer(type) {
     _stopWritingTimer();
 
-    var seconds = WRITING_TIME_LIMITS[type];
-    if (!seconds) return;
-
-    _writingTimerState.remaining = seconds;
     _writingTimerState.currentType = type;
     _writingTimerState.expired = false;
+
+    var seconds = WRITING_TIME_LIMITS[type];
+    if (!seconds) {
+        _syncWritingInputLock();
+        return;
+    }
+
+    _writingTimerState.remaining = seconds;
     _updateWritingTimerDisplay();
+    _syncWritingInputLock();
 
     console.log('⏱️ 타이머 시작:', type, seconds + '초');
 
@@ -295,19 +326,9 @@ function _onWritingTimerExpired() {
             break;
 
         case 'email':
-            var emailTextarea = document.getElementById('emailTextarea');
-            if (emailTextarea) {
-                emailTextarea.disabled = true;
-                emailTextarea.style.opacity = '0.7';
-            }
-            break;
-
         case 'discussion':
-            var discTextarea = document.getElementById('discussionTextarea');
-            if (discTextarea) {
-                discTextarea.disabled = true;
-                discTextarea.style.opacity = '0.7';
-            }
+            // 잠금은 타이머 상태(expired=true)에서 판단 — 직접 잠그지 않는다
+            _syncWritingInputLock();
             break;
     }
 }
@@ -633,15 +654,21 @@ async function _finishWritingModule() {
 function cleanupWritingModule() {
     console.log('🧹 [cleanupWritingModule] 라이팅 모듈 정리 시작');
 
+    // 1. 타이머 정지 + 이번 시도의 타이머 상태 초기화 + 입력칸 잠금 해제
+    //    (정상 제출 후에는 currentWritingModule이 이미 null이므로
+    //     아래 '모듈 없음' 확인보다 먼저 실행해야 잠금이 남지 않는다)
+    _stopWritingTimer();
+    _writingTimerState.currentType = null;
+    _writingTimerState.expired = false;
+    _writingTimerState.remaining = 0;
+    _syncWritingInputLock();
+    console.log('✅ 타이머 정지 + 입력칸 잠금 초기화 완료');
+
     var mod = window.currentWritingModule;
     if (!mod) {
-        console.log('🧹 라이팅 모듈 없음 — 정리 불필요');
+        console.log('🧹 라이팅 모듈 없음 — 나머지 정리 불필요');
         return;
     }
-
-    // 1. 타이머 정지
-    _stopWritingTimer();
-    console.log('✅ 타이머 정지 완료');
 
     // 2. 전역 컴포넌트 참조 해제
     window.currentArrangeComponent = null;
