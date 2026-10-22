@@ -114,6 +114,9 @@ function buildToc() {
   V2.pages.forEach((p, idx) => {
     const doc = parser.parseFromString(p.html || "", "text/html");
     doc.querySelectorAll("h1, h2").forEach((h) => {
+      // 차례 쪽의 항목(제목 전체가 링크)은 목차에 넣지 않는다.
+      const linked = Array.from(h.querySelectorAll("a")).map((a) => a.textContent).join("").replace(/\s/g, "");
+      if (linked && linked === (h.textContent || "").replace(/\s/g, "")) return;
       const title = (h.textContent || "").trim();
       if (title) V2.toc.push({ title: title, level: h.tagName === "H1" ? 1 : 2, idx: idx });
     });
