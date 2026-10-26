@@ -123,10 +123,22 @@ function buildToc() {
   });
 }
 
+// 이온토플 입문서 테마: 쪽 종류와 장 색을 표시한다(내용은 바꾸지 않음).
+function applyBookTheme(el) {
+  const T = window.BookTheme;
+  if (!T || !V2.book) return;
+  if (!T.isThemed(V2.book.id)) { T.applyPage(el, null); return; }
+  V2.themeMetas = V2.themeMetas || T.classify(V2.pages);
+  const meta = V2.themeMetas[V2.idx];
+  T.applyPage(el, meta);
+  T.decorateReader(el, meta);
+}
+
 function render() {
   const p = V2.pages[V2.idx];
   document.getElementById("content").innerHTML = p ? p.html || "" : "";
   window.BookPageFooter?.decorateReader(document.getElementById("content"));
+  applyBookTheme(document.getElementById("content"));
   enableMedia();
   document.getElementById("curPage").textContent = V2.idx + 1;
 
