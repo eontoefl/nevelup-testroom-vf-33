@@ -13,12 +13,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
-  <link rel="stylesheet" href="css/mypage-style.css?v=008_score_chart" />
+  <link rel="stylesheet" href="css/mypage-style.css?v=009_library" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/notification.css" />
   <link rel="stylesheet" href="css/mypage-grass-fast.css" />
   <link rel="stylesheet" href="css/mypage-grass-standard.css" />
-  <link rel="stylesheet" href="css/toefl-score.css?v=031_readonly" />
+  <link rel="stylesheet" href="css/toefl-score.css?v=032_library" />
 <style>
   /* 지난 수강 기록 카드 (재시작, 2026-10-16) */
   .pe-note { font-size: 13px; color: #6b6b7b; margin: -4px 0 12px; }
@@ -83,6 +83,10 @@
       </button>
       <button class="mp-tab" data-panel="panel-toefl" onclick="switchMpTab('panel-toefl')">
         <i class="fa-solid fa-file-lines"></i> 실제 TOEFL 시험
+      </button>
+      <button class="mp-tab" data-panel="panel-library" onclick="switchMpTab('panel-library'); if(window.markLibrarySeen) window.markLibrarySeen();">
+        <i class="fa-solid fa-book-bookmark"></i> 내 서재
+        <span class="mp-tab-dot" id="libTabDot" style="display:none;" title="새 자료"></span>
       </button>
     </nav>
 
@@ -389,6 +393,16 @@
 
     </div><!-- /panel-toefl -->
 
+    <!-- ④ 내 서재 (기본 입문서 + 추가 자료) -->
+    <div class="mp-panel" id="panel-library">
+      <section class="section-block" id="libSection">
+        <h2 class="section-title">
+          <i class="fa-solid fa-book-bookmark"></i> 내 서재
+        </h2>
+        <div class="lib-grid" id="libGrid"></div>
+      </section>
+    </div><!-- /panel-library -->
+
     <!-- ── 시험 일정 등록/수정 모달 ── -->
     <div class="toefl-modal-overlay" id="toeflExamModalOverlay">
       <div class="toefl-modal">
@@ -506,5 +520,6 @@
   <script src="js/mypage-nav.js?v=001"></script>
   <!-- 마이페이지 전용 로직 -->
   <script src="js/mypage.js?v=20261018_authunify"></script>
+  <script src="js/mylibrary.js?v=001"></script>
 </body>
 </html>

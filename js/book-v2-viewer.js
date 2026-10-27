@@ -33,8 +33,16 @@ async function init() {
   // 숨김(비공개) 책 → 내용을 흐릿하게 깔고 그 위에 "수정 중" 팝업. ?dev=1 미리보기는 그대로.
   const hiddenForStudent = V2.book && !V2.book.is_active && !isPreview();
 
-  // 진도/북마크/메모는 실패해도 읽기는 계속 (숨김 책은 추적 생략)
-  if (!hiddenForStudent) {
+  // 특정 학생 공개(selected)인데 내가 대상이 아니면 차단. (?dev=1 미리보기는 통과)
+  let accessDenied = false;
+  if (!hiddenForStudent && !isPreview() && V2.book && V2.book.audience_mode === "selected") {
+    accessDenied = !(await userHasAccess(V2.book.id, V2.user && V2.user.id));
+  }
+
+  const blocked = hiddenForStudent || accessDenied;
+
+  // 진도/북마크/메모는 실패해도 읽기는 계속 (막힌 책은 추적 생략)
+  if (!blocked) {
     try { await loadProgress(); await loadMemos(); } catch (e) { console.warn("진도/메모 로드 실패:", e); }
   }
 
@@ -42,17 +50,39 @@ async function init() {
   render();
   document.getElementById("loading").style.display = "none";
 
-  if (hiddenForStudent) {
+  if (blocked) {
     V2.locked = true;     // 페이지 넘기기/조작 잠금
-    showMaintenance();
+    showMaintenance(accessDenied ? "denied" : "hidden");
+  }
+}
+
+// 이 학생이 이 책(특정공개)의 대상인지
+async function userHasAccess(bookId, userId) {
+  if (!userId) return false;
+  try {
+    const rows = await supabaseSelect(
+      "tr_book_access",
+      "book_id=eq." + bookId + "&user_id=eq." + userId + "&select=id&limit=1"
+    );
+    return !!(rows && rows.length);
+  } catch (_) {
+    return false; // 테이블 미적용 등 → 안전하게 접근 불가
   }
 }
 
 function isPreview() {
   return new URLSearchParams(location.search).get("dev") === "1";
 }
-function showMaintenance() {
+function showMaintenance(reason) {
   document.getElementById("loading").style.display = "none";
+  if (reason === "denied") {
+    const icon = document.getElementById("maintIcon");
+    const title = document.getElementById("maintTitle");
+    const desc = document.getElementById("maintDesc");
+    if (icon) icon.textContent = "🔒";
+    if (title) title.textContent = "아직 열람 권한이 없는 자료예요";
+    if (desc) desc.innerHTML = "이 자료는 지정된 학생에게만 공개돼요.<br><b>선생님께 문의해 주세요!</b>";
+  }
   document.getElementById("maintOverlay").classList.add("open");
 }
 
@@ -84,11 +114,21 @@ async function loadProgress() {
 }
 
 async function loadBook() {
-  const books = await supabaseSelect(
-    "tr_book_documents",
-    "kind=eq.pages&order=sort_order.asc&limit=1"
-  );
-  if (!books || books.length === 0) throw new Error("편집된 입문서가 아직 없어요.");
+  // ?book=<id> 있으면 그 책, 없으면 (구동작) 첫 'pages' 책
+  const bookId = new URLSearchParams(location.search).get("book");
+  let books;
+  if (bookId) {
+    books = await supabaseSelect(
+      "tr_book_documents",
+      "id=eq." + bookId + "&kind=eq.pages&limit=1"
+    );
+  } else {
+    books = await supabaseSelect(
+      "tr_book_documents",
+      "kind=eq.pages&order=sort_order.asc&limit=1"
+    );
+  }
+  if (!books || books.length === 0) throw new Error("자료를 찾을 수 없어요.");
   V2.book = books[0];
   document.getElementById("bookTitle").textContent = V2.book.title || "입문서";
 

@@ -700,6 +700,8 @@
 }
 .mp-tab.active i { color: var(--primary); }
 .mp-tab i { font-size: 0.8rem; }
+/* '내 서재' 새 자료 알림 점 */
+.mp-tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tertiary, #FF7E5F); display: inline-block; flex-shrink: 0; }
 
 /* -- 패널 --
  * 섹션들이 page-wrap의 직속 자식이 아니게 되면서 gap을 잃었다.
