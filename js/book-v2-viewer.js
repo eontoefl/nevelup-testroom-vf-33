@@ -663,17 +663,23 @@ function buildPrintRoot() {
   const T = window.BookTheme;
   const themed = !!(T && T.isThemed(V2.book.id));
   const metas = themed ? (V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id)) : null;
-  // 이름·이메일: 인쇄되는 모든 장의 오른쪽 가장자리에 반복 (CSS position:fixed)
-  const stamp = document.createElement("div");
-  stamp.className = "bookv2-print-stamp";
-  stamp.textContent = (V2.user.name || "학생") + " · " + (V2.user.email || "") + " 전용";
-  root.appendChild(stamp);
+  // 인쇄 틀: 표의 머리(thead)·꼬리(tfoot)는 인쇄되는 모든 장에 반복된다.
+  //  → 위 여백 + 이름·이메일 줄, 아래 여백을 장마다 직접 넣는다 (인쇄 창의 '여백' 설정과 상관없이 같은 모양)
+  const stampText = (V2.user.name || "학생") + " · " + (V2.user.email || "") + " 전용";
+  root.innerHTML =
+    '<table class="bookv2-print-frame"><thead><tr><td><div class="bookv2-print-head"><span class="bookv2-print-stamp"></span></div></td></tr></thead>' +
+    '<tfoot><tr><td><div class="bookv2-print-foot"></div></td></tr></tfoot>' +
+    '<tbody><tr><td class="bookv2-print-body"></td></tr></tbody></table>';
+  root.querySelector(".bookv2-print-stamp").textContent = stampText;
+  const body = root.querySelector(".bookv2-print-body");
   V2.pages.forEach((p, i) => {
     const sheet = document.createElement("section");
-    // 본문 쪽(단어 표)은 이어서 흐르고, 표지·안내·목차 같은 쪽과 그 다음 쪽은 새 장에서 시작
+    // 새 장에서 시작하는 곳: 표지 다음, 단어 표가 처음 시작하는 쪽, 뒷표지. 나머지는 이어서 흐른다 (빈 장 줄이기)
+    // 테마 없는 책은 쪽마다 새 장
     const kind = metas && metas[i] ? metas[i].kind : "body";
     const prevKind = metas && metas[i - 1] ? metas[i - 1].kind : "body";
-    sheet.className = "bookv2-print-page" + (i > 0 && (kind !== "body" || prevKind !== "body" || !themed) ? " is-break" : "");
+    const brk = i > 0 && (!themed || prevKind === "cover" || kind === "cover" || (kind === "body" && prevKind !== "body"));
+    sheet.className = "bookv2-print-page" + (brk ? " is-break" : "");
     const art = document.createElement("article");
     art.className = "bookv2-content book-content";
     art.innerHTML = p.html || "";
@@ -684,7 +690,7 @@ function buildPrintRoot() {
     }
     art.querySelectorAll("video, audio, iframe").forEach((m) => m.remove());
     sheet.append(art);
-    root.appendChild(sheet);
+    body.appendChild(sheet);
   });
   return root;
 }
