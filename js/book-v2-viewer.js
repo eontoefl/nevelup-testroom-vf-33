@@ -662,12 +662,18 @@ function preventDownload() {
 function canPrint() {
   return !!(V2.book && V2.book.allow_print && V2.user && !V2.locked && V2.pages && V2.pages.length);
 }
+// 휴대폰: 터치 화면 + 화면 짧은 쪽이 600px 미만 (아이폰·갤럭시). 태블릿·PC는 해당 안 됨
+function isPhone() {
+  try { return window.matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 600; }
+  catch (_) { return false; }
+}
 function updatePrintButton() {
   const ok = canPrint();
+  const phone = isPhone();
   const b = document.getElementById("btnPrint");
-  if (b) b.hidden = !ok;
+  if (b) b.hidden = !ok || phone;   // 휴대폰에서는 인쇄 버튼을 보여주지 않음 (2026-10-29)
   document.body.classList.toggle("bookv2-print-ok", ok);
-  if (ok) setTimeout(buildPrintRoot, 0);   // 이미지가 미리 받아지도록 먼저 만들어 둔다
+  if (ok && !phone) setTimeout(buildPrintRoot, 0);   // 이미지가 미리 받아지도록 먼저 만들어 둔다 (휴대폰은 생략)
 }
 function buildPrintRoot() {
   let root = document.getElementById("printRoot");
