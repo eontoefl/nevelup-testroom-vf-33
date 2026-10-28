@@ -340,6 +340,13 @@ body.bookv2-confirming .bookv2-progress { filter: blur(8px); pointer-events: non
 .bookv2-icon[hidden] { display: none; }
 .bookv2-icon:disabled { opacity: .5; cursor: default; }
 
+/* ===== 단어장 표: 단어 중간에서 줄 바꾸지 않기 (2026-10-29) =====
+   띄어쓰기 자리에서만 줄을 바꾸고, 한 단어가 칸보다 길면 칸이 그만큼 넓어진다(표 폭 자동). */
+.bookv2-content.book-content.bt-eon.bt-book-voca table { table-layout: auto !important; }
+.bookv2-content.book-content.bt-eon.bt-book-voca table td, .bookv2-content.book-content.bt-eon.bt-book-voca table th { overflow-wrap: normal !important; word-break: keep-all !important; }
+/* 최대로 키웠을 때 긴 단어 때문에 표가 쪽보다 넓어지면 잘리지 않고 옆으로 밀어 볼 수 있게 */
+#content.bt-book-voca { overflow-x: auto; }
+
 /* ===== PDF 저장·인쇄 (2026-10-28) =====
    책 한 쪽 = A4 한 장. 쪽마다 내용이 칸에 다 들어가도록 JS(fitPrintPages)가 배율(zoom)을 정한다.
    표지·뒷표지는 종이를 꽉 채움. 이름·이메일은 모든 장 위쪽 오른편.
@@ -355,7 +362,7 @@ body.bookv2-confirming .bookv2-progress { filter: blur(8px); pointer-events: non
 .bookv2-print-fit > .bookv2-content.book-content { min-height: 0 !important; padding: 0 !important; margin: 0 !important; font-size: 15px; }
 /* 단어 표는 인쇄용으로 촘촘하게: 칸 위아래 여백·줄 간격 줄이고 풀이 칸을 넓게 */
 .bookv2-print-fit table td, .bookv2-print-fit table th { padding-top: 2px !important; padding-bottom: 2px !important; line-height: 1.25 !important; }
-.bookv2-print-fit .bt-book-voca table { table-layout: fixed !important; width: 100% !important; }
+.bookv2-print-fit .bookv2-content.book-content.bt-eon.bt-book-voca table { table-layout: auto !important; width: 100% !important; }
 .bookv2-print-fit .bt-book-voca colgroup col:nth-child(1) { width: 19% !important; }
 .bookv2-print-fit .bt-book-voca colgroup col:nth-child(2) { width: 21% !important; }
 .bookv2-print-fit .bt-book-voca colgroup col:nth-child(3) { width: 60% !important; }
