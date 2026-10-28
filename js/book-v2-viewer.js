@@ -540,7 +540,16 @@ async function saveProgress() {
     if (isCompleted && !wasCompleted) showDone();
   }
 }
-function showDone() { document.getElementById("doneOverlay").classList.add("open"); }
+// 완독 창. 단어장은 반복해서 외우는 책이라 "다시 1쪽부터" 안내 (단어장 4쪽 공부방법과 같은 말, 2026-10-29)
+function showDone() {
+  const T = window.BookTheme;
+  const metas = (T && V2.book && T.isThemed(V2.book.id)) ? (V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id)) : null;
+  if (metas && metas[0] && metas[0].book === "voca") {
+    document.getElementById("doneTitle").textContent = (V2.book.title || "단어장") + " 1회독 끝!";
+    document.querySelector("#doneOverlay .bookv2-done-desc").innerHTML = "이제 1쪽으로 돌아가 다시 외워볼 차례예요.<br>들춰보지 않고 다 쓸 수 있을 때까지 반복해요.";
+  }
+  document.getElementById("doneOverlay").classList.add("open");
+}
 
 // 간단 토스트
 function showToast(msg) {
