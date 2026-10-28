@@ -333,3 +333,35 @@
   .bookv2-content { font-size: 16px; }
   .bookv2-content h1 { font-size: 25px; }
 }
+
+/* ===== 처음 열 때 확인 전: 뒤 내용 흐리게 (2026-10-28) ===== */
+body.bookv2-confirming .bookv2-stage,
+body.bookv2-confirming .bookv2-progress { filter: blur(8px); pointer-events: none; }
+.bookv2-icon[hidden] { display: none; }
+.bookv2-icon:disabled { opacity: .5; cursor: default; }
+
+/* ===== PDF 저장·인쇄 (2026-10-28) =====
+   책 한 쪽이 A4 한 장보다 길어서(단어장 한 쪽 ≈ A4 2.3장) 쪽마다 끊지 않고 이어서 흐르게 찍는다.
+   표 줄은 중간에 안 잘리게, 이름·이메일은 모든 장 오른쪽 가장자리에 세로로 반복(position:fixed는 인쇄 시 장마다 반복됨). */
+.bookv2-print-root, .bookv2-print-block { display: none; }
+@media print {
+  @page { size: A4 portrait; margin: 12mm 10mm 12mm 12mm; }
+  html, body.bookv2-body { background: #fff !important; height: auto !important; overflow: visible !important; }
+  body.bookv2-body > * { display: none !important; }
+  body.bookv2-body.bookv2-print-ok > #printRoot { display: block !important; }
+  body.bookv2-body:not(.bookv2-print-ok) > #printBlock { display: block !important; padding: 40mm 0; text-align: center; font-size: 16px; color: #475569; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* 80%: 단어장 기준 142장 → 97장, 글자는 책 본문 크기 정도로 읽힘 */
+  .bookv2-print-root { padding-right: 7mm; zoom: var(--print-zoom, 0.8); }
+  .bookv2-print-stamp {
+    position: fixed; top: 0; right: 0; height: 100%; width: 5mm;
+    writing-mode: vertical-rl; text-align: center;
+    font-size: 8.5px; color: #6b7280; letter-spacing: .08em; white-space: nowrap;
+  }
+  .bookv2-print-page { margin: 0 0 8mm; }
+  .bookv2-print-page.is-break { break-before: page; page-break-before: always; }
+  .bookv2-print-page:first-child { break-before: auto; page-break-before: auto; }
+  .bookv2-print-page .bookv2-content.book-content { min-height: 0 !important; padding: 0; margin: 0; }
+  .bookv2-print-page tr, .bookv2-print-page img, .bookv2-print-page figure { break-inside: avoid; page-break-inside: avoid; }
+  .bookv2-print-page h1, .bookv2-print-page h2, .bookv2-print-page h3 { break-after: avoid; page-break-after: avoid; }
+}

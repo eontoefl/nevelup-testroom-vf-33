@@ -9,6 +9,10 @@
  *   audience_mode='all'      → 결제자 전원(=이 사이트 접속자) 공개
  *   audience_mode='selected' → tr_book_access 에 내 user_id 있을 때만
  *   (컬럼/테이블이 아직 없으면(SQL 미적용) 'all'로 간주 + selected는 숨김)
+ *
+ * 처음 열 때 확인(view_confirm, 2026-10-28):
+ *   켜진 책을 아직 안 연 학생 → 카드 오른쪽에 "눌러서 열기" 버튼(자물쇠) → 확인 창 → [열어보기]
+ *   연 뒤 → 카드에 "10월 27일 오후 3:40에 처음 열었어요" (book-view-confirm.js)
  * ================================================
  */
 (function () {
@@ -44,26 +48,44 @@
         (access || []).forEach(function (a) { mine[a.book_id] = true; });
       } catch (_) { /* SQL 미적용 → selected 책은 안 보임 */ }
 
-      books.forEach(function (b) {
+      var visible = books.filter(function (b) {
         var mode = b.audience_mode === "selected" ? "selected" : "all";
-        var allowed = mode === "all" || mine[b.id];
-        if (!allowed) return;
+        return mode === "all" || mine[b.id];
+      });
+
+      // 처음 열 때 확인이 켜진 책: 이 학생이 언제 처음 열었는지
+      var VC = window.BookViewConfirm;
+      var confirmIds = VC ? visible.filter(VC.needsConfirm).map(function (b) { return b.id; }) : [];
+      var confirmed = {};
+      if (confirmIds.length) {
+        try { confirmed = await VC.getConfirmedMap(user.id, confirmIds); } catch (_) { confirmed = {}; }
+      }
+
+      visible.forEach(function (b) {
         pagesIds.push(b.id);
+        var needs = confirmIds.indexOf(b.id) !== -1;
         cards.push({
+          id: b.id,
           title: b.title || "(제목 없음)",
           meta: (b.total_pages || 0) + "페이지",
           icon: "fa-file-lines",
           kind: "pages",
           url: "book-v2.html?book=" + b.id,
+          needsConfirm: needs,
+          confirmedAt: needs ? (confirmed[b.id] || null) : null,
         });
       });
     } catch (e) {
       console.warn("📚 [Library] 추가 자료 로드 실패:", e);
     }
 
+    LIB.user = user;
+    LIB.cards = cards;
     renderLibrary(cards);
     updateNewDot();
   }
+
+  var LIB = { user: null, cards: [] };
 
   // 처음 보는 추가자료가 있으면 탭에 점(●) 표시
   function updateNewDot() {
@@ -101,19 +123,28 @@
 
     grid.innerHTML = "";
     cards.forEach(function (c) {
+      var locked = c.needsConfirm && !c.confirmedAt;
+      var opened = c.needsConfirm && !!c.confirmedAt;
       var el = document.createElement("button");
-      el.className = "lib-card";
+      el.className = "lib-card" + (locked ? " is-locked" : "") + (opened ? " is-opened" : "");
       el.type = "button";
       el.innerHTML =
-        '<span class="lib-card-icon"><i class="fa-solid ' + c.icon + '"></i></span>' +
+        '<span class="lib-card-icon"><i class="fa-solid ' + (locked ? "fa-book" : opened ? "fa-book-open" : c.icon) + '"></i></span>' +
         '<span class="lib-card-body">' +
           '<span class="lib-card-title"></span>' +
           '<span class="lib-card-meta"></span>' +
+          (opened ? '<span class="lib-card-opened"></span>' : "") +
         "</span>" +
-        '<span class="lib-card-go"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>';
+        (locked
+          ? '<span class="lib-card-open"><i class="fa-solid fa-lock"></i> 눌러서 열기</span>'
+          : '<span class="lib-card-go"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>');
       el.querySelector(".lib-card-title").textContent = c.title;
       el.querySelector(".lib-card-meta").textContent = c.meta;
-      el.addEventListener("click", function () { window.open(c.url, "_blank"); });
+      if (opened) el.querySelector(".lib-card-opened").textContent = window.BookViewConfirm.formatAt(c.confirmedAt) + "에 처음 열었어요";
+      el.addEventListener("click", function () {
+        if (locked) openWithConfirm(c);
+        else window.open(c.url, "_blank");
+      });
       grid.appendChild(el);
     });
 
@@ -125,5 +156,24 @@
       grid.appendChild(empty);
     }
     section.style.display = "";
+  }
+
+  // 처음 열 때 확인 → [열어보기]: 클릭 순간에 빈 창부터 열고(팝업 차단 방지), 저장이 끝나면 그 창에 책 주소를 넣는다
+  function openWithConfirm(c) {
+    var VC = window.BookViewConfirm;
+    if (!VC || !LIB.user) { window.open(c.url, "_blank"); return; }
+    VC.open({
+      title: c.title,
+      onConfirm: function () {
+        var w = window.open("about:blank", "_blank");
+        return VC.saveConfirm(LIB.user.id, c.id).then(function (at) {
+          if (!at) { if (w) w.close(); return false; }
+          if (w) w.location.href = c.url; else window.open(c.url, "_blank");
+          c.confirmedAt = at;
+          renderLibrary(LIB.cards);
+          return true;
+        });
+      },
+    });
   }
 })();

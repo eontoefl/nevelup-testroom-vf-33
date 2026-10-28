@@ -1255,3 +1255,15 @@ a.cert-item:active {
 .lib-card-go { flex-shrink: 0; color: var(--sub-dark); font-size: 13px; transition: color .15s ease; }
 .lib-card:hover .lib-card-go { color: var(--signature-dark); }
 .lib-empty { grid-column: 1 / -1; margin: 0; padding: 18px 4px; font-size: 0.9rem; color: var(--on-surface-variant); }
+
+/* 내 서재: 처음 열 때 확인 (2026-10-28) */
+.lib-card.is-locked { box-shadow: 0 0 0 1.5px #ddd3f3 inset, 0 4px 16px rgba(25, 28, 29, 0.05); }
+.lib-card-open {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 13px; border-radius: 999px; background: var(--signature); color: #fff;
+  font-size: 0.8rem; font-weight: 700; white-space: nowrap; transition: background .15s ease;
+}
+.lib-card-open i { font-size: 11px; }
+.lib-card.is-locked:hover .lib-card-open { background: var(--signature-dark); }
+.lib-card.is-opened .lib-card-icon { background: var(--accent-light); color: var(--accent-dark); }
+.lib-card-opened { font-size: 0.76rem; font-weight: 600; color: var(--accent-dark); }

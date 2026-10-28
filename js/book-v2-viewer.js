@@ -1,12 +1,13 @@
 /**
- * book-v2-viewer.js — 에디터(BlockNote)로 만든 입문서 렌더 뷰어
+ * book-v2-viewer.js — 에디터(BlockNote)로 만든 책(입문서·단어장 등) 렌더 뷰어
  *  - tr_book_documents(kind='pages') + tr_book_pages 에서 로드
  *  - 페이지별 저장된 html 을 그대로 렌더 (책장 넘기기)
  *  - 학생 이름+이메일 옅은 워터마크
  *  - 다운로드/우클릭 차단
  *
- * ※ 인증(auth.js)은 정식 통합 시 추가. 지금은 localhost 미리보기용으로
- *   세션 없으면 데모 사용자로 표시.
+ * 로그인: 테스트룸 로그인 세션(sessionStorage currentUser)이 없으면 책을 불러오지 않고 안내만 보여준다.
+ *   (localhost ?dev=1 미리보기만 데모 사용자 허용)
+ * 처음 열 때 확인(view_confirm), PDF 저장·인쇄(allow_print)는 책마다 켜고 끈다 (2026-10-28, book-view-confirm.js)
  */
 const V2 = { book: null, pages: [], idx: 0, zoom: 17, user: null, progress: null, bookmarks: [], memos: {}, toc: [], hasPParam: false, locked: false };
 let progressTimer = null;
@@ -19,6 +20,13 @@ async function init() {
   preventDownload();
   setupWatermark();
   bindEvents();
+
+  // 로그인 안 했으면 책 내용을 불러오지 않고 막는다 (2026-10-28)
+  if (!V2.user) {
+    V2.locked = true;
+    showMaintenance("login");
+    return;
+  }
 
   try { const z = parseInt(localStorage.getItem("bookv2_zoom"), 10); if (z) V2.zoom = z; } catch (_) {}
 
@@ -41,8 +49,15 @@ async function init() {
 
   const blocked = hiddenForStudent || accessDenied;
 
-  // 진도/북마크/메모는 실패해도 읽기는 계속 (막힌 책은 추적 생략)
-  if (!blocked) {
+  // 처음 열 때 확인이 켜진 책인데 이 학생이 아직 안 열어봤으면 확인 창부터 (?dev=1 미리보기는 통과)
+  let needConfirm = false;
+  if (!blocked && !isPreview() && window.BookViewConfirm && BookViewConfirm.needsConfirm(V2.book)) {
+    try { needConfirm = !(await BookViewConfirm.getConfirmedAt(V2.user.id, V2.book.id)); }
+    catch (_) { needConfirm = true; }
+  }
+
+  // 진도/북마크/메모는 실패해도 읽기는 계속 (막힌 책·확인 전 책은 추적 생략)
+  if (!blocked && !needConfirm) {
     try { await loadProgress(); await loadMemos(); } catch (e) { console.warn("진도/메모 로드 실패:", e); }
   }
 
@@ -53,7 +68,31 @@ async function init() {
   if (blocked) {
     V2.locked = true;     // 페이지 넘기기/조작 잠금
     showMaintenance(accessDenied ? "denied" : "hidden");
+  } else if (needConfirm) {
+    V2.locked = true;
+    document.body.classList.add("bookv2-confirming");
+    BookViewConfirm.open({
+      title: V2.book.title || "자료",
+      onConfirm: async () => {
+        const at = await BookViewConfirm.saveConfirm(V2.user.id, V2.book.id);
+        if (!at) return false;
+        V2.locked = false;
+        document.body.classList.remove("bookv2-confirming");
+        try { await loadProgress(); await loadMemos(); } catch (e) { console.warn("진도/메모 로드 실패:", e); }
+        render();
+        updatePrintButton();
+        return true;
+      },
+      onCancel: leaveViewer,
+    });
   }
+  updatePrintButton();
+}
+
+// 책 화면에서 나가기: 내 서재에서 새 창으로 열렸으면 창을 닫고, 아니면 뒤로/테스트룸 첫 화면
+function leaveViewer() {
+  if (window.opener && !window.opener.closed) { window.close(); return; }
+  if (history.length > 1) history.back(); else location.href = "index.html";
 }
 
 // 이 학생이 이 책(특정공개)의 대상인지
@@ -70,11 +109,23 @@ async function userHasAccess(bookId, userId) {
   }
 }
 
+// ?dev=1 미리보기(숨김·지정 학생·처음 열 때 확인 건너뜀)는 내 컴퓨터(localhost)에서만 (2026-10-28)
 function isPreview() {
-  return new URLSearchParams(location.search).get("dev") === "1";
+  return new URLSearchParams(location.search).get("dev") === "1" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
 }
 function showMaintenance(reason) {
   document.getElementById("loading").style.display = "none";
+  if (reason === "login") {
+    const icon = document.getElementById("maintIcon");
+    const title = document.getElementById("maintTitle");
+    const desc = document.getElementById("maintDesc");
+    const btn = document.getElementById("maintBack");
+    if (icon) icon.textContent = "🔐";
+    if (title) title.textContent = "로그인이 필요해요";
+    if (desc) desc.innerHTML = "테스트룸에 로그인한 뒤<br><b>마이페이지 &gt; 내 서재</b>에서 열어주세요.";
+    if (btn) btn.textContent = "테스트룸으로 가기";
+  }
   if (reason === "denied") {
     const icon = document.getElementById("maintIcon");
     const title = document.getElementById("maintTitle");
@@ -86,12 +137,12 @@ function showMaintenance(reason) {
   document.getElementById("maintOverlay").classList.add("open");
 }
 
-// 로그인 사용자(없으면 미리보기용 데모)
+// 로그인 사용자. 없으면 null (localhost ?dev=1 미리보기만 데모 사용자)
 function resolveUser() {
   let u = null;
   try { u = JSON.parse(sessionStorage.getItem("currentUser") || "null"); } catch (_) {}
-  if (!u || !u.id) u = { id: "demo-preview", name: "데모 학생", email: "demo@eontoefl.com" };
-  V2.user = u;
+  if ((!u || !u.id) && isPreview()) u = { id: "demo-preview", name: "데모 학생", email: "demo@eontoefl.com" };
+  V2.user = (u && u.id) ? u : null;
 }
 
 // 진도/북마크 로드 (tr_book_progress 재사용, 없으면 생성)
@@ -130,7 +181,10 @@ async function loadBook() {
   }
   if (!books || books.length === 0) throw new Error("자료를 찾을 수 없어요.");
   V2.book = books[0];
-  document.getElementById("bookTitle").textContent = V2.book.title || "입문서";
+  document.getElementById("bookTitle").textContent = V2.book.title || "자료";
+  document.title = (V2.book.title || "자료") + " – 내벨업 테스트룸";
+  const doneTitle = document.getElementById("doneTitle");
+  if (doneTitle) doneTitle.textContent = (V2.book.title || "자료") + " 완독!";
 
   V2.pages = await supabaseSelect(
     "tr_book_pages",
@@ -484,8 +538,13 @@ function bindEvents() {
   document.getElementById("btnNext").addEventListener("click", () => go(1));
   document.getElementById("btnBack").addEventListener("click", () => history.back());
   document.getElementById("maintBack").addEventListener("click", () => {
+    if (!V2.user) { location.href = "index.html"; return; }   // 로그인 안내 → 테스트룸 첫 화면(로그인)
     if (history.length > 1) history.back(); else location.href = "index.html";
   });
+
+  // PDF 저장·인쇄
+  document.getElementById("btnPrint").addEventListener("click", printBook);
+  window.addEventListener("beforeprint", () => { if (canPrint()) buildPrintRoot(); });
 
   // 줌
   document.getElementById("btnZoomIn").addEventListener("click", () => zoomBy(ZOOM_STEP));
@@ -571,8 +630,84 @@ function preventDownload() {
   document.addEventListener("copy", (e) => { if (!inField(e.target)) e.preventDefault(); });
   document.addEventListener("keydown", (e) => {
     const k = (e.key || "").toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && k === "p" && canPrint()) { e.preventDefault(); printBook(); return; }
     if ((e.ctrlKey || e.metaKey) && ["s", "p", "u", "c", "a"].indexOf(k) !== -1 && !inField(e.target)) e.preventDefault();
   });
+}
+
+// ===== PDF 저장·인쇄 (2026-10-28) =====
+// 책마다 allow_print를 켠 경우만. 전체 쪽을 인쇄용 묶음(#printRoot)으로 만들고 쪽마다 학생 이름·이메일을 찍는다.
+// 꺼진 책·잠긴 책(숨김/권한 없음/처음 열 때 확인 전)은 인쇄 메뉴로 찍어도 안내 문구만 나온다 (CSS @media print).
+function canPrint() {
+  return !!(V2.book && V2.book.allow_print && V2.user && !V2.locked && V2.pages && V2.pages.length);
+}
+function updatePrintButton() {
+  const ok = canPrint();
+  const b = document.getElementById("btnPrint");
+  if (b) b.hidden = !ok;
+  document.body.classList.toggle("bookv2-print-ok", ok);
+  if (ok) setTimeout(buildPrintRoot, 0);   // 이미지가 미리 받아지도록 먼저 만들어 둔다
+}
+function buildPrintRoot() {
+  let root = document.getElementById("printRoot");
+  if (root && root.dataset.book === String(V2.book.id)) return root;
+  if (!root) {
+    root = document.createElement("div");
+    root.id = "printRoot";
+    root.className = "bookv2-print-root";
+    root.setAttribute("aria-hidden", "true");
+    document.body.appendChild(root);
+  }
+  root.dataset.book = String(V2.book.id);
+  root.innerHTML = "";
+  const T = window.BookTheme;
+  const themed = !!(T && T.isThemed(V2.book.id));
+  const metas = themed ? (V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id)) : null;
+  // 이름·이메일: 인쇄되는 모든 장의 오른쪽 가장자리에 반복 (CSS position:fixed)
+  const stamp = document.createElement("div");
+  stamp.className = "bookv2-print-stamp";
+  stamp.textContent = (V2.user.name || "학생") + " · " + (V2.user.email || "") + " 전용";
+  root.appendChild(stamp);
+  V2.pages.forEach((p, i) => {
+    const sheet = document.createElement("section");
+    // 본문 쪽(단어 표)은 이어서 흐르고, 표지·안내·목차 같은 쪽과 그 다음 쪽은 새 장에서 시작
+    const kind = metas && metas[i] ? metas[i].kind : "body";
+    const prevKind = metas && metas[i - 1] ? metas[i - 1].kind : "body";
+    sheet.className = "bookv2-print-page" + (i > 0 && (kind !== "body" || prevKind !== "body" || !themed) ? " is-break" : "");
+    const art = document.createElement("article");
+    art.className = "bookv2-content book-content";
+    art.innerHTML = p.html || "";
+    window.BookPageFooter?.decorateReader(art);
+    if (T) {
+      if (themed) { T.applyPage(art, metas[i]); T.decorateReader(art, metas[i]); }
+      else T.applyPage(art, null);
+    }
+    art.querySelectorAll("video, audio, iframe").forEach((m) => m.remove());
+    sheet.append(art);
+    root.appendChild(sheet);
+  });
+  return root;
+}
+let printing = false;
+async function printBook() {
+  if (!canPrint() || printing) return;
+  printing = true;
+  const btn = document.getElementById("btnPrint");
+  if (btn) btn.disabled = true;
+  showToast("인쇄 준비 중이에요...");
+  try {
+    const root = buildPrintRoot();
+    // 이미지·글꼴이 다 받아진 뒤 인쇄 (최대 8초)
+    const imgs = Array.from(root.querySelectorAll("img"));
+    imgs.forEach((im) => { im.loading = "eager"; });
+    const waitImgs = Promise.all(imgs.map((im) => im.complete ? null : new Promise((r) => { im.addEventListener("load", r, { once: true }); im.addEventListener("error", r, { once: true }); })));
+    const waitFonts = document.fonts && document.fonts.ready ? document.fonts.ready : null;
+    await Promise.race([Promise.all([waitImgs, waitFonts]), new Promise((r) => setTimeout(r, 8000))]);
+    window.print();
+  } finally {
+    printing = false;
+    if (btn) btn.disabled = false;
+  }
 }
 
 function escapeHtml(s) {

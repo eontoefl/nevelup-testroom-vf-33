@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0" />
-  <title>입문서 – 내벨업 테스트룸</title>
+  <title>자료 – 내벨업 테스트룸</title>
 
   <!-- Pretendard -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
 
-  <link rel="stylesheet" href="css/book-v2-viewer.css" />
+  <link rel="stylesheet" href="css/book-v2-viewer.css?v=20261028_voca" />
+  <link rel="stylesheet" href="css/book-view-confirm.css?v=001" />
   <link rel="stylesheet" href="css/book-font-notosanskr.css?v=20261028" />
   <link rel="stylesheet" href="css/book-design-system.css?v=20261028c" />
   <link rel="stylesheet" href="css/book-design-viewer.css" />
@@ -21,9 +22,10 @@
 
   <header class="bookv2-top">
     <button class="bookv2-icon" id="btnBack" title="뒤로"><i class="fa-solid fa-arrow-left"></i></button>
-    <h1 class="bookv2-title" id="bookTitle">입문서</h1>
+    <h1 class="bookv2-title" id="bookTitle">자료</h1>
     <button class="bookv2-icon" id="btnBookmark" title="이 페이지 북마크"><i class="fa-regular fa-bookmark"></i></button>
     <button class="bookv2-icon" id="btnMemo" title="이 페이지 메모"><i class="fa-regular fa-comment-dots"></i><span class="bookv2-memo-dot" id="memoDot"></span></button>
+    <button class="bookv2-icon" id="btnPrint" title="PDF 저장·인쇄" hidden><i class="fa-solid fa-print"></i></button>
     <button class="bookv2-icon" id="btnSidebar" title="북마크 목록"><i class="fa-solid fa-list-ul"></i></button>
     <div class="bookv2-zoom">
       <button class="bookv2-icon sm" id="btnZoomOut" title="축소"><i class="fa-solid fa-minus"></i></button>
@@ -109,7 +111,7 @@
   <div class="bookv2-maint" id="maintOverlay">
     <div class="bookv2-maint-box">
       <div class="bookv2-maint-icon" id="maintIcon">🛠️</div>
-      <h2 id="maintTitle">지금 입문서를 손보고 있어요</h2>
+      <h2 id="maintTitle">지금 이 자료를 손보고 있어요</h2>
       <p id="maintDesc">더 좋은 내용으로 업데이트하는 중이라<br>잠깐 닫아뒀어요.<br><b>조금 이따 다시 들어와 주세요!</b></p>
       <button class="bookv2-maint-btn" id="maintBack">돌아가기</button>
     </div>
@@ -119,7 +121,7 @@
   <div class="bookv2-modal-overlay" id="doneOverlay">
     <div class="bookv2-modal bookv2-done">
       <div class="bookv2-done-icon"><i class="fa-solid fa-circle-check"></i></div>
-      <h3>입문서 완독!</h3>
+      <h3 id="doneTitle">완독!</h3>
       <p class="bookv2-done-desc">끝까지 다 읽으셨어요. 수고하셨습니다! 🎉</p>
       <div class="bookv2-modal-actions">
         <button class="bookv2-btn-confirm" id="doneClose">확인</button>
@@ -135,12 +137,16 @@
 
   <div class="bookv2-loading" id="loading">
     <div class="bookv2-spinner"></div>
-    <p>입문서를 불러오는 중...</p>
+    <p>자료를 불러오는 중...</p>
   </div>
+
+  <!-- 인쇄 메뉴로 찍었는데 인쇄가 꺼진 책이면 이 문구만 나온다 -->
+  <div class="bookv2-print-block" id="printBlock">이 자료는 인쇄할 수 없어요.</div>
 
   <script src="js/supabase-client.js"></script>
   <script src="js/book-page-footer.js"></script>
   <script src="js/book-theme.js?v=20261028f"></script>
-  <script src="js/book-v2-viewer.js?v=20261028e"></script>
+  <script src="js/book-view-confirm.js?v=001"></script>
+  <script src="js/book-v2-viewer.js?v=20261028_voca"></script>
 </body>
 </html>
