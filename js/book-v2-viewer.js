@@ -151,7 +151,11 @@ async function loadBook() {
 function buildToc() {
   V2.toc = [];
   const parser = new DOMParser();
+  const T = window.BookTheme;
+  const jumps = T && T.jumpPages && V2.book ? T.jumpPages(V2.book.id, V2.pages.length) : [];
   V2.pages.forEach((p, idx) => {
+    // 쪽 바로가기 (예: 단어장 10쪽)
+    if (jumps.includes(idx + 1)) V2.toc.push({ title: (idx + 1) + "쪽", level: 1, idx: idx, page: true });
     const doc = parser.parseFromString(p.html || "", "text/html");
     doc.querySelectorAll("h1, h2").forEach((h) => {
       // 차례 쪽의 항목(제목 전체가 링크)은 목차에 넣지 않는다.
