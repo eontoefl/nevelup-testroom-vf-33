@@ -34,7 +34,7 @@ async function init() {
     await loadBook();
   } catch (e) {
     const l = document.getElementById("loading");
-    l.querySelector("p").textContent = "불러오기 실패: " + e.message;
+    l.querySelector("p").textContent = "불러오지 못했어요: " + e.message;
     return;
   }
 
@@ -159,6 +159,10 @@ async function loadProgress() {
   V2.bookmarks = (V2.progress && Array.isArray(V2.progress.bookmarks)) ? V2.progress.bookmarks : [];
 
   // 이어보기: ?p 지정이 없으면 마지막으로 본 페이지로
+  // 단어장을 끝까지 본 뒤(완독 창을 안 닫고 나간 경우 등) 다시 열면 뒷표지가 아니라 1쪽부터 (2026-10-29)
+  if (!V2.hasPParam && V2.progress && V2.progress.is_completed && V2.progress.last_page >= V2.pages.length && isVocaBook()) {
+    V2.progress.last_page = 1;
+  }
   if (!V2.hasPParam && V2.progress && V2.progress.last_page > 1) {
     V2.idx = Math.min(V2.progress.last_page - 1, V2.pages.length - 1);
   }
@@ -492,7 +496,7 @@ function closeMemo() {
 async function saveMemo() {
   const uid = curUid();
   const content = document.getElementById("memoText").value.trim();
-  if (!content) { showToast("메모 내용을 입력해주세요."); return; }
+  if (!content) { showToast("메모 내용을 입력해 주세요."); return; }
 
   const btn = document.getElementById("btnMemoSave");
   btn.disabled = true;
@@ -504,10 +508,10 @@ async function saveMemo() {
     } else {
       res = await supabaseInsert("tr_book_memos", { user_id: V2.user.id, book_id: V2.book.id, page_uid: uid, content: content });
     }
-    if (res) { V2.memos[uid] = res; updateMemoDot(); renderMemoList(); closeMemo(); showToast("메모가 저장되었습니다."); }
-    else showToast("저장 실패. 다시 시도해주세요.");
+    if (res) { V2.memos[uid] = res; updateMemoDot(); renderMemoList(); closeMemo(); showToast("메모를 저장했어요."); }
+    else showToast("저장하지 못했어요. 다시 시도해 주세요.");
   } catch (e) {
-    console.warn(e); showToast("저장 실패. 다시 시도해주세요.");
+    console.warn(e); showToast("저장하지 못했어요. 다시 시도해 주세요.");
   } finally { btn.disabled = false; }
 }
 
@@ -517,7 +521,7 @@ async function deleteMemo() {
   if (!existing) return;
   if (!confirm("이 메모를 삭제할까요?")) return;
   const ok = await supabaseDelete("tr_book_memos", "id=eq." + existing.id);
-  if (ok) { delete V2.memos[uid]; updateMemoDot(); renderMemoList(); closeMemo(); showToast("메모가 삭제되었습니다."); }
+  if (ok) { delete V2.memos[uid]; updateMemoDot(); renderMemoList(); closeMemo(); showToast("메모를 지웠어요."); }
 }
 
 // ===== 진도(이어보기) + 완독 =====
@@ -540,6 +544,13 @@ async function saveProgress() {
     if (isCompleted && !wasCompleted) showDone();
   }
 }
+// 단어장(이온토플 디자인의 voca 책)인지
+function isVocaBook() {
+  const T = window.BookTheme;
+  if (!T || !V2.book || !T.isThemed(V2.book.id)) return false;
+  const metas = V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id);
+  return !!(metas[0] && metas[0].book === "voca");
+}
 // 완독 창. 단어장은 반복해서 외우는 책이라 "다시 1쪽부터" 안내 (단어장 4쪽 공부방법과 같은 말, 2026-10-29)
 function showDone() {
   const T = window.BookTheme;
@@ -547,6 +558,7 @@ function showDone() {
   if (metas && metas[0] && metas[0].book === "voca") {
     document.getElementById("doneTitle").textContent = (V2.book.title || "단어장") + " 1회독 끝!";
     document.querySelector("#doneOverlay .bookv2-done-desc").innerHTML = "이제 1쪽으로 돌아가 다시 외워볼 차례예요.<br>들춰보지 않고 다 쓸 수 있을 때까지 반복해요.";
+    V2.restartOnClose = true;   // [확인] 누르면 1쪽으로
   }
   document.getElementById("doneOverlay").classList.add("open");
 }
@@ -588,7 +600,11 @@ function bindEvents() {
   document.querySelectorAll(".bookv2-tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
 
   // 완독 모달 닫기
-  document.getElementById("doneClose").addEventListener("click", () => document.getElementById("doneOverlay").classList.remove("open"));
+  document.getElementById("doneClose").addEventListener("click", () => {
+    document.getElementById("doneOverlay").classList.remove("open");
+    // 단어장: 완독 창을 닫으면 1쪽부터 다시 (2026-10-29)
+    if (V2.restartOnClose) { V2.restartOnClose = false; V2.idx = 0; render(); }
+  });
 
   // 메모
   document.getElementById("btnMemo").addEventListener("click", () => { isMemoOpen() ? closeMemo() : openMemo(); });
