@@ -1269,10 +1269,3 @@ a.cert-item:active {
 }
 .lib-card-open i { font-size: 11px; }
 .lib-card.is-locked:hover .lib-card-open { background: var(--signature-dark); }
-.lib-card-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin: 0 18px; padding: 11px 0 13px; border-top: 1px solid #efeaf7;
-  font-size: 0.78rem;
-}
-.lib-card-foot-label { color: var(--on-surface-variant); }
-.lib-card-foot-date { color: var(--signature-dark); font-weight: 700; font-variant-numeric: tabular-nums; }

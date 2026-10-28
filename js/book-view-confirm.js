@@ -82,7 +82,7 @@
       '<div class="bvc-box" role="dialog" aria-modal="true" aria-labelledby="bvcTitle">' +
         '<div class="bvc-icon"><i class="fa-solid fa-book-open"></i></div>' +
         '<div class="bvc-title" id="bvcTitle">' + esc(opts.title || "자료") + '</div>' +
-        '<p class="bvc-desc">처음 열어본 날짜는 내 서재에 함께 표시돼요.<br>한 번 열면 다음부터는 바로 열 수 있어요.</p>' +
+        '<p class="bvc-desc">한 번 열면 다음부터는 바로 열 수 있어요.</p>' +
         '<p class="bvc-err" id="bvcErr" hidden>저장하지 못했어요. 잠시 후 다시 눌러주세요.</p>' +
         '<div class="bvc-actions">' +
           '<button type="button" class="bvc-cancel" id="bvcCancel">다음에 볼게요</button>' +
