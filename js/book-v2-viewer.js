@@ -168,7 +168,7 @@ function applyBookTheme(el) {
   const T = window.BookTheme;
   if (!T || !V2.book) return;
   if (!T.isThemed(V2.book.id)) { T.applyPage(el, null); return; }
-  V2.themeMetas = V2.themeMetas || T.classify(V2.pages);
+  V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id);
   const meta = V2.themeMetas[V2.idx];
   T.applyPage(el, meta);
   T.decorateReader(el, meta);
