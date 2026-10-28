@@ -352,8 +352,6 @@ body.bookv2-paperzoom .bookv2-paper { flex-shrink: 0; }
    띄어쓰기 자리에서만 줄을 바꾸고, 한 단어가 칸보다 길면 칸이 그만큼 넓어진다(표 폭 자동). */
 .bookv2-content.book-content.bt-eon.bt-book-voca table { table-layout: auto !important; }
 .bookv2-content.book-content.bt-eon.bt-book-voca table td, .bookv2-content.book-content.bt-eon.bt-book-voca table th { overflow-wrap: normal !important; word-break: keep-all !important; }
-/* 최대로 키웠을 때 긴 단어 때문에 표가 쪽보다 넓어지면 잘리지 않고 옆으로 밀어 볼 수 있게 */
-#content.bt-book-voca { overflow-x: auto; }
 
 /* ===== PDF 저장·인쇄 (2026-10-28) =====
    책 한 쪽 = A4 한 장. 쪽마다 내용이 칸에 다 들어가도록 JS(fitPrintPages)가 배율(zoom)을 정한다.
