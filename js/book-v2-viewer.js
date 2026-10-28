@@ -281,19 +281,31 @@ function go(delta) {
 function applyZoom() {
   V2.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, V2.zoom));
   const content = document.getElementById("content");
-  // 이온토플 디자인 책(단어장·입문서 편집본)은 글자 크기가 px로 고정돼 있어 font-size로는 안 커진다 → 화면 배율(zoom)로 키운다 (2026-10-29)
+  // 이온토플 디자인 책(단어장·입문서 편집본)은 글자 크기가 px로 고정돼 있어 font-size로는 안 커진다
+  // → 종이째(프레임 포함) 배율로 키운다. PDF 뷰어처럼 종이 폭도 같이 커지고, 화면보다 커지면 옆으로 밀어서 본다 (2026-10-29)
   const themed = !!(window.BookTheme && V2.book && window.BookTheme.isThemed(V2.book.id));
+  const paper = document.getElementById("paper");
+  content.style.zoom = "";
   if (themed) {
     content.style.fontSize = ZOOM_BASE + "px";
-    content.style.zoom = (V2.zoom / ZOOM_BASE).toFixed(3);
+    document.body.classList.add("bookv2-paperzoom");
+    // 100%일 때 종이 폭을 재서 그 폭에 배율을 곱한다
+    paper.style.zoom = ""; paper.style.width = ""; paper.style.maxWidth = "";
+    const base = paper.getBoundingClientRect().width;
+    paper.style.width = Math.round(base) + "px";
+    paper.style.maxWidth = "none";
+    paper.style.zoom = (V2.zoom / ZOOM_BASE).toFixed(3);
   } else {
-    content.style.zoom = "";
+    document.body.classList.remove("bookv2-paperzoom");
+    paper.style.zoom = ""; paper.style.width = ""; paper.style.maxWidth = "";
     content.style.fontSize = V2.zoom + "px";
   }
   document.getElementById("zoomLevel").textContent = Math.round((V2.zoom / ZOOM_BASE) * 100) + "%";
   try { localStorage.setItem("bookv2_zoom", String(V2.zoom)); } catch (_) {}
 }
 function zoomBy(d) { V2.zoom += d; applyZoom(); }
+let zoomResizeTimer = null;
+window.addEventListener("resize", () => { clearTimeout(zoomResizeTimer); zoomResizeTimer = setTimeout(() => { if (V2.book) applyZoom(); }, 150); });
 
 // ===== 페이지 이동 모달 =====
 function openJump() {
