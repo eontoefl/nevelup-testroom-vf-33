@@ -280,7 +280,16 @@ function go(delta) {
 // ===== 확대/축소 =====
 function applyZoom() {
   V2.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, V2.zoom));
-  document.getElementById("content").style.fontSize = V2.zoom + "px";
+  const content = document.getElementById("content");
+  // 이온토플 디자인 책(단어장·입문서 편집본)은 글자 크기가 px로 고정돼 있어 font-size로는 안 커진다 → 화면 배율(zoom)로 키운다 (2026-10-29)
+  const themed = !!(window.BookTheme && V2.book && window.BookTheme.isThemed(V2.book.id));
+  if (themed) {
+    content.style.fontSize = ZOOM_BASE + "px";
+    content.style.zoom = (V2.zoom / ZOOM_BASE).toFixed(3);
+  } else {
+    content.style.zoom = "";
+    content.style.fontSize = V2.zoom + "px";
+  }
   document.getElementById("zoomLevel").textContent = Math.round((V2.zoom / ZOOM_BASE) * 100) + "%";
   try { localStorage.setItem("bookv2_zoom", String(V2.zoom)); } catch (_) {}
 }
