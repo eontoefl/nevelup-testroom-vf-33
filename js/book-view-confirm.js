@@ -53,6 +53,12 @@
     } catch (_) { return ""; }
   }
 
+  // "10월 27일" (내 서재 카드용, 날짜만)
+  function formatDate(at) {
+    try { return new Date(at).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }); }
+    catch (_) { return ""; }
+  }
+
   function esc(s) {
     var d = document.createElement("div");
     d.textContent = s == null ? "" : String(s);
@@ -122,5 +128,5 @@
     if (ov) ov.remove();
   }
 
-  global.BookViewConfirm = Object.freeze({ needsConfirm: needsConfirm, getConfirmedMap: getConfirmedMap, getConfirmedAt: getConfirmedAt, saveConfirm: saveConfirm, formatAt: formatAt, open: open, close: close });
+  global.BookViewConfirm = Object.freeze({ needsConfirm: needsConfirm, getConfirmedMap: getConfirmedMap, getConfirmedAt: getConfirmedAt, saveConfirm: saveConfirm, formatAt: formatAt, formatDate: formatDate, open: open, close: close });
 })(typeof window !== "undefined" ? window : globalThis);

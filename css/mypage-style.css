@@ -1257,13 +1257,22 @@ a.cert-item:active {
 .lib-empty { grid-column: 1 / -1; margin: 0; padding: 18px 4px; font-size: 0.9rem; color: var(--on-surface-variant); }
 
 /* 내 서재: 처음 열 때 확인 (2026-10-28) */
-.lib-card.is-locked { box-shadow: 0 0 0 1.5px #ddd3f3 inset, 0 4px 16px rgba(25, 28, 29, 0.05); }
+.lib-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; }
+.lib-card { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+.lib-card-main { display: flex; align-items: center; gap: 14px; padding: 16px 18px; }
+.lib-card-meta { font-variant-numeric: tabular-nums; }
+.lib-card.is-locked { box-shadow: 0 0 0 1.5px #e4dcf5 inset, 0 4px 16px rgba(25, 28, 29, 0.05); }
 .lib-card-open {
   flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 13px; border-radius: 999px; background: var(--signature); color: #fff;
+  padding: 8px 14px; border-radius: 999px; background: var(--signature); color: #fff;
   font-size: 0.8rem; font-weight: 700; white-space: nowrap; transition: background .15s ease;
 }
 .lib-card-open i { font-size: 11px; }
 .lib-card.is-locked:hover .lib-card-open { background: var(--signature-dark); }
-.lib-card.is-opened .lib-card-icon { background: var(--accent-light); color: var(--accent-dark); }
-.lib-card-opened { font-size: 0.76rem; font-weight: 600; color: var(--accent-dark); }
+.lib-card-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 18px; padding: 11px 0 13px; border-top: 1px solid #efeaf7;
+  font-size: 0.78rem;
+}
+.lib-card-foot-label { color: var(--on-surface-variant); }
+.lib-card-foot-date { color: var(--signature-dark); font-weight: 700; font-variant-numeric: tabular-nums; }

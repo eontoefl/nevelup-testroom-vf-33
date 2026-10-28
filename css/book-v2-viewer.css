@@ -362,6 +362,13 @@ body.bookv2-confirming .bookv2-progress { filter: blur(8px); pointer-events: non
   .bookv2-print-body > .bookv2-print-page { zoom: var(--print-zoom, 0.8); }
   .bookv2-print-page { margin: 0 0 6mm; }
   .bookv2-print-page.is-break { break-before: page; page-break-before: always; }
+  /* 표지·뒷표지: 종이 한 장(A4)을 꽉 채움. 이름 줄은 위쪽 오른편에 겹쳐 찍음 */
+  .bookv2-print-cover { position: relative; width: 210mm; height: 297mm; overflow: hidden; break-after: page; page-break-after: always; break-inside: avoid; }
+  .bookv2-print-frame + .bookv2-print-cover, .bookv2-print-cover + .bookv2-print-frame { break-before: page; page-break-before: always; }
+  .bookv2-print-root > :last-child { break-after: auto; page-break-after: auto; }
+  .bookv2-print-cover > .bookv2-content.book-content { width: 100% !important; max-width: none !important; height: 100% !important; min-height: 0 !important; margin: 0 !important; box-sizing: border-box; }
+  .bookv2-print-cover .book-cover { aspect-ratio: auto !important; width: 100% !important; height: 297mm !important; min-height: 0 !important; margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+  .bookv2-print-cover > .bookv2-print-stamp { position: absolute; top: 6mm; right: 14mm; z-index: 2; }
   .bookv2-print-page .bookv2-content.book-content { min-height: 0 !important; padding: 0; margin: 0; }
   .bookv2-print-page tr, .bookv2-print-page img, .bookv2-print-page figure { break-inside: avoid; page-break-inside: avoid; }
   .bookv2-print-page h1, .bookv2-print-page h2, .bookv2-print-page h3 { break-after: avoid; page-break-after: avoid; }

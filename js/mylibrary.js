@@ -12,7 +12,7 @@
  *
  * 처음 열 때 확인(view_confirm, 2026-10-28):
  *   켜진 책을 아직 안 연 학생 → 카드 오른쪽에 "눌러서 열기" 버튼(자물쇠) → 확인 창 → [열어보기]
- *   연 뒤 → 카드에 "10월 27일 오후 3:40에 처음 열었어요" (book-view-confirm.js)
+ *   연 뒤 → 카드 아래 구분선 밑에 "처음 열어본 날  10월 27일" (book-view-confirm.js)
  * ================================================
  */
 (function () {
@@ -67,7 +67,7 @@
         cards.push({
           id: b.id,
           title: b.title || "(제목 없음)",
-          meta: (b.total_pages || 0) + "페이지",
+          meta: (b.total_pages || 0) + "쪽",
           icon: "fa-file-lines",
           kind: "pages",
           url: "book-v2.html?book=" + b.id,
@@ -128,19 +128,22 @@
       var el = document.createElement("button");
       el.className = "lib-card" + (locked ? " is-locked" : "") + (opened ? " is-opened" : "");
       el.type = "button";
+      // 윗줄: 아이콘 | 제목·쪽수 | 열기 버튼(또는 화살표). 처음 연 책은 아래에 구분선 + '처음 열어본 날' 한 줄
       el.innerHTML =
-        '<span class="lib-card-icon"><i class="fa-solid ' + (locked ? "fa-book" : opened ? "fa-book-open" : c.icon) + '"></i></span>' +
-        '<span class="lib-card-body">' +
-          '<span class="lib-card-title"></span>' +
-          '<span class="lib-card-meta"></span>' +
-          (opened ? '<span class="lib-card-opened"></span>' : "") +
+        '<span class="lib-card-main">' +
+          '<span class="lib-card-icon"><i class="fa-solid ' + (locked ? "fa-book" : opened ? "fa-book-open" : c.icon) + '"></i></span>' +
+          '<span class="lib-card-body">' +
+            '<span class="lib-card-title"></span>' +
+            '<span class="lib-card-meta"></span>' +
+          "</span>" +
+          (locked
+            ? '<span class="lib-card-open"><i class="fa-solid fa-lock"></i> 눌러서 열기</span>'
+            : '<span class="lib-card-go"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>') +
         "</span>" +
-        (locked
-          ? '<span class="lib-card-open"><i class="fa-solid fa-lock"></i> 눌러서 열기</span>'
-          : '<span class="lib-card-go"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>');
+        (opened ? '<span class="lib-card-foot"><span class="lib-card-foot-label">처음 열어본 날</span><span class="lib-card-foot-date"></span></span>' : "");
       el.querySelector(".lib-card-title").textContent = c.title;
       el.querySelector(".lib-card-meta").textContent = c.meta;
-      if (opened) el.querySelector(".lib-card-opened").textContent = window.BookViewConfirm.formatAt(c.confirmedAt) + "에 처음 열었어요";
+      if (opened) el.querySelector(".lib-card-foot-date").textContent = window.BookViewConfirm.formatDate(c.confirmedAt);
       el.addEventListener("click", function () {
         if (locked) openWithConfirm(c);
         else window.open(c.url, "_blank");

@@ -666,19 +666,44 @@ function buildPrintRoot() {
   // 인쇄 틀: 표의 머리(thead)·꼬리(tfoot)는 인쇄되는 모든 장에 반복된다.
   //  → 위 여백 + 이름·이메일 줄, 아래 여백을 장마다 직접 넣는다 (인쇄 창의 '여백' 설정과 상관없이 같은 모양)
   const stampText = (V2.user.name || "학생") + " · " + (V2.user.email || "") + " 전용";
-  root.innerHTML =
-    '<table class="bookv2-print-frame"><thead><tr><td><div class="bookv2-print-head"><span class="bookv2-print-stamp"></span></div></td></tr></thead>' +
-    '<tfoot><tr><td><div class="bookv2-print-foot"></div></td></tr></tfoot>' +
-    '<tbody><tr><td class="bookv2-print-body"></td></tr></tbody></table>';
-  root.querySelector(".bookv2-print-stamp").textContent = stampText;
-  const body = root.querySelector(".bookv2-print-body");
+  // 표지·뒷표지(테마 cover)는 틀 밖에서 종이 한 장을 꽉 채우고, 나머지 쪽은 틀(여백+이름 줄) 안에서 이어서 흐른다
+  let body = null;
+  const newFrame = () => {
+    const wrap = document.createElement("div");
+    wrap.innerHTML =
+      '<table class="bookv2-print-frame"><thead><tr><td><div class="bookv2-print-head"><span class="bookv2-print-stamp"></span></div></td></tr></thead>' +
+      '<tfoot><tr><td><div class="bookv2-print-foot"></div></td></tr></tfoot>' +
+      '<tbody><tr><td class="bookv2-print-body"></td></tr></tbody></table>';
+    wrap.querySelector(".bookv2-print-stamp").textContent = stampText;
+    root.appendChild(wrap.firstChild);
+    return root.lastChild.querySelector(".bookv2-print-body");
+  };
   V2.pages.forEach((p, i) => {
+    const isCover = !!(themed && metas[i] && metas[i].kind === "cover");
+    if (isCover) {
+      const cover = document.createElement("section");
+      cover.className = "bookv2-print-cover";
+      const st = document.createElement("span");
+      st.className = "bookv2-print-stamp";
+      st.textContent = stampText;
+      const art = document.createElement("article");
+      art.className = "bookv2-content book-content";
+      art.innerHTML = p.html || "";
+      window.BookPageFooter?.decorateReader(art);
+      T.applyPage(art, metas[i]); T.decorateReader(art, metas[i]);
+      cover.append(art, st);
+      root.appendChild(cover);
+      body = null;   // 표지 뒤 쪽은 새 틀(새 장)에서 시작
+      return;
+    }
+    const startFrame = !body;
+    if (!body) body = newFrame();
     const sheet = document.createElement("section");
     // 새 장에서 시작하는 곳: 표지 다음, 단어 표가 처음 시작하는 쪽, 뒷표지. 나머지는 이어서 흐른다 (빈 장 줄이기)
     // 테마 없는 책은 쪽마다 새 장
     const kind = metas && metas[i] ? metas[i].kind : "body";
     const prevKind = metas && metas[i - 1] ? metas[i - 1].kind : "body";
-    const brk = i > 0 && (!themed || prevKind === "cover" || kind === "cover" || (kind === "body" && prevKind !== "body"));
+    const brk = !startFrame && i > 0 && (!themed || (kind === "body" && prevKind !== "body"));
     sheet.className = "bookv2-print-page" + (brk ? " is-break" : "");
     const art = document.createElement("article");
     art.className = "bookv2-content book-content";
