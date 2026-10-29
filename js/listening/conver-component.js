@@ -1,36 +1,34 @@
 /**
  * conver-component.js
  * 리스닝 - 컨버(Conversation) 컴포넌트
- * 
+ *
  * - 세트당 2문제
- * - 인트로 화면 (이미지 + [듣기 시작] 버튼)
- * - 오디오 시퀀스: 버튼 클릭 → 나레이션 → 대화 오디오
+ * - 인트로 화면 (이미지) → 화면 표시 약 2초 후 자동 재생: 나레이션 → 대화 오디오 (실전 동일)
  * - 문제 화면 (작은 이미지 + 질문 2개)
  * - 답안 채점 및 결과 반환
- * 
- * 의존성: conver-loader.js (loadConverData)
+ *
+ * 의존성: conver-loader.js (loadConverData), 오디오는 컨트롤러의 공용 서비스(config.audio) 사용
  */
 
 class ConverComponent {
   constructor(setNumber, config = {}) {
     console.log(`[ConverComponent] 생성 - setNumber: ${setNumber}`);
-    
+
     this._destroyed = false;
     this._questionTimedOut = false;
     this.setNumber = setNumber;
     this.currentQuestion = 0;
     this.answers = {};
-    
+
     this.setData = null;
-    this.audioPlayer = null;
-    this.isAudioPlaying = false;
     this.showingIntro = true;
     this.currentImage = null;
-    
+
     // 직전 이미지 추적 (static 레벨)
     if (!ConverComponent._lastImage) ConverComponent._lastImage = null;
-    
-    // 콜백 설정
+
+    // 콜백/서비스 설정
+    this.audio = config.audio || null;   // 리스닝 공용 오디오 서비스 (모듈당 1개)
     this.onComplete = config.onComplete || null;
     this.onError = config.onError || null;
     this.onTimerStart = config.onTimerStart || null;
@@ -64,7 +62,6 @@ class ConverComponent {
     
     if (!allData || !allData.sets || allData.sets.length === 0) {
       console.error('[ConverComponent] 데이터 로드 실패');
-      alert('컨버 데이터를 불러올 수 없습니다.');
       return false;
     }
     
@@ -145,41 +142,32 @@ class ConverComponent {
            onload="console.log('✅ 컨버 이미지 로드 성공:', this.src);">
     `;
     
-    // [듣기 시작] 버튼 표시
-    this._showPlayButton();
+    // 화면 표시 약 2초 후 자동 재생 (실전 동일, 예고 표시 없음)
+    // 대기하는 동안 나레이션+대화 오디오를 미리 받아 정확히 2초에 재생되게 함
+    this._audioFailCount = 0;
+    if (this.audio) {
+      this.audio.schedule(() => this._startAudioSequence(), [this.NARRATION_URL, this.setData.audioUrl]);
+    }
   }
 
   /**
-   * [듣기 시작] 버튼 표시
+   * 현재 오디오 대기/재생 단계인지 (컨트롤러가 Next/Submit 숨김 판단에 사용)
    */
-  _showPlayButton() {
-    const introScreen = document.getElementById('converIntroScreen');
-    const imageContainer = document.getElementById('converIntroImage');
-    if (!introScreen || !imageContainer) return;
-    
-    const existingBtn = document.getElementById('converListenBtn');
-    if (existingBtn) existingBtn.remove();
-    
-    const btn = document.createElement('button');
-    btn.id = 'converListenBtn';
-    btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:10px;"><path d="M3 9v6h4l5 5V4L7 9H3z" fill="white"/><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="white"/><path d="M19 12c0-3.17-1.82-5.9-4.5-7.22v2.16A5.98 5.98 0 0 1 18 12c0 2.48-1.35 4.64-3.5 5.06v2.16C17.18 17.9 19 15.17 19 12z" fill="white" opacity="0.7"/></svg>듣기 시작';
-    btn.onclick = () => this._onPlayButtonClick();
-    introScreen.insertBefore(btn, imageContainer);
+  isAudioPhase() {
+    return this.showingIntro === true;
   }
-  
+
   /**
-   * [듣기 시작] 버튼 클릭 → 나레이션 → 대화 오디오 자동 연결
+   * 오디오 시퀀스 시작: 나레이션 → 대화 오디오 → 문제 화면 (자동재생 타이머에서 호출)
    */
-  _onPlayButtonClick() {
-    console.log('[ConverComponent] 🔊 [듣기 시작] 버튼 클릭');
-    
-    const btn = document.getElementById('converListenBtn');
-    if (btn) btn.remove();
-    
+  _startAudioSequence() {
+    if (this._destroyed) return;
+    console.log('[ConverComponent] 🔊 오디오 시퀀스 자동 시작');
+
     this.playNarration(() => {
       if (this._destroyed) return;
       console.log('[ConverComponent] 나레이션 완료 → 대화 오디오 바로 재생');
-      this.playMainAudio(this.setData.audioUrl, () => {
+      this.playMainAudio(() => {
         if (this._destroyed) return;
         console.log('[ConverComponent] 대화 오디오 완료 → 문제 화면 전환');
         this.showQuestions();
@@ -188,113 +176,65 @@ class ConverComponent {
   }
 
   /**
-   * 나레이션 재생
+   * 나레이션 재생 (실패 시에도 다음 단계로 진행 — 나레이션은 필수 아님)
    */
   playNarration(onEnded) {
     console.log('[ConverComponent] 나레이션 재생');
-    
-    if (this.audioPlayer) {
-      this.audioPlayer.pause();
-      this.audioPlayer = null;
-    }
-    
-    this.audioPlayer = new Audio(this.NARRATION_URL);
-    this.isAudioPlaying = true;
-    let _callbackFired = false;
-    
-    const fireCallback = (source) => {
-      if (_callbackFired) { console.log(`[ConverComponent] 나레이션 콜백 중복 차단 (${source})`); return; }
-      _callbackFired = true;
-      this.isAudioPlaying = false;
-      if (!this._destroyed && onEnded) onEnded();
-    };
-    
-    this.audioPlayer.addEventListener('ended', () => {
+
+    this.audio.play(this.NARRATION_URL, () => {
       console.log('[ConverComponent] 나레이션 재생 완료');
-      fireCallback('ended');
-    });
-    
-    this.audioPlayer.addEventListener('error', (e) => {
-      console.error('[ConverComponent] 나레이션 재생 실패:', e);
-      fireCallback('error');
-    });
-    
-    this.audioPlayer.play().catch(err => {
-      console.error('[ConverComponent] 나레이션 play() 실패:', err);
-      fireCallback('catch');
+      if (!this._destroyed && onEnded) onEnded();
+    }, () => {
+      console.warn('[ConverComponent] 나레이션 재생 실패 — 대화 오디오로 진행');
+      if (!this._destroyed && onEnded) onEnded();
     });
   }
 
   /**
    * 대화 오디오 재생 (실패 시 다시 재생 UI)
    */
-  playMainAudio(audioUrl, onEnded) {
+  playMainAudio(onEnded) {
     console.log('[ConverComponent] 대화 오디오 재생');
-    
-    if (!audioUrl || audioUrl === 'PLACEHOLDER') {
+
+    const audioUrl = this.setData.audioUrl;
+    if (!isValidListeningAudioUrl(audioUrl)) {
       console.warn('[ConverComponent] 오디오 URL 없음 → 바로 문제 화면');
       this._showNoAudioNotice();
       if (!this._destroyed && onEnded) onEnded();
       return;
     }
-    
-    if (this.audioPlayer) {
-      this.audioPlayer.pause();
-      this.audioPlayer = null;
-    }
-    
-    this.audioPlayer = new Audio(audioUrl);
-    this.isAudioPlaying = true;
-    let _callbackFired = false;
-    
-    const fireCallback = (source) => {
-      if (_callbackFired) { console.log(`[ConverComponent] 대화오디오 콜백 중복 차단 (${source})`); return; }
-      _callbackFired = true;
-      this.isAudioPlaying = false;
-      if (!this._destroyed && onEnded) onEnded();
-    };
-    
-    this.audioPlayer.addEventListener('ended', () => {
+
+    this.audio.play(audioUrl, () => {
       console.log('[ConverComponent] 대화 오디오 재생 완료');
-      fireCallback('ended');
-    });
-    
-    this.audioPlayer.addEventListener('error', (e) => {
-      console.error('[ConverComponent] 대화 오디오 재생 실패:', e);
-      this.isAudioPlaying = false;
-      this._showAudioRetryUI(audioUrl, onEnded);
-    });
-    
-    this.audioPlayer.play().catch(err => {
-      console.error('[ConverComponent] 대화 오디오 play() 실패:', err);
-      this.isAudioPlaying = false;
-      this._showAudioRetryUI(audioUrl, onEnded);
+      if (!this._destroyed && onEnded) onEnded();
+    }, (err) => {
+      if (this._destroyed) return;
+      console.error('[ConverComponent] 대화 오디오 재생 실패:', err && err.message);
+      this._audioFailCount++;
+      this._showAudioRetryUI(onEnded);
     });
   }
-  
+
   /**
-   * 오디오 재생 실패 시 [다시 재생] UI
+   * 오디오 재생 실패 → 공용 실패 UI (다시 시도 / 2회 실패부터 건너뛰기)
    */
-  _showAudioRetryUI(audioUrl, onEnded) {
-    if (document.getElementById('converAudioRetryUI')) return;
-    
-    const container = document.getElementById('converIntroImage');
-    if (!container) return;
-    
-    const retryDiv = document.createElement('div');
-    retryDiv.id = 'converAudioRetryUI';
-    retryDiv.style.cssText = `text-align: center; padding: 16px; margin-top: 12px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 8px;`;
-    retryDiv.innerHTML = `
-      <p style="color: #dc2626; font-weight: 600; margin: 0 0 12px;">오디오를 불러오지 못했습니다</p>
-      <button id="converRetryBtn" style="padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">🔄 다시 재생</button>
-    `;
-    container.appendChild(retryDiv);
-    
-    document.getElementById('converRetryBtn').onclick = () => {
-      retryDiv.remove();
-      console.log('[ConverComponent] 🔄 대화 오디오 다시 재생 시도');
-      this.playMainAudio(audioUrl, onEnded);
-    };
+  _showAudioRetryUI(onEnded) {
+    showListeningFailureUI({
+      containerId: 'converIntroImage',
+      uiId: 'converAudioRetryUI',
+      message: '오디오를 불러오지 못했습니다',
+      failCount: this._audioFailCount,
+      onRetry: () => {
+        if (this._destroyed) return;
+        console.log('[ConverComponent] 🔄 대화 오디오 다시 재생 시도');
+        this.playMainAudio(onEnded);
+      },
+      onSkip: () => {
+        if (this._destroyed) return;
+        console.log('[ConverComponent] ⏭️ 오디오 건너뛰고 문제 화면으로');
+        if (onEnded) onEnded();
+      }
+    });
   }
   
   /**
@@ -327,8 +267,6 @@ class ConverComponent {
     document.getElementById('converTimer').style.display = 'inline-block';
     const converTimerWrap = document.getElementById('converTimerWrap');
     if (converTimerWrap) converTimerWrap.style.display = '';
-    const converNextBtn = document.getElementById('converNextBtn');
-    if (converNextBtn) converNextBtn.style.display = '';
     
     // 첫 번째 문제 로드
     this.loadQuestion(0);
@@ -444,19 +382,11 @@ class ConverComponent {
     console.log('[ConverComponent] ⏰ 시간 초과 - 보기 선택 차단');
     this._questionTimedOut = true;
     
+    // 보기 잠금만 수행 — 이동은 컨트롤러가 스피너와 함께 자동 처리 (실전 동일)
     document.querySelectorAll('#converQuestionContent .response-option').forEach(el => {
       el.style.pointerEvents = 'none';
       el.style.opacity = '0.5';
     });
-    
-    const container = document.getElementById('converQuestionContent');
-    if (container) {
-      const notice = document.createElement('div');
-      notice.id = 'converTimeoutNotice';
-      notice.style.cssText = `text-align: center; padding: 12px; margin-top: 12px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; color: #92400e; font-weight: 600;`;
-      notice.textContent = '⏰ 시간이 초과되었습니다. Next 버튼을 눌러주세요.';
-      container.appendChild(notice);
-    }
   }
 
   /**
@@ -475,12 +405,9 @@ class ConverComponent {
    */
   submit() {
     console.log('[ConverComponent] 제출 시작');
-    
-    if (this.audioPlayer) {
-      this.audioPlayer.pause();
-      this.audioPlayer = null;
-    }
-    this.isAudioPlaying = false;
+
+    // 오디오/대기 타이머 정지
+    if (this.audio) this.audio.stopAll();
     
     const results = {
       setId: this.setData.setId,
@@ -524,22 +451,15 @@ class ConverComponent {
    */
   cleanup() {
     console.log('[ConverComponent] Cleanup 시작');
-    
+
     this._destroyed = true;
-    
-    if (this.audioPlayer) {
-      this.audioPlayer.onended = null;
-      this.audioPlayer.onerror = null;
-      this.audioPlayer.pause();
-      this.audioPlayer = null;
-    }
-    
-    this.isAudioPlaying = false;
+    if (this.audio) this.audio.stopAll();
+
     this._questionTimedOut = false;
     this.showingIntro = true;
     this.currentImage = null;
     this.answers = {};
-    
+
     console.log('[ConverComponent] Cleanup 완료');
   }
 }

@@ -16,6 +16,74 @@ function escapeRegex_listening(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * 리스닝 오디오 URL 유효성 판정 (4개 유형 공통 기준)
+ * - 빈 값 / 'PLACEHOLDER' / 더미 드라이브 ID 포함 → 오디오 없음으로 취급
+ */
+function isValidListeningAudioUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    var trimmed = url.trim();
+    if (trimmed === '' || trimmed === 'PLACEHOLDER') return false;
+    if (trimmed.includes('1ABC123DEF456')) return false;
+    return true;
+}
+window.isValidListeningAudioUrl = isValidListeningAudioUrl;
+
+// ============================================
+// 공용 실패 UI — 리스닝 모듈 안의 모든 실패는 이 하나의 문법을 쓴다
+// (오디오 재생 실패 / 세트 데이터 로드 실패 공통)
+//
+// 규칙:
+//   - 실패 1회차: [다시 시도]만 표시
+//   - 재시도도 실패(2회차)부터: [건너뛰고 계속하기] 추가 표시
+//   - 실패 횟수는 호출 측이 오디오/세트 1개 단위로 관리 (성공·다음 문제 이동 시 리셋)
+// ============================================
+
+/**
+ * 실패 UI 렌더링
+ * @param {object} opts
+ *   - containerId: UI를 붙일 컨테이너 요소 id
+ *   - uiId:        이 UI의 고유 id (중복 방지 + 제거용)
+ *   - message:     실패 안내 문구
+ *   - failCount:   현재까지의 실패 횟수 (2 이상이면 건너뛰기 노출)
+ *   - onRetry:     [다시 시도] 클릭 콜백
+ *   - onSkip:      [건너뛰고 계속하기] 클릭 콜백
+ */
+function showListeningFailureUI(opts) {
+    var container = document.getElementById(opts.containerId);
+    if (!container) return;
+
+    var existing = document.getElementById(opts.uiId);
+    if (existing) existing.remove();
+
+    var div = document.createElement('div');
+    div.id = opts.uiId;
+    div.className = 'listening-failure-ui';
+
+    var html =
+        '<p class="lf-msg"><i class="fas fa-exclamation-circle"></i> ' + opts.message + '</p>' +
+        '<button type="button" class="lf-retry-btn"><i class="fas fa-redo"></i>다시 시도</button>';
+    if (opts.failCount >= 2 && typeof opts.onSkip === 'function') {
+        html += '<button type="button" class="lf-skip-btn">건너뛰고 계속하기</button>';
+    }
+    div.innerHTML = html;
+
+    div.querySelector('.lf-retry-btn').onclick = function() {
+        div.remove();
+        opts.onRetry();
+    };
+    var skipBtn = div.querySelector('.lf-skip-btn');
+    if (skipBtn) {
+        skipBtn.onclick = function() {
+            div.remove();
+            opts.onSkip();
+        };
+    }
+
+    container.appendChild(div);
+}
+window.showListeningFailureUI = showListeningFailureUI;
+
 // ============================================
 // 재풀이 (Retry) 공용 렌더링 — 리스닝 전용
 // options: ['텍스트', '텍스트', ...] 구조

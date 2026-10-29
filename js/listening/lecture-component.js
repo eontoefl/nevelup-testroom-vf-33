@@ -6,29 +6,28 @@
  * - 문제 개수: 4개 (공지사항 2개)
  * - 타이머: 30초 (공지사항 20초)
  * - lectureTitle 필드 추가 (인트로 상단 표시)
- * 
+ *
+ * 오디오: 화면 표시 약 2초 후 자동 재생 (실전 동일), 컨트롤러의 공용 서비스(config.audio) 사용
  * 의존성: lecture-loader.js (loadLectureData)
  */
 
 class LectureComponent {
     constructor(setNumber, config = {}) {
         console.log(`[LectureComponent] 생성 - setNumber: ${setNumber}`);
-        
+
         this.setNumber = setNumber;
+        this.audio = config.audio || null;   // 리스닝 공용 오디오 서비스 (모듈당 1개)
         this.onComplete = config.onComplete || null;
         this.onError = config.onError || null;
         this.onTimerStart = config.onTimerStart || null;
-        
+
         // 내부 상태
         this.currentQuestion = 0;
         this.answers = {};
         this.showingIntro = true;
         this.setData = null;
         this.currentImage = null;
-        
-        // 오디오 플레이어
-        this.audioPlayer = null;
-        this.isAudioPlaying = false;
+
         this._destroyed = false;
         this._questionTimedOut = false;
         
@@ -75,10 +74,12 @@ class LectureComponent {
             
             // 3. 인트로 화면 표시
             this.showIntro();
-            
+
+            return true;
+
         } catch (error) {
             console.error('[LectureComponent] 초기화 실패:', error);
-            alert('렉쳐 듣기 데이터를 불러오는데 실패했습니다.');
+            return false;
         }
     }
     
@@ -150,56 +151,28 @@ class LectureComponent {
         const lecSubmitBtn = document.getElementById('lectureSubmitBtn');
         if (lecSubmitBtn) lecSubmitBtn.style.display = 'none';
         
-        // [듣기 시작] 버튼 표시
-        this._showPlayButton();
+        // 화면 표시 약 2초 후 자동 재생 (실전 동일, 예고 표시 없음)
+        // 대기하는 동안 나레이션+렉처 오디오를 미리 받아 정확히 2초에 재생되게 함
+        this._audioFailCount = 0;
+        if (this.audio) {
+            this.audio.schedule(() => this.playAudioSequence(), [this.setData.narrationUrl, this.setData.audioUrl]);
+        }
     }
-    
+
     /**
-     * [듣기 시작] 버튼 표시
+     * 현재 오디오 대기/재생 단계인지 (컨트롤러가 Next/Submit 숨김 판단에 사용)
      */
-    _showPlayButton() {
-        const introScreen = document.getElementById('lectureIntroScreen');
-        const introImage = document.getElementById('lectureIntroImage');
-        if (!introScreen || !introImage) return;
-
-        const existing = introScreen.querySelector('.listen-start-btn');
-        if (existing) existing.remove();
-
-        const btn = document.createElement('button');
-        btn.className = 'listen-start-btn';
-        btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:10px;"><path d="M3 9v6h4l5 5V4L7 9H3z" fill="white"/><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="white"/><path d="M19 12c0-3.17-1.82-5.9-4.5-7.22v2.16A5.98 5.98 0 0 1 18 12c0 2.48-1.35 4.64-3.5 5.06v2.16C17.18 17.9 19 15.17 19 12z" fill="white" opacity="0.7"/></svg>듣기 시작';
-        btn.onclick = () => this._onPlayButtonClick();
-
-        introScreen.insertBefore(btn, introImage);
+    isAudioPhase() {
+        return this.showingIntro === true;
     }
 
     /**
-     * 듣기 시작 버튼 클릭
-     */
-    _onPlayButtonClick() {
-        const btn = document.querySelector('#lectureIntroScreen .listen-start-btn');
-        if (btn) btn.remove();
-        console.log('[LectureComponent] 듣기 시작 버튼 클릭됨');
-        this.playAudioSequence();
-    }
-
-    /**
-     * 오디오 시퀀스 재생
+     * 오디오 시퀀스 재생: 나레이션 → 렉처 오디오 → 문제 화면 (자동재생 타이머에서 호출)
      */
     playAudioSequence() {
-        console.log('[LectureComponent] 오디오 시퀀스 시작');
-        
-        const narrationUrl = this.setData.narrationUrl;
-        
-        if (!narrationUrl || narrationUrl.trim() === '') {
-            console.log('[LectureComponent] 나레이션 없음, 렉처 오디오만 재생');
-            this.playMainAudio(() => {
-                if (this._destroyed) return;
-                this.showQuestions();
-            });
-            return;
-        }
-        
+        if (this._destroyed) return;
+        console.log('[LectureComponent] 🔊 오디오 시퀀스 자동 시작');
+
         this.playNarration(() => {
             if (this._destroyed) return;
             this.playMainAudio(() => {
@@ -208,94 +181,69 @@ class LectureComponent {
             });
         });
     }
-    
+
     /**
-     * 나레이션 재생
+     * 나레이션 재생 (없거나 실패해도 다음 단계로 진행 — 나레이션은 필수 아님)
      */
     playNarration(onEnded) {
         const narrationUrl = this.setData.narrationUrl;
-        
-        if (!narrationUrl) {
+
+        if (!isValidListeningAudioUrl(narrationUrl)) {
+            console.log('[LectureComponent] 나레이션 없음, 렉처 오디오만 재생');
             if (onEnded) onEnded();
             return;
         }
-        
-        this.audioPlayer = new Audio(narrationUrl);
-        let _callbackFired = false;
-        
-        const fireCallback = (source) => {
-            if (_callbackFired) return;
-            _callbackFired = true;
-            if (this._destroyed) return;
-            if (onEnded) onEnded();
-        };
-        
-        this.audioPlayer.onended = () => { fireCallback('ended'); };
-        this.audioPlayer.onerror = (e) => { fireCallback('error'); };
-        this.audioPlayer.play().catch(err => { fireCallback('catch'); });
-    }
-    
-    /**
-     * 렉처 오디오 재생
-     */
-    playMainAudio(onEnded) {
-        const audioUrl = this.setData.audioUrl;
-        
-        if (!audioUrl || audioUrl.trim() === '') {
-            this._showNoAudioNotice();
-            if (onEnded) onEnded();
-            return;
-        }
-        
-        if (this.audioPlayer) {
-            this.audioPlayer.onended = null;
-            this.audioPlayer.onerror = null;
-            this.audioPlayer.pause();
-        }
-        
-        this.audioPlayer = new Audio(audioUrl);
-        this.isAudioPlaying = true;
-        let _callbackFired = false;
-        
-        const fireCallback = (source) => {
-            if (_callbackFired) return;
-            _callbackFired = true;
-            this.isAudioPlaying = false;
-            if (this._destroyed) return;
-            if (onEnded) onEnded();
-        };
-        
-        this.audioPlayer.onended = () => { fireCallback('ended'); };
-        this.audioPlayer.onerror = (e) => {
-            this.isAudioPlaying = false;
-            this._showAudioRetryUI(audioUrl, onEnded);
-        };
-        this.audioPlayer.play().catch(err => {
-            this.isAudioPlaying = false;
-            this._showAudioRetryUI(audioUrl, onEnded);
+
+        this.audio.play(narrationUrl, () => {
+            if (!this._destroyed && onEnded) onEnded();
+        }, () => {
+            console.warn('[LectureComponent] 나레이션 재생 실패 — 렉처 오디오로 진행');
+            if (!this._destroyed && onEnded) onEnded();
         });
     }
 
     /**
-     * 오디오 재시도 UI
+     * 렉처 오디오 재생 (실패 시 다시 재생 UI)
      */
-    _showAudioRetryUI(audioUrl, onEnded) {
-        const introImage = document.getElementById('lectureIntroImage');
-        if (!introImage) return;
-        if (introImage.querySelector('.audio-retry-panel')) return;
+    playMainAudio(onEnded) {
+        const audioUrl = this.setData.audioUrl;
 
-        const panel = document.createElement('div');
-        panel.className = 'audio-retry-panel';
-        panel.style.cssText = 'margin-top:16px;padding:16px;background:#FFF3F3;border:2px solid #E74C3C;border-radius:12px;text-align:center;';
-        panel.innerHTML = `
-            <p style="color:#E74C3C;font-weight:600;margin-bottom:12px;">⚠️ 오디오 로드에 실패했습니다</p>
-            <button style="padding:10px 28px;font-size:16px;font-weight:600;color:#fff;background:#E74C3C;border:none;border-radius:8px;cursor:pointer;">🔄 다시 재생</button>
-        `;
-        panel.querySelector('button').onclick = () => {
-            panel.remove();
-            this.playMainAudio(onEnded);
-        };
-        introImage.appendChild(panel);
+        if (!isValidListeningAudioUrl(audioUrl)) {
+            this._showNoAudioNotice();
+            if (!this._destroyed && onEnded) onEnded();
+            return;
+        }
+
+        this.audio.play(audioUrl, () => {
+            if (!this._destroyed && onEnded) onEnded();
+        }, (err) => {
+            if (this._destroyed) return;
+            console.error('[LectureComponent] 렉처 오디오 재생 실패:', err && err.message);
+            this._audioFailCount++;
+            this._showAudioRetryUI(onEnded);
+        });
+    }
+
+    /**
+     * 오디오 재생 실패 → 공용 실패 UI (다시 시도 / 2회 실패부터 건너뛰기)
+     */
+    _showAudioRetryUI(onEnded) {
+        showListeningFailureUI({
+            containerId: 'lectureIntroImage',
+            uiId: 'lectureAudioRetryUI',
+            message: '오디오를 불러오지 못했습니다',
+            failCount: this._audioFailCount,
+            onRetry: () => {
+                if (this._destroyed) return;
+                console.log('[LectureComponent] 🔄 렉처 오디오 다시 재생 시도');
+                this.playMainAudio(onEnded);
+            },
+            onSkip: () => {
+                if (this._destroyed) return;
+                console.log('[LectureComponent] ⏭️ 오디오 건너뛰고 문제 화면으로');
+                if (onEnded) onEnded();
+            }
+        });
     }
 
     /**
@@ -327,9 +275,6 @@ class LectureComponent {
         document.getElementById('lectureTimer').style.display = 'inline-block';
         const lecTimerWrap = document.getElementById('lectureTimerWrap');
         if (lecTimerWrap) lecTimerWrap.style.display = '';
-        const lecNextBtn = document.getElementById('lectureNextBtn');
-        if (lecNextBtn) lecNextBtn.style.display = '';
-        
         // 첫 번째 문제 로드
         this.loadQuestion(0);
         
@@ -391,20 +336,12 @@ class LectureComponent {
         this._questionTimedOut = true;
         console.log('[LectureComponent] ⏰ 시간 초과 - 보기 차단');
 
+        // 보기 잠금만 수행 — 이동은 컨트롤러가 스피너와 함께 자동 처리 (실전 동일)
         const options = document.querySelectorAll('#lectureQuestionContent .response-option');
         options.forEach(opt => {
             opt.style.pointerEvents = 'none';
             opt.style.opacity = '0.5';
         });
-
-        const container = document.getElementById('lectureQuestionContent');
-        if (container && !container.querySelector('.timeout-notice')) {
-            const notice = document.createElement('div');
-            notice.className = 'timeout-notice';
-            notice.style.cssText = 'margin-top:16px;padding:14px 20px;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border:2px solid #FF9800;border-radius:12px;text-align:center;font-weight:700;color:#E65100;font-size:16px;';
-            notice.textContent = '⏰ 시간이 초과되었습니다. Next 버튼을 눌러주세요.';
-            container.appendChild(notice);
-        }
     }
     
     /**
@@ -452,7 +389,10 @@ class LectureComponent {
      */
     submit() {
         console.log('[LectureComponent] 제출 시작');
-        
+
+        // 오디오/대기 타이머 정지
+        if (this.audio) this.audio.stopAll();
+
         const results = [];
         let totalCorrect = 0;
         let totalIncorrect = 0;
@@ -508,22 +448,15 @@ class LectureComponent {
      */
     cleanup() {
         console.log('[LectureComponent] Cleanup 시작');
-        
+
         this._destroyed = true;
-        
-        if (this.audioPlayer) {
-            this.audioPlayer.onended = null;
-            this.audioPlayer.onerror = null;
-            this.audioPlayer.pause();
-            this.audioPlayer = null;
-        }
-        
-        this.isAudioPlaying = false;
+        if (this.audio) this.audio.stopAll();
+
         this._questionTimedOut = false;
         this.showingIntro = true;
         this.currentImage = null;
         this.answers = {};
-        
+
         console.log('[LectureComponent] Cleanup 완료');
     }
 }

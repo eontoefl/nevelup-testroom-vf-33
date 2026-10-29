@@ -203,50 +203,195 @@ body {
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
 
-/* 듣기 시작 버튼 (Response, Conver, Announcement, Lecture) */
-#responseListenBtn,
-#converListenBtn,
-#announcementListenBtn,
-.listen-start-btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 16px 0 !important;
-    padding: 12px 32px !important;
-    background: linear-gradient(135deg, #9480c5 0%, #7b68b0 100%) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 50px !important;
-    font-family: 'Pretendard Variable', Pretendard, sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.3px !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.35) !important;
-    transform: none !important;
-}
-
-/* 버튼 부모 컨테이너 중앙정렬 */
+/* 버튼 부모 컨테이너 중앙정렬 (재시도 UI 등) */
 #responsePersonImage {
     text-align: center;
 }
 
-#responseListenBtn:hover,
-#converListenBtn:hover,
-#announcementListenBtn:hover,
-.listen-start-btn:hover {
-    background: linear-gradient(135deg, #7b68b0 0%, #6a58a0 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 24px rgba(148, 128, 197, 0.5) !important;
+/* ── 리스닝 사운드 체크 화면 ──
+   DESIGN.md 문법: 무테두리 톤 레이어링 + 시그니처 그라데이션 CTA + 소프트 앰비언트 섀도우 */
+.sound-check-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 24px;
 }
 
-#responseListenBtn:active,
-#converListenBtn:active,
-#announcementListenBtn:active,
-.listen-start-btn:active {
-    transform: translateY(0) !important;
-    box-shadow: 0 2px 8px rgba(148, 128, 197, 0.3) !important;
+.sound-check-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(25, 28, 29, 0.06);
+    padding: 44px 40px 40px;
+    max-width: 560px;
+    width: 100%;
+    text-align: center;
+}
+
+.sound-check-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #f6f4fb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.sound-check-icon i {
+    font-size: 30px;
+    color: #9480c5;
+}
+
+.sound-check-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #191c1d;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+}
+
+.sound-check-desc {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #3e484f;
+    margin-bottom: 18px;
+}
+
+.sound-check-info {
+    background: #f6f4fb;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #3e484f;
+}
+.sound-check-info b {
+    color: #7c6bb0;
+    font-weight: 800;
+}
+
+.sound-check-status {
+    min-height: 20px;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 22px;
+}
+.sound-check-status.is-error {
+    color: #ba1a1a;
+}
+
+.sound-check-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.sound-check-btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.sound-check-btn-listen {
+    background: #f6f4fb;
+    color: #7c6bb0;
+}
+.sound-check-btn-listen i { margin-right: 7px; }
+.sound-check-btn-listen:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(148, 128, 197, 0.18);
+}
+.sound-check-btn-listen:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.sound-check-btn-start {
+    background: linear-gradient(135deg, #9480c5, #b49fe0);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(148, 128, 197, 0.28);
+}
+.sound-check-btn-start:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(148, 128, 197, 0.36);
+}
+.sound-check-btn-start:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 전이 중 잠긴 Next/Submit — 눌리지 않는 상태를 눈에 보이게 */
+.test-header-right .btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* ── 리스닝 공용 실패 UI (오디오 재생 실패 / 세트 로드 실패 공통) ──
+   DESIGN.md 문법: 무테두리 톤 박스 + error 색 안내 + 그라데이션 재시도 + 고스트 건너뛰기 */
+.listening-failure-ui {
+    background: #fbf1f0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 16px auto 0;
+    max-width: 420px;
+    text-align: center;
+}
+.listening-failure-ui .lf-msg {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ba1a1a;
+    margin: 0 0 14px;
+    line-height: 1.6;
+}
+.listening-failure-ui .lf-msg i {
+    margin-right: 5px;
+}
+.listening-failure-ui .lf-retry-btn {
+    padding: 11px 26px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #9480c5, #b49fe0);
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(148, 128, 197, 0.25);
+    transition: transform 0.12s ease, box-shadow 0.18s ease;
+}
+.listening-failure-ui .lf-retry-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(148, 128, 197, 0.34);
+}
+.listening-failure-ui .lf-retry-btn i {
+    margin-right: 7px;
+}
+.listening-failure-ui .lf-skip-btn {
+    display: block;
+    margin: 12px auto 0;
+    padding: 6px 12px;
+    border: none;
+    background: none;
+    color: #6b7280;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.listening-failure-ui .lf-skip-btn:hover {
+    color: #3e484f;
 }
 
 .btn-success {

@@ -55,7 +55,7 @@
     <!-- Pretendard Font -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
     <!-- CACHE BUSTER: 20250125-1355 -->
-    <link rel="stylesheet" href="css/style.css?v=110_notice_gap">
+    <link rel="stylesheet" href="css/style.css?v=112_failureui">
     
     <link rel="stylesheet" href="css/result-screen.css?v=003_scoped">
 <link rel="stylesheet" href="css/reading-result.css?v=002">
@@ -2106,6 +2106,42 @@
         </div>
     </div>
 
+    <!-- Listening - 사운드 체크 (모듈 진입 직후: 음량 확인 + 오디오 잠금 해제) -->
+    <div id="listeningSoundCheckScreen" class="screen">
+        <div class="test-header">
+            <button class="btn-back" onclick="backToTaskDashboard()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="test-title">
+                <span><i class="fas fa-headphones"></i> 리스닝</span>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div class="sound-check-wrap">
+                <div class="sound-check-card">
+                    <div class="sound-check-icon"><i class="fas fa-headphones"></i></div>
+                    <h2 class="sound-check-title">사운드 체크</h2>
+                    <p class="sound-check-desc">
+                        아래 버튼을 눌러 소리가 잘 들리는지 확인하고,<br>편안한 음량으로 조절해 주세요. 여러 번 들어봐도 괜찮아요.
+                    </p>
+                    <p class="sound-check-info">
+                        실제 시험과 동일하게, 각 문제 화면이 나타나면<br><b>약 2초 후 음성이 자동으로 재생</b>됩니다. 오디오는 <b>한 번만</b> 들려드려요.
+                    </p>
+                    <p id="listeningSoundCheckStatus" class="sound-check-status">&nbsp;</p>
+                    <div class="sound-check-actions">
+                        <button id="listeningSoundPlayBtn" class="sound-check-btn sound-check-btn-listen" onclick="_onListeningSoundCheckPlay()">
+                            <i class="fas fa-volume-up"></i>소리 들어보기
+                        </button>
+                        <button id="listeningSoundStartBtn" class="sound-check-btn sound-check-btn-start" disabled onclick="_onListeningSoundCheckStart()">
+                            잘 들려요, 시작하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Listening - 응답고르기 -->
     <div id="listeningResponseScreen" class="screen">
         <div class="test-header">
@@ -3044,25 +3080,25 @@
     <!-- [V3] 리딩 모듈 컨트롤러 — 7세트(35문제) 순서 제어 + DB 저장 -->
     <script src="js/reading/reading-module-controller.js?v=20261006_pause"></script>
     <!-- 리스닝 - 공용 유틸리티 -->
-    <script src="js/listening/listening-utils.js"></script>
+    <script src="js/listening/listening-utils.js?v=003_hardening"></script>
     <!-- 리스닝 - 응답고르기 (Response) -->
     <script src="js/listening/response-loader.js"></script>
-    <script src="js/listening/response-component.js"></script>
+    <script src="js/listening/response-component.js?v=004_autoadvance"></script>
     <script src="js/listening/response-result.js"></script>
     <!-- 리스닝 - 컨버 (Conversation) -->
     <script src="js/listening/conver-loader.js"></script>
-    <script src="js/listening/conver-component.js"></script>
+    <script src="js/listening/conver-component.js?v=004_autoadvance"></script>
     <script src="js/listening/conver-result.js"></script>
     <!-- 리스닝 - 공지사항 (Announcement) -->
     <script src="js/listening/announcement-loader.js"></script>
-    <script src="js/listening/announcement-component.js"></script>
+    <script src="js/listening/announcement-component.js?v=004_autoadvance"></script>
     <script src="js/listening/announcement-result.js"></script>
     <!-- 리스닝 - 렉쳐 (Lecture) -->
     <script src="js/listening/lecture-loader.js"></script>
-    <script src="js/listening/lecture-component.js"></script>
+    <script src="js/listening/lecture-component.js?v=004_autoadvance"></script>
     <script src="js/listening/lecture-result.js"></script>
     <!-- 리스닝 모듈 컨트롤러 (V3) -->
-    <script src="js/listening/listening-module-controller.js?v=20261006_pause"></script>
+    <script src="js/listening/listening-module-controller.js?v=20261029_autoplay"></script>
     <!-- 라이팅 공용 유틸리티 -->
     <script src="js/writing/writing-utils.js"></script>
     <!-- 단어배열 Component -->
@@ -3088,7 +3124,7 @@
     <script src="js/speaking/interview-loader.js?v=001"></script>
     <script src="js/speaking/InterviewComponent.js?v=002"></script>
     <!-- Speaking Audio Engine (V3) — iPad Safari 호환 오디오 재생 -->
-    <script src="js/speaking/audio-player.js?v=001"></script>
+    <script src="js/speaking/audio-player.js?v=004_silentmode"></script>
     <!-- Speaking Result (해설 화면용) -->
     <script src="js/speaking/repeat-result.js?v=003"></script>
     <script src="js/speaking/interview-result.js?v=003"></script>
@@ -3392,6 +3428,30 @@ function showGuidePopup(config) {
 <style>
     @keyframes submitSpin { to { transform: rotate(360deg); } }
 </style>
+
+<!-- 리스닝 시간 만료 자동 이동 스피너 (전체 화면, 1초) -->
+<div id="listeningAutoAdvanceOverlay" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    background: rgba(255, 255, 255, 0.92);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+">
+    <div style="
+        width: 44px;
+        height: 44px;
+        border: 4px solid #ece7f7;
+        border-top-color: #9480c5;
+        border-radius: 50%;
+        animation: submitSpin 0.8s linear infinite;
+    "></div>
+    <p class="laa-text" style="margin-top: 16px; color: #7c6bb0; font-size: 15px; font-weight: 700;">
+        다음 문제로 이동합니다
+    </p>
+</div>
 
 </body>
 </html>
