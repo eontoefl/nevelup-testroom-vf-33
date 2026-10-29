@@ -428,7 +428,7 @@ class ConverComponent {
     const questionKey = `${this.setData.setId}_q${this.currentQuestion + 1}`;
     this.answers[questionKey] = optionIndex;
     
-    document.querySelectorAll('.conver-options .response-option').forEach((el, idx) => {
+    document.querySelectorAll('#converQuestionContent .response-option').forEach((el, idx) => {
       if (idx === optionIndex - 1) {
         el.classList.add('selected');
       } else {
@@ -444,7 +444,7 @@ class ConverComponent {
     console.log('[ConverComponent] ⏰ 시간 초과 - 보기 선택 차단');
     this._questionTimedOut = true;
     
-    document.querySelectorAll('.conver-options .response-option').forEach(el => {
+    document.querySelectorAll('#converQuestionContent .response-option').forEach(el => {
       el.style.pointerEvents = 'none';
       el.style.opacity = '0.5';
     });

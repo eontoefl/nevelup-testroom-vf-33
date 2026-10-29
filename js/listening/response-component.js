@@ -401,7 +401,7 @@ class ResponseComponent {
     console.log('[ResponseComponent] ⏰ 시간 초과 - 보기 선택 차단');
     this._questionTimedOut = true;
     
-    document.querySelectorAll('.response-option').forEach(el => {
+    document.querySelectorAll('#responseOptions .response-option').forEach(el => {
       el.style.pointerEvents = 'none';
       el.style.opacity = '0.5';
     });
@@ -436,7 +436,7 @@ class ResponseComponent {
     const questionKey = `${this.setData.setId}_q${this.currentQuestion + 1}`;
     this.answers[questionKey] = optionIndex;
     
-    document.querySelectorAll('.response-option').forEach((el, idx) => {
+    document.querySelectorAll('#responseOptions .response-option').forEach((el, idx) => {
       if (idx === optionIndex - 1) {
         el.classList.add('selected');
       } else {
