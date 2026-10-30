@@ -308,7 +308,7 @@ async function _onListeningSoundCheckPlay() {
             var startBtnE = document.getElementById('listeningSoundStartBtn');
             if (startBtnE) startBtnE.disabled = false;
             if (statusEl) {
-                statusEl.textContent = '소리 재생에 계속 실패하고 있어요. 이대로 시작할 수도 있습니다 — 문제 화면에서 오디오가 재생되지 않으면 [다시 시도] 버튼이 표시돼요.';
+                statusEl.textContent = '소리 재생에 계속 실패하고 있어요. 이대로 시작해도 돼요. 문제 화면에서 소리가 안 나오면 [다시 시도] 버튼이 나와요.';
                 statusEl.classList.add('is-error');
             }
         } else if (statusEl) {
@@ -411,6 +411,10 @@ async function _goToListeningSet(setIndex) {
         showScreen(screenId);
     }
 
+    // 버튼 상태 갱신 — 새 세트는 오디오 단계에서 시작하므로 Next/Submit 숨김
+    // (데이터 로드 중·로드 실패 안내 중에도 이전 세트의 버튼 상태가 남지 않음)
+    _updateListeningButtons();
+
     // 컴포넌트 초기화 (데이터 로드 + 문제 표시)
     var initOk = false;
     try {
@@ -427,9 +431,6 @@ async function _goToListeningSet(setIndex) {
 
     // 문제 번호 표시 업데이트
     _updateListeningProgress();
-
-    // 버튼 상태 업데이트
-    _updateListeningButtons();
 }
 
 // 유형별 화면/컨테이너 매핑
