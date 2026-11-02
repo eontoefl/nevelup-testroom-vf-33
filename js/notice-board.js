@@ -5,7 +5,8 @@
  *   - 공지 종류별 모양(STYLES) · 등록일 표시(formatDate) · 카드 HTML(renderItem)
  *   - 카드 동작(펼치기 · 닫기 · 다시 보지 않기 · N 뱃지 읽음 처리)
  *   - 게시 기간 규칙: 게시 종료 시각(active_until)이 지금보다 뒤인 공지만 보인다.
- *     게시를 켜면 지금부터 ACTIVE_DAYS일 뒤가 종료 시각이 된다.
+ *     관리자 화면에서 게시를 켜면 종료 일시 입력칸에 기본값(지금부터 ACTIVE_DAYS일 뒤)이 채워지고,
+ *     관리자가 더 짧게·길게 바꿀 수 있다.
  *
  * 테스트룸 index.html과 공홈 admin-settings.html(공지 탭)이 같은 파일을 불러 쓴다.
  * 전역 이름 충돌을 막기 위해 window.NoticeBoard 하나만 노출한다.
@@ -25,7 +26,7 @@
         check:    { emoji: '✅', label: '완료 / 확인', bg: '#f0fdf4', titleColor: '#16a34a', textColor: '#166534', glow: false }
     };
 
-    // 게시 기간 (일)
+    // 게시 기간 기본값 (일) — 관리자 종료 일시 입력칸에 처음 채워지는 값
     var ACTIVE_DAYS = 7;
 
     function styleOf(type) {
@@ -57,7 +58,7 @@
     function liveFilter(now) {
         return 'active_until=gt.' + encodeURIComponent((now || new Date()).toISOString());
     }
-    // 게시를 켤 때의 종료 시각
+    // 게시를 켤 때 채워지는 기본 종료 시각
     function newActiveUntil(now) {
         return new Date((now || new Date()).getTime() + ACTIVE_DAYS * 24 * 60 * 60 * 1000).toISOString();
     }
