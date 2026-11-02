@@ -15,8 +15,10 @@
     gap: 12px;
 }
 
-/* 공지 아이템 (JS 동적 생성) */
+/* 공지 아이템 (JS 동적 생성 — js/notice-board.js) */
+/* 글꼴을 카드에 직접 지정: 공홈 관리자 미리보기에서도 테스트룸과 같은 글꼴로 보이도록 */
 .notice-item {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
     border-radius: 14px;
     padding: 20px 22px;
     font-size: 0.9rem;
@@ -146,4 +148,10 @@
     color: #1a1a1a;
     word-break: keep-all;
     white-space: pre-line;
+}
+
+/* 긴급 공지 빛남 효과 (NoticeBoard.STYLES.urgent.glow) */
+@keyframes noticeGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    50% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
 }

@@ -70,7 +70,7 @@
 <link rel="stylesheet" href="css/writing-discussion-result.css?v=009">
     <link rel="stylesheet" href="css/writing-discussion-style.css?v=016">
     <link rel="stylesheet" href="css/notification.css?v=001">
-    <link rel="stylesheet" href="css/notice-panel.css?v=003_no_header">
+    <link rel="stylesheet" href="css/notice-panel.css?v=004_notice_board">
     <link rel="stylesheet" href="css/speaking-repeat-style.css?v=001">
     <link rel="stylesheet" href="css/speaking-repeat-result.css?v=003">
     <link rel="stylesheet" href="css/speaking-interview-style.css?v=002">
@@ -435,98 +435,9 @@
             </div>
         </div>
         
+        <script src="js/notice-board.js?v=001"></script>
         <script>
-        // 공지 타입 → 스타일 매핑
-        const NOTICE_STYLES = {
-            urgent:   { emoji: '🚨', bg: '#fef2f2', titleColor: '#dc2626', textColor: '#991b1b', glow: true },
-            notice:   { emoji: '📢', bg: '#eff6ff', titleColor: '#1d4ed8', textColor: '#1e3a5f', glow: false },
-            deadline: { emoji: '⏰', bg: '#fff7ed', titleColor: '#c2410c', textColor: '#9a3412', glow: false },
-            tip:      { emoji: '💡', bg: '#f0fdf4', titleColor: '#16a34a', textColor: '#14532d', glow: false },
-            update:   { emoji: '🔄', bg: '#fefce8', titleColor: '#a16207', textColor: '#78350f', glow: false },
-            event:    { emoji: '🎉', bg: '#faf5ff', titleColor: '#7c3aed', textColor: '#5b21b6', glow: false },
-            warning:  { emoji: '⚠️', bg: '#fff7ed', titleColor: '#ea580c', textColor: '#9a3412', glow: false },
-            check:    { emoji: '✅', bg: '#f0fdf4', titleColor: '#16a34a', textColor: '#166534', glow: false }
-        };
-
-        // 공지 등록 시각 → KST "2026.07.06 16:27" 포맷
-        function formatNoticeDate(iso) {
-            if (!iso) return '';
-            try {
-                const d = new Date(iso);
-                if (isNaN(d)) return '';
-                const p = new Intl.DateTimeFormat('en-CA', {
-                    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit', hour12: false
-                }).formatToParts(d);
-                const g = t => (p.find(x => x.type === t) || {}).value || '';
-                return `${g('year')}.${g('month')}.${g('day')} ${g('hour')}:${g('minute')}`;
-            } catch (e) { return ''; }
-        }
-
-        // "다시 보지 않기"로 숨긴 공지 id 목록 (localStorage 저장)
-        function getHiddenNotices() {
-            try { return JSON.parse(localStorage.getItem('tr_hidden_notices') || '[]'); }
-            catch (e) { return []; }
-        }
-
-        // 한 번이라도 펼쳐본(=읽은) 공지 id 목록 — N 뱃지 표시 여부용
-        function getSeenNotices() {
-            try { return JSON.parse(localStorage.getItem('tr_seen_notices') || '[]'); }
-            catch (e) { return []; }
-        }
-
-        function markNoticeSeen(id) {
-            const seen = getSeenNotices();
-            if (!seen.includes(id)) {
-                seen.push(id);
-                try { localStorage.setItem('tr_seen_notices', JSON.stringify(seen)); } catch (e) {}
-            }
-        }
-
-        // 공지 컨테이너에 남은 공지가 없으면 통째로 숨김
-        function hideNoticeContainerIfEmpty() {
-            const listEl = document.getElementById('noticeList');
-            const box = document.getElementById('noticeContainer');
-            if (listEl && box && listEl.children.length === 0) box.style.display = 'none';
-        }
-
-        // 제목 줄 클릭 — 내용 펼치기/접기
-        function toggleNotice(headEl) {
-            const item = headEl.closest('.notice-item');
-            if (!item) return;
-            item.classList.toggle('collapsed');
-            const collapsed = item.classList.contains('collapsed');
-
-            const chev = item.querySelector('.notice-chevron');
-            if (chev) chev.textContent = collapsed ? '▾' : '▴';
-
-            // 펼치면 읽은 것으로 처리 → N 뱃지 제거
-            if (!collapsed) {
-                markNoticeSeen(item.getAttribute('data-notice-id'));
-                const badge = item.querySelector('.notice-badge');
-                if (badge) badge.remove();
-            }
-        }
-
-        // 닫기(×) — 이번만 숨김 (새로고침하면 다시 보임)
-        function closeNotice(ev, btn) {
-            if (ev) ev.stopPropagation();   // 제목 클릭(토글)로 전파 방지
-            const item = btn.closest('.notice-item');
-            if (item) item.remove();
-            hideNoticeContainerIfEmpty();
-        }
-
-        // 다시 보지 않기 — 영구 숨김 (localStorage에 기록)
-        function dismissNotice(btn, id) {
-            const hidden = getHiddenNotices();
-            if (!hidden.includes(id)) {
-                hidden.push(id);
-                try { localStorage.setItem('tr_hidden_notices', JSON.stringify(hidden)); } catch (e) {}
-            }
-            const item = btn.closest('.notice-item');
-            if (item) item.remove();
-            hideNoticeContainerIfEmpty();
-        }
+        // 공지 카드 모양·동작·게시 기간 규칙은 js/notice-board.js (NoticeBoard) 한 곳에서 정의
 
         // Supabase에서 공지사항 로드
         async function loadNotices() {
@@ -547,7 +458,7 @@
                     return;
                 }
 
-                const notices = await supabaseSelect('tr_notices', 'is_active=eq.true&order=sort_order.asc');
+                const notices = await supabaseSelect('tr_notices', NoticeBoard.liveFilter() + '&order=sort_order.asc');
 
                 // 공개 대상 필터: 현재 학생이 호주내챌인지 판별 (main.js와 동일 기준)
                 const isAus = !!(currentUser && currentUser.program && currentUser.program.includes('Australia'));
@@ -558,7 +469,7 @@
                 };
 
                 // "다시 보지 않기"로 영구 숨김한 공지 제외 + 대상 필터
-                const hidden = getHiddenNotices();
+                const hidden = NoticeBoard.getHidden();
                 const visible = (notices || []).filter(n => audienceMatch(n) && !hidden.includes(n.id));
 
                 if (visible.length === 0) {
@@ -569,34 +480,8 @@
                 // 공지가 있으면 컨테이너 표시 (이전에 숨겨졌을 수 있으므로)
                 document.getElementById('noticeContainer').style.display = '';
 
-                const seen = getSeenNotices();
-                listEl.innerHTML = visible.map(n => {
-                    const s = NOTICE_STYLES[n.type] || NOTICE_STYLES.notice;
-                    const glowStyle = s.glow ? 'animation:noticeGlow 2s ease-in-out infinite;' : '';
-                    const isNew = !seen.includes(n.id);
-                    const dateStr = formatNoticeDate(n.created_at);
-                    return `
-                        <div class="notice-item collapsed" data-notice-id="${n.id}" style="background:${s.bg}; ${glowStyle}">
-                            <div class="notice-item-head" onclick="toggleNotice(this)">
-                                <div class="notice-item-tag" style="color:${s.titleColor};">
-                                    ${s.emoji} ${n.title}
-                                    ${isNew ? '<span class="notice-badge">N</span>' : ''}
-                                </div>
-                                <div class="notice-head-right">
-                                    ${dateStr ? `<span class="notice-date" style="color:${s.titleColor};">${dateStr}</span>` : ''}
-                                    <span class="notice-chevron" style="color:${s.titleColor};">▾</span>
-                                    <button class="notice-close-x" title="닫기" onclick="closeNotice(event, this)" style="color:${s.titleColor};">&times;</button>
-                                </div>
-                            </div>
-                            <div class="notice-item-body">
-                                <div class="notice-item-content" style="color:${s.textColor};">${n.content}</div>
-                                <div class="notice-item-actions">
-                                    <button class="notice-action-btn" onclick="dismissNotice(this, '${n.id}')" style="color:${s.textColor};">다시 보지 않기</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                const seen = NoticeBoard.getSeen();
+                listEl.innerHTML = visible.map(n => NoticeBoard.renderItem(n, { isNew: !seen.includes(n.id) })).join('');
 
                 console.log(`📢 공지사항 ${visible.length}개 로드 완료`);
             } catch (e) {
@@ -3197,10 +3082,6 @@
     </div>
 </div>
 <style>
-@keyframes noticeGlow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-    50% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
-}
 </style>
 
 <!-- ========== 과제 안내 가이드 팝업 ========== -->
