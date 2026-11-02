@@ -190,10 +190,11 @@ async function loadBook() {
   const doneTitle = document.getElementById("doneTitle");
   if (doneTitle) doneTitle.textContent = (V2.book.title || "자료") + " 완독!";
 
-  V2.pages = await supabaseSelect(
-    "tr_book_pages",
-    "book_id=eq." + V2.book.id + "&order=sort_order.asc&select=id,sort_order,html"
-  );
+  // 버전 협업 책은 삭제된 쪽을 deleted_at으로 남긴다(논리삭제). 그 열이 아직 없는 DB에서는 예전 조회로.
+  const pageQuery = "book_id=eq." + V2.book.id + "&order=sort_order.asc&select=id,sort_order,html";
+  let livePages = null;
+  try { livePages = await supabaseSelect("tr_book_pages", pageQuery + "&deleted_at=is.null"); } catch (_) { livePages = null; }
+  V2.pages = livePages && livePages.length ? livePages : await supabaseSelect("tr_book_pages", pageQuery);
   if (!V2.pages || V2.pages.length === 0) throw new Error("페이지가 없어요.");
   document.getElementById("totPage").textContent = V2.pages.length;
   document.getElementById("jumpMax").textContent = V2.pages.length;
