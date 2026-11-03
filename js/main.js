@@ -65,6 +65,8 @@ function initScheduleScreen() {
     var mode = window.courseMode || 'regular';
     if (mode === 'correction') {
         _renderCorrectionMode();
+    } else if (mode === 'training') {
+        _renderTrainingMode();
     } else if (mode === 'practice') {
         _renderPracticeMode();
     } else if (mode === 'australia') {
@@ -114,22 +116,42 @@ function _appendChallengePauseBanner(container) {
     container.appendChild(box);
 }
 
+// ===== 모드별 일정 화면 (2026-11-03 유형별 트레이닝) =====
+// 모드마다 보여줄 칸·제목·설명·아이콘을 여기 한 곳에서 정한다. 나머지 칸은 _applyModeView가 숨긴다.
+// (예전에는 화면 그리는 함수 4개가 서로의 칸을 하나씩 숨겨서, 칸이 늘면 4곳을 다 고쳐야 했다)
+var MODE_VIEWS = {
+    regular:    { container: 'scheduleContainer',           title: 'NEVEL-UP TESTROOM', desc: 'Select the desired week and day.', icon: 'fa-calendar-days' },
+    australia:  { container: 'australiaScheduleContainer',  titleHtml: 'NEVEL-UP TESTROOM <span style="font-size:0.5em; font-weight:400; opacity:0.7; vertical-align:middle;">Australia</span>', desc: 'Select the desired week and day.', icon: 'fa-calendar-days' },
+    practice:   { container: 'practiceScheduleContainer',   title: 'PRACTICE MODE',     desc: 'Select the desired practice.',     icon: 'fa-calendar-days' },
+    correction: { container: 'correctionScheduleContainer', title: '1:1 FEEDBACK',      desc: 'Select the desired session.',      icon: 'fa-calendar-days' },
+    training:   { container: 'trainingScheduleContainer',   title: 'TRAINING',          desc: 'Select a type.',                   icon: 'fa-dumbbell', theme: 'training-theme' }
+};
+
+/** 그 모드의 칸만 보이고 나머지는 숨김 + 제목·설명·아이콘·색 테마 */
+function _applyModeView(mode) {
+    var view = MODE_VIEWS[mode] || MODE_VIEWS.regular;
+    Object.keys(MODE_VIEWS).forEach(function (key) {
+        var el = document.getElementById(MODE_VIEWS[key].container);
+        if (el) el.style.display = (MODE_VIEWS[key] === view) ? '' : 'none';
+    });
+    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
+    if (scheduleHeader) {
+        if (view.titleHtml) scheduleHeader.querySelector('h1').innerHTML = view.titleHtml;
+        else scheduleHeader.querySelector('h1').textContent = view.title;
+        scheduleHeader.querySelector('p').textContent = view.desc;
+        var icon = scheduleHeader.querySelector('.calendar-icon-box i');
+        if (icon) icon.className = 'fas ' + view.icon;
+    }
+    var screen = document.getElementById('scheduleScreen');
+    if (screen) screen.classList.toggle('training-theme', view.theme === 'training-theme');
+    // 트레이닝 단위 목록의 뒤로가기 버튼은 트레이닝 모듈이 켠다. 다른 모드에서는 항상 숨김.
+    var trBack = document.getElementById('trainingBackBtn');
+    if (trBack && mode !== 'training') trBack.style.display = 'none';
+}
+
 /** 정규코스 렌더링 */
 function _renderRegularMode() {
-    // 정규코스 컨테이너 표시 / 연습·첨삭·호주 컨테이너 숨김
-    var regularContainer = document.getElementById('scheduleContainer');
-    var practiceContainer = document.getElementById('practiceScheduleContainer');
-    var correctionContainer = document.getElementById('correctionScheduleContainer');
-    var australiaContainer = document.getElementById('australiaScheduleContainer');
-    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
-    if (regularContainer) regularContainer.style.display = '';
-    if (practiceContainer) practiceContainer.style.display = 'none';
-    if (correctionContainer) correctionContainer.style.display = 'none';
-    if (australiaContainer) australiaContainer.style.display = 'none';
-    if (scheduleHeader) {
-        scheduleHeader.querySelector('h1').textContent = 'NEVEL-UP TESTROOM';
-        scheduleHeader.querySelector('p').textContent = 'Select the desired week and day.';
-    }
+    _applyModeView('regular');
     
     const doRender = () => {
         renderSchedule(currentUser.program);
@@ -153,62 +175,31 @@ function _renderRegularMode() {
 
 /** 연습코스 렌더링 */
 function _renderPracticeMode() {
-    // 정규·첨삭·호주 컨테이너 숨김 / 연습코스 컨테이너 표시
-    var regularContainer = document.getElementById('scheduleContainer');
-    var practiceContainer = document.getElementById('practiceScheduleContainer');
-    var correctionContainer = document.getElementById('correctionScheduleContainer');
-    var australiaContainer = document.getElementById('australiaScheduleContainer');
-    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
-    if (regularContainer) regularContainer.style.display = 'none';
-    if (practiceContainer) practiceContainer.style.display = '';
-    if (correctionContainer) correctionContainer.style.display = 'none';
-    if (australiaContainer) australiaContainer.style.display = 'none';
-    if (scheduleHeader) {
-        scheduleHeader.querySelector('h1').textContent = 'PRACTICE MODE';
-        scheduleHeader.querySelector('p').textContent = 'Select the desired practice.';
-    }
+    _applyModeView('practice');
     
     renderPracticeSchedule();
 }
 
 /** 첨삭(FEEDBACK) 모드 렌더링 */
 function _renderCorrectionMode() {
-    // 정규·연습·호주 컨테이너 숨김 / 첨삭 컨테이너 표시
-    var regularContainer = document.getElementById('scheduleContainer');
-    var practiceContainer = document.getElementById('practiceScheduleContainer');
-    var correctionContainer = document.getElementById('correctionScheduleContainer');
-    var australiaContainer = document.getElementById('australiaScheduleContainer');
-    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
-    if (regularContainer) regularContainer.style.display = 'none';
-    if (practiceContainer) practiceContainer.style.display = 'none';
-    if (correctionContainer) correctionContainer.style.display = '';
-    if (australiaContainer) australiaContainer.style.display = 'none';
-    if (scheduleHeader) {
-        scheduleHeader.querySelector('h1').textContent = '1:1 FEEDBACK';
-        scheduleHeader.querySelector('p').textContent = 'Select the desired session.';
-    }
+    _applyModeView('correction');
 
     renderCorrectionSchedule();
 }
 
 /** Australia 모드 렌더링 */
 function _renderAustraliaMode() {
-    // 정규·연습·첨삭 컨테이너 숨김 / 호주 컨테이너 표시
-    var regularContainer = document.getElementById('scheduleContainer');
-    var practiceContainer = document.getElementById('practiceScheduleContainer');
-    var correctionContainer = document.getElementById('correctionScheduleContainer');
-    var australiaContainer = document.getElementById('australiaScheduleContainer');
-    var scheduleHeader = document.querySelector('#scheduleScreen .schedule-header');
-    if (regularContainer) regularContainer.style.display = 'none';
-    if (practiceContainer) practiceContainer.style.display = 'none';
-    if (correctionContainer) correctionContainer.style.display = 'none';
-    if (australiaContainer) australiaContainer.style.display = '';
-    if (scheduleHeader) {
-        scheduleHeader.querySelector('h1').innerHTML = 'NEVEL-UP TESTROOM <span style="font-size:0.5em; font-weight:400; opacity:0.7; vertical-align:middle;">Australia</span>';
-        scheduleHeader.querySelector('p').textContent = 'Select the desired week and day.';
-    }
+    _applyModeView('australia');
     
     renderAustraliaSchedule(currentUser.program);
+}
+
+/** 유형별 트레이닝(TRAINING) 모드 렌더링 — 화면 내용은 js/training/training-main.js */
+function _renderTrainingMode() {
+    _applyModeView('training');
+    if (window.TrainingMain && typeof TrainingMain.render === 'function') {
+        TrainingMain.render();
+    }
 }
 
 /** Australia 스케줄 렌더링 (TESTROOM과 동일 구조) */
@@ -1894,13 +1885,14 @@ function showTaskListScreen(week, dayKr, tasks) {
 
 // ===== SEGMENT CONTROL =====
 
-/** 세그먼트 컨트롤 초기화 (TESTROOM / AUSTRALIA / PRACTICE / FEEDBACK 토글) */
+/** 세그먼트 컨트롤 초기화 (TESTROOM / AUSTRALIA / TRAINING / PRACTICE / FEEDBACK 토글) */
 function _initSegmentControl() {
     var segmentWrap = document.getElementById('courseSegmentControl');
     if (!segmentWrap) return;
     
     var btnRegular = document.getElementById('segBtnRegular');
     var btnAustralia = document.getElementById('segBtnAustralia');
+    var btnTraining = document.getElementById('segBtnTraining');
     var btnPractice = document.getElementById('segBtnPractice');
     var btnFeedback = document.getElementById('segBtnFeedback');
     
@@ -1911,35 +1903,42 @@ function _initSegmentControl() {
         ? isCorrectionAvailable(currentUser)
         : (currentUser && (currentUser.correctionEnabled || window.__isAdmin));
     var hasAustralia = currentUser && currentUser.program && currentUser.program.includes('Australia');
+    // 유형별 트레이닝: 호주 과정·내챌 환불·중도포기만 숨김. 날짜·연습코스 여부와 무관(계획서 v2 3장·17장 1번)
+    var hasTraining = !!currentUser && !hasAustralia
+        && !((typeof isChallengeRefundedNow === 'function') && isChallengeRefundedNow(currentUser));
     
     // 호주과정 학생: TESTROOM 숨김 / 정규 학생: AUSTRALIA 숨김
     if (btnRegular) btnRegular.style.display = hasAustralia ? 'none' : '';
     if (btnAustralia) btnAustralia.style.display = hasAustralia ? '' : 'none';
+    if (btnTraining) btnTraining.style.display = hasTraining ? '' : 'none';
     if (btnPractice) btnPractice.style.display = hasPractice ? '' : 'none';
     if (btnFeedback) btnFeedback.style.display = hasCorrection ? '' : 'none';
     
+    // 현재 모드 유효성 검증 — 호주 학생 기본은 australia, 정규 학생 기본은 regular
+    var defaultMode = hasAustralia ? 'australia' : 'regular';
+    var prevMode = window.courseMode;
+    var mode = prevMode || defaultMode;
+    if (mode === 'regular' && hasAustralia) mode = 'australia';
+    if (mode === 'australia' && !hasAustralia) mode = 'regular';
+    if (mode === 'training' && !hasTraining) mode = defaultMode;
+    if (mode === 'practice' && !hasPractice) mode = defaultMode;
+    if (mode === 'correction' && !hasCorrection) mode = defaultMode;
+    if (!MODE_VIEWS[mode]) mode = defaultMode;   // 모르는 값(옛 세션 등)은 기본 모드로
+    if (mode !== prevMode) {
+        setCourseMode(mode);
+        // 모드가 바뀌었으면 화면도 그 모드로 다시 그린다 (토글과 화면이 어긋나지 않게).
+        // 예전에는 모드 값만 바꾸고 화면은 이전 모드로 남는 경우가 있었다.
+        if (prevMode) _renderModeByName(mode);
+    }
+    
     // 세그먼트 컨트롤: 탭이 하나뿐이면 숨김
-    var visibleTabs = (hasAustralia ? 1 : 1) + (hasPractice ? 1 : 0) + (hasCorrection ? 1 : 0);
+    var visibleTabs = 1 + (hasTraining ? 1 : 0) + (hasPractice ? 1 : 0) + (hasCorrection ? 1 : 0);
     if (visibleTabs <= 1) {
         segmentWrap.style.display = 'none';
-        var defaultMode = hasAustralia ? 'australia' : 'regular';
-        if (window.courseMode !== defaultMode) {
-            setCourseMode(defaultMode);
-            if (hasAustralia) _renderAustraliaMode(); else _renderRegularMode();
-        }
         return;
     }
     
     segmentWrap.style.display = '';
-    
-    // 현재 모드 유효성 검증 — 호주 학생 기본은 australia, 정규 학생 기본은 regular
-    var defaultMode = hasAustralia ? 'australia' : 'regular';
-    var mode = window.courseMode || defaultMode;
-    if (mode === 'regular' && hasAustralia) mode = 'australia';
-    if (mode === 'australia' && !hasAustralia) mode = 'regular';
-    if (mode === 'practice' && !hasPractice) mode = defaultMode;
-    if (mode === 'correction' && !hasCorrection) mode = defaultMode;
-    if (mode !== window.courseMode) setCourseMode(mode);
     
     // active 클래스 동기화
     _syncSegmentActive(mode);
@@ -1958,6 +1957,14 @@ function _initSegmentControl() {
             setCourseMode('australia');
             _syncSegmentActive('australia');
             _renderAustraliaMode();
+        };
+    }
+    if (btnTraining) {
+        btnTraining.onclick = function() {
+            if (window.courseMode === 'training') return;
+            setCourseMode('training');
+            _syncSegmentActive('training');
+            _renderTrainingMode();
         };
     }
     if (btnPractice) {
@@ -1984,10 +1991,21 @@ function _syncSegmentActive(mode) {
     var btnAustralia = document.getElementById('segBtnAustralia');
     var btnPractice = document.getElementById('segBtnPractice');
     var btnFeedback = document.getElementById('segBtnFeedback');
+    var btnTraining = document.getElementById('segBtnTraining');
     if (btnRegular) btnRegular.classList.toggle('seg-active', mode === 'regular');
     if (btnAustralia) btnAustralia.classList.toggle('seg-active', mode === 'australia');
+    if (btnTraining) btnTraining.classList.toggle('seg-active', mode === 'training');
     if (btnPractice) btnPractice.classList.toggle('seg-active', mode === 'practice');
     if (btnFeedback) btnFeedback.classList.toggle('seg-active', mode === 'correction');
+}
+
+/** 모드 이름으로 그 모드 화면 그리기 */
+function _renderModeByName(mode) {
+    if (mode === 'correction') _renderCorrectionMode();
+    else if (mode === 'training') _renderTrainingMode();
+    else if (mode === 'practice') _renderPracticeMode();
+    else if (mode === 'australia') _renderAustraliaMode();
+    else _renderRegularMode();
 }
 
 // backToSchedule: 스케줄 화면 복귀 (공통)

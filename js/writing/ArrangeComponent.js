@@ -24,26 +24,9 @@ class ArrangeComponent {
         this.draggedWord = null; // 현재 드래그 중인 단어
         
         
-        // 프로필 이미지 (여자 7개, 남자 7개)
-        this.FEMALE_IMAGES = [
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_F1.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_F2.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_F3.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_F4.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_F5.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_F6.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_F7.png'
-        ];
-        
-        this.MALE_IMAGES = [
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_M1.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_M2.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_M3.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_M4.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_M5.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_M6.png',
-            'https://eontoefl.github.io/toefl-audio/writing/arrange/image/arrange_image_M7.png'
-        ];
+        // 프로필 이미지 (여자 7개, 남자 7개) — 목록은 arrange-core.js 한 곳에 있다
+        this.FEMALE_IMAGES = ArrangeCore.FEMALE_IMAGES;
+        this.MALE_IMAGES = ArrangeCore.MALE_IMAGES;
     }
     
     /**
@@ -89,41 +72,8 @@ class ArrangeComponent {
      * 랜덤 남녀 조합 생성 (남남/여여 불가, 직전 이미지 제외)
      */
     getRandomGenderPair() {
-        // static 레벨 직전 이미지 추적
-        if (!ArrangeComponent._lastFemaleImage) ArrangeComponent._lastFemaleImage = null;
-        if (!ArrangeComponent._lastMaleImage) ArrangeComponent._lastMaleImage = null;
-        
-        const pickExcludingLast = (images, lastKey) => {
-            if (images.length <= 1) return images[0] || '';
-            const last = ArrangeComponent[lastKey];
-            const candidates = last ? images.filter(img => img !== last) : images;
-            const picked = candidates[Math.floor(Math.random() * candidates.length)];
-            ArrangeComponent[lastKey] = picked;
-            return picked;
-        };
-        
-        const femaleImage = pickExcludingLast(this.FEMALE_IMAGES, '_lastFemaleImage');
-        const maleImage = pickExcludingLast(this.MALE_IMAGES, '_lastMaleImage');
-        
-        // 랜덤으로 순서 결정 (50% 확률로 여자가 먼저 or 남자가 먼저)
-        const femaleFirst = Math.random() < 0.5;
-        
-        return {
-            first: femaleFirst ? {
-                gender: 'female',
-                image: femaleImage
-            } : {
-                gender: 'male',
-                image: maleImage
-            },
-            second: femaleFirst ? {
-                gender: 'male',
-                image: maleImage
-            } : {
-                gender: 'female',
-                image: femaleImage
-            }
-        };
+        // 직전 이미지 추적과 조합 규칙은 arrange-core.js (트레이닝과 같이 씀)
+        return ArrangeCore.randomGenderPair();
     }
     
     /**
@@ -171,87 +121,8 @@ class ArrangeComponent {
         // 프로필 이미지 조합
         const genderPair = this.profilePairs[questionKey];
         
-        // 첫 번째 사람 프로필 + 주어진 문장
-        const givenSentenceHtml = `
-            <div class="arrange-given">
-                <div class="arrange-profile ${genderPair.first.gender}">
-                    <img src="${genderPair.first.image}" alt="${genderPair.first.gender}" />
-                </div>
-                <div class="arrange-sentence">${question.givenSentence}</div>
-            </div>
-        `;
-        
-        // 두 번째 사람 프로필 + 빈칸
-        const blanksHtml = question.presentedWords.map((word, index) => {
-            const isBlank = word === '_';
-            const userWord = savedAnswer && savedAnswer[index] ? savedAnswer[index] : null;
-            
-            if (isBlank) {
-                return `
-                    <div class="arrange-blank ${userWord ? 'has-word' : ''}" 
-                         data-index="${index}" 
-                         ondrop="window.currentArrangeComponent.dropWord(event)" 
-                         ondragover="allowDrop(event)"
-                         onclick="window.currentArrangeComponent.removeWord(${index})">
-                        ${userWord ? `<span class="filled-word">${userWord}</span>` : ''}
-                    </div>
-                `;
-            } else {
-                return `<span class="arrange-presented-word">${word}</span>`;
-            }
-        }).join('');
-        
-        const answerAreaHtml = `
-            <div class="arrange-answer">
-                <div class="arrange-profile ${genderPair.second.gender}">
-                    <img src="${genderPair.second.image}" alt="${genderPair.second.gender}" />
-                </div>
-                <div class="arrange-blanks">
-                    ${blanksHtml}
-                    <span class="arrange-punctuation">${question.endPunctuation}</span>
-                </div>
-            </div>
-        `;
-        
-        // 하단 보기 단어들
-        const usedWords = savedAnswer ? Object.values(savedAnswer) : [];
-        // 대소문자 무시 비교 (첫 빈칸 대문자 변환 대응)
-        // 사용 횟수 카운트 (같은 단어가 여러 개 있을 때 사용한 만큼만 비활성화)
-        const usedWordsLowerCount = {};
-        usedWords.forEach(w => {
-            const key = w.toLowerCase();
-            usedWordsLowerCount[key] = (usedWordsLowerCount[key] || 0) + 1;
-        });
-        const optionsHtml = question.optionWords.map(word => {
-            const key = word.toLowerCase();
-            let isUsed = false;
-            if (usedWordsLowerCount[key] && usedWordsLowerCount[key] > 0) {
-                isUsed = true;
-                usedWordsLowerCount[key]--;
-            }
-            return `
-                <div class="arrange-option ${isUsed ? 'used' : ''}" 
-                     draggable="${!isUsed}" 
-                     ondragstart="window.currentArrangeComponent.dragStart(event)" 
-                     ondragend="window.currentArrangeComponent.dragEnd(event)"
-                     data-word="${word}">
-                    ${word}
-                </div>
-            `;
-        }).join('');
-        
-        const optionsAreaHtml = `
-            <div class="arrange-options">
-                ${optionsHtml}
-            </div>
-        `;
-        
-        container.innerHTML = `
-            <h2 class="arrange-title">Make an appropriate sentence.</h2>
-            ${givenSentenceHtml}
-            ${answerAreaHtml}
-            ${optionsAreaHtml}
-        `;
+        // 화면 HTML은 arrange-core.js가 만든다 (예전과 글자 하나까지 같은 HTML)
+        container.innerHTML = ArrangeCore.buildQuestionHtml(question, savedAnswer, genderPair, 'window.currentArrangeComponent');
     }
     
     /**
@@ -295,16 +166,7 @@ class ArrangeComponent {
         }
         
         // 문장 맨 앞 빈칸인지 확인 (0번 자리가 빈칸이고, 거기에 넣을 때만 대문자 변환)
-        let word = this.draggedWord;
-        const isFirstPosition = index === 0;
-        
-        if (isFirstPosition && word) {
-            // 첫 글자를 대문자로 변환
-            word = word.charAt(0).toUpperCase() + word.slice(1);
-            console.log(`[ArrangeComponent] 첫 번째 빈칸 - 대문자 변환: ${this.draggedWord} → ${word}`);
-        }
-        
-        this.answers[questionKey][index] = word;
+        const word = ArrangeCore.placeWord(this.answers[questionKey], index, this.draggedWord);
         console.log(`[ArrangeComponent] 답안 저장: ${questionKey}[${index}] = ${word}`);
         
         // 화면 재렌더링
@@ -320,9 +182,8 @@ class ArrangeComponent {
         const question = this.setData.questions[this.currentQuestion];
         const questionKey = `${this.setData.setId}_q${question.questionNum}`;
         
-        if (this.answers[questionKey] && this.answers[questionKey][index]) {
+        if (ArrangeCore.removeWord(this.answers[questionKey], index)) {
             console.log(`[ArrangeComponent] 단어 제거: ${questionKey}[${index}]`);
-            delete this.answers[questionKey][index];
             
             // 화면 재렌더링
             this.renderQuestion(question);
@@ -360,34 +221,15 @@ class ArrangeComponent {
             const questionKey = `${this.setData.setId}_q${question.questionNum}`;
             const userAnswer = this.answers[questionKey];
             
-            // 사용자가 빈칸에 넣은 답만 순서대로 추출
-            const userBlankAnswers = [];
-            question.presentedWords.forEach((word, idx) => {
-                if (word === '_') {
-                    if (userAnswer && userAnswer[idx]) {
-                        userBlankAnswers.push(userAnswer[idx]);
-                    } else {
-                        userBlankAnswers.push('___');
-                    }
-                }
-            });
-            
-            // 정답 확인 (빈칸 답을 정답 벌마다 순서대로 비교, 하나라도 일치하면 정답)
-            const matchedIdx = question.answerSets.findIndex(set =>
-                userBlankAnswers.length === set.answer.length &&
-                set.answer.every((w, i) => userBlankAnswers[i].toLowerCase() === w.toLowerCase())
-            );
-            const isCorrect = matchedIdx !== -1;
+            // 채점은 arrange-core.js (빈칸 답을 정답 벌마다 순서대로 비교, 하나라도 일치하면 정답, 대소문자 무시)
+            const graded = ArrangeCore.gradeQuestion(question, userAnswer);
+            const matchedIdx = graded.matchedIdx;
+            const isCorrect = graded.isCorrect;
             // 정답이면 맞힌 벌, 오답이면 1벌을 기록에 남긴다
             const shownSet = question.answerSets[isCorrect ? matchedIdx : 0];
             
             // 결과 표시용 전체 문장 조합
-            const userFullAnswer = question.presentedWords.map((word, idx) => {
-                if (word === '_') {
-                    return (userAnswer && userAnswer[idx]) ? userAnswer[idx] : '___';
-                }
-                return word;
-            });
+            const userFullAnswer = graded.userFullAnswer;
             
             console.log(`[ArrangeComponent] Q${question.questionNum} - ${isCorrect ? '정답' : '오답'}`);
             

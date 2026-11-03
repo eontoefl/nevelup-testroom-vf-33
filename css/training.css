@@ -1,0 +1,117 @@
+/* =====================================================================
+   유형별 트레이닝 (TRAINING) — 미스트 시안 색
+   계획서: C:\기능구현\유형별 트레이닝\IMPLEMENTATION_PLAN.md (v2) 4장, 16-5
+   배치·글꼴은 실전 화면과 같고 색만 다르다. 모든 규칙은 .training-theme 안에서만 적용된다.
+   (일정 화면은 TRAINING 모드일 때만 #scheduleScreen에 .training-theme이 붙는다. 문제 화면은 항상 붙어 있다)
+   ===================================================================== */
+
+.training-theme {
+    --primary-color: #5a8a8f;
+    --bg-color: #eaf1f1;
+    --tr-hl-bg: #d9e8e8;
+    --tr-hl-fg: #3c6a6f;
+    --tr-ko: #7f9496;
+    --tr-soft: #dde9e9;
+    --tr-border: #d9e5e5;
+    --tr-wrong: #c2414b;
+    background: var(--bg-color);
+}
+#scheduleScreen.training-theme,
+#trainingScreen.training-theme { background: var(--bg-color); min-height: 100vh; }
+
+/* ---- 보라를 직접 적은 곳 7개 (style.css 445·477·1554·1612·2973·3936·3963) ---- */
+.training-theme .user-card { box-shadow: 0 10px 30px -5px rgba(90, 138, 143, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.04); }
+.training-theme .top-nav-bar .program-badge { background-color: rgba(90, 138, 143, 0.10); }
+.training-theme .user-icon { color: var(--primary-color); }
+.training-theme .calendar-icon-box { box-shadow: 0 10px 15px -3px rgba(90, 138, 143, 0.3); }
+.training-theme .week-title { background-color: rgba(90, 138, 143, 0.10); }
+.training-theme .arrange-option:hover { color: #46767b; }
+.training-theme .course-segment-control { background: #dbe8e8; box-shadow: 0 2px 8px rgba(70, 120, 125, 0.15), 0 0.5px 2px rgba(0, 0, 0, 0.05); }
+.training-theme .seg-btn { color: #7d9799; }
+.training-theme .seg-btn.seg-active { box-shadow: 0 2px 8px rgba(90, 138, 143, 0.15); }
+.training-theme .btn-back { background: var(--tr-soft); color: var(--primary-color); }
+.training-theme .btn-primary:hover { background: #4c787d; }   /* style.css .btn-primary:hover 보라(#7d6bb0) 대신 */
+.tr-btn.primary:hover { background: #4c787d; }
+
+/* ---- 프로필 사진: 파일 안의 보라 테두리를 가리고 청록 테두리 ---- */
+.training-theme .arrange-profile { overflow: hidden; border: 4px solid var(--primary-color); box-sizing: border-box; }
+.training-theme .arrange-profile img { transform: scale(1.13); }
+
+/* ---- 유형 선택 카드 (시안 9) ---- */
+.tr-type { display: flex; align-items: center; gap: 22px; background: #fff; border-radius: 18px; padding: 24px 28px; box-shadow: 0 2px 10px rgba(70, 120, 125, .06); cursor: pointer; font-family: Inter, 'Pretendard Variable', Pretendard, sans-serif; transition: transform .2s ease; }
+.tr-type:hover { transform: translateY(-2px); }
+.tr-type-icon { width: 64px; height: 64px; border-radius: 16px; background: var(--primary-color); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; flex: 0 0 64px; }
+.tr-type-main { flex: 1; min-width: 0; }
+.tr-type-name { font-size: 22px; font-weight: 700; color: #1e293b; letter-spacing: -.01em; }
+.tr-type-desc { font-size: 14px; color: #7b8b8d; margin-top: 4px; }
+.tr-type-prog { width: 240px; }
+.tr-type-prog-top { display: flex; justify-content: space-between; font-size: 13px; color: #7b8b8d; margin-bottom: 8px; }
+.tr-type-prog-top b { color: var(--primary-color); font-weight: 700; }
+.tr-bar { height: 8px; border-radius: 99px; background: #e3eded; overflow: hidden; }
+.tr-bar i { display: block; height: 100%; background: var(--primary-color); border-radius: 99px; transition: width .4s ease; }
+.tr-type-arrow { color: #a9bfc1; font-size: 18px; margin-left: 8px; }
+.tr-loading, .tr-empty { padding: 40px 0; color: #7b8b8d; font-size: 15px; }
+
+/* ---- 단위 목록 카드 (시안 12, 세로 약 110px) ---- */
+.tr-units-grid .day-button { padding: 20px 8px; gap: 10px; justify-content: flex-start; }
+.tr-units-grid .day-button .progress-dot,
+.tr-units-grid .day-button .tr-check { margin: 0 auto; }
+.tr-units-grid .day-button .day-tasks { min-height: 18px; line-height: 18px; }
+.training-theme .dot-done { background: var(--primary-color); }
+.tr-dot-part { background: linear-gradient(90deg, var(--primary-color) 50%, #d7e3e3 50%); }
+.tr-check { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--primary-color); color: #fff; font-size: 10px; }
+.tr-count { font-weight: 600; }
+.tr-count.done { color: var(--primary-color); }
+.training-theme .day-button.tr-full { background: #f3f8f8; box-shadow: inset 0 0 0 2px var(--primary-color); }
+
+/* ---- 문제 화면 ---- */
+#trainingQuestionContent { max-width: 1200px; margin: 0 auto; padding: 40px 20px 0; }
+#trainingQuestionContent.tr-locked .arrange-option,
+#trainingQuestionContent.tr-locked .arrange-blank { pointer-events: none; }
+#trainingQuestionContent .arrange-blank.tr-wrong { border-bottom-color: #e8a1a7; }
+#trainingQuestionContent .arrange-blank.tr-wrong .filled-word { color: var(--tr-wrong); }
+.tr-timer-seg { display: flex; background: #e3eded; border-radius: 10px; padding: 3px; gap: 2px; margin-right: 10px; }
+.tr-timer-seg button { border: none; background: transparent; font: 600 12px 'Pretendard Variable', Pretendard, sans-serif; color: #7d9799; padding: 7px 11px; border-radius: 8px; cursor: pointer; }
+.tr-timer-seg button.on { background: #fff; color: var(--primary-color); box-shadow: 0 1px 4px rgba(70, 120, 125, .15); }
+.tr-timer-clock { display: flex; align-items: center; gap: 6px; font: 700 16px Inter, sans-serif; color: var(--primary-color); margin-right: 14px; white-space: nowrap; }
+.tr-timer-clock.over { color: var(--tr-wrong); }
+.tr-timer-clock small { font: 600 12px 'Pretendard Variable', Pretendard, sans-serif; margin-left: 4px; }
+
+.tr-feedback { max-width: 1000px; margin: 22px auto 0; border-radius: 14px; padding: 16px 22px; display: flex; align-items: center; gap: 12px; font: 600 16px 'Pretendard Variable', Pretendard, sans-serif; }
+.tr-feedback.wrong { background: #fdecee; color: var(--tr-wrong); }
+.tr-feedback.right { background: #e8f6ee; color: #1f8a4c; }
+.tr-actions { display: flex; justify-content: center; gap: 12px; margin: 22px auto 0; max-width: 1000px; }
+.tr-btn { border: none; border-radius: 10px; padding: 12px 22px; font: 600 15px 'Pretendard Variable', Pretendard, sans-serif; cursor: pointer; }
+.tr-btn.primary { background: var(--primary-color); color: #fff; }
+.tr-btn.ghost { background: #fff; color: var(--primary-color); border: 1.5px solid #cfe0e0; }
+.tr-save-fail { max-width: 1000px; margin: 12px auto 0; font-size: 13px; color: #b45309; text-align: center; }
+
+.tr-explain { max-width: 1000px; margin: 24px auto 40px; background: #fff; border-radius: 16px; padding: 26px 30px; box-shadow: 0 2px 10px rgba(70, 120, 125, .06); border: 1px solid var(--tr-border); font-family: 'Pretendard Variable', Pretendard, sans-serif; }
+.tr-row { display: flex; gap: 14px; align-items: baseline; margin-bottom: 14px; }
+.tr-label { flex: 0 0 64px; font-size: 13px; font-weight: 700; color: #8a84a0; }
+.tr-sent { font-size: 18px; color: #222; line-height: 1.6; }
+.tr-sent.mine { color: var(--tr-wrong); }
+.tr-sent-prompt { font-size: 16px; }
+.tr-ko { font-size: 14px; color: var(--tr-ko); margin-top: 2px; }
+.tr-hl { background: var(--tr-hl-bg); color: var(--tr-hl-fg); border-radius: 6px; padding: 1px 6px; font-weight: 700; }
+.tr-div { height: 1px; background: #eee; margin: 18px 0; }
+.tr-ex-title { font-size: 15px; font-weight: 700; color: var(--primary-color); margin-bottom: 10px; }
+.tr-ex { font-size: 15.5px; line-height: 1.8; color: #333; }
+
+/* ---- 마지막 결과 화면 (시안 17) ---- */
+.tr-end2 { max-width: 720px; margin: 44px auto; font-family: 'Pretendard Variable', Pretendard, Inter, sans-serif; }
+.tr-card { background: #fff; border-radius: 20px; padding: 38px 42px; box-shadow: 0 2px 12px rgba(70, 120, 125, .07); }
+.tr-ring { display: flex; align-items: center; gap: 28px; }
+.tr-ring-bg { stroke: #e3eded; }
+.tr-ring-fg { stroke: var(--primary-color); }
+.tr-ring-num { font: 700 28px Inter, sans-serif; fill: var(--primary-color); }
+.tr-ring-tot { font: 400 14px Inter, sans-serif; fill: #a3b5b7; }
+.tr-h { font: 700 26px Inter, 'Pretendard Variable', Pretendard, sans-serif; color: #1e293b; margin: 0; letter-spacing: -.01em; }
+.tr-s { color: #7b8b8d; font-size: 15px; margin-top: 6px; }
+.tr-sec { margin-top: 30px; }
+.tr-sec-t { font-size: 13px; font-weight: 700; color: #7b8b8d; margin-bottom: 12px; }
+.tr-sec-note { font-weight: 400; color: #a3b5b7; }
+.tr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tr-chip { font: 500 14px Inter, sans-serif; padding: 7px 13px; border-radius: 99px; background: #e8f1f1; color: #3c6a6f; }
+.tr-chip.x { background: #fff; color: var(--tr-wrong); box-shadow: inset 0 0 0 1.5px #ecb3b8; }
+.tr-btns2 { display: flex; gap: 12px; justify-content: center; margin-top: 32px; }

@@ -90,6 +90,7 @@
     <link rel="stylesheet" href="css/correction.css?v=025">
     <link rel="stylesheet" href="css/correction-extension.css?v=015">
     <link rel="stylesheet" href="css/aus-task-select.css?v=001">
+<link rel="stylesheet" href="css/training.css?v=20261103_training">
     
     <!-- [V3] 삭제됨: V2 Stage Selector 인라인 스타일 -->
 
@@ -373,6 +374,10 @@
         <!-- 상단 네비게이션 바 (container 밖) -->
         <div class="top-nav-bar">
             <div class="top-nav-left">
+                <!-- 유형별 트레이닝: 단위 목록 → 유형 선택 뒤로가기 (TRAINING 단위 목록에서만 보임) -->
+                <button class="btn-back" id="trainingBackBtn" onclick="TrainingMain.back()" title="뒤로가기" style="display:none;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
                 <header class="user-card">
                     <div class="user-card-content">
                         <div class="user-name-wrapper">
@@ -388,6 +393,7 @@
                 <div class="course-segment-control" id="courseSegmentControl" style="display:none;">
                     <button class="seg-btn seg-active" id="segBtnRegular">TESTROOM</button>
                     <button class="seg-btn" id="segBtnAustralia">AUSTRALIA</button>
+                    <button class="seg-btn" id="segBtnTraining" style="display:none;">TRAINING</button>
                     <button class="seg-btn" id="segBtnPractice">PRACTICE</button>
                     <button class="seg-btn" id="segBtnFeedback">FEEDBACK</button>
                 </div>
@@ -517,6 +523,10 @@
             <!-- Australia 스케줄 -->
             <section class="schedule-section" id="australiaScheduleContainer" style="display:none;">
                 <!-- renderAustraliaSchedule()에서 동적 생성 -->
+            </section>
+
+            <!-- 유형별 트레이닝 (유형 선택 / 단위 목록) — js/training/training-main.js -->
+            <section class="schedule-section" id="trainingScheduleContainer" style="display:none;">
             </section>
 
             <!-- 연습코스 스케줄 (Practice 1~60 그리드) -->
@@ -2292,6 +2302,44 @@
     </div>
 
 
+    <!-- 유형별 트레이닝 - 문제 풀이 화면 (js/training/training-session.js) -->
+    <div id="trainingScreen" class="screen training-theme" style="display:none;">
+        <div class="test-header">
+            <button class="btn-back" onclick="TrainingSession.exit()" title="뒤로가기">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="test-progress">
+                <span id="trainingProgress">Question 1 of 1</span>
+            </div>
+            <div class="test-title">
+                <i class="fas fa-dumbbell"></i>
+                <span>Training - Build a Sentence</span>
+            </div>
+            <div class="test-header-right">
+                <div class="tr-timer-seg" id="trainingTimerSeg">
+                    <button data-timer="off" onclick="TrainingSession.setTimer('off')">끄기</button>
+                    <button data-timer="40" onclick="TrainingSession.setTimer('40')">40초</button>
+                    <button data-timer="60" onclick="TrainingSession.setTimer('60')">1분</button>
+                </div>
+                <div class="tr-timer-clock" id="trainingTimerClock" style="display:none;"></div>
+                <button id="trainingCheckBtn" class="btn btn-primary" onclick="TrainingSession.check()" disabled>정답 확인</button>
+                <button id="trainingNextBtn" class="btn btn-primary" onclick="TrainingSession.next()" style="display:none;">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div id="trainingSolveArea">
+                <div id="trainingQuestionContent"></div>
+                <div id="trainingFeedback"></div>
+                <div id="trainingExplain"></div>
+            </div>
+            <div id="trainingEndContent" style="display:none;"></div>
+        </div>
+    </div>
+
+
     <!-- Writing - 이메일작성 섹션 -->
     <div id="writingEmailScreen" class="screen">
         <div class="test-header">
@@ -2988,7 +3036,8 @@
     <script src="js/writing/writing-utils.js"></script>
     <!-- 단어배열 Component -->
     <script src="js/writing/arrange-loader.js?v=20261016_alt"></script>
-    <script src="js/writing/ArrangeComponent.js?v=20261016_alt"></script>
+    <script src="js/writing/arrange-core.js?v=20261103_training"></script>
+    <script src="js/writing/ArrangeComponent.js?v=20261103_training"></script>
     <script src="js/writing/arrange-result.js?v=20261016_alt"></script>
     <!-- 이메일작성 Component -->
     <script src="js/writing/email-loader.js"></script>
@@ -3044,7 +3093,10 @@
     <script src="js/correction/correction-feedback.js?v=006"></script>
     <script src="js/correction/correction-detail.js?v=011_corr_dup"></script>
 
-    <script src="js/main.js?v=20261017_progress"></script>
+    <script src="js/training/training-data.js?v=20261103_training"></script>
+    <script src="js/training/training-main.js?v=20261103_training"></script>
+    <script src="js/training/training-session.js?v=20261103_training"></script>
+    <script src="js/main.js?v=20261103_training"></script>
     <script src="js/navigation.js?v=003_popup_rules"></script>
     <!-- supabase-client.js, auth.js → 컨트롤러보다 앞에서 로드됨 (위쪽 참조) -->
     <!-- 🔔 알림 시스템 -->
