@@ -122,8 +122,12 @@
 
     function _fullSentence(q, words) {
         var blanks = 0;
-        var parts = q.presentedWords.map(function (w) {
-            if (w === '_') { return words[blanks++] || '___'; }
+        var parts = q.presentedWords.map(function (w, i) {
+            if (w === '_') {
+                var x = words[blanks++] || '___';
+                // 첫 칸은 대문자 (학생이 놓을 때와 같은 규칙 — arrange-core placeWord). 조각은 소문자로 저장됨
+                return i === 0 ? x.charAt(0).toUpperCase() + x.slice(1) : x;
+            }
             return w;
         });
         return parts.join(' ') + q.endPunctuation;

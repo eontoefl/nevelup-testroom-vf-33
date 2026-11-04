@@ -2,9 +2,10 @@
  * training-data.js — 유형별 트레이닝: 문제·기록 불러오기, 저장, 진도 계산
  * 계획서: C:\기능구현\유형별 트레이닝\IMPLEMENTATION_PLAN.md (v2)
  *
- * 표 두 개 (기존 정규·연습·호주 기록 표와 따로 — 인증률·주간체크·관리자 화면에 섞이지 않게)
- *   tr_training_items    : 문제 (학생은 읽기만)
- *   tr_training_attempts : 학생 기록. 지우거나 고치지 않고 일어난 일을 한 줄씩 쌓는다(추가만).
+ * 표 (기존 정규·연습·호주 기록 표와 따로 — 인증률·주간체크·관리자 화면에 섞이지 않게)
+ *   문제 표는 유형마다 하나 (2026-11-04 대표 결정). W1 Build a Sentence = tr_training_w1 (학생은 읽기만)
+ *     → 새 유형은 TYPES에 table을 적고 그 유형 전용 표를 만든다.
+ *   tr_training_attempts : 모든 유형이 같이 쓰는 학생 기록 (type 칸으로 구별). 지우거나 고치지 않고 일어난 일을 한 줄씩 쌓는다(추가만).
  *       event 'check'  = 정답 확인을 누름 (is_correct)
  *       event 'reveal' = 정답·해설 보기를 누름
  *
@@ -19,14 +20,13 @@
 (function () {
     'use strict';
 
-    var ITEMS_TABLE = 'tr_training_items';
     var ATTEMPTS_TABLE = 'tr_training_attempts';
     var MIX_RATIO = 0.3;        // 다른 단위에서 섞는 비율 (이 숫자 하나로 조정)
     var ELIGIBLE_RATIO = 0.8;   // "풀어 본 단위" 기준
 
     // 유형 목록 — 다른 유형이 생기면 여기에 한 줄 추가 (계획서 확정 6·25번)
     var TYPES = [
-        { key: 'build_sentence', area: 'Writing', name: 'Build a Sentence', desc: '외운 표현으로 문장 배열 연습', icon: 'fa-pen' }
+        { key: 'build_sentence', table: 'tr_training_w1', area: 'Writing', name: 'Build a Sentence', desc: '외운 표현으로 문장 배열 연습', icon: 'fa-pen' }
     ];
 
     function _arr(v) {
@@ -40,10 +40,10 @@
     }
 
     /** DB 줄 → 화면용 문제 (실전 W1 문제와 같은 모양 + 트레이닝 칸) */
-    function toQuestion(row) {
+    function toQuestion(row, type) {
         return {
             itemId: row.item_id,
-            type: row.type,
+            type: type,
             unitNo: Number(row.unit_no),
             orderNo: Number(row.order_no) || 0,
             groupNo: row.group_no == null ? null : Number(row.group_no),
@@ -60,9 +60,10 @@
     }
 
     async function loadItems(type) {
-        var rows = await supabaseSelect(ITEMS_TABLE,
-            'type=eq.' + encodeURIComponent(type) + '&order=unit_no.asc,order_no.asc&select=*');
-        return (rows || []).map(toQuestion);
+        var t = TYPES.find(function (x) { return x.key === type; });
+        if (!t || !t.table) return [];
+        var rows = await supabaseSelect(t.table, 'order=unit_no.asc,order_no.asc&select=*');
+        return (rows || []).map(function (r) { return toQuestion(r, type); });
     }
 
     async function loadAttempts(userId, type) {
