@@ -2,35 +2,7 @@
  * 입문서 정독 PDF 모달 관련 함수
  */
 
-// ── 데드라인 연장 캐시 (페이지 로드 시 Supabase에서 가져옴) ──
-window._deadlineExtensions = [];
-
-/**
- * 데드라인 연장 데이터 로드 (페이지 로드 시 1회 호출)
- * tr_deadline_extensions 테이블에서 현재 사용자의 연장 기록을 캐시
- */
-async function loadDeadlineExtensions() {
-    try {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-        if (!user || !user.id) {
-            console.log('📅 [연장] 사용자 정보 없음 — 로드 생략');
-            return;
-        }
-        if (typeof supabaseSelect !== 'function') {
-            console.log('📅 [연장] supabaseSelect 없음 — 로드 생략');
-            return;
-        }
-        var rows = await supabaseSelect(
-            'tr_deadline_extensions',
-            'user_id=eq.' + user.id + '&select=original_date,extra_days'
-        );
-        window._deadlineExtensions = rows || [];
-        console.log('📅 [연장] 로드 완료:', window._deadlineExtensions.length + '건');
-    } catch (e) {
-        console.warn('📅 [연장] 로드 실패:', e);
-        window._deadlineExtensions = [];
-    }
-}
+// 마감 연장은 currentUser.deadlineExtensions(로그인·세션 동기화에서 시작일·정지 이력과 함께 받음, 2026-11-08).
 
 /**
  * 4시 마감 체크 (데드라인 방식)
@@ -76,7 +48,7 @@ function isTaskDeadlinePassed() {
         if (typeof isSelfPacedV2 === 'function' && isSelfPacedV2(user)) {
             // 세트 마감(연장 반영)은 timezone-utils의 단일 진실원 함수로 계산.
             var spDeadline = (typeof getSelfPacedSetDeadline === 'function')
-                ? getSelfPacedSetDeadline(user, ct.currentWeek, ct.currentDay, window._deadlineExtensions, getUserTimezone())
+                ? getSelfPacedSetDeadline(user, ct.currentWeek, ct.currentDay, user.deadlineExtensions || [], getUserTimezone())
                 : null;
             if (!spDeadline) {
                 console.log('⏰ [마감] 자기주도 v2 — 세트 날짜 계산 불가 → 통과');
@@ -115,7 +87,7 @@ function isTaskDeadlinePassed() {
         console.log('⏰ [마감] 날짜 없음(시작일 파싱 실패 또는 무기한 정지 구간) — 마감 없음으로 처리:', user.startDate);
         return false;
     }
-    var deadline = getChallengeTaskDeadline(effectiveStartDate, ct.currentWeek, dayOffset, window._deadlineExtensions, getUserTimezone(), pauses);
+    var deadline = getChallengeTaskDeadline(effectiveStartDate, ct.currentWeek, dayOffset, user.deadlineExtensions || [], getUserTimezone(), pauses);
 
     var now = new Date();
     var passed = now > deadline;
@@ -297,15 +269,6 @@ async function openIntroBookGuide(params) {
         window.location.href = url;
     };
 }
-
-// ★ 데드라인 연장 데이터 미리 로드 (캐시)
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        if (typeof loadDeadlineExtensions === 'function') {
-            loadDeadlineExtensions();
-        }
-    }, 500);
-});
 
 /**
  * 과제 시작 확인 팝업 (유형별 메시지)

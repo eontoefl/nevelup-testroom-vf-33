@@ -24,7 +24,7 @@ const sandbox = {
     window: {}, console: { log() {}, warn() {}, error() {} },
     sessionStorage: { _s: {}, getItem(k) { return this._s[k] || null; }, setItem(k, v) { this._s[k] = v; } },
     localStorage: { getItem() { return null; }, setItem() {} },
-    fetch: async (url, opts) => { fetchLog.push(url); const data = fetchReply(url); return { ok: true, status: 200, headers: { get: (k) => (k === 'content-type' ? 'application/json' : null) }, json: async () => data, text: async () => JSON.stringify(data) }; }
+    fetch: async (url, opts) => { fetchLog.push(url); const data = fetchReply(url); if (data && data.__fail) return { ok: false, status: 503, headers: { get: () => null }, json: async () => ({}), text: async () => 'fail' }; return { ok: true, status: 200, headers: { get: (k) => (k === 'content-type' ? 'application/json' : null) }, json: async () => data, text: async () => JSON.stringify(data) }; }
 };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
@@ -135,6 +135,27 @@ console.log('[7] refreshPauseState — DB 재조회로 user 갱신 (모의 fetch
     fetchReply = () => [];
     const r2 = await T.refreshPauseState({ id: 'u2', applicationId: 43, startDate: '2026-09-06' });
     check('행 없으면 기존 값 유지', r2.startDate === '2026-09-06');
+    check('행 없으면 동기화 실패 표시(scheduleSyncOk=false)', r2.scheduleSyncOk === false);
+
+    console.log('[7-b] refreshPauseState — 마감 연장도 같은 길로(이 수강 기준, 실패 시 이전 값 유지) 2026-11-08');
+    const APP = { schedule_start: '2026-09-13', challenge_pauses: [], correction_pauses: [] };
+    const EXT = [{ original_date: '2026-09-15', extra_days: 3 }];
+    fetchLog.length = 0;
+    fetchReply = (url) => url.includes('/applications?') ? [APP] : (url.includes('/tr_deadline_extensions?') ? EXT : []);
+    const e1 = await T.refreshPauseState({ id: 'u3', applicationId: 'app-77', startDate: '2026-09-06', deadlineExtensions: [] });
+    check('연장을 수강 id로 조회(enrollment_id)', fetchLog.some(x => x.includes('tr_deadline_extensions?enrollment_id=eq.app-77')) && !fetchLog.some(x => x.includes('tr_deadline_extensions?user_id')));
+    check('연장 목록 갱신 + 동기화 성공', e1.deadlineExtensions.length === 1 && e1.deadlineExtensions[0].extra_days === 3 && e1.scheduleSyncOk === true);
+    check('세션에도 연장 저장', JSON.parse(sandbox.sessionStorage.getItem('currentUser')).deadlineExtensions.length === 1);
+    fetchReply = (url) => url.includes('/applications?') ? [APP] : (url.includes('/tr_deadline_extensions?') ? { __fail: true } : []);
+    const e2 = await T.refreshPauseState({ id: 'u3', applicationId: 'app-77', startDate: '2026-09-06', deadlineExtensions: EXT });
+    check('연장 조회 실패 → 이전 연장 유지', e2.deadlineExtensions === EXT);
+    check('연장 조회 실패 → scheduleSyncOk=false(고정 보류)', e2.scheduleSyncOk === false);
+    check('연장 조회 실패해도 다른 재료는 갱신', e2.startDate === '2026-09-13');
+    fetchReply = (url) => url.includes('/applications?') ? [APP] : (url.includes('/tr_deadline_extensions?') ? [] : []);
+    const e3 = await T.refreshPauseState({ id: 'u3', applicationId: 'app-77', deadlineExtensions: EXT });
+    check('연장 0건(성공) → 빈 목록으로 갱신', Array.isArray(e3.deadlineExtensions) && e3.deadlineExtensions.length === 0 && e3.scheduleSyncOk === true);
+    check('_fetchDeadlineExtensions: 실패 null / 성공 배열', (await (async () => { fetchReply = () => ({ __fail: true }); return await T._fetchDeadlineExtensions('a'); })()) === null && Array.isArray(await (async () => { fetchReply = () => []; return await T._fetchDeadlineExtensions('a'); })()));
+
 
     console.log('[8] submitCorrectionDraft — 정지 중 1차 차단, 2차 허용');
     T.currentUser = { id: 'u1', correctionPauses: nowPause, timezone: 'Asia/Seoul' };

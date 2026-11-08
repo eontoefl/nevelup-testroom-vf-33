@@ -15,7 +15,6 @@
 let mpUser = null;           // sessionStorage에서 로드한 유저 정보
 let mpV3Results = [];        // study_results_v3
 let mpGradeRules = [];       // tr_grade_rules (등급/환급 기준표)
-let mpDeadlineExtensions = []; // tr_deadline_extensions (데드라인 연장)
 let mpAuth = null;           // 디비 enrollment_auth 결과(지금 수강의 인증률). 실패 시 null
 
 // section_type을 요일 매핑하기 위한 한→영 변환
@@ -86,11 +85,7 @@ async function loadAllData() {
         'order=min_rate.desc'
     ) || [];
 
-    // 데드라인 연장 기록 로드
-    mpDeadlineExtensions = await supabaseSelect(
-        'tr_deadline_extensions',
-        `user_id=eq.${userId}&select=original_date,extra_days`
-    ) || [];
+    // 데드라인 연장 기록: mpUser.deadlineExtensions(refreshPauseState에서 이 수강 기준으로 받음, 2026-11-08)
 
     // 인증률: 디비 한 곳에서 계산(공홈 관리자 화면과 같은 숫자, 2026-10-18 인증률통일)
     const authRows = mpUser.applicationId ? await loadEnrollmentAuth([mpUser.applicationId]) : [];
@@ -101,7 +96,7 @@ async function loadAllData() {
     await loadToeflScores();
     await loadToeflTarget();
 
-    console.log(`📊 [MyPage] 로드 완료 - V3결과: ${mpV3Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${mpDeadlineExtensions.length}건`);
+    console.log(`📊 [MyPage] 로드 완료 - V3결과: ${mpV3Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${(mpUser.deadlineExtensions || []).length}건`);
 }
 
 // ================================================
@@ -129,7 +124,8 @@ function renderDeadlineExtensionBanner() {
     if (existing) existing.remove();
 
     // 데이터 없으면 아무것도 안 함 (DOM에 빈 요소 남기지 않음)
-    if (!mpDeadlineExtensions || mpDeadlineExtensions.length === 0 || !mpUser.startDate) {
+    const exts = mpUser.deadlineExtensions || [];
+    if (exts.length === 0 || !mpUser.startDate) {
         return;
     }
 
@@ -139,7 +135,7 @@ function renderDeadlineExtensionBanner() {
 
     const tz = getUserTimezone();
 
-    mpDeadlineExtensions.forEach(ext => {
+    exts.forEach(ext => {
         const origDate = new Date(ext.original_date + 'T00:00:00');
         if (isNaN(origDate.getTime())) return;
 
@@ -670,7 +666,7 @@ function getDeadlineForDayNum(dayNum) {
         const w = Math.floor((dayNum - 1) / 6) + 1;
         const di = (dayNum - 1) % 6;
         return (typeof getSelfPacedSetDeadline === 'function')
-            ? getSelfPacedSetDeadline(mpUser, w, di, mpDeadlineExtensions, getUserTimezone())
+            ? getSelfPacedSetDeadline(mpUser, w, di, mpUser.deadlineExtensions || [], getUserTimezone())
             : null;
     }
 
@@ -688,14 +684,15 @@ function getDeadlineForDayNum(dayNum) {
  */
 function buildExtendedDeadlineMap() {
     const map = new Map();
-    if (!mpUser.startDate || !mpDeadlineExtensions || mpDeadlineExtensions.length === 0) return map;
+    const exts = mpUser.deadlineExtensions || [];
+    if (!mpUser.startDate || exts.length === 0) return map;
 
     if (!parseYmdLocal(mpUser.startDate)) return map;
 
     const now = new Date();
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-    mpDeadlineExtensions.forEach(ext => {
+    exts.forEach(ext => {
         if (!parseYmdLocal(ext.original_date)) return;
 
         // 연장된 마감 계산 (타임존 기반)

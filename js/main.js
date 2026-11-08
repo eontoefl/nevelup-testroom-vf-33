@@ -2033,7 +2033,7 @@ function _renderDeadlineBanner(week, dayKr) {
     if (dayOffset === undefined) return;
 
     // 과제 마감(다음날 04:00 + 연장 + 정지 보정) — 일정 계산 단일 출처(timezone-utils.js). 시작일 형식 오류면 표시 안 함.
-    var deadline = getChallengeTaskDeadline(user.startDate, week, dayOffset, window._deadlineExtensions, getUserTimezone(), user.challengePauses || []);
+    var deadline = getChallengeTaskDeadline(user.startDate, week, dayOffset, user.deadlineExtensions || [], getUserTimezone(), user.challengePauses || []);
     var now = new Date();
     var banner = document.createElement('div');
     banner.id = 'taskListDeadlineBanner';
