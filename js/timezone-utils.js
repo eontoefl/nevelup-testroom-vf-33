@@ -602,4 +602,25 @@ function getChallengeDayPosition(startYmd, today, pauses) {
     return { diffDays: diffDays, weekNum: Math.floor(diffDays / 7) + 1, dayIndex: ((diffDays % 7) + 7) % 7 };
 }
 
+/**
+ * 마감까지 남은 시간 문구 — 과제 목록 마감 배너와 마이페이지 연장 안내가 같이 쓴다(2026-11-08, main.js에서 옮김).
+ *   timeText: 1일 이상 "N일 N시간 N분 남음", 하루 미만 "N시간 N분 남음", 1시간 미만 "N분 남음"
+ *   label: "오늘 마감" / "내일 마감" / "N일 후 마감", urgent: 하루 미만이고 6시간 미만
+ * @returns {{passed:boolean, urgent:boolean, label:string, timeText:string}}
+ */
+function formatDeadlineRemaining(deadline, now) {
+    now = now || new Date();
+    if (!deadline || now > deadline) return { passed: true, urgent: false, label: '', timeText: '' };
+    var diff = deadline - now;
+    var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    var timeText;
+    if (days > 0) timeText = days + '일 ' + hours + '시간 ' + minutes + '분 남음';
+    else if (hours > 0) timeText = hours + '시간 ' + minutes + '분 남음';
+    else timeText = minutes + '분 남음';
+    var label = days === 0 ? '오늘 마감' : days === 1 ? '내일 마감' : days + '일 후 마감';
+    return { passed: false, urgent: days === 0 && hours < 6, label: label, timeText: timeText };
+}
+
 console.log('✅ timezone-utils.js 로드 완료');

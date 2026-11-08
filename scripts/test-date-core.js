@@ -78,5 +78,16 @@ check('buildMaterializedSelfPacedSchedule 첫 생성 24개·마지막 세트 ≤
 check('toefl 등록 마감(시작+28/42) == 옛 식', starts.every(s => [28, 42].every(n => eq(T.addDaysLocal(T.parseYmdLocal(s), n), oldToeflDeadline(s, n)))));
 check('첨삭 탭 D-1 문자열 == 옛 식 (KST)', !isKST || starts.every(s => T.addDaysYmd(s, -1) === oldCorrActiveStartStr(s)));
 
+console.log('\n[5] 남은 시간 문구(formatDeadlineRemaining) == 옛 과제 목록 배너 식 (2026-11-08)');
+function oldBanner(deadline, now) { if (now > deadline) return 'PASSED'; var diff = deadline - now; var days = Math.floor(diff / 86400000); var hours = Math.floor((diff % 86400000) / 3600000); var minutes = Math.floor((diff % 3600000) / 60000); var t = days > 0 ? days + '일 ' + hours + '시간 ' + minutes + '분 남음' : hours > 0 ? hours + '시간 ' + minutes + '분 남음' : minutes + '분 남음'; var lab = days === 0 ? '오늘 마감' : days === 1 ? '내일 마감' : days + '일 후 마감'; return (days === 0 && hours < 6 ? 'U|마감 임박 · ' : 'N|' + lab + ' · ') + t; }
+function newBanner(deadline, now) { var r = T.formatDeadlineRemaining(deadline, now); if (r.passed) return 'PASSED'; return (r.urgent ? 'U|마감 임박 · ' : 'N|' + r.label + ' · ') + r.timeText; }
+const base = new Date(2026, 10, 8, 20, 0, 0);
+const diffs = [-60000, 0, 30000, 59 * 60000, 3600000, 5 * 3600000 + 59 * 60000, 6 * 3600000, 23 * 3600000 + 59 * 60000, 86400000, 86400000 + 1, 2 * 86400000 + 6 * 3600000 + 39 * 60000, 6 * 86400000 + 8 * 3600000, 17 * 86400000];
+check('경계값 13개 모두 옛 식과 같은 문구·강조', diffs.every(d => newBanner(new Date(base.getTime() + d), base) === oldBanner(new Date(base.getTime() + d), base)));
+check('무작위 2000개 옛 식과 같음', (() => { for (let i = 0; i < 2000; i++) { const d = Math.floor(Math.random() * 20 * 86400000) - 3600000; if (newBanner(new Date(base.getTime() + d), base) !== oldBanner(new Date(base.getTime() + d), base)) return false; } return true; })());
+check('예시: 2일 6시간 39분 남음 / 2일 후 마감', (() => { const r = T.formatDeadlineRemaining(new Date(base.getTime() + 2 * 86400000 + 6 * 3600000 + 39 * 60000), base); return r.timeText === '2일 6시간 39분 남음' && r.label === '2일 후 마감' && !r.urgent; })());
+check('예시: 5시간 10분 → 마감 임박', (() => { const r = T.formatDeadlineRemaining(new Date(base.getTime() + 5 * 3600000 + 10 * 60000), base); return r.urgent && r.timeText === '5시간 10분 남음' && r.label === '오늘 마감'; })());
+check('마감 지남/없음 → passed', T.formatDeadlineRemaining(new Date(base.getTime() - 1000), base).passed && T.formatDeadlineRemaining(null, base).passed);
+
 console.log('\n' + pass + ' passed' + (fail ? ', ' + fail + ' FAILED' : ''));
 process.exit(fail ? 1 : 0);

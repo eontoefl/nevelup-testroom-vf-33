@@ -132,6 +132,7 @@ function renderDeadlineExtensionBanner() {
     const now = new Date();
     const dayKrNames = ['일', '월', '화', '수', '목', '금', '토'];
     const activeExtensions = [];
+    const md = d => `${d.getMonth() + 1}/${d.getDate()}(${dayKrNames[d.getDay()]})`;
 
     const tz = getUserTimezone();
 
@@ -154,31 +155,37 @@ function renderDeadlineExtensionBanner() {
 
     if (activeExtensions.length === 0) return;
 
-    // 마감이 가까운 순으로 정렬
-    activeExtensions.sort((a, b) => a.deadline - b.deadline);
+    // 같은 마감끼리 묶고(마감 가까운 순), 이어진 과제 날짜는 범위로: "10/28(수)~11/3(화)"
+    activeExtensions.sort((a, b) => a.deadline - b.deadline || a.originalDate - b.originalDate);
+    const groups = [];
+    activeExtensions.forEach(ext => {
+        let g = groups.find(x => x.deadline.getTime() === ext.deadline.getTime());
+        if (!g) { g = { deadline: ext.deadline, dates: [] }; groups.push(g); }
+        g.dates.push(ext.originalDate);
+    });
+    const rows = groups.map(g => {
+        g.dates.sort((a, b) => a - b);
+        const runs = [];
+        g.dates.forEach(d => {
+            const last = runs[runs.length - 1];
+            if (last && diffDaysLocal(last.end, d) === 1) last.end = d; else runs.push({ start: d, end: d });
+        });
+        const label = runs.map(r => r.start.getTime() === r.end.getTime() ? md(r.start) : `${md(r.start)}~${md(r.end)}`).join(', ');
+        return `<span class="ext-banner-row"><span class="ext-banner-date">${label}</span> 과제는 <span class="ext-banner-deadline">${md(g.deadline)} 새벽 4시</span>까지 할 수 있어요</span>`;
+    }).join(' ');
 
-    const items = activeExtensions.map(ext => {
-        const origM = ext.originalDate.getMonth() + 1;
-        const origD = ext.originalDate.getDate();
-        const origDay = dayKrNames[ext.originalDate.getDay()];
-        const dlM = ext.deadline.getMonth() + 1;
-        const dlD = ext.deadline.getDate();
-        const dlDay = dayKrNames[ext.deadline.getDay()];
-        return `<div class="ext-banner-item">
-            <i class="fa-solid fa-clock-rotate-left"></i>
-            <span><strong>${origM}/${origD}(${origDay})</strong> 과제의 마감이 <strong>${dlM}/${dlD}(${dlDay}) 새벽 4시</strong>까지 연장되었습니다.</span>
-        </div>`;
-    }).join('');
+    // 남은 시간: 가장 가까운 마감 기준, 과제 목록과 같은 문구(formatDeadlineRemaining)
+    const remain = formatDeadlineRemaining(groups[0].deadline, now);
+    const pillText = remain.urgent ? `마감 임박 · ${remain.timeText}` : remain.timeText;
 
     // 배너 동적 생성
     const banner = document.createElement('div');
     banner.id = 'deadlineExtensionBanner';
     banner.innerHTML = `
-        <div class="ext-banner">
-            <div class="ext-banner-header">
-                <i class="fa-solid fa-calendar-plus"></i> 데드라인 연장 안내
-            </div>
-            ${items}
+        <div class="ext-banner${groups.length > 1 ? ' is-multi' : ''}">
+            <div class="ext-banner-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="ext-banner-body"><span class="ext-banner-title">마감이 늘어난 과제가 있어요</span>${rows}</div>
+            <span class="ext-banner-pill${remain.urgent ? ' is-urgent' : ''}">${pillText}</span>
         </div>
     `;
 

@@ -2051,29 +2051,16 @@ function _renderDeadlineBanner(week, dayKr) {
     }
     if (!deadline) return;
 
-    if (now > deadline) {
+    var remain = formatDeadlineRemaining(deadline, now);   // 남은 시간 문구 — 마이페이지 연장 안내와 같은 규칙(timezone-utils.js)
+    if (remain.passed) {
         banner.className = 'task-deadline-banner deadline-passed';
         banner.innerHTML = '<i class="fas fa-lock"></i> 마감됨';
+    } else if (remain.urgent) {
+        banner.className = 'task-deadline-banner deadline-urgent';
+        banner.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + remain.timeText;
     } else {
-        var diff = deadline - now;
-        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        var timeText = '';
-        if (days > 0) timeText = days + '일 ' + hours + '시간 ' + minutes + '분 남음';
-        else if (hours > 0) timeText = hours + '시간 ' + minutes + '분 남음';
-        else timeText = minutes + '분 남음';
-
-        var deadlineLabel = days === 0 ? '오늘 마감' : days === 1 ? '내일 마감' : days + '일 후 마감';
-
-        if (days === 0 && hours < 6) {
-            banner.className = 'task-deadline-banner deadline-urgent';
-            banner.innerHTML = '<i class="fas fa-exclamation-circle"></i> 마감 임박 · ' + timeText;
-        } else {
-            banner.className = 'task-deadline-banner deadline-normal';
-            banner.innerHTML = '<i class="fas fa-clock"></i> ' + deadlineLabel + ' · ' + timeText;
-        }
+        banner.className = 'task-deadline-banner deadline-normal';
+        banner.innerHTML = '<i class="fas fa-clock"></i> ' + remain.label + ' · ' + remain.timeText;
     }
 
     var welcomeHeader = document.querySelector('#taskListScreen .welcome-header');
