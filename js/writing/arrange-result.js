@@ -241,8 +241,13 @@ function _renderUserAnswerInline(result) {
             parts.push(word);
         }
     });
-    if (result.endPunctuation) parts.push(result.endPunctuation);
-    return escapeHtml_writing(parts.join(' '));
+    // 끝 문장부호와 쉼표로 시작하는 칸 앞에는 띄어쓰기를 넣지 않는다 (2026-11-10, 예전: "flexible .")
+    var line = '';
+    parts.forEach(function(w, i) {
+        var t = String(w);
+        line += (i === 0 || t.charAt(0) === ',') ? t : ' ' + t;
+    });
+    return escapeHtml_writing(line + (result.endPunctuation || ''));
 }
 
 // ── 단어 클릭 → 다음 빈 슬롯에 배치 ──

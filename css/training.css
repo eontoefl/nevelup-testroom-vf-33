@@ -94,6 +94,7 @@
 .tr-sent-prompt { font-size: 16px; }
 .tr-ko { font-size: 14px; color: var(--tr-ko); margin-top: 2px; }
 .tr-hl { background: var(--tr-hl-bg); color: var(--tr-hl-fg); border-radius: 6px; padding: 1px 6px; font-weight: 700; }
+.tr-hl.tr-hl-tight { padding-right: 1px; }   /* 바로 뒤 쉼표·온점을 붙여 보이게 (2026-11-10) */
 .tr-div { height: 1px; background: #eee; margin: 18px 0; }
 .tr-ex-title { font-size: 15px; font-weight: 700; color: var(--primary-color); margin-bottom: 10px; }
 .tr-ex { font-size: 15.5px; line-height: 1.8; color: #333; }

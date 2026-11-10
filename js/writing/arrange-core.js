@@ -109,7 +109,9 @@
                     </div>
                 `;
             } else {
-                return `<span class="arrange-presented-word">${word}</span>`;
+                // 쉼표로 시작하는 고정 칸(문장 중간 쉼표)은 앞 칸에 붙여 보인다 (2026-11-10). 모양은 style.css .arrange-attach
+                const attach = String(word).charAt(0) === ',' ? ' arrange-attach' : '';
+                return `<span class="arrange-presented-word${attach}">${word}</span>`;
             }
         }).join('');
         
@@ -120,7 +122,7 @@
                 </div>
                 <div class="arrange-blanks">
                     ${blanksHtml}
-                    <span class="arrange-punctuation">${question.endPunctuation}</span>
+                    <span class="arrange-punctuation${question.endPunctuation === '?' ? ' arrange-punct-q' : ''}">${question.endPunctuation}</span>
                 </div>
             </div>
         `;
@@ -208,6 +210,20 @@
      * @param {object|null} userAnswer - { 빈칸 index: 단어 }
      * @returns {{isCorrect:boolean, matchedIdx:number, userBlankAnswers:string[], userFullAnswer:string[], wrongBlankIndexes:number[]}}
      */
+    /**
+     * 단어 배열 → 문장 한 줄 (2026-11-10)
+     * 띄어쓰기로 잇되, 쉼표로 시작하는 칸과 끝 문장부호 앞에는 띄어쓰기를 넣지 않는다.
+     * 예: ['I','decided','yet',',','but','it','is'] + '.' → "I decided yet, but it is."
+     */
+    function joinSentence(words, endPunctuation) {
+        let s = '';
+        (words || []).forEach(function (w, i) {
+            const t = String(w);
+            s += (i === 0 || t.charAt(0) === ',') ? t : ' ' + t;
+        });
+        return s + (endPunctuation || '');
+    }
+
     function gradeQuestion(question, userAnswer) {
         // 사용자가 빈칸에 넣은 답만 순서대로 추출
         const userBlankAnswers = [];
@@ -260,6 +276,7 @@
         placeWord: placeWord,
         removeWord: removeWord,
         isComplete: isComplete,
-        gradeQuestion: gradeQuestion
+        gradeQuestion: gradeQuestion,
+        joinSentence: joinSentence
     };
 })();

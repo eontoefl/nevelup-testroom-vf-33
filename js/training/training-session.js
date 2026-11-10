@@ -130,7 +130,7 @@
             }
             return w;
         });
-        return parts.join(' ') + q.endPunctuation;
+        return ArrangeCore.joinSentence(parts, q.endPunctuation);
     }
 
     function _highlight(sentence, hl) {
@@ -138,13 +138,16 @@
         if (!hl) return safe;
         var idx = sentence.toLowerCase().indexOf(String(hl).toLowerCase());
         if (idx < 0) return safe;
-        return _esc(sentence.slice(0, idx)) + '<mark class="tr-hl">' + _esc(sentence.slice(idx, idx + hl.length)) + '</mark>' + _esc(sentence.slice(idx + hl.length));
+        var rest = sentence.slice(idx + hl.length);
+        // 바로 뒤에 쉼표·문장부호가 붙으면 색 상자 오른쪽 여백을 줄여 떨어져 보이지 않게 (2026-11-10)
+        var tight = /^[,.?]/.test(rest) ? ' tr-hl-tight' : '';
+        return _esc(sentence.slice(0, idx)) + '<mark class="tr-hl' + tight + '">' + _esc(sentence.slice(idx, idx + hl.length)) + '</mark>' + _esc(rest);
     }
 
     function _explainHtml() {
         var q = S.q;
         var correct = _fullSentence(q, q.answerSets[0].answer);
-        var mine = S.lastGrade ? S.lastGrade.userFullAnswer.join(' ') + q.endPunctuation : '';
+        var mine = S.lastGrade ? ArrangeCore.joinSentence(S.lastGrade.userFullAnswer, q.endPunctuation) : '';
         var mineWrong = S.phase === 'revealed';
         var html = '<div class="tr-explain">';
         html += '<div class="tr-row"><div class="tr-label">내 답</div><div><div class="tr-sent ' + (mineWrong ? 'mine' : '') + '">' + _esc(mine) + '</div></div></div>';
@@ -193,7 +196,7 @@
         S.checkedOnce = true;
         S.phase = g.isCorrect ? 'correct' : 'wrong';
         _render();
-        await _save('check', g.isCorrect, g.userFullAnswer.join(' ') + S.q.endPunctuation, timing);
+        await _save('check', g.isCorrect, ArrangeCore.joinSentence(g.userFullAnswer, S.q.endPunctuation), timing);
     }
 
     function retry() {

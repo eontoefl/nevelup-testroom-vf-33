@@ -2930,13 +2930,46 @@ body {
 }
 
 .arrange-punctuation {
-    font-size: 22px;
-    font-weight: 700;
+    /* 2026-11-10 대표: 옆 단어와 같은 크기·굵기·줄 높이 (예전: 22px 굵게, 줄 맨 아래(밑줄 높이)에 맞춰 글자보다 낮게 보였음) */
+    font-size: 18px;
+    font-weight: 400;
     color: var(--text-primary);
     margin-left: -8px;
+}
+
+/* 쉼표·끝 문장부호를 앞 글자에 붙인다 (2026-11-10)
+   - 미리 찍힌 단어 뒤: 칸 사이 간격 10px + 그 단어 오른쪽 여백 8px = 18px 당김
+   - 조각이 놓인 빈칸 뒤: 빈칸 오른쪽 여백을 없애 밑줄이 단어 끝에서 끝나게 하고 간격 10px 당김
+     (:has 못 쓰는 오래된 브라우저는 8px 떨어져 보일 뿐)
+   - 빈 빈칸 뒤: 예전처럼 밑줄 끝에서 2px
+   - 물음표(.arrange-punct-q)는 붙이지 않고 예전 간격 그대로 (대표: 붙이면 너무 붙어 보임)
+   - 쉼표(.arrange-attach)는 단어와 같은 크기 — .arrange-presented-word 모양 그대로 */
+.arrange-presented-word.arrange-attach {
+    padding-left: 0;
+    margin-left: -8px;
+}
+.arrange-presented-word + .arrange-attach,
+.arrange-presented-word + .arrange-punctuation:not(.arrange-punct-q) {
+    margin-left: -18px;
+}
+.arrange-blank.has-word:has(+ .arrange-attach),
+.arrange-blank.has-word:has(+ .arrange-punctuation:not(.arrange-punct-q)) {
+    padding-right: 0;
+}
+/* 빈칸 바로 뒤 부호는 밑줄 높이에 (대표 2026-11-10: 밑줄이 끝나는 자리에 밑줄과 같은 높이로).
+   미리 찍힌 단어 뒤 부호는 글자 높이 그대로. */
+.arrange-blank + .arrange-attach,
+.arrange-blank + .arrange-punctuation:not(.arrange-punct-q) {
+    margin-left: -7px;  /* 밑줄 끝에서 3px 띄움 (칸 간격 10px - 7px). 대표: 딱 붙으면 너무 붙어 보임 */
     align-self: flex-end;
     line-height: 1;
-    padding-bottom: 2px;
+    position: relative;
+    top: 2px;   /* 부호 아래 끝 = 밑줄 (측정값으로 맞춤) */
+}
+/* 물음표는 글자 높이에 한 칸 띄워서 (대표: 이 모양이 낫다). 조각이 놓인 빈칸 글자는 2px 떠 있어서 같이 올림 */
+.arrange-blank.has-word + .arrange-punct-q {
+    position: relative;
+    top: -2px;
 }
 
 .arrange-options {
