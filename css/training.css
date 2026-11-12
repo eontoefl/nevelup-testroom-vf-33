@@ -65,7 +65,9 @@
 .training-theme .day-button.tr-full { background: #f3f8f8; box-shadow: inset 0 0 0 2px var(--primary-color); }
 
 /* ---- 문제 화면 ---- */
-#trainingQuestionContent { max-width: 1200px; margin: 0 auto; padding: 40px 20px 0; }
+/* 양옆 여백은 문제·정답 안내·해설·결과 카드가 함께 들어 있는 틀에 한 번만 (2026-11-12, 휴대폰에서 문제 상자만 여백이 있던 것 정리) */
+#trainingScreen > .test-content { padding: 0 20px; }
+#trainingQuestionContent { max-width: 1200px; margin: 0 auto; padding: 40px 0 0; }
 #trainingQuestionContent.tr-locked .arrange-option,
 #trainingQuestionContent.tr-locked .arrange-blank { pointer-events: none; }
 #trainingQuestionContent .arrange-blank.tr-wrong { border-bottom-color: #e8a1a7; }

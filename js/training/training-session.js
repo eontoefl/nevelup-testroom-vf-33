@@ -345,8 +345,13 @@
             var q = itemMap[id];
             var label = (q.highlight || '').trim();
             if (label) {
-                if (!chipMap[label]) { chipMap[label] = { label: label, bad: false }; res.chips.push(chipMap[label]); }
-                if (kind !== 'first') chipMap[label].bad = true;
+                // 같은 표현은 형광펜(_highlight)과 같은 기준으로 대소문자 무시해 한 알약으로 묶는다.
+                // 문장 중간에 놓인 문제는 소문자(do you know)로 저장돼 있어서, 대문자로 시작하는 모양이 있으면 그 모양을 보여 준다 (2026-11-12)
+                var key = label.toLowerCase();
+                var chip = chipMap[key];
+                if (!chip) { chip = chipMap[key] = { label: label, bad: false }; res.chips.push(chip); }
+                else if (/^[A-Z]/.test(label) && !/^[A-Z]/.test(chip.label)) chip.label = label;
+                if (kind !== 'first') chip.bad = true;
             }
         });
         return res;
