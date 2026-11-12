@@ -39,7 +39,7 @@
 
 /* ---- 유형 선택 카드 (시안 9) ---- */
 .tr-type { display: flex; align-items: center; gap: 22px; background: #fff; border-radius: 18px; padding: 24px 28px; box-shadow: 0 2px 10px rgba(70, 120, 125, .06); cursor: pointer; font-family: Inter, 'Pretendard Variable', Pretendard, sans-serif; transition: transform .2s ease; }
-.tr-type:hover { transform: translateY(-2px); }
+.tr-type:hover, .tr-unit:hover { transform: translateY(-2px); }
 .tr-type-icon { width: 64px; height: 64px; border-radius: 16px; background: var(--primary-color); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; flex: 0 0 64px; }
 .tr-type-main { flex: 1; min-width: 0; }
 .tr-type-name { font-size: 22px; font-weight: 700; color: #1e293b; letter-spacing: -.01em; }
@@ -52,17 +52,37 @@
 .tr-type-arrow { color: #a9bfc1; font-size: 18px; margin-left: 8px; }
 .tr-loading, .tr-empty { padding: 40px 0; color: #7b8b8d; font-size: 15px; }
 
-/* ---- 단위 목록 카드 (시안 12, 세로 약 110px) ---- */
-.tr-units-grid .day-button { padding: 20px 8px; gap: 10px; justify-content: flex-start; }
-.tr-units-grid .day-button .progress-dot,
-.tr-units-grid .day-button .tr-check { margin: 0 auto; }
-.tr-units-grid .day-button .day-tasks { min-height: 18px; line-height: 18px; }
-.training-theme .dot-done { background: var(--primary-color); }
-.tr-dot-part { background: linear-gradient(90deg, var(--primary-color) 50%, #d7e3e3 50%); }
-.tr-check { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--primary-color); color: #fff; font-size: 10px; }
-.tr-count { font-weight: 600; }
-.tr-count.done { color: var(--primary-color); }
-.training-theme .day-button.tr-full { background: #f3f8f8; box-shadow: inset 0 0 0 2px var(--primary-color); }
+/* ---- 복습 안내 배너 (시안 29, 단위 목록 위에 항상) ---- */
+.tr-review { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid var(--tr-border); border-radius: 14px; padding: 16px 20px; font-family: 'Pretendard Variable', Pretendard, Inter, sans-serif; }
+.tr-review-ico { flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--tr-hl-bg); color: var(--tr-hl-fg); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.tr-review-tx { flex: 1; min-width: 0; }
+.tr-review-t { font-size: 14.5px; font-weight: 700; color: #1f2a2c; }
+.tr-review-t b { font: 700 10.5px Inter, sans-serif; letter-spacing: .06em; color: var(--primary-color); background: #e3eded; border-radius: 5px; padding: 2px 6px; margin-right: 8px; vertical-align: 1px; }
+.tr-review-d { font-size: 12.5px; line-height: 1.6; color: #5f7173; margin-top: 5px; }
+.tr-review-s { font-size: 11.5px; color: #97a7a9; margin-top: 6px; }
+.tr-review-viz { flex: none; width: 250px; margin-left: 12px; }
+.tr-review-bar { display: flex; height: 30px; border-radius: 9px; overflow: hidden; font-size: 11.5px; font-weight: 700; }
+.tr-review-bar span { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.tr-review-bar .own { flex: 10; background: var(--primary-color); color: #fff; }
+.tr-review-bar .rev { flex: 3.6; background: var(--tr-hl-bg); color: var(--tr-hl-fg); }
+.tr-review-cap { display: flex; justify-content: space-between; margin-top: 7px; font-size: 11px; color: #97a7a9; }
+@media (max-width: 768px) { .tr-review { flex-wrap: wrap; } .tr-review-viz { width: 100%; margin-left: 0; } }
+
+/* ---- 단위 카드 (시안 22·29): UNIT 번호 · 이름 · 막대(.tr-bar 같이 씀) · % · 상태. 칸 수는 폭에 맞춰 (넓으면 5칸) ---- */
+.tr-units { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.tr-unit { display: flex; flex-direction: column; text-align: left; background: #fff; border: 1.5px solid transparent; border-radius: 12px; padding: 14px 16px 13px; cursor: pointer; font-family: Inter, 'Pretendard Variable', Pretendard, sans-serif; transition: transform .2s ease; }
+.tr-unit-done { border-color: var(--primary-color); background: #f3f8f8; }
+.tr-unit-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: #8a9a9c; }
+.tr-unit-done .tr-unit-top { color: var(--primary-color); }
+.tr-unit-name { font-size: 14px; font-weight: 700; line-height: 1.35; color: #1f2a2c; margin-top: 8px; min-height: 2.7em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tr-unit .tr-bar { display: block; height: 4px; margin-top: 12px; }
+.tr-unit-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.tr-unit-pct { font-size: 11.5px; font-weight: 600; color: #3c4a4c; }
+.tr-unit-new .tr-unit-pct { color: #a9b6b8; font-weight: 500; }
+.tr-unit-done .tr-unit-pct { color: var(--primary-color); }
+.tr-unit-lab { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 6px; color: var(--tr-hl-fg); background: var(--tr-hl-bg); }
+.tr-unit-new .tr-unit-lab { color: #8a9a9c; background: #f1f4f4; }
+.tr-unit-done .tr-unit-lab { color: #fff; background: var(--primary-color); }
 
 /* ---- 문제 화면 ---- */
 /* 양옆 여백은 문제·정답 안내·해설·결과 카드가 함께 들어 있는 틀에 한 번만 (2026-11-12, 휴대폰에서 문제 상자만 여백이 있던 것 정리) */
@@ -118,3 +138,18 @@
 .tr-chip { font: 500 14px Inter, sans-serif; padding: 7px 13px; border-radius: 99px; background: #e8f1f1; color: #3c6a6f; }
 .tr-chip.x { background: #fff; color: var(--tr-wrong); box-shadow: inset 0 0 0 1.5px #ecb3b8; }
 .tr-btns2 { display: flex; gap: 12px; justify-content: center; margin-top: 32px; }
+
+/* ---- 시작 안내 (시안 25): 결과 화면 틀(.tr-end2 · .tr-card · .tr-h · .tr-s · .tr-btn) 같이 씀 ---- */
+.tr-intro { max-width: 540px; }
+.tr-intro-unit { font: 700 12px Inter, sans-serif; letter-spacing: .06em; color: var(--primary-color); margin-bottom: 6px; }
+.tr-intro-total { display: flex; align-items: baseline; gap: 8px; margin-top: 22px; }
+.tr-intro-total b { font: 800 34px Inter, sans-serif; color: #1e293b; }
+.tr-intro-total span { font: 600 13px Inter, sans-serif; color: var(--tr-ko); }
+.tr-intro-split { display: flex; gap: 8px; margin-top: 12px; }
+.tr-intro-chip { flex: 1; border-radius: 12px; padding: 11px 12px; background: #f3f8f8; }
+.tr-intro-chip.rev { background: var(--tr-hl-bg); }
+.tr-intro-chip .k { font-size: 11px; font-weight: 600; color: var(--tr-ko); }
+.tr-intro-chip .v { font: 800 18px Inter, sans-serif; color: #1e293b; margin-top: 2px; }
+.tr-intro-chip .s { font: 500 11px Inter, sans-serif; color: var(--tr-hl-fg); margin-top: 2px; }
+.tr-intro .tr-s { font-size: 13px; line-height: 1.65; margin-top: 16px; }
+.tr-intro .tr-btn { width: 100%; }

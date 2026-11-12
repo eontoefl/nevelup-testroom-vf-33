@@ -150,22 +150,13 @@
             return;
         }
 
-        box.innerHTML = '<div class="week-block">'
+        box.innerHTML = _reviewBanner()
+            + '<div class="week-block">'
             + '<div class="week-header"><h2 class="week-title">Units</h2><div class="week-divider"></div></div>'
-            + '<div class="days-grid practice-days-grid tr-units-grid">'
-            + list.map(function (u) {
-                var st = u.done ? 'full' : (u.eligible ? 'done' : (u.answeredCount > 0 ? 'part' : 'none'));
-                var mark = st === 'full'
-                    ? '<span class="tr-check"><i class="fas fa-check"></i></span>'
-                    : '<div class="progress-dot ' + (st === 'done' ? 'dot-done' : st === 'part' ? 'tr-dot-part' : 'dot-none') + '"></div>';
-                var count = st === 'none' ? '&nbsp;' : '<span class="tr-count ' + (st !== 'part' ? 'done' : '') + '">' + u.answeredCount + ' / ' + u.total + '</span>';
-                return '<button class="day-button ' + (st === 'full' ? 'tr-full' : '') + '" data-unit="' + u.unitNo + '">'
-                    + '<span class="day-name">' + _pad2(u.unitNo) + '</span>' + mark
-                    + '<span class="day-tasks">' + count + '</span></button>';
-            }).join('')
-            + '</div></div>';
+            + '<div class="tr-units">' + list.map(_unitCard).join('') + '</div>'
+            + '</div>';
 
-        box.querySelectorAll('.day-button[data-unit]').forEach(function (btn) {
+        box.querySelectorAll('.tr-unit[data-unit]').forEach(function (btn) {
             btn.onclick = function () {
                 var u = units[Number(btn.getAttribute('data-unit'))];
                 if (!u) return;
@@ -177,6 +168,38 @@
                 }
             };
         });
+    }
+
+    /**
+     * 단위 카드 (시안 22·29): UNIT 번호 · 이름 · 막대 · % · 상태.
+     * 상태는 안 풀(new) / 푸는 중(go) / 다 풀(done) 세 가지. 다 푼 단위는 다시 풀어도 Done 그대로(17장).
+     * 문제 수 대신 %: 이번에 푸는 문제 수는 복습이 더해져 달라지므로(시작 안내에서 보여 줌). 내림 — 다 풀기 전에는 100%가 안 나옴.
+     */
+    function _unitCard(u) {
+        var st = u.done ? 'done' : (u.answeredCount > 0 ? 'go' : 'new');
+        var pct = u.done ? 100 : Math.floor(u.answeredCount / u.total * 100);
+        var label = { 'new': 'Start', go: 'Continue', done: 'Done' }[st];
+        return '<button class="tr-unit tr-unit-' + st + '" data-unit="' + u.unitNo + '"' + (u.title ? ' title="' + _esc(u.title) + '"' : '') + '>'
+            + '<span class="tr-unit-top"><span>UNIT ' + _pad2(u.unitNo) + '</span>' + (u.done ? '<i class="fas fa-circle-check"></i>' : '') + '</span>'
+            + '<span class="tr-unit-name">' + _esc(u.title || '') + '</span>'
+            + '<span class="tr-bar"><i style="width:' + pct + '%"></i></span>'
+            + '<span class="tr-unit-foot"><span class="tr-unit-pct">' + pct + '%</span><span class="tr-unit-lab">' + label + '</span></span>'
+            + '</button>';
+    }
+
+    /** 복습 안내 배너 (시안 29) — 단위 목록 위에 항상. 기준 %는 섞기 기준값 하나(TrainingData.ELIGIBLE_RATIO)에서 */
+    function _reviewBanner() {
+        var pct = Math.round(TrainingData.ELIGIBLE_RATIO * 100);
+        return '<div class="tr-review">'
+            + '<div class="tr-review-ico"><i class="fas fa-rotate"></i></div>'
+            + '<div class="tr-review-tx">'
+            + '<div class="tr-review-t"><b>REVIEW MIX</b>외운 표현을 잊지 않게, 지난 Unit 문제가 함께 나와요</div>'
+            + '<div class="tr-review-d">새 Unit을 풀다 보면 앞에서 외운 표현이 섞여 나와요. 다시 꺼내 쓸수록 오래 기억에 남아요.</div>'
+            + '<div class="tr-review-s">* 거의 다 푼 Unit(' + pct + '% 이상)의 문제만 섞여 나와요.</div>'
+            + '</div>'
+            + '<div class="tr-review-viz"><div class="tr-review-bar"><span class="own">이 Unit</span><span class="rev"><i class="fas fa-rotate"></i> 복습</span></div>'
+            + '<div class="tr-review-cap"><span>지금 고른 Unit</span><span>앞에서 푼 Unit</span></div></div>'
+            + '</div>';
     }
 
     /** 단위 목록 → 유형 선택 */

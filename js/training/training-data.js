@@ -53,7 +53,9 @@
             optionWords: _arr(row.chunks),
             endPunctuation: row.end_punct || '.',
             answerSets: [{ answer: _arr(row.answer), translation: row.answer_ko || '', explanation: row.explanation || '' }],
-            highlight: row.highlight || '',
+            highlight: row.highlight || '',    // 정답 문장 안 형광펜 = 문장 속 실제 글자 (예: He wanted)
+            bookExpr: row.book_expr || '',     // 책 표현 이름 (예: She wanted) — 결과 화면 칩에 씀. 없으면 highlight
+            unitTitle: row.unit_title || '',   // 단위 이름 (책 UNIT 이름, 카드·시작 안내 표시용)
             answerKo: row.answer_ko || '',
             explanation: row.explanation || ''
         };
@@ -86,7 +88,7 @@
     function summarize(items, attempts) {
         var units = {};
         items.forEach(function (q) {
-            if (!units[q.unitNo]) units[q.unitNo] = { unitNo: q.unitNo, items: [], answered: {}, passes: {} };
+            if (!units[q.unitNo]) units[q.unitNo] = { unitNo: q.unitNo, title: q.unitTitle, items: [], answered: {}, passes: {} };
             units[q.unitNo].items.push(q);
         });
         var itemUnit = {};

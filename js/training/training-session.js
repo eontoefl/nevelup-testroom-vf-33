@@ -53,10 +53,53 @@
             local: []      // 이번 풀이에서 일어난 일 (저장 실패해도 결과 화면에 쓰기 위해)
         };
         _stopTimer();
-        if (typeof showScreen === 'function') showScreen('trainingScreen');
-        $('trainingEndContent').style.display = 'none';
-        $('trainingSolveArea').style.display = '';
         _syncTimerSeg();
+        _showIntro();   // 처음·이어 풀기·다시 풀기 모두 여기로 온다. 타이머는 Start를 누른 뒤(begin)에서야 돈다
+    }
+
+    /**
+     * 안내 칸 모드 — 풀이 칸·정답 확인·다음·타이머를 숨기고 안내 칸(#trainingEndContent)만 보인다.
+     * 시작 안내와 결과 화면이 같이 쓴다. 되돌리기는 _restoreSolveUi.
+     */
+    function _showPanel(label, html) {
+        if (typeof showScreen === 'function') showScreen('trainingScreen');
+        $('trainingProgress').textContent = label;
+        $('trainingSolveArea').style.display = 'none';
+        $('trainingCheckBtn').style.display = 'none';
+        $('trainingNextBtn').style.display = 'none';
+        $('trainingTimerSeg').style.display = 'none';
+        $('trainingTimerClock').style.display = 'none';
+        var panel = $('trainingEndContent');
+        panel.style.display = '';
+        panel.innerHTML = html;
+    }
+
+    /** 시작 안내 (시안 25): 이번에 푸는 문제 수 = 이 Unit n + 복습 m. 복습 문제가 어느 것인지는 알려 주지 않는다(32장) */
+    function _showIntro() {
+        var own = S.queue.filter(function (q) { return q.unitNo === S.unitNo; });
+        var rev = S.queue.length - own.length;
+        var revUnits = [];
+        S.queue.forEach(function (q) { if (q.unitNo !== S.unitNo && revUnits.indexOf(q.unitNo) < 0) revUnits.push(q.unitNo); });
+        revUnits.sort(function (a, b) { return a - b; });
+        var revText = 'Unit ' + revUnits.slice(0, 4).map(_pad2).join(' · ') + (revUnits.length > 4 ? ' 외 ' + (revUnits.length - 4) + '개' : '');
+        var title = (own[0] && own[0].unitTitle) || '';
+        _showPanel('Unit ' + _pad2(S.unitNo), '<div class="tr-end2 tr-intro"><div class="tr-card">'
+            + '<div class="tr-intro-unit">UNIT ' + _pad2(S.unitNo) + (S.pass >= 2 ? ' · ROUND ' + S.pass : '') + '</div>'
+            + (title ? '<h2 class="tr-h">' + _esc(title) + '</h2>' : '')
+            + '<div class="tr-intro-total"><b>' + S.queue.length + '</b><span>' + (S.queue.length === 1 ? 'question' : 'questions') + ' this round</span></div>'
+            + '<div class="tr-intro-split">'
+            + '<div class="tr-intro-chip"><div class="k">이 Unit</div><div class="v">' + own.length + '</div><div class="s">Unit ' + _pad2(S.unitNo) + '</div></div>'
+            + (rev ? '<div class="tr-intro-chip rev"><div class="k"><i class="fas fa-rotate"></i> 복습</div><div class="v">' + rev + '</div><div class="s">' + revText + '</div></div>' : '')
+            + '</div>'
+            + (rev ? '<div class="tr-s">앞에서 외운 표현을 ' + rev + '문제 섞었어요. 잊기 전에 한 번 더 꺼내 써 보면 오래 남아요.</div>' : '')
+            + '<div class="tr-btns2"><button class="tr-btn primary" onclick="TrainingSession.begin()">Start <i class="fas fa-arrow-right"></i></button></div>'
+            + '</div></div>');
+    }
+
+    /** 시작 안내의 Start → 첫 문제 */
+    function begin() {
+        if (!S || !S.queue.length) return;
+        _restoreSolveUi();
         _loadQuestion();
     }
 
@@ -343,10 +386,10 @@
             res[kind]++;
             if (checks[0].timer_sec) { res.timed++; if (checks[0].within_time) res.within++; }
             var q = itemMap[id];
-            var label = (q.highlight || '').trim();
+            // 칩 이름은 책 표현 이름(She wanted). 형광펜은 문장 속 실제 글자(highlight, He wanted) 그대로 (2026-11-12)
+            var label = (q.bookExpr || q.highlight || '').trim();
             if (label) {
-                // 같은 표현은 형광펜(_highlight)과 같은 기준으로 대소문자 무시해 한 알약으로 묶는다.
-                // 문장 중간에 놓인 문제는 소문자(do you know)로 저장돼 있어서, 대문자로 시작하는 모양이 있으면 그 모양을 보여 준다 (2026-11-12)
+                // 같은 표현은 대소문자 무시해 한 알약으로 묶는다. 대문자로 시작하는 모양이 있으면 그 모양을 보여 준다 (2026-11-12)
                 var key = label.toLowerCase();
                 var chip = chipMap[key];
                 if (!chip) { chip = chipMap[key] = { label: label, bad: false }; res.chips.push(chip); }
@@ -369,23 +412,13 @@
         S.pass = opts.pass;
         S.endUnits = opts.units;
         S.endItems = opts.items;
-        if (typeof showScreen === 'function') showScreen('trainingScreen');
         var r = _passResult(opts.items, opts.attempts, opts.unitNo, opts.pass);
-
-        $('trainingProgress').textContent = 'Unit ' + _pad2(opts.unitNo);
-        $('trainingSolveArea').style.display = 'none';
-        $('trainingCheckBtn').style.display = 'none';
-        $('trainingNextBtn').style.display = 'none';
-        $('trainingTimerSeg').style.display = 'none';
-        $('trainingTimerClock').style.display = 'none';
 
         var C = 2 * Math.PI * 50;
         var ratio = r.total ? r.first / r.total : 0;
         var statLine = '한 번에 맞힌 문제 ' + r.first + '개 · 다시 풀어서 맞힘 ' + r.retry + '개 · 정답 보고 넘어감 ' + r.revealed + '개'
             + (r.timed ? ' · 시간 안에 푼 문제 ' + r.within + '개' : '');
-        var end = $('trainingEndContent');
-        end.style.display = '';
-        end.innerHTML = '<div class="tr-end2"><div class="tr-card">'
+        _showPanel('Unit ' + _pad2(opts.unitNo), '<div class="tr-end2"><div class="tr-card">'
             + '<div class="tr-ring"><svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">'
             + '<circle cx="60" cy="60" r="50" fill="none" class="tr-ring-bg" stroke-width="12"/>'
             + '<circle cx="60" cy="60" r="50" fill="none" class="tr-ring-fg" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + (C * ratio).toFixed(1) + ' 999" transform="rotate(-90 60 60)"/>'
@@ -396,7 +429,7 @@
                 + r.chips.map(function (c) { return '<span class="tr-chip ' + (c.bad ? 'x' : '') + '">' + _esc(c.label) + '</span>'; }).join('') + '</div></div>' : '')
             + '<div class="tr-btns2"><button class="tr-btn ghost" onclick="TrainingSession.restartUnit()"><i class="fas fa-rotate-left"></i> 이 단위 다시 풀기</button>'
             + '<button class="tr-btn primary" onclick="TrainingSession.exit()">단위 목록으로</button></div>'
-            + '</div></div>';
+            + '</div></div>');
     }
 
     /** 결과 화면의 "이 단위 다시 풀기" — 하다 만 회차가 있으면 이어서, 없으면 새 회차로 처음부터 */
@@ -432,6 +465,7 @@
 
     window.TrainingSession = {
         start: start,
+        begin: begin,
         showEnd: showEnd,
         restartUnit: restartUnit,
         check: check,
