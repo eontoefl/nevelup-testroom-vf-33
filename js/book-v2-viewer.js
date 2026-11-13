@@ -61,8 +61,8 @@ async function init() {
     try { await loadProgress(); await loadMemos(); } catch (e) { console.warn("진도/메모 로드 실패:", e); }
   }
 
-  applyZoom();
   render();
+  applyZoom();   // 쪽을 그린 뒤에 잔다(세로 스크롤바가 생긴 실제 폭 기준)
   document.getElementById("loading").style.display = "none";
 
   if (blocked) {
@@ -159,8 +159,8 @@ async function loadProgress() {
   V2.bookmarks = (V2.progress && Array.isArray(V2.progress.bookmarks)) ? V2.progress.bookmarks : [];
 
   // 이어보기: ?p 지정이 없으면 마지막으로 본 페이지로
-  // 단어장을 끝까지 본 뒤(완독 창을 안 닫고 나간 경우 등) 다시 열면 뒷표지가 아니라 1쪽부터 (2026-10-29)
-  if (!V2.hasPParam && V2.progress && V2.progress.is_completed && V2.progress.last_page >= V2.pages.length && isVocaBook()) {
+  // 반복 책을 끝까지 본 뒤(완독 창을 안 닫고 나간 경우 등) 다시 열면 뒷표지가 아니라 1쪽부터 (2026-10-29)
+  if (!V2.hasPParam && V2.progress && V2.progress.is_completed && V2.progress.last_page >= V2.pages.length && isRepeatBook()) {
     V2.progress.last_page = 1;
   }
   if (!V2.hasPParam && V2.progress && V2.progress.last_page > 1) {
@@ -283,28 +283,19 @@ function go(delta) {
 }
 
 // ===== 확대/축소 =====
+// 모든 책을 종이째(프레임 포함) 배율로 키운다. 글자 크기가 고정된 책(꾸밈 책·HTML 책)도 똑같이 커지고,
+// PDF 뷰어처럼 종이 폭도 같이 커져 화면보다 커지면 옆으로 밀어서 본다 (2026-10-29 꾸밈 책, 2026-11-13 모든 책으로 통일)
 function applyZoom() {
   V2.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, V2.zoom));
-  const content = document.getElementById("content");
-  // 이온토플 디자인 책(단어장·입문서 편집본)은 글자 크기가 px로 고정돼 있어 font-size로는 안 커진다
-  // → 종이째(프레임 포함) 배율로 키운다. PDF 뷰어처럼 종이 폭도 같이 커지고, 화면보다 커지면 옆으로 밀어서 본다 (2026-10-29)
-  const themed = !!(window.BookTheme && V2.book && window.BookTheme.isThemed(V2.book.id));
   const paper = document.getElementById("paper");
-  content.style.zoom = "";
-  if (themed) {
-    content.style.fontSize = ZOOM_BASE + "px";
-    document.body.classList.add("bookv2-paperzoom");
-    // 100%일 때 종이 폭을 재서 그 폭에 배율을 곱한다
-    paper.style.zoom = ""; paper.style.width = ""; paper.style.maxWidth = "";
-    const base = paper.getBoundingClientRect().width;
-    paper.style.width = Math.round(base) + "px";
-    paper.style.maxWidth = "none";
-    paper.style.zoom = (V2.zoom / ZOOM_BASE).toFixed(3);
-  } else {
-    document.body.classList.remove("bookv2-paperzoom");
-    paper.style.zoom = ""; paper.style.width = ""; paper.style.maxWidth = "";
-    content.style.fontSize = V2.zoom + "px";
-  }
+  // 100%일 때 종이 폭을 재서 그 폭에 배율을 곱한다. 잴 때만 줄어들 수 있게 해서 양쪽 버튼 자리를 뺨 폭으로 잔다
+  // (안 그러면 태블릿 폭에서 100%인데도 옆으로 넘침)
+  paper.style.zoom = ""; paper.style.width = ""; paper.style.maxWidth = ""; paper.style.flexShrink = "1";
+  const base = paper.getBoundingClientRect().width;
+  paper.style.flexShrink = "";
+  paper.style.width = Math.round(base) + "px";
+  paper.style.maxWidth = "none";
+  paper.style.zoom = (V2.zoom / ZOOM_BASE).toFixed(3);
   document.getElementById("zoomLevel").textContent = Math.round((V2.zoom / ZOOM_BASE) * 100) + "%";
   try { localStorage.setItem("bookv2_zoom", String(V2.zoom)); } catch (_) {}
 }
@@ -552,19 +543,16 @@ async function saveProgress() {
     if (isCompleted && !wasCompleted) showDone();
   }
 }
-// 단어장(이온토플 디자인의 voca 책)인지
-function isVocaBook() {
-  const T = window.BookTheme;
-  if (!T || !V2.book || !T.isThemed(V2.book.id)) return false;
-  const metas = V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id);
-  return !!(metas[0] && metas[0].book === "voca");
+// 반복해서 외우는 책(회독 책)인지: 책 안에 '회독'(회독 기록 쪽·회독 안내)이 있으면 반복 책.
+// 단어장 v1·v2, W1 문장배열 암기장. 책 모양(꾸밈 책·HTML 책)과 상관없이 내용으로 판단한다 (2026-11-13)
+function isRepeatBook() {
+  if (V2.isRepeat === undefined) V2.isRepeat = !!(V2.pages && V2.pages.some((p) => typeof p.html === "string" && p.html.includes("회독")));
+  return V2.isRepeat;
 }
-// 완독 창. 단어장은 반복해서 외우는 책이라 "다시 1쪽부터" 안내 (단어장 4쪽 공부방법과 같은 말, 2026-10-29)
+// 완독 창. 반복 책은 "다시 1쪽부터" 안내 (단어장 4쪽·W1 암기장 8쪽 공부법과 같은 말, 2026-10-29)
 function showDone() {
-  const T = window.BookTheme;
-  const metas = (T && V2.book && T.isThemed(V2.book.id)) ? (V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id)) : null;
-  if (metas && metas[0] && metas[0].book === "voca") {
-    document.getElementById("doneTitle").textContent = (V2.book.title || "단어장") + " 1회독 끝!";
+  if (isRepeatBook()) {
+    document.getElementById("doneTitle").textContent = (V2.book.title || "자료") + " 1회독 끝!";
     document.querySelector("#doneOverlay .bookv2-done-desc").innerHTML = "이제 1쪽으로 돌아가 다시 외워볼 차례예요.<br>들춰보지 않고 다 쓸 수 있을 때까지 반복해요.";
     V2.restartOnClose = true;   // [확인] 누르면 1쪽으로
   }

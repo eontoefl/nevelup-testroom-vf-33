@@ -90,8 +90,10 @@
 .bookv2-progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--v2-primary), var(--v2-primary-light)); transition: width .3s ease; }
 
 /* ===== 무대 ===== */
+/* 종이째 확대(applyZoom)로 종이가 화면보다 넓어져도 왼쪽이 잘리지 않게, 가운데 정렬은 양쪽 버튼의 margin auto로 한다
+   (넓으면 가운데, 넘치면 왼쪽부터 붙고 옆으로 밀어서 봄. 2026-10-29 꾸밈 책, 2026-11-13 모든 책) */
 .bookv2-stage {
-  display: flex; align-items: flex-start; justify-content: center;
+  display: flex; align-items: flex-start; justify-content: flex-start;
   gap: 12px; padding: 84px 16px 72px; min-height: 100vh;
 }
 
@@ -116,10 +118,12 @@
 }
 .bookv2-nav:hover:not(:disabled) { transform: scale(1.08); }
 .bookv2-nav:disabled { opacity: 0.25; cursor: default; }
+#btnPrev { margin-left: auto; }
+#btnNext { margin-right: auto; }
 
 /* ===== 종이 ===== */
 .bookv2-paper {
-  position: relative; width: 100%; max-width: 760px;
+  position: relative; width: 100%; max-width: 760px; flex-shrink: 0;
   background: var(--v2-paper); border-radius: 16px; box-shadow: var(--v2-amb);
   padding: 56px 60px 72px; min-height: calc(100vh - 200px); overflow: hidden;
 }
@@ -133,8 +137,8 @@
 .bookv2-watermark span { font-size: 12px; font-weight: 500; white-space: nowrap; color: #64748b; letter-spacing: 0.04em; }
 
 /* ===== 콘텐츠 (에디터 lossy HTML 렌더) ===== */
-/* 줌: 본문 base font-size를 JS가 조절, 나머지는 em으로 비율 유지 */
-.bookv2-content { position: relative; z-index: 1; font-size: 17px; line-height: 1.85; color: var(--v2-text); word-break: keep-all; transition: font-size .12s ease; }
+/* 글자 크기는 고정(확대는 종이째 zoom). 나머지는 em으로 비율 유지 */
+.bookv2-content { position: relative; z-index: 1; font-size: 17px; line-height: 1.85; color: var(--v2-text); word-break: keep-all; }
 .bookv2-content h1 {
   font-size: 1.76em; font-weight: 800; letter-spacing: -0.02em; color: #111827;
   margin: 0 0 0.9em; padding-bottom: 0.45em; border-bottom: 3px solid var(--v2-primary-light);
@@ -330,23 +334,15 @@
   .bookv2-paper { padding: 40px 24px 56px; }
   .bookv2-nav { width: 40px; height: 40px; }
   .bookv2-stage { gap: 6px; padding: 76px 8px 50px; }
-  .bookv2-content { font-size: 16px; }
   .bookv2-content h1 { font-size: 25px; }
 }
+@media (max-width: 680px) { .bookv2-paper { margin: 0 auto; } }
 
 /* ===== 처음 열 때 확인 전: 뒤 내용 흐리게 (2026-10-28) ===== */
 body.bookv2-confirming .bookv2-stage,
 body.bookv2-confirming .bookv2-progress { filter: blur(8px); pointer-events: none; }
 .bookv2-icon[hidden] { display: none; }
 .bookv2-icon:disabled { opacity: .5; cursor: default; }
-
-/* ===== 종이째 확대·축소 (이온토플 디자인 책, 2026-10-29) =====
-   종이가 화면보다 넓어지면 왼쪽이 잘리지 않게 가운데 정렬을 margin auto로 (넘치면 왼쪽부터 붙고 옆으로 밀어서 봄) */
-body.bookv2-paperzoom .bookv2-stage { justify-content: flex-start; }
-body.bookv2-paperzoom #btnPrev { margin-left: auto; }
-body.bookv2-paperzoom #btnNext { margin-right: auto; }
-body.bookv2-paperzoom .bookv2-paper { flex-shrink: 0; }
-@media (max-width: 680px) { body.bookv2-paperzoom .bookv2-paper { margin: 0 auto; } }
 
 /* ===== 단어장 표: 단어 중간에서 줄 바꾸지 않기 (2026-10-29) =====
    띄어쓰기 자리에서만 줄을 바꾸고, 한 단어가 칸보다 길면 칸이 그만큼 넓어진다(표 폭 자동). */

@@ -9,11 +9,11 @@
 
    Why this file exists (two problems, two fixes):
 
-   1) Zoom compatibility. V2.zoom sets an inline px font-size on
-      #content (see js/book-v2-viewer.js applyZoom()). Descendants sized
-      in "em" scale with that inline value; descendants sized in "rem"
-      do not (rem is relative to the root <html> font-size, which the
-      zoom control never touches). book-design-system.css intentionally
+   1) Base-size compatibility. #content has a fixed 17px base (section 0;
+      zoom no longer touches font-size: since 2026-11-13 applyZoom() in
+      js/book-v2-viewer.js scales the whole paper with CSS zoom). Descendants
+      sized in "em" follow that 17px base; descendants sized in "rem"
+      follow the root <html> font-size instead. book-design-system.css intentionally
       uses rem for its own host context (the editor), so every rem-based
       font-size it defines is re-declared here in the equivalent "em"
       value, scoped one class more specifically than the original
@@ -35,10 +35,11 @@
    ===================================================================== */
 
 /* ---------------------------------------------------------------------
-   0. Base font-size fallback (defensive only)
-   applyZoom() always sets an inline font-size on #content on load, so
-   this rarely matters in practice — it only guards the brief instant
-   before JS runs / if JS ever fails to execute.
+   0. Base font-size of #content (17px)
+   Beats book-design-system.css ".book-content { font-size: 16px }" by
+   specificity. Zoom does not change it (paper-level zoom, see note #1).
+   Same 17px on phones: the old 16px mobile rules never took effect
+   (applyZoom's inline 17px always won), so they were removed 2026-11-13.
    --------------------------------------------------------------------- */
 .bookv2-content.book-content {
   font-size: 17px;
@@ -102,12 +103,6 @@
    Mirrors the rem values book-design-system.css uses at the same
    breakpoints, converted to em for the same zoom reason as above.
    --------------------------------------------------------------------- */
-@media (max-width: 680px) {
-  /* Match the old viewer's own mobile base-size intent (16px) so the
-     design-system blocks don't look oversized next to plain paragraphs. */
-  .bookv2-content.book-content { font-size: 16px; }
-}
-
 @media (max-width: 400px) {
   .bookv2-content.book-content .book-design-title { font-size: 0.98em; }
   .bookv2-content.book-content .book-heading[data-book-level="1"] .book-design-title,
