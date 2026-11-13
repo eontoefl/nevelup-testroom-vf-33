@@ -41,6 +41,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         try { mpUser = await refreshPauseState(mpUser); } catch (e) { console.warn('⚠️ [MyPage] 동기화 실패:', e); }
     }
 
+    // 1-c. 단어장 v2 학생: 잔디 칸 설명의 단어 쪽번호를 v2 책 기준(+2)으로 (2026-11-13, js/vocab-version.js)
+    if (typeof VocabVersion !== 'undefined') {
+        try { await VocabVersion.load(); VocabVersion.applyGrassTitles(document, mpUser); } catch (e) { console.warn('⚠️ [MyPage] 단어장 버전 표시 실패:', e); }
+    }
+
     // 2. UI 기본 세팅
     document.getElementById('userName').textContent = mpUser.name;
     document.getElementById('programBadge').textContent = mpUser.program || '내벨업챌린지';

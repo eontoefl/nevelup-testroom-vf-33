@@ -51,6 +51,8 @@
       // 단어장 v1/v2: 이 학생 버전이 아닌 단어장 책은 숨긴다 (js/vocab-version.js)
       var hideVoca = null;
       if (window.VocabVersion) {
+        // 마이페이지 동기화와 동시에 도는 코드라, 발송 정보를 여기서도 최신으로 읽는다(관리자가 방금 발송 완료한 경우)
+        if (typeof refreshPauseState === "function") { try { user = await refreshPauseState(user); } catch (_) {} }
         try { await window.VocabVersion.load(); } catch (_) {}
         hideVoca = window.VocabVersion.hiddenBookId(user);
       }

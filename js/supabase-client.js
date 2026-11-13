@@ -202,7 +202,7 @@ async function getStudentProgram(userEmail) {
     // 재시작(수강 2, 2026-10-16): "지금 수강" = 가장 최근에 **입금 확인된** 신청서.
     //   수강 2 신청서를 제출하고 입금 확인 전까지는 수강 1(끝난 과정)이 그대로 보여야 한다.
     //   입금 확인된 신청서가 하나도 없으면 예전처럼 가장 최근 신청서로 '입금 미확인/신청서 없음'을 판정한다.
-    const _appCols = 'id,preferred_program,assigned_program,preferred_start_date,schedule_start,australia_schedule_start,current_step,status,deposit_confirmed_by_admin,practice_enabled,correction_enabled,correction_start_date,enrollment_no';
+    const _appCols = 'id,preferred_program,assigned_program,preferred_start_date,schedule_start,australia_schedule_start,current_step,status,deposit_confirmed_by_admin,practice_enabled,correction_enabled,correction_start_date,enrollment_no,shipping_completed_at,shipping_waived,restart_materials';
     let apps = await supabaseSelect(
         'applications',
         `email=eq.${encodeURIComponent(userEmail)}&deposit_confirmed_by_admin=eq.true&order=created_at.desc&limit=1&select=${_appCols}`
@@ -298,7 +298,12 @@ async function getStudentProgram(userEmail) {
         deadlineExtensions: deadlineExtensions, // 내챌 마감 연장(이 수강) — 실패면 null
         serviceStops: serviceStops,          // 환불·중도포기 기록(배열)
         appStatus: appStatus,                // 옛 방식 환불 표시(refunded|dropped) — 기록이 비어 있을 때만 의미
-        refundAt: refundAt                   // 옛 방식 환불 시각(ms)
+        refundAt: refundAt,                  // 옛 방식 환불 시각(ms)
+        // 단어장 v1/v2 판정용(2026-11-13, js/vocab-version.js): 발송 완료 시각·발송 면제·재시작 때 다시 받은 교재
+        shippingCompletedAt: app.shipping_completed_at || null,
+        shippingWaived: !!app.shipping_waived,
+        restartMaterials: Array.isArray(app.restart_materials) ? app.restart_materials : [],
+        shipInfoLoaded: true
     };
 }
 
@@ -441,7 +446,7 @@ async function refreshPauseState(user) {
     if (!user || !user.applicationId) return user;
     user.scheduleSyncOk = false;
     var rows = await supabaseSelect('applications',
-        'id=eq.' + user.applicationId + '&select=schedule_start,australia_schedule_start,correction_enabled,correction_start_date,challenge_pauses,correction_pauses,self_paced_end_date,self_paced_schedule,service_stops,app_status,refund_at');
+        'id=eq.' + user.applicationId + '&select=schedule_start,australia_schedule_start,correction_enabled,correction_start_date,challenge_pauses,correction_pauses,self_paced_end_date,self_paced_schedule,service_stops,app_status,refund_at,enrollment_no,shipping_completed_at,shipping_waived,restart_materials');
     if (!rows || !rows[0]) return user;
     var r = rows[0];
     if (r.schedule_start) user.startDate = r.schedule_start;
@@ -451,6 +456,12 @@ async function refreshPauseState(user) {
     user.serviceStops = _stopEntriesOf(r.service_stops);      // 환불·중도포기 기록(2026-10-12)
     user.appStatus = r.app_status || null;
     user.refundAt = r.refund_at || null;
+    // 단어장 v1/v2 판정용(2026-11-13): 관리자가 발송 완료를 누른 뒤 새로고침하면 바로 반영
+    if (r.enrollment_no) user.enrollmentNo = r.enrollment_no;
+    user.shippingCompletedAt = r.shipping_completed_at || null;
+    user.shippingWaived = !!r.shipping_waived;
+    user.restartMaterials = Array.isArray(r.restart_materials) ? r.restart_materials : [];
+    user.shipInfoLoaded = true;
     user.correctionStartDate = r.correction_start_date || null;
     if (typeof isCorrectionActiveNow === 'function') {
         user.correctionEnabled = isCorrectionActiveNow({ correctionEnabled: !!r.correction_enabled, correctionStartDate: r.correction_start_date || null }, user.timezone || 'Asia/Seoul');

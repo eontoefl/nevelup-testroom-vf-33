@@ -120,6 +120,11 @@ async function handleLogin(event) {
             programType: programType,  // 'fast' = 4주, 'standard' = 8주
             applicationId: programInfo.applicationId,
             enrollmentNo: programInfo.enrollmentNo || 1,   // 수강 번호(2=재시작). 기록 꼬리표는 applicationId
+            // 단어장 v1/v2 판정용(2026-11-13, js/vocab-version.js)
+            shippingCompletedAt: programInfo.shippingCompletedAt || null,
+            shippingWaived: !!programInfo.shippingWaived,
+            restartMaterials: programInfo.restartMaterials || [],
+            shipInfoLoaded: !!programInfo.shipInfoLoaded,
             startDate: programInfo.startDate,
             australiaStartDate: programInfo.australiaStartDate || null,  // 호주과정 시작일 (별도)
             practiceEnabled: !!programInfo.practiceEnabled,  // 연습코스 활성화 여부

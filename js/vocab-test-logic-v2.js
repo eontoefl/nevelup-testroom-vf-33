@@ -795,6 +795,7 @@ async function saveVocabRecord(correctCount, totalCount, percentage, results) {
         total: totalCount,
         accuracy: percentage,
         pages: currentPages,
+        vocab_version: (typeof VocabVersion !== 'undefined') ? VocabVersion.versionFor() : 'v1',   // 단어장 버전(2026-11-13). 문제 생기면 어느 정답표로 풀었는지 확인용
         completedAt: new Date().toISOString(),
         words: results || []   // 단어별 답안(학생이 쓴 칸 순서): [{ headword, total, matched, allCorrect, answers: [{ userAnswer, status: ok|typo|wrong|blank|dup, answer: 그 칸에 붙은 교재 정답 }] }]
     };
