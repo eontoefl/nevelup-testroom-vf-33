@@ -15,7 +15,6 @@
 let mpUser = null;           // sessionStorage에서 로드한 유저 정보
 let mpV3Results = [];        // study_results_v3
 let mpGradeRules = [];       // tr_grade_rules (등급/환급 기준표)
-let mpDeadlineExtensions = []; // tr_deadline_extensions (데드라인 연장)
 let mpAuth = null;           // 디비 enrollment_auth 결과(지금 수강의 인증률). 실패 시 null
 
 // section_type을 요일 매핑하기 위한 한→영 변환
@@ -86,11 +85,7 @@ async function loadAllData() {
         'order=min_rate.desc'
     ) || [];
 
-    // 데드라인 연장 기록 로드
-    mpDeadlineExtensions = await supabaseSelect(
-        'tr_deadline_extensions',
-        `user_id=eq.${userId}&select=original_date,extra_days`
-    ) || [];
+    // 데드라인 연장 기록: mpUser.deadlineExtensions(refreshPauseState에서 이 수강 기준으로 받음, 2026-11-08)
 
     // 인증률: 디비 한 곳에서 계산(공홈 관리자 화면과 같은 숫자, 2026-10-18 인증률통일)
     const authRows = mpUser.applicationId ? await loadEnrollmentAuth([mpUser.applicationId]) : [];
@@ -101,7 +96,7 @@ async function loadAllData() {
     await loadToeflScores();
     await loadToeflTarget();
 
-    console.log(`📊 [MyPage] 로드 완료 - V3결과: ${mpV3Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${mpDeadlineExtensions.length}건`);
+    console.log(`📊 [MyPage] 로드 완료 - V3결과: ${mpV3Results.length}건, 등급규칙: ${mpGradeRules.length}건, 연장: ${(mpUser.deadlineExtensions || []).length}건`);
 }
 
 // ================================================
@@ -129,17 +124,19 @@ function renderDeadlineExtensionBanner() {
     if (existing) existing.remove();
 
     // 데이터 없으면 아무것도 안 함 (DOM에 빈 요소 남기지 않음)
-    if (!mpDeadlineExtensions || mpDeadlineExtensions.length === 0 || !mpUser.startDate) {
+    const exts = mpUser.deadlineExtensions || [];
+    if (exts.length === 0 || !mpUser.startDate) {
         return;
     }
 
     const now = new Date();
     const dayKrNames = ['일', '월', '화', '수', '목', '금', '토'];
     const activeExtensions = [];
+    const md = d => `${d.getMonth() + 1}/${d.getDate()}(${dayKrNames[d.getDay()]})`;
 
     const tz = getUserTimezone();
 
-    mpDeadlineExtensions.forEach(ext => {
+    exts.forEach(ext => {
         const origDate = new Date(ext.original_date + 'T00:00:00');
         if (isNaN(origDate.getTime())) return;
 
@@ -158,31 +155,37 @@ function renderDeadlineExtensionBanner() {
 
     if (activeExtensions.length === 0) return;
 
-    // 마감이 가까운 순으로 정렬
-    activeExtensions.sort((a, b) => a.deadline - b.deadline);
+    // 같은 마감끼리 묶고(마감 가까운 순), 이어진 과제 날짜는 범위로: "10/28(수)~11/3(화)"
+    activeExtensions.sort((a, b) => a.deadline - b.deadline || a.originalDate - b.originalDate);
+    const groups = [];
+    activeExtensions.forEach(ext => {
+        let g = groups.find(x => x.deadline.getTime() === ext.deadline.getTime());
+        if (!g) { g = { deadline: ext.deadline, dates: [] }; groups.push(g); }
+        g.dates.push(ext.originalDate);
+    });
+    const rows = groups.map(g => {
+        g.dates.sort((a, b) => a - b);
+        const runs = [];
+        g.dates.forEach(d => {
+            const last = runs[runs.length - 1];
+            if (last && diffDaysLocal(last.end, d) === 1) last.end = d; else runs.push({ start: d, end: d });
+        });
+        const label = runs.map(r => r.start.getTime() === r.end.getTime() ? md(r.start) : `${md(r.start)}~${md(r.end)}`).join(', ');
+        return `<span class="ext-banner-row"><span class="ext-banner-date">${label}</span> 과제는 <span class="ext-banner-deadline">${md(g.deadline)} 새벽 4시</span>까지 할 수 있어요</span>`;
+    }).join(' ');
 
-    const items = activeExtensions.map(ext => {
-        const origM = ext.originalDate.getMonth() + 1;
-        const origD = ext.originalDate.getDate();
-        const origDay = dayKrNames[ext.originalDate.getDay()];
-        const dlM = ext.deadline.getMonth() + 1;
-        const dlD = ext.deadline.getDate();
-        const dlDay = dayKrNames[ext.deadline.getDay()];
-        return `<div class="ext-banner-item">
-            <i class="fa-solid fa-clock-rotate-left"></i>
-            <span><strong>${origM}/${origD}(${origDay})</strong> 과제의 마감이 <strong>${dlM}/${dlD}(${dlDay}) 새벽 4시</strong>까지 연장되었습니다.</span>
-        </div>`;
-    }).join('');
+    // 남은 시간: 가장 가까운 마감 기준, 과제 목록과 같은 문구(formatDeadlineRemaining)
+    const remain = formatDeadlineRemaining(groups[0].deadline, now);
+    const pillText = remain.urgent ? `마감 임박 · ${remain.timeText}` : remain.timeText;
 
     // 배너 동적 생성
     const banner = document.createElement('div');
     banner.id = 'deadlineExtensionBanner';
     banner.innerHTML = `
-        <div class="ext-banner">
-            <div class="ext-banner-header">
-                <i class="fa-solid fa-calendar-plus"></i> 데드라인 연장 안내
-            </div>
-            ${items}
+        <div class="ext-banner${groups.length > 1 ? ' is-multi' : ''}">
+            <div class="ext-banner-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="ext-banner-body"><span class="ext-banner-title">마감이 늘어난 과제가 있어요</span>${rows}</div>
+            <span class="ext-banner-pill${remain.urgent ? ' is-urgent' : ''}">${pillText}</span>
         </div>
     `;
 
@@ -487,7 +490,7 @@ function renderSummaryCards() {
     }
 
     // ── 인증률: 디비 enrollment_auth가 계산한 값(공홈 관리자 목록·상세와 같은 한 곳, 2026-10-18 인증률통일) ──
-    //   정규·자기주도 모두 "오늘까지 할당된 과제" 기준(자기주도는 개별분석에서 정한 시작~종료 일정표, 연장은 연장 마감이 지나야 셈).
+    //   정규·자기주도 모두 "오늘까지 할당된 과제" 기준(자기주도는 개별분석에서 정한 시작~종료 일정표). 연장은 마감만 늦춤 — 분모·분자는 같은 과제 범위(2026-11-08).
     //   아직 셀 과제가 없으면(시작 전) "-".
     let authRatePct = null, authSubText;
     if (!mpAuth) {
@@ -670,7 +673,7 @@ function getDeadlineForDayNum(dayNum) {
         const w = Math.floor((dayNum - 1) / 6) + 1;
         const di = (dayNum - 1) % 6;
         return (typeof getSelfPacedSetDeadline === 'function')
-            ? getSelfPacedSetDeadline(mpUser, w, di, mpDeadlineExtensions, getUserTimezone())
+            ? getSelfPacedSetDeadline(mpUser, w, di, mpUser.deadlineExtensions || [], getUserTimezone())
             : null;
     }
 
@@ -688,14 +691,15 @@ function getDeadlineForDayNum(dayNum) {
  */
 function buildExtendedDeadlineMap() {
     const map = new Map();
-    if (!mpUser.startDate || !mpDeadlineExtensions || mpDeadlineExtensions.length === 0) return map;
+    const exts = mpUser.deadlineExtensions || [];
+    if (!mpUser.startDate || exts.length === 0) return map;
 
     if (!parseYmdLocal(mpUser.startDate)) return map;
 
     const now = new Date();
     const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-    mpDeadlineExtensions.forEach(ext => {
+    exts.forEach(ext => {
         if (!parseYmdLocal(ext.original_date)) return;
 
         // 연장된 마감 계산 (타임존 기반)

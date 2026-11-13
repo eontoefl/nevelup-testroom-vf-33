@@ -398,8 +398,8 @@ function getSelfPacedSetDate(user, week, day) {
  * 자기주도 v2 — 특정 세트(주,요일)의 "연장까지 반영한 최종 마감시각".
  * 세트→배정날짜→기본마감(다음날 04:00)→연장 적용을 한 곳에서 처리하는 단일 진실원.
  * 마감 판정(task-router)·인증률 동결(auth)·잔디 빨간칸(mypage)이 모두 이 함수를 사용한다.
- * 연장정보는 호출 컨텍스트마다 저장 위치가 다르므로(window._deadlineExtensions / mpDeadlineExtensions)
- * 전역을 직접 읽지 않고 "받아서" 쓴다 → 어느 페이지에서든 동일하게 동작.
+ * 연장정보는 호출자가 user.deadlineExtensions(로그인·refreshPauseState에서 받은 이 수강의 연장)를
+ * 넘겨준다(한 곳에서만 받음, 2026-11-08) → 어느 페이지에서든 동일하게 동작.
  * @param {object} user - selfPaced / selfPacedEndDate / startDate 보유
  * @param {number} week - 1~4
  * @param {string|number} day - 한글/영문 요일 또는 0~5
@@ -600,6 +600,27 @@ function getChallengeDayPosition(startYmd, today, pauses) {
     if (diffDays == null) return null;
     diffDays -= pausedDaysUntil(pauses, fmtYmd(parseYmdLocal(today)));   // 정지로 멈춘 날수는 경과일에서 뺀다
     return { diffDays: diffDays, weekNum: Math.floor(diffDays / 7) + 1, dayIndex: ((diffDays % 7) + 7) % 7 };
+}
+
+/**
+ * 마감까지 남은 시간 문구 — 과제 목록 마감 배너와 마이페이지 연장 안내가 같이 쓴다(2026-11-08, main.js에서 옮김).
+ *   timeText: 1일 이상 "N일 N시간 N분 남음", 하루 미만 "N시간 N분 남음", 1시간 미만 "N분 남음"
+ *   label: "오늘 마감" / "내일 마감" / "N일 후 마감", urgent: 하루 미만이고 6시간 미만
+ * @returns {{passed:boolean, urgent:boolean, label:string, timeText:string}}
+ */
+function formatDeadlineRemaining(deadline, now) {
+    now = now || new Date();
+    if (!deadline || now > deadline) return { passed: true, urgent: false, label: '', timeText: '' };
+    var diff = deadline - now;
+    var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    var timeText;
+    if (days > 0) timeText = days + '일 ' + hours + '시간 ' + minutes + '분 남음';
+    else if (hours > 0) timeText = hours + '시간 ' + minutes + '분 남음';
+    else timeText = minutes + '분 남음';
+    var label = days === 0 ? '오늘 마감' : days === 1 ? '내일 마감' : days + '일 후 마감';
+    return { passed: false, urgent: days === 0 && hours < 6, label: label, timeText: timeText };
 }
 
 console.log('✅ timezone-utils.js 로드 완료');

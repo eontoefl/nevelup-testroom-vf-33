@@ -264,6 +264,9 @@ async function getStudentProgram(userEmail) {
         }
     } catch (e) { /* 칸 미존재 → 정지 없음으로 */ }
 
+    // 마감 연장(2026-11-08): 다른 일정 재료와 같은 길로 읽는다. 실패면 null(빈 목록과 구분).
+    const deadlineExtensions = await _fetchDeadlineExtensions(app.id);
+
     // 환불·중도포기 기록(2026-10-12, 환불처리 2단계): 정지 칸과 같은 관례로 별도 조회. 옛 방식 표시(app_status)도 함께 읽는다.
     let serviceStops = [], appStatus = null, refundAt = null;
     try {
@@ -292,6 +295,7 @@ async function getStudentProgram(userEmail) {
         selfPacedSchedule: selfPacedSchedule,  // (v2) 저장된 확정 일정표(JSON) 또는 null
         challengePauses: challengePauses,    // 내챌 일시정지 이력(배열)
         correctionPauses: correctionPauses,  // 첨삭 일시정지 이력(배열)
+        deadlineExtensions: deadlineExtensions, // 내챌 마감 연장(이 수강) — 실패면 null
         serviceStops: serviceStops,          // 환불·중도포기 기록(배열)
         appStatus: appStatus,                // 옛 방식 환불 표시(refunded|dropped) — 기록이 비어 있을 때만 의미
         refundAt: refundAt                   // 옛 방식 환불 시각(ms)
@@ -416,12 +420,26 @@ function isCorrRowStopClosed(user, row) {
 }
 
 /**
+ * 내챌 마감 연장 목록(이 수강 = 신청서 id 기준, 디비 인증률 계산·관리자 연장 버튼과 같은 기준).
+ *   supabaseSelect는 실패를 빈 목록으로 돌려주므로 쓰지 않는다 — 실패를 '연장 없음'과 구분해야 한다.
+ * @returns {Promise<Array|null>} 배열(없으면 []), 실패면 null
+ */
+async function _fetchDeadlineExtensions(applicationId) {
+    if (!applicationId) return [];
+    var rows = await supabaseRequest('/rest/v1/tr_deadline_extensions?enrollment_id=eq.' + encodeURIComponent(applicationId)
+        + '&select=original_date,extra_days');
+    return Array.isArray(rows) ? rows : null;
+}
+
+/**
  * 세션 복원·마이페이지 진입 때 DB에서 최신값을 다시 읽는다(관리자가 정지를 걸어도 열린 탭이 옛 상태로 돌지 않게).
- *   갱신: startDate·australiaStartDate·정지 이력 2종·첨삭 사용 여부·첨삭 시작일·(자기주도) 종료일·확정표. sessionStorage에도 저장.
+ *   갱신: startDate·australiaStartDate·정지 이력 2종·첨삭 사용 여부·첨삭 시작일·(자기주도) 종료일·확정표·마감 연장. sessionStorage에도 저장.
  *   실패하면 기존 값을 유지하고 그대로 돌려준다.
+ *   user.scheduleSyncOk = 이번에 일정 재료(신청서·연장)를 모두 실제로 받아왔는가 — 인증률 고정은 이때만 한다.
  */
 async function refreshPauseState(user) {
     if (!user || !user.applicationId) return user;
+    user.scheduleSyncOk = false;
     var rows = await supabaseSelect('applications',
         'id=eq.' + user.applicationId + '&select=schedule_start,australia_schedule_start,correction_enabled,correction_start_date,challenge_pauses,correction_pauses,self_paced_end_date,self_paced_schedule,service_stops,app_status,refund_at');
     if (!rows || !rows[0]) return user;
@@ -441,6 +459,9 @@ async function refreshPauseState(user) {
         if (r.self_paced_end_date) user.selfPacedEndDate = r.self_paced_end_date;
         if (r.self_paced_schedule) user.selfPacedSchedule = r.self_paced_schedule;
     }
+    var exts = await _fetchDeadlineExtensions(user.applicationId);
+    if (exts) user.deadlineExtensions = exts;   // 실패면 기존 값 유지(정지 이력과 같은 규칙)
+    user.scheduleSyncOk = !!exts;
     try { sessionStorage.setItem('currentUser', JSON.stringify(user)); } catch (e) {}
     return user;
 }

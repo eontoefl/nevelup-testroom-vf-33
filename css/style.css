@@ -2094,6 +2094,7 @@ body {
     margin: 0 0 20px 0;
     padding-bottom: 15px;
     border-bottom: 2px solid var(--border-color);
+    white-space: pre-line; /* DB 제목의 줄바꿈 표시 */
 }
 
 .daily1-passage-content {

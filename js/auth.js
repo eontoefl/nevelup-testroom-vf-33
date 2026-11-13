@@ -134,6 +134,8 @@ async function handleLogin(event) {
             appStatus: programInfo.appStatus || null,             // 옛 방식 환불 표시
             refundAt: programInfo.refundAt || null,
             correctionStartDate: programInfo.correctionStartDate || null,
+            deadlineExtensions: programInfo.deadlineExtensions || [],   // 내챌 마감 연장(이 수강)
+            scheduleSyncOk: programInfo.deadlineExtensions !== null,    // 일정 재료를 모두 받아왔는가(고정 조건)
             timezone: userTimezone  // 학생별 타임존 (IANA)
         };
 
@@ -169,8 +171,12 @@ async function handleLogin(event) {
         const programLabel = programType === 'fast' ? '4주 Fast' : '8주 Standard';
         showLoginSuccess(`환영합니다, ${currentUser.name}님! (${programLabel})`);
         
-        // 밀린 인증률 일괄 확정 (로그인 대기 시간 동안 백그라운드 처리)
-        _fillMissingAuthRates(user.id);
+        // 밀린 인증률 일괄 확정 (로그인 대기 시간 동안 백그라운드 처리) — 일정 재료를 모두 받아왔을 때만.
+        // 로그인 때 못 받았으면 새로고침과 같은 동기화(refreshPauseState)를 한 번 더 거친 뒤 확정한다.
+        var _loginSync = (currentUser.scheduleSyncOk || typeof refreshPauseState !== 'function')
+            ? Promise.resolve()
+            : refreshPauseState(currentUser).catch(function (e) { console.warn('⚠️ 로그인 동기화 재시도 실패:', e); });
+        _loginSync.then(function () { if (currentUser.scheduleSyncOk) _fillMissingAuthRates(user.id); });
         
         setTimeout(() => {
             showScreen('scheduleScreen');
@@ -344,8 +350,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (typeof Sentry !== 'undefined' && Sentry.setUser) {
             Sentry.setUser({ id: currentUser.id, email: currentUser.email, username: currentUser.name });
         }
-        // 시작일·정지 이력·첨삭 상태 최신값 동기화(DB 변경 반영). 2026-10-06: 동기화가 끝난 뒤에 인증률 확정을 돌린다
-        // (옛 세션 정보로 정지 기간 과제를 확정하지 않도록). 동기화 실패 시 기존 값 그대로 진행.
+        // 시작일·정지 이력·첨삭 상태·마감 연장 최신값 동기화(DB 변경 반영). 2026-10-06: 동기화가 끝난 뒤에 인증률 확정을 돌린다
+        // (옛 세션 정보로 정지 기간 과제를 확정하지 않도록). 2026-11-08: 일정 재료를 실제로 받아온 때만 확정한다
+        // (받지 못했으면 화면은 세션 값으로 돌고, 확정은 다음 접속으로 미룬다).
+        currentUser.scheduleSyncOk = false;
         var _restoreSync = (currentUser.applicationId && typeof refreshPauseState === 'function')
             ? refreshPauseState(currentUser).then(function (u) {
                 console.log('📋 세션 동기화 완료:', u.startDate, '/ australia:', u.australiaStartDate,
@@ -356,7 +364,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             }).catch(function (e) { console.warn('⚠️ 세션 동기화 실패(기존 값 유지):', e); })
             : Promise.resolve();
         // 밀린 인증률 일괄 확정 (백그라운드 처리) — 동기화 뒤에
-        _restoreSync.then(function () { _fillMissingAuthRates(currentUser.id); });
+        _restoreSync.then(function () { if (currentUser.scheduleSyncOk) _fillMissingAuthRates(currentUser.id); });
         // book.html에서 일반 사용자 → authReady 발행 (뷰어 초기화용)
         if (isBookPage) {
             window.dispatchEvent(new Event('authReady'));
@@ -491,7 +499,7 @@ function _rowTaskDeadlineNormal(row, tz) {
         if (isNaN(w) || dayIdx < 0) return null;
         // 과제 마감(다음날 04:00 + 연장) — 일정 계산 단일 출처(timezone-utils.js). 없으면(book.html 등) 동결 안 함.
         if (typeof getChallengeTaskDeadline !== 'function') return null;
-        var exts = (typeof window !== 'undefined' && window._deadlineExtensions) ? window._deadlineExtensions : [];
+        var exts = currentUser.deadlineExtensions || [];
         // 정지 이력 반영: 무기한 정지 구간 과제는 마감 null → 호출부가 '동결 안 함'(조기 동결 금지)
         return getChallengeTaskDeadline(startStr, w, dayIdx, exts, tz, currentUser.challengePauses || []);
     } catch (e) {
@@ -525,10 +533,7 @@ async function _fillMissingAuthRates(userId) {
             console.log('🔒 [인증률] 자기주도(구, 기한 만료) — 일괄 확정 진행');
         }
 
-        // 마감 가드에 필요한 연장정보 최신화 + week/day 확보 (v2뿐 아니라 정규도 per-row 마감 판정).
-        if ((isSpV2gate || !isSp) && typeof loadDeadlineExtensions === 'function') {
-            try { await loadDeadlineExtensions(); } catch (e) { /* 무시 */ }
-        }
+        // 마감 가드의 연장정보는 currentUser.deadlineExtensions(로그인·동기화에서 받은 값). 이 함수는 받아온 뒤에만 불린다.
         var selectCols = 'id,initial_record,error_note_submitted,week,day';
 
         var rows = await supabaseSelect(
@@ -558,7 +563,7 @@ async function _fillMissingAuthRates(userId) {
             if (isSpV2gate) {
                 // 자기주도 v2: 세트 마감(연장 반영) — timezone-utils 단일 진실원.
                 rowDl = (typeof getSelfPacedSetDeadline === 'function')
-                    ? getSelfPacedSetDeadline(currentUser, row.week, row.day, window._deadlineExtensions, tz)
+                    ? getSelfPacedSetDeadline(currentUser, row.week, row.day, currentUser.deadlineExtensions || [], tz)
                     : null;
                 if (!rowDl) continue; // 매핑 실패 → 건너뜀
             } else if (!isSp) {

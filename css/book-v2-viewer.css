@@ -385,3 +385,22 @@ body.bookv2-paperzoom .bookv2-paper { flex-shrink: 0; }
   .bookv2-print-sheet, .bookv2-print-cover { break-after: page; page-break-after: always; }
   .bookv2-print-root > :last-child { break-after: auto; page-break-after: auto; }
 }
+
+/* 목차: "07 첫 단어 ~ 끝 단어" 제목 (단어장 v2 단어 쪽) — 작은 알약 칩 + 두 줄 (book-v2-viewer.js renderToc) 2026-11-13 */
+.bookv2-toc-item.rg { justify-content: flex-start; align-items: flex-start; gap: 10px; padding: 8px 14px; }
+.bookv2-toc-item.rg.current { background: transparent; }
+.bookv2-toc-chip { flex: none; box-sizing: border-box; height: 18px; min-width: 26px; padding: 0 6px; margin-top: 1px; border-radius: 99px; background: #F1EDF8; color: #6B5C8E; font: 500 10.5px/18px Outfit, Pretendard, sans-serif; text-align: center; font-variant-numeric: tabular-nums; }
+.bookv2-toc-rg { min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.bookv2-toc-rg b { font-size: 14px; font-weight: 600; color: #2E2A3A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookv2-toc-rg span { font-size: 12px; color: #A39BB8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookv2-toc-item.rg.current .bookv2-toc-chip { background: #5B4A7D; color: #fff; }
+.bookv2-toc-item.rg.current .bookv2-toc-rg b { color: #5B4A7D; }
+
+/* PDF 저장·인쇄: HTML 책(인쇄 쪽 그대로) — 210×280 종이 그대로, 여백·축소 없음, 이름은 위에 겹쳐 찍음 (book-v2-viewer.js buildPrintRoot) 2026-11-13 */
+.bookv2-print-html { position: relative; width: 210mm; height: 280mm; overflow: hidden; box-sizing: border-box; background: #fff; }
+.bookv2-print-html > .bookv2-content.book-content { width: 210mm !important; max-width: none !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.bookv2-print-html > .bookv2-print-stamp { position: absolute; top: 2.2mm; right: 10mm; z-index: 5; font-size: 6.5pt; color: #8a8f9c; }
+@media print {
+  .bookv2-print-html { break-after: page; page-break-after: always; }
+  .bookv2-print-root.is-html > :last-child { break-after: auto; page-break-after: auto; }
+}

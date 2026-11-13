@@ -411,12 +411,19 @@ function renderToc() {
   const empty = document.getElementById("tocEmpty");
   if (!V2.toc.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
   empty.style.display = "none";
-  list.innerHTML = V2.toc.map((it) =>
-    '<div class="bookv2-toc-item lv' + it.level + (it.idx === V2.idx ? ' current' : '') + '" data-idx="' + it.idx + '">' +
+  // "07 첫 단어 ~ 끝 단어" 꼴 제목(단어장 v2 단어 쪽): 번호 칩 + 첫 단어 윗줄, 끝 단어 아랫줄
+  const RANGE_TITLE = /^(\d{2,3})\s+(.+?)\s+~\s+(.+)$/;
+  list.innerHTML = V2.toc.map((it) => {
+    const rg = it.title.match(RANGE_TITLE);
+    if (rg) return '<div class="bookv2-toc-item lv' + it.level + ' rg' + (it.idx === V2.idx ? ' current' : '') + '" data-idx="' + it.idx + '">' +
+      '<span class="bookv2-toc-chip">' + escapeHtml(rg[1]) + '</span>' +
+      '<span class="bookv2-toc-rg"><b>' + escapeHtml(rg[2]) + '</b><span>~ ' + escapeHtml(rg[3]) + '</span></span>' +
+    '</div>';
+    return '<div class="bookv2-toc-item lv' + it.level + (it.idx === V2.idx ? ' current' : '') + '" data-idx="' + it.idx + '">' +
       '<span class="bookv2-toc-title">' + escapeHtml(it.title) + '</span>' +
       '<span class="bookv2-toc-page">' + (it.idx + 1) + '</span>' +
-    '</div>'
-  ).join("");
+    '</div>';
+  }).join("");
   list.querySelectorAll(".bookv2-toc-item").forEach((el) => {
     el.addEventListener("click", () => { V2.idx = parseInt(el.dataset.idx, 10); render(); closeSidebar(); });
   });
@@ -701,6 +708,9 @@ function updatePrintButton() {
   document.body.classList.toggle("bookv2-print-ok", ok);
   if (ok && !phone) setTimeout(buildPrintRoot, 0);   // 이미지가 미리 받아지도록 먼저 만들어 둔다 (휴대폰은 생략)
 }
+function isHtmlBook() {
+  return !!(V2.pages && V2.pages.length && V2.pages.every((p) => typeof p.html === "string" && p.html.trim().startsWith('<div class="twp">')));
+}
 function buildPrintRoot() {
   let root = document.getElementById("printRoot");
   if (root && root.dataset.book === String(V2.book.id)) return root;
@@ -717,6 +727,29 @@ function buildPrintRoot() {
   const themed = !!(T && T.isThemed(V2.book.id));
   const metas = themed ? (V2.themeMetas = V2.themeMetas || T.classify(V2.pages, V2.book.id)) : null;
   const stampText = (V2.user.name || "학생") + " · " + (V2.user.email || "") + " 전용";
+  // HTML 책(모든 쪽이 인쇄 쪽 그대로인 <div class="twp">): 인쇄본과 같은 210×280 종이에 여백·축소 없이 한 쪽씩. 이름·이메일은 위에 겹쳐 찍는다 (2026-11-13)
+  if (isHtmlBook()) {
+    root.classList.add("is-html");
+    let pg = document.getElementById("printPageHtml");
+    if (!pg) { pg = document.createElement("style"); pg.id = "printPageHtml"; document.head.appendChild(pg); }
+    pg.textContent = "@media print { @page { size: 210mm 280mm; margin: 0; } }";
+    V2.pages.forEach((p) => {
+      const sheet = document.createElement("section");
+      sheet.className = "bookv2-print-html";
+      const art = document.createElement("article");
+      art.className = "bookv2-content book-content";
+      art.innerHTML = p.html || "";
+      art.querySelectorAll("video, audio, iframe").forEach((m) => m.remove());
+      const st = document.createElement("span");
+      st.className = "bookv2-print-stamp";
+      st.textContent = stampText;
+      sheet.append(art, st);
+      root.appendChild(sheet);
+    });
+    return root;
+  }
+  const old = document.getElementById("printPageHtml"); if (old) old.remove();
+  root.classList.remove("is-html");
   // 책 한 쪽 = A4 한 장. 표지·뒷표지는 종이를 꽉 채우고, 나머지 쪽은 여백 안에 들어가도록 쪽마다 크기를 줄인다(fitPrintPages).
   V2.pages.forEach((p, i) => {
     const isCover = !!(themed && metas[i] && metas[i].kind === "cover");

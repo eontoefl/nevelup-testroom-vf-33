@@ -215,6 +215,7 @@
     color: var(--rd-text);
     text-align: center;
     letter-spacing: -0.02em;
+    white-space: pre-line; /* DB 제목의 줄바꿈 표시 */
 }
 
 .sentence-translations {
@@ -242,6 +243,7 @@
 .sentence-translation {
     font-size: 0.95rem;
     color: var(--rd-gray);
+    white-space: pre-line; /* DB 번역의 줄바꿈 표시 */
 }
 
 /* ── 인터랙티브 단어 ── */

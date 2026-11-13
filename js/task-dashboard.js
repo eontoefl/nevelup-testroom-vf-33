@@ -145,7 +145,9 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
     console.log('📋 [대시보드] 상태:', { hasInitial, hasCurrent, deadlinePassed, pausedMode });
 
     // ── 고정인증률 확정 저장 (마감 지남 + 아직 미확정) — 정규코스만. 정지 중엔 확정하지 않는다.
-    if (!inPractice && deadlinePassed && !pausedMode && record && record.locked_auth_rate == null) {
+    //    일정 재료(연장 포함)를 이번 접속에서 실제로 받아온 때만 확정(auth.js 일괄 확정과 같은 조건, 2026-11-08).
+    const syncedUser = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (!inPractice && deadlinePassed && !pausedMode && syncedUser && syncedUser.scheduleSyncOk && record && record.locked_auth_rate == null) {
         await _lockAuthRate(record, hasInitial);
     }
 
