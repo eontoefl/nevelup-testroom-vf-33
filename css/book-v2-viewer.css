@@ -395,3 +395,12 @@ body.bookv2-paperzoom .bookv2-paper { flex-shrink: 0; }
 .bookv2-toc-rg span { font-size: 12px; color: #A39BB8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bookv2-toc-item.rg.current .bookv2-toc-chip { background: #5B4A7D; color: #fff; }
 .bookv2-toc-item.rg.current .bookv2-toc-rg b { color: #5B4A7D; }
+
+/* PDF 저장·인쇄: HTML 책(인쇄 쪽 그대로) — 210×280 종이 그대로, 여백·축소 없음, 이름은 위에 겹쳐 찍음 (book-v2-viewer.js buildPrintRoot) 2026-11-13 */
+.bookv2-print-html { position: relative; width: 210mm; height: 280mm; overflow: hidden; box-sizing: border-box; background: #fff; }
+.bookv2-print-html > .bookv2-content.book-content { width: 210mm !important; max-width: none !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.bookv2-print-html > .bookv2-print-stamp { position: absolute; top: 2.2mm; right: 10mm; z-index: 5; font-size: 6.5pt; color: #8a8f9c; }
+@media print {
+  .bookv2-print-html { break-after: page; page-break-after: always; }
+  .bookv2-print-root.is-html > :last-child { break-after: auto; page-break-after: auto; }
+}
