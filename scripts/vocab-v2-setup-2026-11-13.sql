@@ -4,9 +4,9 @@
 -- 하는 일
 --   1) tr_vocab_v2 : v2 단어 시험 정답표 (tr_vocab 과 같은 모양). 1,263행.
 --        v2 책(디지털 단어장 v2, 47282479…) 기준 쪽번호(7~63)와 동의어.
---        v1(tr_vocab)과 동의어가 다른 단어는 42개 (동의어 수정 38 + 6월 정오표 옛답 정리 4).
+--        v1(tr_vocab)과 동의어가 다른 단어는 56개 (11/9 동의어 수정 38 + 6월 정오표 옛답 정리 4 + 11/13 동의어 수정 14). 정본 2026-11-13 20:15 저장본에서 뽑음.
 --   2) tr_app_settings : 설정 한 줄. key='vocab_version'
---        v2_start_from 이 null 이면 전원 v1 → 실행해도 학생 화면은 그대로.
+--        new_book_date 가 null 이면 전원 v1 → 실행해도 학생 화면은 그대로.
 -- 바꾸지 않는 것: tr_vocab(v1 정답표), 일정표 표, 책.
 -- 되돌리기: 파일 맨 아래 참고.
 -- ============================================================
@@ -32,8 +32,8 @@ GRANT SELECT ON public.tr_app_settings TO anon, authenticated;
 
 INSERT INTO public.tr_app_settings (key, value, note) VALUES (
   'vocab_version',
-  '{"v2_start_from": null, "force_v1": [], "force_v2": []}'::jsonb,
-  '단어장 버전. 시작일 >= v2_start_from 이면 v2. null이면 전원 v1. force_v1/force_v2 = applicationId 목록(예외)'
+  '{"new_book_date": null, "v1_closed": false, "force_v1": [], "force_v2": []}'::jsonb,
+  '단어장 버전. new_book_date(새 책 도착일) 이후 단어장 발송 학생은 v2. null이면 전원 v1. 판정 규칙: C:\기능구현\단어장_v1v2분리\IMPLEMENTATION_PLAN.md 2절'
 ) ON CONFLICT (key) DO NOTHING;
 
 DELETE FROM public.tr_vocab_v2;
@@ -73,14 +73,14 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page8_advent', 8, 'advent', 'arrival', 'coming', 'beginning', NULL, NULL, NULL, NULL, NULL),
 ('page8_advent_of', 8, 'advent of', 'introduction of', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page8_adverse', 8, 'adverse', 'unfavorable', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page8_advocate', 8, 'advocate', 'support', 'speak in favor', 'promote', 'argue for', 'argue in support of something', NULL, NULL, NULL),
+('page8_advocate', 8, 'advocate', 'support', 'speak in favor of', 'promote', 'argue for', 'argue in support of something', NULL, NULL, NULL),
 ('page8_affluent', 8, 'affluent', 'wealthy', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page8_afford', 8, 'afford', 'provide', 'offer', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page8_aftermath', 8, 'aftermath', 'result', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page8_aggravate', 8, 'aggravate', 'make worse', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page8_aggregate', 8, 'aggregate', 'combined', 'collected', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page8_aggregation', 8, 'aggregation', 'group', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page8_agitated', 8, 'agitated', 'create movement in', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('page8_agitated', 8, 'agitated', 'created movement in', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page8_akin_to', 8, 'akin to', 'similar to', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page9_alarm', 9, 'alarm', 'surprise', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page9_albeit', 9, 'albeit', 'even though', 'although', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -89,7 +89,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page9_allied', 9, 'allied', 'related', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page9_allocate', 9, 'allocate', 'designate', 'distribute', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page9_allocation', 9, 'allocation', 'assignment', 'distribution', NULL, NULL, NULL, NULL, NULL, NULL),
-('page9_allude_to', 9, 'allude to', 'suggest', 'refer', NULL, NULL, NULL, NULL, NULL, NULL),
+('page9_allude_to', 9, 'allude to', 'suggest', 'refer to', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page9_allure', 9, 'allure', 'appeal', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page9_alter', 9, 'alter', 'change', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page9_alteration', 9, 'alteration', 'change', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -212,7 +212,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page14_circuitous', 14, 'circuitous', 'indirect', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page14_circumstance', 14, 'circumstance', 'condition', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page14_circumvent', 14, 'circumvent', 'get around', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page14_cite', 14, 'cite', 'mention', 'refer', NULL, NULL, NULL, NULL, NULL, NULL),
+('page14_cite', 14, 'cite', 'mention', 'refer to', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page14_cited', 14, 'cited', 'referred to', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page15_classic', 15, 'classic', 'typical', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page15_clear', 15, 'clear', 'remove', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -318,7 +318,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page19_cope_with', 19, 'cope with', 'deal with', 'handle', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page19_copious', 19, 'copious', 'abundant', 'plentiful', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page19_core', 19, 'core', 'center', 'central idea', NULL, NULL, NULL, NULL, NULL, NULL),
-('page19_cornerstone', 19, 'cornerstone', 'foundation', 'basic', 'element', 'bedrock', NULL, NULL, NULL, NULL),
+('page19_cornerstone', 19, 'cornerstone', 'foundation', 'basis', 'element', 'bedrock', NULL, NULL, NULL, NULL),
 ('page19_correlate', 19, 'correlate', 'match', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page20_correspondingly', 20, 'correspondingly', 'accordingly', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page20_corroborate', 20, 'corroborate', 'confirm', 'bear out', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -406,7 +406,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page23_discount', 23, 'discount', 'ignore', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page23_discovered', 23, 'discovered', 'found', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page23_discrete', 23, 'discrete', 'separate', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page23_disentangle', 23, 'disentangle', 'disband', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('page23_disentangle', 23, 'disentangle', 'untangle', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page23_disgust', 23, 'disgust', 'distaste', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page23_disintegrate', 23, 'disintegrate', 'break down', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page24_dismantle', 24, 'dismantle', 'take apart', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -434,7 +434,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page25_dramatic', 25, 'dramatic', 'striking', 'significant', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page25_dramatically', 25, 'dramatically', 'greatly', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page25_drastically', 25, 'drastically', 'severely', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page25_drawn_by', 25, 'drawn by', 'attracted', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('page25_drawn_by', 25, 'drawn by', 'attracted by', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page25_dryness', 25, 'dryness', 'aridity', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page25_dual', 25, 'dual', 'double', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page25_due_to', 25, 'due to', 'caused by', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -462,7 +462,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page26_emanate', 26, 'emanate', 'emerge', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page26_embark_on', 26, 'embark on', 'start', 'begin', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page26_embed', 26, 'embed', 'implant', 'enclose', 'insert', NULL, NULL, NULL, NULL, NULL),
-('page26_embellish', 26, 'embellish', 'make more attractive', 'decorative', NULL, NULL, NULL, NULL, NULL, NULL),
+('page26_embellish', 26, 'embellish', 'make more attractive', 'decorate', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page26_embodiment', 26, 'embodiment', 'concrete example', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page26_emerge', 26, 'emerge', 'appear', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page26_emergence', 26, 'emergence', 'rise', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -657,7 +657,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page34_in_conjunction_with', 34, 'in conjunction with', 'together with', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page35_in_contrast_to', 35, 'in contrast to', 'unlike', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page35_in_earnest', 35, 'in earnest', 'seriously', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page35_in_essence', 35, 'in essence', 'significantly', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('page35_in_essence', 35, 'in essence', 'essentially', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page35_in_principle', 35, 'in principle', 'theoretically', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page35_in_response_to', 35, 'in response to', 'in reaction to', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page35_in_tandem', 35, 'in tandem', 'in association', 'together', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -720,7 +720,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page37_intermittently', 37, 'intermittently', 'periodically', 'from time to time', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page37_interpreted', 37, 'interpreted', 'understood', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page38_interval', 38, 'interval', 'period', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page38_intervening_years', 38, 'intervening years', 'between years', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('page38_intervening_years', 38, 'intervening years', 'years in between', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page38_intimate', 38, 'intimate', 'close', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page38_intimate_with', 38, 'intimate with', 'familiar with', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page38_intricate', 38, 'intricate', 'complicated', 'complex', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -906,7 +906,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page47_prevail', 47, 'prevail', 'be dominant', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page47_prevailing', 47, 'prevailing', 'widespread', 'dominant', 'current', NULL, NULL, NULL, NULL, NULL),
 ('page47_prevalent', 47, 'prevalent', 'widespread', 'most common', NULL, NULL, NULL, NULL, NULL, NULL),
-('page47_previously', 47, 'previously', 'formerly', 'early', NULL, NULL, NULL, NULL, NULL, NULL),
+('page47_previously', 47, 'previously', 'formerly', 'earlier', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page47_primarily', 47, 'primarily', 'mainly', 'mostly', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page47_primary', 47, 'primary', 'fundamental', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page47_prime', 47, 'prime', 'peak', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -956,7 +956,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page49_qualify', 49, 'qualify', 'meet the requirement', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page49_quantify', 49, 'quantify', 'measure', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page49_quarters', 49, 'quarters', 'residences', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page49_question', 49, 'question', 'take a critical look', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('page49_question', 49, 'question', 'take a critical look at', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page49_radical', 49, 'radical', 'fundamental', 'drastic', 'extreme', NULL, NULL, NULL, NULL, NULL),
 ('page49_radically', 49, 'radically', 'essentially', 'completely', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page49_randomness', 49, 'randomness', 'lack of pattern', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -1215,7 +1215,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page59_transition', 59, 'transition', 'change', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page59_transitory', 59, 'transitory', 'short-lived', 'brief', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page60_transmit', 60, 'transmit', 'convey', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page60_transplant', 60, 'transplant', 'remove', 'place with other context', NULL, NULL, NULL, NULL, NULL, NULL),
+('page60_transplant', 60, 'transplant', 'remove', 'place in another context', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page60_trapped', 60, 'trapped', 'caught', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page60_trappings', 60, 'trappings', 'decoration', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page60_trauma', 60, 'trauma', 'damage', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -1287,7 +1287,7 @@ INSERT INTO public.tr_vocab_v2 (id, page, headword, synonym1, synonym2, synonym3
 ('page63_vulnerable', 63, 'vulnerable', 'easily damaged', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page63_wary', 63, 'wary', 'cautious', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page63_whereas', 63, 'whereas', 'while', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('page63_whereby', 63, 'whereby', 'through', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('page63_whereby', 63, 'whereby', 'through which', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 ('page63_wholesale', 63, 'wholesale', 'extensive', 'complete', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page63_wholly', 63, 'wholly', 'completely', 'entirely', NULL, NULL, NULL, NULL, NULL, NULL),
 ('page63_widely', 63, 'widely', 'extensively', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -1311,8 +1311,8 @@ COMMIT;
 -- ============================================================
 -- [나중에] 기준일 넣기 (새 책 첫 발송 학생의 시작일). 이때부터 그 날짜 이후 시작 학생은 v2.
 --   UPDATE public.tr_app_settings
---   SET value = jsonb_set(value, '{v2_start_from}', '"YYYY-MM-DD"'), updated_at = now()
+--   SET value = jsonb_set(value, '{new_book_date}', '"YYYY-MM-DD"'), updated_at = now()
 --   WHERE key = 'vocab_version';
 -- [예외] 특정 학생만 바꾸기: force_v2 / force_v1 에 applications.id 추가
--- [되돌리기] 전원 v1로: v2_start_from 을 null 로.  표를 지우려면: DROP TABLE public.tr_vocab_v2;
+-- [되돌리기] 전원 v1로: new_book_date 를 null 로.  표를 지우려면: DROP TABLE public.tr_vocab_v2;
 -- ============================================================
