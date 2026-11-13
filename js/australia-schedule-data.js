@@ -317,5 +317,7 @@ function getAusWeekSchedule(program, week) {
 function getAusDayTasks(program, week, day) {
     const weekSchedule = getAusWeekSchedule(program, week);
     if (!weekSchedule) return [];
-    return weekSchedule[day] || [];
+    const tasks = weekSchedule[day] || [];
+    // 단어장 v2 학생은 단어 과제 쪽번호가 v2 책 기준(+2) (js/vocab-version.js)
+    return (typeof VocabVersion !== 'undefined') ? VocabVersion.taskList(tasks) : tasks;
 }

@@ -48,7 +48,15 @@
         (access || []).forEach(function (a) { mine[a.book_id] = true; });
       } catch (_) { /* SQL 미적용 → selected 책은 안 보임 */ }
 
+      // 단어장 v1/v2: 이 학생 버전이 아닌 단어장 책은 숨긴다 (js/vocab-version.js)
+      var hideVoca = null;
+      if (window.VocabVersion) {
+        try { await window.VocabVersion.load(); } catch (_) {}
+        hideVoca = window.VocabVersion.hiddenBookId(user);
+      }
+
       var visible = books.filter(function (b) {
+        if (hideVoca && b.id === hideVoca) return false;
         var mode = b.audience_mode === "selected" ? "selected" : "all";
         return mode === "all" || mine[b.id];
       });

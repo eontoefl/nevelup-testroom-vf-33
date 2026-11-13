@@ -77,7 +77,10 @@ async function _loadVocabFromSupabase(pages) {
         console.log('📥 [Vocab] Supabase에서 데이터 로드... (페이지:', pages.join(', '), ')');
         // 🎯 필요한 페이지만 서버에서 직접 필터링 → 전체 행(1000개 제한) 조회 방지
         const pageFilter = `page=in.(${pages.join(',')})`;
-        const rows = await supabaseSelect('tr_vocab', `select=*&${pageFilter}&order=page.asc,id.asc`);
+        // 단어장 v1 → tr_vocab, v2 → tr_vocab_v2 (js/vocab-version.js)
+        const vocabTable = (typeof VocabVersion !== 'undefined') ? VocabVersion.vocabTable() : 'tr_vocab';
+        console.log('📚 [Vocab] 정답표:', vocabTable);
+        const rows = await supabaseSelect(vocabTable, `select=*&${pageFilter}&order=page.asc,id.asc`);
 
         if (!rows || rows.length === 0) {
             console.warn('⚠️ [Vocab] Supabase 데이터 없음');
@@ -132,7 +135,12 @@ async function loadVocabData(pageRange) {
         return;
     }
     
-    // 2) Google Sheets 폴백
+    // 2) Google Sheets 폴백 — v1 정답만 있으므로 v2 학생에게는 쓰지 않는다 (쪽번호·동의어가 달라 엉뚱한 단어가 나옴)
+    if (typeof VocabVersion !== 'undefined' && VocabVersion.versionFor() === 'v2') {
+        console.error('❌ [Vocab] v2 정답표 로드 실패 (폴백 없음)');
+        alert('데이터를 불러오는데 실패했습니다. 다시 시도해주세요.');
+        return;
+    }
     console.log('🔄 [Vocab] Google Sheets 폴백 시도...');
     try {
         const csvUrl = `https://docs.google.com/spreadsheets/d/${VOCAB_SPREADSHEET_ID}/export?format=csv&gid=${VOCAB_SHEET_GID}`;

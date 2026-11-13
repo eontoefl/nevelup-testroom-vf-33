@@ -379,6 +379,8 @@ let SCHEDULE_DATA = {
  * 실패 시 위의 하드코딩 데이터가 그대로 유지됩니다.
  */
 async function loadScheduleFromSupabase() {
+    // 단어장 v1/v2 설정을 일정표보다 먼저 읽어 둔다 (실패해도 v1로 계속)
+    if (typeof VocabVersion !== 'undefined') { try { await VocabVersion.load(); } catch (e) {} }
     if (typeof USE_SUPABASE !== 'undefined' && !USE_SUPABASE) {
         console.log('ℹ️ [Schedule] USE_SUPABASE=false, 하드코딩 데이터 사용');
         return SCHEDULE_DATA;
@@ -643,5 +645,7 @@ function getDayTasks(program, week, day) {
     const weekSchedule = getWeekSchedule(program, week);
     if (!weekSchedule) return [];
 
-    return weekSchedule[day] || [];
+    const tasks = weekSchedule[day] || [];
+    // 단어장 v2 학생은 단어 과제 쪽번호가 v2 책 기준(+2)으로 바뀜 (js/vocab-version.js)
+    return (typeof VocabVersion !== 'undefined') ? VocabVersion.taskList(tasks) : tasks;
 }

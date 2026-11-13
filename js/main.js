@@ -1583,6 +1583,12 @@ async function _loadPracticeTasks(practiceNumber) {
         alert('Practice ' + practiceNumber + '의 과제 데이터가 없습니다.');
         return;
     }
+
+    // 단어장 v2 학생은 단어 과제 쪽번호가 v2 책 기준(+2) (js/vocab-version.js)
+    if (typeof VocabVersion !== 'undefined') {
+        try { await VocabVersion.load(); } catch (e) {}
+        tasks = VocabVersion.taskList(tasks);
+    }
     
     // 과제 목록 화면 표시 (연습코스 전용)
     showPracticeTaskListScreen(practiceNumber, tasks);
