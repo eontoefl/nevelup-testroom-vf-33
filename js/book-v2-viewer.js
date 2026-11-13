@@ -549,11 +549,16 @@ function isRepeatBook() {
   if (V2.isRepeat === undefined) V2.isRepeat = !!(V2.pages && V2.pages.some((p) => typeof p.html === "string" && p.html.includes("회독")));
   return V2.isRepeat;
 }
-// 완독 창. 반복 책은 "다시 1쪽부터" 안내 (단어장 4쪽·W1 암기장 8쪽 공부법과 같은 말, 2026-10-29)
+// 완독 창. 반복 책은 "다시 1쪽부터" 안내. 문구는 그 책의 공부법과 같은 말로 한다.
+// 기본 = 단어장 4쪽 공부방법 (2026-10-29). 책마다 공부법이 다르면 여기에 책 id로 적는다(없으면 기본 문구).
+const REPEAT_DONE_DESC = {
+  // W1 문장배열 암기장: 8쪽 공부법(A4로 가리고 조각 순서대로 적기) + 43쪽 회독 기록 (2026-11-14)
+  "f2800a43-0fd0-4bd7-81c9-6d9a14407a79": "회독 기록 쪽에 끝낸 날을 적고, UNIT 01부터 다시 외워 봐요.<br>A4 용지를 들춰 보지 않고 모든 조각을 순서대로 맞힐 때까지 반복해요.",
+};
 function showDone() {
   if (isRepeatBook()) {
     document.getElementById("doneTitle").textContent = (V2.book.title || "자료") + " 1회독 끝!";
-    document.querySelector("#doneOverlay .bookv2-done-desc").innerHTML = "이제 1쪽으로 돌아가 다시 외워볼 차례예요.<br>들춰보지 않고 다 쓸 수 있을 때까지 반복해요.";
+    document.querySelector("#doneOverlay .bookv2-done-desc").innerHTML = REPEAT_DONE_DESC[V2.book.id] || "이제 1쪽으로 돌아가 다시 외워볼 차례예요.<br>들춰보지 않고 다 쓸 수 있을 때까지 반복해요.";
     V2.restartOnClose = true;   // [확인] 누르면 1쪽으로
   }
   document.getElementById("doneOverlay").classList.add("open");
