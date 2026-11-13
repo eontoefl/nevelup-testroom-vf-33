@@ -385,3 +385,13 @@ body.bookv2-paperzoom .bookv2-paper { flex-shrink: 0; }
   .bookv2-print-sheet, .bookv2-print-cover { break-after: page; page-break-after: always; }
   .bookv2-print-root > :last-child { break-after: auto; page-break-after: auto; }
 }
+
+/* 목차: "07 첫 단어 ~ 끝 단어" 제목 (단어장 v2 단어 쪽) — 작은 알약 칩 + 두 줄 (book-v2-viewer.js renderToc) 2026-11-13 */
+.bookv2-toc-item.rg { justify-content: flex-start; align-items: flex-start; gap: 10px; padding: 8px 14px; }
+.bookv2-toc-item.rg.current { background: transparent; }
+.bookv2-toc-chip { flex: none; box-sizing: border-box; height: 18px; min-width: 26px; padding: 0 6px; margin-top: 1px; border-radius: 99px; background: #F1EDF8; color: #6B5C8E; font: 500 10.5px/18px Outfit, Pretendard, sans-serif; text-align: center; font-variant-numeric: tabular-nums; }
+.bookv2-toc-rg { min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.bookv2-toc-rg b { font-size: 14px; font-weight: 600; color: #2E2A3A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookv2-toc-rg span { font-size: 12px; color: #A39BB8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookv2-toc-item.rg.current .bookv2-toc-chip { background: #5B4A7D; color: #fff; }
+.bookv2-toc-item.rg.current .bookv2-toc-rg b { color: #5B4A7D; }

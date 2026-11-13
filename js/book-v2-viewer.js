@@ -411,12 +411,19 @@ function renderToc() {
   const empty = document.getElementById("tocEmpty");
   if (!V2.toc.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
   empty.style.display = "none";
-  list.innerHTML = V2.toc.map((it) =>
-    '<div class="bookv2-toc-item lv' + it.level + (it.idx === V2.idx ? ' current' : '') + '" data-idx="' + it.idx + '">' +
+  // "07 첫 단어 ~ 끝 단어" 꼴 제목(단어장 v2 단어 쪽): 번호 칩 + 첫 단어 윗줄, 끝 단어 아랫줄
+  const RANGE_TITLE = /^(\d{2,3})\s+(.+?)\s+~\s+(.+)$/;
+  list.innerHTML = V2.toc.map((it) => {
+    const rg = it.title.match(RANGE_TITLE);
+    if (rg) return '<div class="bookv2-toc-item lv' + it.level + ' rg' + (it.idx === V2.idx ? ' current' : '') + '" data-idx="' + it.idx + '">' +
+      '<span class="bookv2-toc-chip">' + escapeHtml(rg[1]) + '</span>' +
+      '<span class="bookv2-toc-rg"><b>' + escapeHtml(rg[2]) + '</b><span>~ ' + escapeHtml(rg[3]) + '</span></span>' +
+    '</div>';
+    return '<div class="bookv2-toc-item lv' + it.level + (it.idx === V2.idx ? ' current' : '') + '" data-idx="' + it.idx + '">' +
       '<span class="bookv2-toc-title">' + escapeHtml(it.title) + '</span>' +
       '<span class="bookv2-toc-page">' + (it.idx + 1) + '</span>' +
-    '</div>'
-  ).join("");
+    '</div>';
+  }).join("");
   list.querySelectorAll(".bookv2-toc-item").forEach((el) => {
     el.addEventListener("click", () => { V2.idx = parseInt(el.dataset.idx, 10); render(); closeSidebar(); });
   });
