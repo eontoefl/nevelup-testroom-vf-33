@@ -91,6 +91,46 @@ function bindRdWordEvents() {
     });
 }
 
+/**
+ * 어휘 팝업용 속성(data-translation, data-explanation).
+ * 어휘 span을 만드는 곳(linkVocabHTML, R2-2 색칠 span)은 모두 이것만 쓴다.
+ */
+function vocabDataAttrs(w) {
+    var attr = function (s) { return escapeHtml(s || '').replace(/"/g, '&quot;'); };
+    return ' data-translation="' + attr(w.translation) + '" data-explanation="' + attr(w.explanation) + '"';
+}
+
+/**
+ * 해설 본문 글자에 어휘 링크(뜻 팝업)를 붙여 HTML로 돌려준다. 리딩·리스닝 해설 화면 공용.
+ * 원문(평문)을 한 번만 훑고 HTML은 마지막에 한 번 만든다. 링크끼리는 겹치지 않는다.
+ * - 표현이 나올 때마다 모두 링크한다
+ * - 앞에서 시작하는 표현이 먼저, 같은 자리에서는 긴 표현이 먼저
+ * - 경계: 앞뒤가 영문자·숫자·_·- 가 아닐 것, 대소문자 무시
+ * - 글자는 escapeHtml, 줄바꿈은 <br>
+ */
+function linkVocabHTML(text, words, className) {
+    text = String(text || '');
+    var toHTML = function (s) { return escapeHtml(s).replace(/\n/g, '<br>'); };
+    var list = (Array.isArray(words) ? words : [])
+        .filter(function (w) { return w && typeof w.word === 'string' && w.word; })
+        .sort(function (a, b) { return b.word.length - a.word.length; });
+    if (!list.length) return toHTML(text);
+
+    var pattern = new RegExp('(?<![\\w-])(?:' + list.map(function (w) {
+        return '(' + w.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')';
+    }).join('|') + ')(?![\\w-])', 'gi');
+
+    var html = '', last = 0, m;
+    while ((m = pattern.exec(text)) !== null) {
+        var w = list[m.slice(1).findIndex(function (g) { return g !== undefined; })];
+        html += toHTML(text.slice(last, m.index))
+            + '<span class="' + (className || 'interactive-word') + '"' + vocabDataAttrs(w) + '>'
+            + toHTML(m[0]) + '</span>';
+        last = pattern.lastIndex;
+    }
+    return html + toHTML(text.slice(last));
+}
+
 // ============================================
 // 재풀이 (Retry) 공용 클릭 핸들러
 // 모든 객관식 result 화면에서 공유
@@ -192,6 +232,8 @@ window.toggleRdOptions = toggleRdOptions;
 window.showRdTooltip = showRdTooltip;
 window.hideRdTooltip = hideRdTooltip;
 window.bindRdWordEvents = bindRdWordEvents;
+window.vocabDataAttrs = vocabDataAttrs;
+window.linkVocabHTML = linkVocabHTML;
 
 // 전역 노출 — 레거시 별칭 (MIGRATION-PLAN.md + validate-migration.sh 호환)
 window.toggleDaily1Options = toggleRdOptions;
