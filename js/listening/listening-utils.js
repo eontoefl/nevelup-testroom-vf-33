@@ -11,11 +11,6 @@ function escapeHtml_listening(text) {
     return div.innerHTML;
 }
 
-// 정규표현식 이스케이프
-function escapeRegex_listening(str) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 /**
  * 리스닝 오디오 URL 유효성 판정 (4개 유형 공통 기준)
  * - 빈 값 / 'PLACEHOLDER' / 더미 드라이브 ID 포함 → 오디오 없음으로 취급
