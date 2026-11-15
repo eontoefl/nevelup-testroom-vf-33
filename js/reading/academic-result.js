@@ -140,15 +140,7 @@ function renderAcademicSetResult(setResult, setIdx, mode) {
     sentences.forEach((sentence, idx) => {
         const translation = translations[idx] || '';
         
-        let highlightedSentence = escapeHtml(sentence).replace(/\n/g, '<br>');
-        if (setResult.passage.interactiveWords) {
-            setResult.passage.interactiveWords.forEach(wordObj => {
-                const regex = new RegExp(`(?<![\\w-])${wordObj.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`, 'gi');
-                highlightedSentence = highlightedSentence.replace(regex, 
-                    (match) => `<span class="interactive-word" data-word="${wordObj.word}" data-translation="${escapeHtml(wordObj.translation)}" data-explanation="${escapeHtml(wordObj.explanation)}">${match}</span>`
-                );
-            });
-        }
+        const highlightedSentence = linkVocabHTML(sentence, setResult.passage.interactiveWords);
         
         sentencesHTML += `
             <div class="sentence-pair">

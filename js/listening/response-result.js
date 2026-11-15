@@ -139,7 +139,7 @@ function renderResponseAnswer(answer, qIdx, mode) {
                 </div>
                 ${answer.script ? `
                 <div class="audio-script">
-                    <strong>Script:</strong> ${highlightResponseScript(answer.script, answer.scriptHighlights || [])}
+                    <strong>Script:</strong> ${linkVocabHTML(answer.script, answer.scriptHighlights, 'response-keyword-highlight')}
                     ${answer.scriptTrans ? `<br><strong>해석:</strong> ${answer.scriptTrans}` : ''}
                 </div>
                 ` : ''}
@@ -213,32 +213,6 @@ function renderResponseOptionsExplanation(answer) {
     
     return html;
 }
-
-// Script에 툴팁 추가
-function highlightResponseScript(scriptText, highlights) {
-    if (!highlights || highlights.length === 0) {
-        return escapeHtml_listening(scriptText);
-    }
-    
-    let highlightedText = escapeHtml_listening(scriptText);
-    
-    highlights.forEach(highlight => {
-        const word = highlight.word || '';
-        const translation = highlight.translation || '';
-        const explanation = highlight.explanation || '';
-        
-        if (!word) return;
-        
-        const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
-        highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="response-keyword-highlight" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
-        });
-    });
-    
-    return highlightedText;
-}
-
-// escapeHtml_listening, escapeRegex_listening → listening-utils.js 공용 함수 사용
 
 // 보기 해설 토글
 function toggleResponseOptions(toggleId) {

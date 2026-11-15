@@ -190,7 +190,7 @@ function renderConverScript(script, scriptTrans, scriptHighlights = []) {
             <div class="script-line">
                 <span class="script-speaker${speakerBClass}">${speakerName}</span>
                 <div class="script-text">
-                    ${highlightConverScript(text, scriptHighlights)}
+                    ${linkVocabHTML(text, scriptHighlights)}
                     ${translation ? `<span class="translation">${translation}</span>` : ''}
                 </div>
             </div>
@@ -199,31 +199,6 @@ function renderConverScript(script, scriptTrans, scriptHighlights = []) {
     
     return html;
 }
-
-// 스크립트 하이라이트
-function highlightConverScript(scriptText, highlights) {
-    if (!highlights || highlights.length === 0) {
-        return escapeHtml_listening(scriptText);
-    }
-    
-    let highlightedText = escapeHtml_listening(scriptText);
-    
-    highlights.forEach(highlight => {
-        const word = highlight.word || '';
-        const translation = highlight.translation || '';
-        const explanation = highlight.explanation || '';
-        
-        if (!word) return;
-        
-        const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
-        highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="interactive-word" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
-        });
-    });
-    
-    return highlightedText;
-}
-
 
 // 문제별 결과 렌더링
 function renderConverAnswer(answer, qIdx, setIdx, mode) {

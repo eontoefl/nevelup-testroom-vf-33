@@ -89,46 +89,18 @@ function _d2BuildHighlightSpan(word, q, setIdx, interactiveWords) {
     // 색칠(ac-res-highlight-word) + daily2 스코프(d2-highlight-word) + (겹치면) 뜻보기(interactive-word)
     var cls = 'ac-res-highlight-word d2-highlight-word' + (iw ? ' interactive-word' : '');
     var html = '<span class="' + cls + '" data-set="' + setIdx + '" data-q="' + q + '"';
-    if (iw) {
-        html += ' data-word="' + escapeHtml(iw.word) + '"' +
-                ' data-translation="' + escapeHtml(iw.translation) + '"' +
-                ' data-explanation="' + escapeHtml(iw.explanation) + '"';
-    }
+    if (iw) html += vocabDataAttrs(iw);
     html += '>' + escapeHtml(word) + '</span>';
     return html;
 }
 
-// ── 한 문장 HTML 빌드 — 하이라이트 마커 + 뜻보기 단어 처리 ──
+// ── 한 문장 HTML 빌드 — <<단어|문제번호>> 표시는 색칠 span, 나머지 글자는 어휘 링크 ──
 function _d2BuildSentenceHTML(rawSentence, interactiveWords, setIdx) {
-    // 1) <<단어|문제번호>> / <<단어>> 마커를 플레이스홀더로 빼둠 (이스케이프·단어매칭에 안 걸리도록)
-    var marks = [];
-    var n = 0;
-    var text = rawSentence
-        .replace(/<<([^|>]+)\|(\d+)>>/g, function(m, w, q) {
-            var ph = '@@D2HL' + (n++) + '@@'; marks.push({ ph: ph, word: w, q: q }); return ph;
-        })
-        .replace(/<<([^>]+)>>/g, function(m, w) {
-            var ph = '@@D2HL' + (n++) + '@@'; marks.push({ ph: ph, word: w, q: '0' }); return ph;
-        });
-
-    // 2) 이스케이프 + 줄바꿈
-    var html = escapeHtml(text).replace(/\n/g, '<br>');
-
-    // 3) 일반 뜻보기(interactive-word) 단어 래핑 (플레이스홀더는 매칭 안 됨)
-    if (Array.isArray(interactiveWords)) {
-        interactiveWords.forEach(function(wordObj) {
-            var regex = new RegExp('(?<![\\w-])' + wordObj.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\w-])', 'gi');
-            html = html.replace(regex, function(match) {
-                return '<span class="interactive-word" data-word="' + wordObj.word + '" data-translation="' + escapeHtml(wordObj.translation) + '" data-explanation="' + escapeHtml(wordObj.explanation) + '">' + match + '</span>';
-            });
-        });
-    }
-
-    // 4) 플레이스홀더 → 하이라이트 span (겹치면 색칠+뜻보기 합침)
-    marks.forEach(function(mk) {
-        html = html.replace(mk.ph, _d2BuildHighlightSpan(mk.word, mk.q, setIdx, interactiveWords));
-    });
-    return html;
+    return rawSentence.split(/<<([^>]+)>>/).map(function (part, i) {
+        if (i % 2 === 0) return linkVocabHTML(part, interactiveWords);
+        var mk = part.match(/^([^|]+)\|(\d+)$/);
+        return _d2BuildHighlightSpan(mk ? mk[1] : part, mk ? mk[2] : '0', setIdx, interactiveWords);
+    }).join('');
 }
 
 // 세트별 결과 렌더링

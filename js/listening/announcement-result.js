@@ -195,7 +195,7 @@ function renderAnnouncementScript(script, scriptTrans, scriptHighlights = []) {
         html += `
             <div class="announce-paragraph">
                 <div class="announce-paragraph-text">
-                    ${highlightAnnouncementScript(sentence.replace(/\n/g, '<br>'), scriptHighlights)}
+                    ${highlightAnnouncementScript(sentence, scriptHighlights)}
                 </div>
                 ${translation ? `<span class="announce-paragraph-translation">${translation.replace(/\n/g, '<br>')}</span>` : ''}
             </div>
@@ -205,7 +205,7 @@ function renderAnnouncementScript(script, scriptTrans, scriptHighlights = []) {
     return html;
 }
 
-// Script에 툴팁 추가
+// 어휘 문자열(단어::뜻::설명##...)을 배열로 바꾼 뒤 어휘 링크
 function highlightAnnouncementScript(scriptText, highlights) {
     // highlights가 문자열이면 파싱
     if (typeof highlights === 'string' && highlights.length > 0) {
@@ -223,29 +223,7 @@ function highlightAnnouncementScript(scriptText, highlights) {
         }
     }
     
-    if (!highlights || !Array.isArray(highlights) || highlights.length === 0) {
-        return escapeHtml_listening(scriptText);
-    }
-    
-    let highlightedText = escapeHtml_listening(scriptText);
-    
-    // 각 하이라이트 단어/구문에 대해 처리
-    highlights.forEach((highlight, index) => {
-        const word = highlight.word || '';
-        const translation = highlight.translation || '';
-        const explanation = highlight.explanation || '';
-        
-        if (!word) return;
-        
-        // 단어/구문을 찾아서 하이라이트 추가
-        const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
-        const beforeReplace = highlightedText;
-        highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="interactive-word" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
-        });
-    });
-    
-    return highlightedText;
+    return linkVocabHTML(scriptText, highlights);
 }
 
 // 문제별 답안 렌더링

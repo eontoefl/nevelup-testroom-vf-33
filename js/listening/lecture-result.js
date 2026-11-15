@@ -208,39 +208,13 @@ function renderLectureScript(script, scriptTrans, scriptHighlights = []) {
         html += `
             <div class="lecture-paragraph">
                 <div class="lecture-paragraph-text">
-                    ${highlightLectureScript(sentence.replace(/\n/g, '<br>'), scriptHighlights)}
+                    ${linkVocabHTML(sentence, scriptHighlights)}
                 </div>
                 ${translation ? `<span class="lecture-paragraph-translation">${translation.replace(/\n/g, '<br>')}</span>` : ''}
             </div>
         `;
     });
     return html;
-}
-
-/**
- * 스크립트 하이라이트 (Announcement와 동일)
- */
-function highlightLectureScript(scriptText, highlights) {
-    if (!highlights || highlights.length === 0) {
-        return escapeHtml_listening(scriptText);
-    }
-    
-    let highlightedText = escapeHtml_listening(scriptText);
-    
-    highlights.forEach((highlight) => {
-        const word = highlight.word || '';
-        const translation = highlight.translation || '';
-        const explanation = highlight.explanation || '';
-        
-        if (!word) return;
-        
-        const regex = new RegExp(`\\b(${escapeRegex_listening(word)})\\b`, 'gi');
-        highlightedText = highlightedText.replace(regex, (match) => {
-            return `<span class="interactive-word" data-translation="${escapeHtml_listening(translation)}" data-explanation="${escapeHtml_listening(explanation)}">${match}</span>`;
-        });
-    });
-    
-    return highlightedText;
 }
 
 /**

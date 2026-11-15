@@ -93,13 +93,7 @@ function renderDaily1SetResult(setResult, setIndex, mode) {
     sentences.forEach((sentence, idx) => {
         const translation = translations[idx] || '';
         
-        let sentenceHTML = escapeHtml(sentence).replace(/\n/g, '<br>');
-        if (passage.interactiveWords) {
-            passage.interactiveWords.forEach(wordData => {
-                const regex = new RegExp(`(?<![\\w-])${wordData.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`, 'gi');
-                sentenceHTML = sentenceHTML.replace(regex, (match) => `<span class="interactive-word" data-word="${wordData.word}" data-translation="${escapeHtml(wordData.translation)}" data-explanation="${escapeHtml(wordData.explanation)}">${match}</span>`);
-            });
-        }
+        const sentenceHTML = linkVocabHTML(sentence, passage.interactiveWords);
         
         sentencesHTML += `
             <div class="sentence-pair">
