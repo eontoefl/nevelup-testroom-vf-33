@@ -6,7 +6,7 @@
  */
 
 // 캐시 시스템
-let cachedLectureData = null;
+let cachedLectureData = null; // 받는 중이거나 받은 요청(Promise)
 
 // 캐시 초기화 함수 (디버깅용)
 window.clearLectureCache = function() {
@@ -22,17 +22,18 @@ window.clearLectureCache = function() {
 async function loadLectureData(forceReload = false) {
   console.log('[lecture-loader] 데이터 로드 시작');
   
-  // 캐시 확인
-  if (!forceReload && cachedLectureData) {
+  // 표는 한 번만 받는다 — 보낸 요청을 캐시해서 동시에 불러도 같은 요청을 기다린다(못 받으면 비워서 다음에 새로 받음)
+  if (forceReload || !cachedLectureData) {
+    const request = _loadLectureFromSupabase();
+    cachedLectureData = request;
+    const clearIfFailed = (data) => { if (cachedLectureData === request && !data) cachedLectureData = null; };
+    request.then(clearIfFailed, () => clearIfFailed(null));
+  } else {
     console.log('✅ [lecture-loader] 캐시된 데이터 사용');
-    console.log('  캐시 데이터 세트 순서:', cachedLectureData.sets.map(s => s.setId));
-    return cachedLectureData;
   }
   
-  // Supabase에서 로드
-  const result = await _loadLectureFromSupabase();
+  const result = await cachedLectureData;
   if (result) {
-    cachedLectureData = result;
     return result;
   }
   

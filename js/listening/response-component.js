@@ -54,9 +54,10 @@ class ResponseComponent {
   }
 
   /**
-   * 초기화 - 데이터 로드 및 첫 문제 시작
+   * 문제 받기 (화면은 안 바뀜) — 모듈 시작 때 컨트롤러가 모든 세트에 한꺼번에 부른다
+   * @returns {Promise<boolean>} 못 받으면 false
    */
-  async init() {
+  async load() {
     console.log(`[ResponseComponent] 초기화 시작 - setNumber: ${this.setNumber}`);
     
     // 데이터 로드 (외부 로더 사용)
@@ -77,10 +78,14 @@ class ResponseComponent {
     this.setData = allData.sets[setIndex];
     console.log(`[ResponseComponent] 세트 데이터 로드 완료:`, this.setData);
     
-    // 첫 문제 로드
-    this.loadQuestion(0);
-    
     return true;
+  }
+
+  /**
+   * 첫 문제 표시 — load() 성공 뒤, 이 세트에 도착했을 때 컨트롤러가 부른다
+   */
+  show() {
+    this.loadQuestion(0);
   }
 
   /**

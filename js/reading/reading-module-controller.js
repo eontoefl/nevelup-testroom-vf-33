@@ -169,19 +169,10 @@ async function startReadingModule(moduleNumber) {
     _createAllComponents();
 
     // 모든 세트의 문제를 먼저 받는다 — 안 연 세트가 없고, 풀이 중 인터넷이 끊겨도 세트 이동은 된다
-    var allLoaded = await _loadAllComponents();
-    if (!allLoaded) {
-        // 못 받음 → 타이머·저장 없이 끝. 학생은 대시보드에 그대로 남아 실전풀이를 다시 누른다(실패한 표는 캐시되지 않아 다시 받음)
+    // (못 받으면 _loadAllComponents가 로딩을 걷고 안내 팝업을 띄움 → 타이머·저장 없이 끝)
+    if (!(await _loadAllComponents(window.currentReadingModule.components))) {
         console.error('❌ 리딩 문제를 받지 못해 시작하지 않음');
         window.currentReadingModule = null;
-        _hideSetLoading();
-        if (typeof _showProblemNotReadyPopup === 'function') {
-            _showProblemNotReadyPopup({
-                icon: '📶',
-                title: '문제를 불러오지 못했어요',
-                messageHtml: '인터넷 연결을 확인한 뒤 다시 눌러 주세요.'
-            });
-        }
         return;
     }
 
@@ -194,16 +185,27 @@ async function startReadingModule(moduleNumber) {
 }
 
 /**
- * 모든 세트의 문제 받기 (화면은 안 바뀜)
- * @returns {Promise<boolean>} 하나라도 못 받으면 false
+ * 모듈 시작 때 모든 세트의 문제 받기 (리딩·리스닝 공용, 화면은 안 바뀜)
+ * 하나라도 못 받으면 로딩 표시를 걷고 "문제를 불러오지 못했어요" 팝업 → false.
+ * 학생은 대시보드에 그대로 남아 실전풀이를 다시 누른다(못 받은 표는 캐시되지 않아 다시 받음).
+ * @param {Array} components - 세트별 컴포넌트(load() 보유)
+ * @returns {Promise<boolean>} 모두 받으면 true
  */
-async function _loadAllComponents() {
-    var mod = window.currentReadingModule;
-    if (!mod) return false;
-    var results = await Promise.all(mod.components.map(function(comp) {
+async function _loadAllComponents(components) {
+    var results = await Promise.all((components || []).map(function(comp) {
         return comp ? comp.load().catch(function() { return false; }) : Promise.resolve(false);
     }));
-    return results.every(function(ok) { return ok === true; });
+    if (results.length > 0 && results.every(function(ok) { return ok === true; })) return true;
+
+    _hideSetLoading();
+    if (typeof _showProblemNotReadyPopup === 'function') {
+        _showProblemNotReadyPopup({
+            icon: '📶',
+            title: '문제를 불러오지 못했어요',
+            messageHtml: '인터넷 연결을 확인한 뒤 다시 눌러 주세요.'
+        });
+    }
+    return false;
 }
 
 // ============================================================

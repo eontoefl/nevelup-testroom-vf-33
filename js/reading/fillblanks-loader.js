@@ -107,7 +107,7 @@ function parsePassageWithMarkers(text) {
 }
 
 // ✅ 데이터 캐시 (정렬된 데이터를 메모리에 저장)
-let cachedFillBlanksData = null;
+let cachedFillBlanksData = null; // 받는 중이거나 받은 요청(Promise)
 
 // 🔧 캐시 강제 초기화 함수 (디버깅용)
 window.clearFillBlanksCache = function() {
@@ -119,19 +119,21 @@ window.clearFillBlanksCache = function() {
 async function loadFillBlanksData(forceReload = false) {
     console.log('🔄 [loadFillBlanksData] 시작 (forceReload:', forceReload, ')');
     
-    // 강제 리로드가 아니고 캐시가 있으면 재사용
-    if (!forceReload && cachedFillBlanksData) {
+    // 표는 한 번만 받는다 — 보낸 요청을 캐시해서 동시에 불러도 같은 요청을 기다린다(못 받으면 비워서 다음에 새로 받음)
+    if (forceReload || !cachedFillBlanksData) {
+        const request = _fetchFillBlanksFromSupabase();
+        cachedFillBlanksData = request;
+        const clearIfFailed = (data) => { if (cachedFillBlanksData === request && !(data && data.sets.length > 0)) cachedFillBlanksData = null; };
+        request.then(clearIfFailed, () => clearIfFailed(null));
+    } else {
         console.log('✅ [loadFillBlanksData] 캐시된 데이터 사용');
-        console.log('📊 [loadFillBlanksData] 캐시 데이터 세트 순서:', cachedFillBlanksData.sets.map(s => s.id));
-        return cachedFillBlanksData;
     }
     
-    const sheetsData = await _fetchFillBlanksFromSupabase();
+    const sheetsData = await cachedFillBlanksData;
     
     if (sheetsData && sheetsData.sets.length > 0) {
         console.log('✅ Supabase에서 빈칸채우기 데이터를 불러왔습니다.');
         console.log('📊 [loadFillBlanksData] 반환 데이터 세트 순서:', sheetsData.sets.map(s => s.id));
-        cachedFillBlanksData = sheetsData; // 캐시 저장
         window.readingFillBlanksData = sheetsData; // 보험 데이터 업데이트
         return sheetsData;
     } else {

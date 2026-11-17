@@ -50,9 +50,10 @@ class LectureComponent {
     }
     
     /**
-     * 컴포넌트 초기화
+     * 문제 받기 (화면은 안 바뀜) — 모듈 시작 때 컨트롤러가 모든 세트에 한꺼번에 부른다
+     * @returns {Promise<boolean>} 못 받으면 false
      */
-    async init() {
+    async load() {
         console.log('[LectureComponent] 초기화 시작');
         
         try {
@@ -71,9 +72,6 @@ class LectureComponent {
             
             this.setData = allData.sets[setIndex];
             console.log('[LectureComponent] 세트 데이터 로드 완료:', this.setData);
-            
-            // 3. 인트로 화면 표시
-            this.showIntro();
 
             return true;
 
@@ -81,6 +79,13 @@ class LectureComponent {
             console.error('[LectureComponent] 초기화 실패:', error);
             return false;
         }
+    }
+
+    /**
+     * 인트로 화면 표시 — load() 성공 뒤, 이 세트에 도착했을 때 컨트롤러가 부른다
+     */
+    show() {
+        this.showIntro();
     }
     
     /**

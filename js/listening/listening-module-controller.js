@@ -8,6 +8,7 @@
  * 
  * 흐름:
  *   대시보드 "실전풀이" → startListeningModule(moduleNumber)
+ *   → 로딩 표시 아래서 9개 세트 문제를 먼저 모두 받음 (하나라도 못 받으면 안내 팝업, 모듈 시작 안 함)
  *   → 사운드 체크 화면 (음량 확인 + 오디오 잠금 해제)
  *   → 9개 세트 순서 진행 (순방향만, Back 없음)
  *   → Submit 또는 마지막 문제 완료 → 전체 채점 → DB 저장
@@ -126,6 +127,9 @@ async function startListeningModule(moduleNumber) {
         cleanupListeningModule();
     }
 
+    // 시작부터 문제를 다 받을 때까지 화면 전체 로딩 표시(리딩과 같은 공용 로딩). 다시풀기 판단 조회도 이 안에서 기다린다.
+    _showSetLoading();
+
     // 세트 번호 매핑 (module-definitions.js 규칙 기반)
     // Response: 모듈당 1세트 (Module 1 → set 1, Module 2 → set 2)
     // Conver: 모듈당 3세트 (Module 1 → sets [1,2,3], Module 2 → sets [4,5,6])
@@ -197,6 +201,15 @@ async function startListeningModule(moduleNumber) {
 
     // 9개 컴포넌트 한꺼번에 생성
     _createAllListeningComponents();
+
+    // 9개 세트의 문제를 먼저 받는다 — 풀이 중에 세트 문제를 못 받는 상황(빈 기록)이 없음
+    // (못 받으면 _loadAllComponents가 로딩을 걷고 안내 팝업을 띄움 → 모듈을 정리하고 끝, 학생은 대시보드에 그대로)
+    if (!(await _loadAllComponents(window.currentListeningModule.components))) {
+        console.error('❌ 리스닝 문제를 받지 못해 시작하지 않음');
+        cleanupListeningModule();
+        return;
+    }
+    _hideSetLoading();
 
     // 사운드 체크 화면부터 시작 (음량 확인 + 오디오 잠금 해제 → 이후 자동재생)
     _showListeningSoundCheck();
@@ -384,7 +397,7 @@ function _createAllListeningComponents() {
 // ============================================================
 
 /**
- * 특정 세트로 이동 (init 호출)
+ * 특정 세트로 이동 (문제는 시작 때 이미 받아 둠 → 첫 화면만 표시)
  * @param {number} setIndex - 0~8
  */
 async function _goToListeningSet(setIndex) {
@@ -412,22 +425,10 @@ async function _goToListeningSet(setIndex) {
     }
 
     // 버튼 상태 갱신 — 새 세트는 오디오 단계에서 시작하므로 Next/Submit 숨김
-    // (데이터 로드 중·로드 실패 안내 중에도 이전 세트의 버튼 상태가 남지 않음)
     _updateListeningButtons();
 
-    // 컴포넌트 초기화 (데이터 로드 + 문제 표시)
-    var initOk = false;
-    try {
-        initOk = (await comp.init()) === true;
-    } catch (e) {
-        console.error('❌ 세트 초기화 실패:', e);
-    }
-
-    if (!initOk) {
-        // 세트 로드 실패 → 공용 실패 문법으로 처리 (다시 시도 / 2회 실패부터 건너뛰기)
-        _showListeningSetLoadFailure(setIndex);
-        return;
-    }
+    // 첫 화면 표시 (문제는 모듈 시작 때 받아 둠)
+    comp.show();
 
     // 문제 번호 표시 업데이트
     _updateListeningProgress();
@@ -440,60 +441,6 @@ var _LISTENING_SCREEN_MAP = {
     'announcement': 'listeningAnnouncementScreen',
     'lecture':      'listeningLectureScreen'
 };
-var _LISTENING_FAILURE_CONTAINER_MAP = {
-    'response':     'responsePersonImage',
-    'conver':       'converIntroImage',
-    'announcement': 'announcementIntroImage',
-    'lecture':      'lectureIntroImage'
-};
-
-/**
- * 세트 데이터 로드 실패 → 공용 실패 UI 표시
- * 건너뛰면 해당 세트는 최종 제출 시 기존 규칙("데이터 없는 세트는 0점")이 그대로 처리
- */
-function _showListeningSetLoadFailure(setIndex) {
-    var mod = window.currentListeningModule;
-    if (!mod) return;
-
-    var seq = mod.sequence[setIndex];
-    if (!mod._setFailCounts) mod._setFailCounts = {};
-    mod._setFailCounts[setIndex] = (mod._setFailCounts[setIndex] || 0) + 1;
-
-    console.warn('⚠️ [' + seq.label + '] 로드 실패 (' + mod._setFailCounts[setIndex] + '회차)');
-
-    // 실패 UI가 붙는 인트로 영역이 보이도록 서브화면 상태 정리
-    // (같은 유형의 직전 세트가 문제 화면을 띄워둔 채일 수 있음)
-    var subScreens = {
-        'conver':       ['converIntroScreen', 'converQuestionScreen'],
-        'announcement': ['announcementIntroScreen', 'announcementQuestionScreen'],
-        'lecture':      ['lectureIntroScreen', 'lectureQuestionScreen']
-    }[seq.type];
-    if (subScreens) {
-        var introEl = document.getElementById(subScreens[0]);
-        var questionEl = document.getElementById(subScreens[1]);
-        if (introEl) introEl.style.display = 'block';
-        if (questionEl) questionEl.style.display = 'none';
-    }
-
-    showListeningFailureUI({
-        containerId: _LISTENING_FAILURE_CONTAINER_MAP[seq.type],
-        uiId: 'listeningSetLoadFailureUI',
-        message: '문제를 불러오지 못했습니다',
-        failCount: mod._setFailCounts[setIndex],
-        onRetry: function() {
-            _goToListeningSet(setIndex);
-        },
-        onSkip: function() {
-            if (setIndex < mod.sequence.length - 1) {
-                _goToListeningSet(setIndex + 1);
-            } else {
-                // 마지막 세트 → 전체 제출 (이 세트는 0점 처리됨)
-                _listeningModuleSubmit();
-            }
-        }
-    });
-}
-
 /**
  * 세트 완료 콜백 (submit 후 호출됨)
  */
@@ -578,31 +525,11 @@ function _listeningModuleSubmit() {
 
     console.log('📤 리스닝 모듈 전체 제출');
 
-    // 현재 세트 먼저 제출 (아직 안 했을 수 있음)
-    var comp = mod.components[mod.currentIndex];
-    var currentKey = mod.sequence[mod.currentIndex].type + '_set' + mod.sequence[mod.currentIndex].setNum;
-    if (comp && !mod.answers[currentKey] && comp.setData != null) {
-        comp.submit();
-    }
-
-    // 모든 미제출 세트 일괄 제출
-    // ※ init()되지 않은 세트(문제 데이터 없음)는 건너뛰고 0점 처리
+    // 아직 제출 안 된 세트(지금 세트 포함) 일괄 제출 — 모든 세트의 문제는 시작 때 받아 둠
     mod.sequence.forEach(function(seq, i) {
         var key = seq.type + '_set' + seq.setNum;
         if (!mod.answers[key] && mod.components[i]) {
-            // 문제 데이터가 있는지 확인 (init 완료 여부)
-            var hasData = mod.components[i].setData != null;
-            if (hasData) {
-                mod.components[i].submit();
-            } else {
-                // 데이터 없음 → 빈 결과(0점)로 기록
-                console.log('⚠️ [' + seq.label + '] 문제 데이터 없음 — 0점 처리');
-                mod.answers[key] = {
-                    type: seq.type,
-                    setNumber: seq.setNum,
-                    answers: []
-                };
-            }
+            mod.components[i].submit();
         }
     });
 

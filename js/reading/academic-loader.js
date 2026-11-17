@@ -347,7 +347,7 @@ const readingAcademicDataDemo = {
 };
 
 // ✅ 데이터 캐시 (정렬된 데이터를 메모리에 저장)
-let cachedAcademicData = null;
+let cachedAcademicData = null; // 받는 중이거나 받은 요청(Promise)
 
 // 🔧 캐시 강제 초기화 함수 (디버깅용)
 window.clearAcademicCache = function() {
@@ -359,17 +359,20 @@ window.clearAcademicCache = function() {
 async function loadAcademicData(forceReload = false) {
     console.log('🔄 [loadAcademicData] 시작 (forceReload:', forceReload, ')');
     
-    // 강제 리로드가 아니고 캐시가 있으면 재사용
-    if (!forceReload && cachedAcademicData) {
+    // 표는 한 번만 받는다 — 보낸 요청을 캐시해서 동시에 불러도 같은 요청을 기다린다(못 받으면 비워서 다음에 새로 받음)
+    if (forceReload || !cachedAcademicData) {
+        const request = _fetchAcademicFromSupabase();
+        cachedAcademicData = request;
+        const clearIfFailed = (data) => { if (cachedAcademicData === request && !(data && data.sets.length > 0)) cachedAcademicData = null; };
+        request.then(clearIfFailed, () => clearIfFailed(null));
+    } else {
         console.log('✅ [loadAcademicData] 캐시된 데이터 사용');
-        return cachedAcademicData;
     }
     
-    const supabaseData = await _fetchAcademicFromSupabase();
+    const supabaseData = await cachedAcademicData;
     
     if (supabaseData && supabaseData.sets.length > 0) {
         console.log('✅ Supabase에서 아카데믹리딩 데이터를 불러왔습니다.');
-        cachedAcademicData = supabaseData; // 캐시 저장
         return supabaseData;
     } else {
         console.log('⚠️ 아카데믹리딩 데모 데이터를 사용합니다.');

@@ -150,7 +150,7 @@ function parseQuestionData(questionStr) {
 }
 
 // ✅ 데이터 캐시 (정렬된 데이터를 메모리에 저장)
-let cachedDaily1Data = null;
+let cachedDaily1Data = null; // 받는 중이거나 받은 요청(Promise)
 
 // 🔧 캐시 강제 초기화 함수 (디버깅용)
 window.clearDaily1Cache = function() {
@@ -162,19 +162,17 @@ window.clearDaily1Cache = function() {
 async function loadDaily1Data(forceReload = false) {
     console.log('🔄 [loadDaily1Data] 시작 (forceReload:', forceReload, ')');
     
-    // 강제 리로드가 아니고 캐시가 있으면 재사용
-    if (!forceReload && cachedDaily1Data) {
+    // 표는 한 번만 받는다 — 보낸 요청을 캐시해서 동시에 불러도 같은 요청을 기다린다(못 받으면 비워서 다음에 새로 받음)
+    if (forceReload || !cachedDaily1Data) {
+        console.log('📥 Supabase에서 새로 데이터 로드 중...');
+        const request = _fetchDaily1FromSupabase();
+        cachedDaily1Data = request;
+        const clearIfFailed = (data) => { if (cachedDaily1Data === request && !(data && data.sets.length > 0)) cachedDaily1Data = null; };
+        request.then(clearIfFailed, () => clearIfFailed(null));
+    } else {
         console.log('✅ [loadDaily1Data] 캐시된 데이터 사용');
-        console.log('📊 [loadDaily1Data] 캐시 데이터 세트 순서:', cachedDaily1Data.sets.map(s => s.id));
-        console.log('📊 [loadDaily1Data] 캐시 데이터 상세:');
-        cachedDaily1Data.sets.forEach((set, idx) => {
-            console.log(`  [${idx}] ${set.id} | ${set.mainTitle} | ${set.questions.length}문제`);
-        });
-        return cachedDaily1Data;
     }
-    
-    console.log('📥 Supabase에서 새로 데이터 로드 중...');
-    const sheetsData = await _fetchDaily1FromSupabase();
+    const sheetsData = await cachedDaily1Data;
     
     if (sheetsData && sheetsData.sets.length > 0) {
         console.log('✅ Supabase에서 일상리딩1 데이터를 불러왔습니다.');
@@ -183,7 +181,6 @@ async function loadDaily1Data(forceReload = false) {
         sheetsData.sets.forEach((set, idx) => {
             console.log(`  [${idx}] ${set.id} | ${set.mainTitle} | ${set.questions.length}문제 | Q1: ${set.questions[0]?.question.substring(0, 50)}`);
         });
-        cachedDaily1Data = sheetsData; // 캐시 저장
         return sheetsData;
     } else {
         console.log('⚠️ 일상리딩1 데모 데이터를 사용합니다.');
