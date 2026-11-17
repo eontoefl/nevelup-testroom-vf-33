@@ -361,7 +361,9 @@ async function _checkProblemDataExists(sectionType, moduleNumber) {
  * "문제 준비 중" 팝업 표시
  * 문제 데이터가 아직 등록되지 않았을 때 학생에게 친절하게 안내
  */
-function _showProblemNotReadyPopup() {
+function _showProblemNotReadyPopup(opts) {
+    // opts(선택): { icon, title, messageHtml } — 같은 모양으로 다른 안내를 띄울 때(예: 리딩 문제 받기 실패). 없으면 '문제 준비 중' 문구.
+    opts = opts || {};
     // 기존 팝업이 있으면 제거
     var existingOverlay = document.getElementById('problemNotReadyOverlay');
     var existingPopup = document.getElementById('problemNotReadyPopup');
@@ -378,16 +380,20 @@ function _showProblemNotReadyPopup() {
     popup.id = 'problemNotReadyPopup';
     popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:32px 28px 24px;max-width:360px;width:90%;z-index:99999;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);';
     
-    popup.innerHTML = 
-        '<div style="font-size:36px;margin-bottom:16px;">🔧</div>' +
-        '<h3 style="margin:0 0 12px;font-size:18px;font-weight:700;color:#1a1a2e;">문제 준비 중이에요!</h3>' +
-        '<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#555;">' +
+    var bodyHtml = opts.messageHtml
+        ? '<p style="margin:0 0 24px;font-size:14px;line-height:1.7;color:#555;">' + opts.messageHtml + '</p>'
+        : '<p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#555;">' +
             '이 영역의 문제는 현재 꼼꼼하게 검토하고 다듬는 중이에요.<br>' +
             '더 정확하고 퀄리티 높은 문제를 드리기 위해<br>하나하나 세심하게 확인하고 있으니 조금만 기다려 주세요!' +
-        '</p>' +
-        '<p style="margin:0 0 24px;font-size:13px;color:#888;">' +
+          '</p>' +
+          '<p style="margin:0 0 24px;font-size:13px;color:#888;">' +
             '잠시 후 또는 내일 다시 들어오시면<br>준비된 문제로 만나실 수 있어요 😊' +
-        '</p>' +
+          '</p>';
+
+    popup.innerHTML = 
+        '<div style="font-size:36px;margin-bottom:16px;">' + (opts.icon || '🔧') + '</div>' +
+        '<h3 style="margin:0 0 12px;font-size:18px;font-weight:700;color:#1a1a2e;">' + (opts.title || '문제 준비 중이에요!') + '</h3>' +
+        bodyHtml +
         '<button id="problemNotReadyCloseBtn" style="' +
             'background:#9480c5;color:#fff;border:none;border-radius:10px;' +
             'padding:12px 32px;font-size:15px;font-weight:600;cursor:pointer;' +

@@ -28,7 +28,6 @@ class Daily1Component {
         
         // 콜백
         this.onComplete = config.onComplete || null;
-        this.onError = config.onError || null;
         
         // DOM 요소 ID
         this.screenId = 'readingDaily1Screen';
@@ -40,39 +39,33 @@ class Daily1Component {
     }
     
     /**
-     * 초기화 및 데이터 로드
+     * 문제 받기 — 데이터 로드 + 세트 찾기 (화면은 건드리지 않음)
+     * 리딩 컨트롤러가 모듈 시작 때 모든 세트에 대해 한꺼번에 부른다.
+     * @returns {Promise<boolean>} 성공 true / 실패 false (리스닝 컴포넌트 init과 같은 약속)
      */
-    async init() {
-        console.log(`📖 [Daily1Component] 초기화 시작`);
-        
+    async load() {
         try {
-            // 1. 화면 표시
-            showScreen(this.screenId);
-            
-            // 2. 데이터 로드
             this.data = await loadDaily1Data();
-            console.log(`✅ 데이터 로드 완료: ${this.data.sets.length}개 세트`);
-            
-            // 3. 세트 찾기
             const setIndex = this.findSetIndex(this.setNumber);
             if (setIndex === -1) {
-                throw new Error(`Set ${this.setNumber}를 찾을 수 없습니다`);
+                console.error(`❌ [Daily1Component] 세트를 받지 못함: ${this.setNumber}`);
+                return false;
             }
-            
             this.currentSet = this.data.sets[setIndex];
-            console.log(`✅ Set 로드 완료: ${this.currentSet.id}`);
-            console.log(`  - Main Title: ${this.currentSet.mainTitle}`);
-            console.log(`  - 문제 개수: ${this.currentSet.questions.length}`);
-            
-            // 4. UI 렌더링
-            this.render();
-            
+            console.log(`✅ [Daily1Component] 세트 받음: ${this.currentSet.id}`);
+            return true;
         } catch (error) {
-            console.error(`❌ [Daily1Component] 초기화 실패:`, error);
-            if (this.onError) {
-                this.onError(error);
-            }
+            console.error(`❌ [Daily1Component] 문제 받기 실패:`, error);
+            return false;
         }
+    }
+
+    /**
+     * 화면 그리기 — 화면 전환 + 렌더링 (load()로 받아 둔 데이터를 쓴다, 저장된 답은 렌더링이 복원)
+     */
+    show() {
+        showScreen(this.screenId);
+        this.render();
     }
     
     /**

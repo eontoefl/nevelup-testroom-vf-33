@@ -112,6 +112,9 @@ async function startReadingModule(moduleNumber) {
     console.log(`📚 리딩 Module ${moduleNumber} 시작`);
     console.log(`📚 ============================\n`);
 
+    // 시작부터 문제를 다 받을 때까지 화면 전체 로딩 표시(뒤 버튼 막힘). 다시풀기 판단 조회도 이 안에서 기다린다.
+    _showSetLoading();
+
     // 이번 회차 세트 목록 (구성표 0장). 목록에 없는 회차는 대시보드 시작 전 확인에서 이미 걸러진다.
     const plan = getReadingModulePlan(moduleNumber);
     const sequence = plan.sequence;
@@ -165,11 +168,42 @@ async function startReadingModule(moduleNumber) {
     // 세트 컴포넌트 한꺼번에 생성
     _createAllComponents();
 
-    // 타이머 시작 (READING_MODULE_TIME_LIMIT_SEC)
+    // 모든 세트의 문제를 먼저 받는다 — 안 연 세트가 없고, 풀이 중 인터넷이 끊겨도 세트 이동은 된다
+    var allLoaded = await _loadAllComponents();
+    if (!allLoaded) {
+        // 못 받음 → 타이머·저장 없이 끝. 학생은 대시보드에 그대로 남아 실전풀이를 다시 누른다(실패한 표는 캐시되지 않아 다시 받음)
+        console.error('❌ 리딩 문제를 받지 못해 시작하지 않음');
+        window.currentReadingModule = null;
+        _hideSetLoading();
+        if (typeof _showProblemNotReadyPopup === 'function') {
+            _showProblemNotReadyPopup({
+                icon: '📶',
+                title: '문제를 불러오지 못했어요',
+                messageHtml: '인터넷 연결을 확인한 뒤 다시 눌러 주세요.'
+            });
+        }
+        return;
+    }
+
+    // 타이머 시작 (READING_MODULE_TIME_LIMIT_SEC) — 문제를 다 받은 뒤부터 18:00
     _startTimer();
 
-    // 첫 세트 시작
+    // 첫 세트 표시 후 로딩 표시 걷기
     await _goToSet(0);
+    _hideSetLoading();
+}
+
+/**
+ * 모든 세트의 문제 받기 (화면은 안 바뀜)
+ * @returns {Promise<boolean>} 하나라도 못 받으면 false
+ */
+async function _loadAllComponents() {
+    var mod = window.currentReadingModule;
+    if (!mod) return false;
+    var results = await Promise.all(mod.components.map(function(comp) {
+        return comp ? comp.load().catch(function() { return false; }) : Promise.resolve(false);
+    }));
+    return results.every(function(ok) { return ok === true; });
 }
 
 // ============================================================
@@ -246,14 +280,8 @@ async function _goToSet(setIndex) {
 
     console.log(`\n▶️ [${setIndex + 1}/${mod.sequence.length}] ${seq.label} 이동`);
 
-    // 로딩 오버레이 표시 (데이터 로드 완료까지 클릭 차단)
-    _showSetLoading();
-
-    // 컴포넌트 초기화 (화면 전환 + 데이터 로드 포함)
-    await comp.init();
-
-    // 로딩 오버레이 숨김
-    _hideSetLoading();
+    // 화면 전환 + 그리기 (문제는 시작 때 이미 받아 둠)
+    comp.show();
 
     // 문제 번호 표시 업데이트
     _updateProgress();
@@ -381,27 +409,12 @@ function _readingModuleSubmit() {
     console.log('📤 리딩 모듈 전체 제출');
 
     // 모든 세트를 "지금 메모리에 들어있는 최신 답안" 기준으로 일괄 채점한다.
-    // ※ 학생이 한 번이라도 연 세트(currentSet != null)는 무조건 다시 채점 →
-    //    review/Back으로 돌아가 수정한 답이 항상 최종 결과에 반영됨.
-    // ※ 한 번도 열지 않은 세트(데이터 없음)는 0점 처리.
-    mod.sequence.forEach(function(seq, i) {
-        var key = seq.type + '_set' + seq.setNum;
-        var comp = mod.components[i];
-        if (!comp) return;
-
-        var hasData = comp.currentSet != null;
-        if (hasData) {
-            // 최신 답안으로 (재)채점: submit → onComplete → mod.answers[key] 덮어쓰기
-            comp.submit();
-        } else {
-            // 한 번도 열지 않은 세트 → 빈 결과(0점)로 기록
-            console.log('⚠️ [' + seq.label + '] 문제 데이터 없음 — 0점 처리');
-            mod.answers[key] = {
-                type: seq.type,
-                setNumber: seq.setNum,
-                answers: []
-            };
-        }
+    // ※ 문제는 시작 때 모두 받아 두므로 모든 세트가 같은 길로 채점된다.
+    //    한 번도 열지 않은 세트도 문제 내용과 함께 '미응답'으로 저장돼 점수·해설에 그대로 나온다.
+    // ※ review/Back으로 돌아가 수정한 답도 항상 최종 결과에 반영됨.
+    mod.components.forEach(function(comp) {
+        // submit → onComplete → mod.answers[유형_set번호] 덮어쓰기
+        if (comp) comp.submit();
     });
 
     _finishReadingModule();
