@@ -240,6 +240,10 @@ async function loadBook() {
       // (일정표·단어 시험·진도·북마크가 원래 쪽 번호에 묶여 있음, 2026-11-16 대표)
       V2.covers.front = V2.pages[0].html; V2.covers.back = lastHtml;
       V2.firstInner = 1; V2.lastInner = V2.pages.length - 2;
+    } else if (isCov(V2.pages[0].html)) {
+      // 1쪽만 커버인 책(입문서 v2, 2026-11-17): 1쪽 = 앞커버 목업, 쪽 번호는 그대로 (2쪽부터 내지)
+      V2.covers.front = V2.pages[0].html;
+      V2.firstInner = 1; V2.lastInner = V2.pages.length - 1;
     } else {
       if ((lm && /\b(cover|cvp)\b/.test(lm[1])) || isCov(lastHtml)) { V2.covers.back = lastHtml; V2.pages = V2.pages.slice(0, -1); }
       // 앞커버 그림: Supabase 저장소 guide-images/book/covers/<책 id>.json (2026-11-17, 저장소 파일 book-covers에서 옮김)
