@@ -574,3 +574,12 @@ body.v3-phone #btnBack { order: -1; flex: none; } body.v3-phone #btnBookmark { o
 
 /* W1 암기장: UNIT 첫 쪽 위 16mm는 인쇄용 자리. 휴대폰에서는 다른 쪽과 같게 (2026-11-17) */
 body.v3-phone #content .twp > .page > .kick { padding-top: 2mm !important; }
+
+/* 휴대폰: 두 번 눌러 확대 막기(버튼), 커버 화면 2026-11-17 */
+body.v3-phone, body.v3-phone button, .v3-ph-bar, .v3-ph-bar * { touch-action: manipulation; }
+body.v3-phone #btnBookmark:disabled, .v3-ph-tool:disabled { opacity: .3; }
+.v3-ph-cover { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 10px; }
+.v3-ph-cover-box { position: relative; overflow: hidden; border-radius: 4px; box-shadow: 0 10px 28px rgba(30,24,48,.18); background: #fff; }
+.v3-ph-cover-host { position: absolute; left: 0; top: 0; }
+.v3-ph-cover-cap { font: 700 11px Outfit, Pretendard, sans-serif; letter-spacing: .24em; color: #8A80A6; }
+body.v3-phone.v3-ph-cover-on .bookv2-paper { background: transparent; box-shadow: none; }

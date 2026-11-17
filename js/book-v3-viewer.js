@@ -203,7 +203,7 @@ async function loadBook() {
   // 앞커버는 book-covers/<책 id>.json 의 그림을 FRONT COVER 목업으로 보여준다. (PC 펼친 면 화면에서만)
   V2.covers = { front: null, back: null };
   { const pp = parseInt(new URLSearchParams(location.search).get("p"), 10); V2.hasPParamPending = !!pp; }
-  if (!isPhone() && V2.pages.length > 1 && V2.pages.every((p) => typeof p.html === "string" && p.html.trim().startsWith('<div class="twp">'))) {
+  if (V2.pages.length > 1 && V2.pages.every((p) => typeof p.html === "string" && p.html.trim().startsWith('<div class="twp">'))) {
     const lastHtml = V2.pages[V2.pages.length - 1].html || "";
     const lm = lastHtml.match(/class="page([^"]*)"/);
     const isCov = (h) => /data-book-kind="cover"/.test(h || "");
@@ -333,7 +333,7 @@ function spreadOf(i) {
   return [L, R <= last && !(backAlone() && R === last) ? R : null];
 }
 function visibleIdx() {
-  if (!document.getElementById("v3Book")) return [V2.idx];
+  if (!document.getElementById("v3Book")) return isCoverView(V2.idx) ? [] : [V2.idx];
   return spreadOf(V2.idx).filter((x) => x !== null);
 }
 function lastVisible() { const v = visibleIdx(); if (!v.length) return V2.idx < V2.firstInner ? V2.idx : V2.pages.length - 1; return Math.max.apply(null, v); }
@@ -570,9 +570,21 @@ function render() {
     renderSpread();
     document.getElementById("content").innerHTML = "";
   } else {
-    document.getElementById("content").innerHTML = p ? p.html || "" : "";
-    window.BookPageFooter?.decorateReader(document.getElementById("content"));
-    applyBookTheme(document.getElementById("content"));
+    const cEl = document.getElementById("content");
+    const covKind = isCoverView(V2.idx) ? (V2.idx < V2.firstInner ? "front" : "back") : "";
+    document.body.classList.toggle("v3-ph-cover-on", !!covKind);
+    if (covKind && window.BookPage) {
+      // 휴대폰 커버 화면 (2026-11-17 대표: 앞커버·뒷커버 둘 다 보이기)
+      cEl.innerHTML = '<div class="v3-ph-cover"><div class="v3-ph-cover-box"><div class="v3-ph-cover-host"></div></div><div class="v3-ph-cover-cap">' + (covKind === "front" ? "FRONT COVER" : "BACK COVER") + "</div></div>";
+      const box = cEl.querySelector(".v3-ph-cover-box"), host = cEl.querySelector(".v3-ph-cover-host");
+      BookPage.render(host, covKind === "front" ? V2.covers.front : V2.covers.back);
+      const w = Math.max(200, (cEl.clientWidth || window.innerWidth - 40));
+      BookPage.place(box, host, Math.min(w / BookPage.W, (window.innerHeight - 160) / BookPage.H));
+    } else {
+      cEl.innerHTML = p ? p.html || "" : "";
+      window.BookPageFooter?.decorateReader(cEl);
+      applyBookTheme(cEl);
+    }
   }
   enableMedia();
   const cur = document.getElementById("curPage"); if (cur) cur.textContent = V2.idx + 1;
@@ -618,7 +630,8 @@ function go(delta) {
     return;
   }
   const n = V2.idx + delta;
-  if (n >= 0 && n < V2.pages.length) {
+  if (n >= coverLo() && n <= coverHi()) {   // 커버 화면(앞커버 = 첫 쪽 앞, 뒷커버 = 끝 쪽 뒤)까지
+    if (isMemoOpen()) closeMemo();
     V2.idx = n;
     render();
   }
@@ -1238,6 +1251,7 @@ function setupPhoneUI() {
   if (!isPhone() || PH.on) return;
   PH.on = true;
   document.body.classList.add("v3-phone");
+  document.documentElement.style.touchAction = "manipulation";   // 빠르게 두 번 눌러도 화면이 확대되지 않게 (두 손가락 확대는 그대로)
   const pill = document.createElement("div"); pill.id = "v3PhPage"; pill.className = "v3-ph-page"; document.body.appendChild(pill);
   const bar = document.createElement("div"); bar.id = "v3PhBar"; bar.className = "v3-ph-bar";
   // 2026-11-17 대표 선택 (다-2) 반투명 유리: 양 끝 동그라미 = 쪽 넘기기(화살표만), 가운데 알약 = 목차(쪽수)·메모·글자 크기
@@ -1295,9 +1309,12 @@ function phTextSize(step) {
 }
 function phSync() {
   if (!PH.on) return;
-  const cur = V2.idx + 1, tot = V2.pages.length;
-  const pill = phEl("v3PhPage"); if (pill) pill.innerHTML = "<b>" + cur + "</b> / " + tot;
-  const tt = phEl("phTocTxt"); if (tt) tt.textContent = cur + " / " + tot;
+  const tot = V2.pages.length, cov = isCoverView(V2.idx) ? (V2.idx < V2.firstInner ? "앞커버" : "뒷커버") : "";
+  const cur = V2.idx + 1;
+  const pill = phEl("v3PhPage"); if (pill) pill.innerHTML = cov ? "<b>" + cov + "</b>" : "<b>" + cur + "</b> / " + tot;
+  const tt = phEl("phTocTxt"); if (tt) tt.textContent = cov || (cur + " / " + tot);
+  const bmb = document.getElementById("btnBookmark"); if (bmb) bmb.disabled = !!cov;
+  const mmb = phEl("phMemo"); if (mmb) mmb.disabled = !!cov;
   const md = phEl("phMemoDot"), dot = document.getElementById("memoDot"); if (md) md.classList.toggle("on", !!(dot && dot.classList.contains("on")));
   const pv = phEl("phPrev"), nx = phEl("phNext"), bp = document.getElementById("btnPrev"), bn = document.getElementById("btnNext");
   if (pv && bp) pv.disabled = bp.disabled; if (nx && bn) nx.disabled = bn.disabled;
