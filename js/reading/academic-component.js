@@ -212,20 +212,48 @@ class AcademicComponent {
     }
 
     /**
-     * Select Sentence 문제: 마커 클릭 인터랙션 설정
-     * - 이벤트 위임 방식으로 한 번만 등록
-     * - 마커 클릭 → 이전 선택 해제 → 현재 마커 ss-selected → 답안 저장 → 보기 동기화
+     * 지문 칸 클릭 처리를 지문 칸 자체가 하나만 갖게 한다.
+     * - 지문 칸(#academicPassageContent)은 한 회차의 학술 세트들이 같이 쓴다.
+     * - 클릭 처리는 칸에 한 번만 붙이고, 눌리면 "지금 이 칸을 쓰는 세트"에게 넘긴다.
+     * - 세트는 문제를 열 때 자기를 "지금 쓰는 세트"로 적기만 한다.
+     *   (세트마다 처리를 붙였다 떼면, 다른 세트로 넘어갈 때 이전 세트 것이 남아 그 세트 답이 바뀜)
      */
-    setupSelectSentenceInteraction() {
+    attachPassageClick() {
         const contentEl = document.getElementById(this.passageContentId);
         if (!contentEl) return;
 
-        // 이전 리스너 제거
-        if (this._ssClickHandler) {
-            contentEl.removeEventListener('click', this._ssClickHandler);
+        contentEl._acActiveComponent = this;
+        if (!contentEl._acPassageClickBound) {
+            contentEl.addEventListener('click', (e) => {
+                const active = contentEl._acActiveComponent;
+                if (active) active.handlePassageClick(e);
+            });
+            contentEl._acPassageClickBound = true;
         }
+    }
 
-        this._ssClickHandler = (e) => {
+    /**
+     * 지문 칸 클릭 — 지금 문제가 삽입이면 삽입 처리, 문장선택이면 선택 처리, 그 밖의 유형은 아무것도 안 함
+     */
+    handlePassageClick(e) {
+        const question = this.currentSet && this.currentSet.questions[this.currentQuestion];
+        if (!question) return;
+        const qType = question.questionType || 'normal';
+
+        if (qType === 'insertion') {
+            // 마커 클릭 → 이전 삽입 제거 → 현재 마커 selected → 문장 삽입 → 답안 저장
+            const sentenceText = this.extractInsertionSentence(question.question || '');
+            if (!sentenceText) return;
+
+            const marker = e.target.closest('.ac-insertion-marker.ac-insertion-active');
+            if (!marker) return;
+
+            const markerNum = parseInt(marker.dataset.marker, 10);
+            if (!markerNum) return;
+
+            this.applyInsertionSelection(marker, markerNum, sentenceText);
+        } else if (qType === 'select_sentence') {
+            // 마커 클릭 → 이전 선택 해제 → 현재 마커 ss-selected → 답안 저장 → 보기 동기화
             const marker = e.target.closest('.ac-ss-marker.ac-ss-active');
             if (!marker) return;
 
@@ -246,9 +274,15 @@ class AcademicComponent {
             options.forEach(opt => {
                 opt.classList.toggle('selected', opt.dataset.value === String(markerNum));
             });
-        };
+        }
+    }
 
-        contentEl.addEventListener('click', this._ssClickHandler);
+    /**
+     * Select Sentence 문제: 저장된 답의 지문 표시 복원 (클릭은 handlePassageClick)
+     */
+    setupSelectSentenceInteraction() {
+        const contentEl = document.getElementById(this.passageContentId);
+        if (!contentEl) return;
 
         // 이전 답안 복원
         const savedAnswer = this.answers[this.currentQuestion];
@@ -270,9 +304,7 @@ class AcademicComponent {
     }
 
     /**
-     * Insertion 문제: 마커 클릭 인터랙션 설정
-     * - 이벤트 위임 방식으로 한 번만 등록
-     * - 마커 클릭 → 이전 삽입 제거 → 현재 마커 selected → 문장 삽입 → 답안 저장
+     * Insertion 문제: 저장된 답의 삽입 문장 복원 (클릭은 handlePassageClick)
      */
     setupInsertionInteraction() {
         const contentEl = document.getElementById(this.passageContentId);
@@ -285,24 +317,6 @@ class AcademicComponent {
             console.warn('[AcademicComponent] insertion 문장을 추출할 수 없습니다');
             return;
         }
-
-        // 이벤트 위임: contentEl에 한 번만 리스너 등록
-        // 이전 리스너 제거를 위해 bound 함수를 저장
-        if (this._insertionClickHandler) {
-            contentEl.removeEventListener('click', this._insertionClickHandler);
-        }
-
-        this._insertionClickHandler = (e) => {
-            const marker = e.target.closest('.ac-insertion-marker.ac-insertion-active');
-            if (!marker) return;
-
-            const markerNum = parseInt(marker.dataset.marker, 10);
-            if (!markerNum) return;
-
-            this.applyInsertionSelection(marker, markerNum, sentenceText);
-        };
-
-        contentEl.addEventListener('click', this._insertionClickHandler);
 
         // 이전 답안 복원
         const savedAnswer = this.answers[this.currentQuestion];
@@ -357,18 +371,8 @@ class AcademicComponent {
         const isInsertion = qType === 'insertion';
         const isSelectSentence = qType === 'select_sentence';
         
-        // 이전 문제의 이벤트 리스너 공통 정리 (어떤 유형이든 안전하게)
-        const contentEl = document.getElementById(this.passageContentId);
-        if (contentEl) {
-            if (this._insertionClickHandler) {
-                contentEl.removeEventListener('click', this._insertionClickHandler);
-                this._insertionClickHandler = null;
-            }
-            if (this._ssClickHandler) {
-                contentEl.removeEventListener('click', this._ssClickHandler);
-                this._ssClickHandler = null;
-            }
-        }
+        // 지문 칸 클릭을 이 세트가 받는다 (어떤 유형이든 항상)
+        this.attachPassageClick();
 
         // highlight/insertion/select_sentence 지문 스타일 토글
         this.updatePassageHighlight(question);

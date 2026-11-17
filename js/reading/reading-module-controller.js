@@ -4,18 +4,18 @@
  * 리딩 모듈 컨트롤러 (V3)
  * ================================================
  * 
- * 역할: 7개 세트(35문제)를 순서대로 진행시키는 지휘자
+ * 역할: 회차 구성표(아래 0장)에 따라 이번 회차의 세트(35문제)를 순서대로 진행시키는 지휘자
  * 
  * 흐름:
  *   대시보드 "실전풀이" → startReadingModule(moduleNumber)
- *   → 7개 세트 순서 진행 (Next/Back 자유 이동)
+ *   → 구성표의 세트 순서대로 진행 (Next/Back 자유 이동)
  *   → Submit 또는 시간초과 → 전체 채점 → DB 저장
  *   → 대시보드 복귀
  * 
- * 세트 순서 (총 35문제):
- *   FB세트1(Q1-10) → FB세트2(Q11-20) → Daily1세트1(Q21-22)
- *   → Daily1세트2(Q23-24) → Daily2세트1(Q25-27)
- *   → Daily2세트2(Q28-30) → Academic(Q31-35)
+ * 회차 구성 (두 가지, 모두 35문제·18분):
+ *   일상형: 빈칸 2 → 일상1 2 → 일상2 2 → 학술 1
+ *   학술형: 빈칸 2 → 일상1 1 → 일상2 1 → 학술 2
+ *   회차별 유형과 근거: C:\기능구현\리딩_모듈_구성개편\모듈_배정_기준.md
  * 
  * 참조: v3-flow-spec.md §1-1 ~ §1-4, v3-design-spec.md §2
  */
@@ -25,6 +25,79 @@
 // ============================================================
 
 window.currentReadingModule = null;
+
+// ============================================================
+// 0. 리딩 회차 구성표 — 회차 구성·시간은 여기 한 곳에만 적는다
+// ============================================================
+
+/** 리딩 모듈 제한시간(초). 타이머와 정규코스 시작 팝업(task-router.js)이 이 값을 쓴다. */
+var READING_MODULE_TIME_LIMIT_SEC = 18 * 60;
+
+/** 유형별 고정 정보. 나오는 순서도 이 순서(빈칸 → 일상1 → 일상2 → 학술). */
+var READING_SET_TYPES = [
+    { type: 'fillblanks', questionsPerSet: 10, label: '빈칸채우기' },
+    { type: 'daily1',     questionsPerSet: 2,  label: '일상지문1' },
+    { type: 'daily2',     questionsPerSet: 3,  label: '일상지문2' },
+    { type: 'academic',   questionsPerSet: 5,  label: '학술지문' }
+];
+
+/** 구성별 유형당 세트 수 (두 구성 모두 35문항) */
+var READING_MODULE_KINDS = {
+    daily:    { fillblanks: 2, daily1: 2, daily2: 2, academic: 1 },  // 일상형(일상 추가형)
+    academic: { fillblanks: 2, daily1: 1, daily2: 1, academic: 2 }   // 학술형(아카데믹 추가형)
+};
+
+/**
+ * 회차별 유형 (Module 1~42, 순서대로). 정규 Fast/Standard = Module 1~12, 연습코스 = Module 13~42.
+ * 학생이 다음 구성을 예상하기 어렵게 섞어 둔 고정 목록이다. 실행할 때마다 다시 뽑지 않는다.
+ * 이 목록을 바꾸면 그 뒤 모든 회차의 세트 번호가 밀린다(대표 확인 후에만 변경).
+ */
+var READING_MODULE_KIND_LIST = [
+    // 정규 Module 1~12
+    'academic', 'academic', 'daily', 'daily', 'academic', 'daily',
+    'academic', 'daily', 'daily', 'academic', 'academic', 'daily',
+    // 연습 Module 13~42 (Practice 1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22, 25, 26, 28, 31, 32, 34, 37, 38, 40, 43, 44, 46, 49, 50, 52, 55, 56, 58)
+    'academic', 'daily', 'daily', 'daily', 'academic', 'academic',
+    'academic', 'daily', 'daily', 'academic', 'daily', 'academic',
+    'daily', 'daily', 'daily', 'academic', 'daily', 'academic',
+    'academic', 'academic', 'daily', 'daily', 'academic', 'daily',
+    'academic', 'academic', 'academic', 'daily', 'academic', 'daily'
+];
+
+/**
+ * 회차 번호 → 이번 회차 세트 목록.
+ * 세트 번호는 "쓰이는 순서대로 +1": 앞 회차들이 쓴 유형별 세트 수 다음 번호부터.
+ * 목록에 없는 회차면 null (대시보드의 시작 전 확인이 "문제 준비 중" 팝업을 띄움).
+ * @param {number} moduleNumber
+ * @returns {{kind: string, sequence: Array<{type, setNum, questionsPerSet, label}>}|null}
+ */
+function getReadingModulePlan(moduleNumber) {
+    var m = parseInt(moduleNumber, 10);
+    if (!(m >= 1 && m <= READING_MODULE_KIND_LIST.length)) return null;
+
+    var used = {};
+    READING_SET_TYPES.forEach(function(t) { used[t.type] = 0; });
+    for (var i = 0; i < m - 1; i++) {
+        var prevCounts = READING_MODULE_KINDS[READING_MODULE_KIND_LIST[i]];
+        READING_SET_TYPES.forEach(function(t) { used[t.type] += prevCounts[t.type]; });
+    }
+
+    var kind = READING_MODULE_KIND_LIST[m - 1];
+    var counts = READING_MODULE_KINDS[kind];
+    var sequence = [];
+    READING_SET_TYPES.forEach(function(t) {
+        var n = counts[t.type];
+        for (var k = 0; k < n; k++) {
+            sequence.push({
+                type: t.type,
+                setNum: used[t.type] + k + 1,
+                questionsPerSet: t.questionsPerSet,
+                label: n > 1 ? t.label + ' 세트' + (k + 1) : t.label
+            });
+        }
+    });
+    return { kind: kind, sequence: sequence };
+}
 
 // ============================================================
 // 1. 진입점 — startReadingModule
@@ -39,32 +112,18 @@ async function startReadingModule(moduleNumber) {
     console.log(`📚 리딩 Module ${moduleNumber} 시작`);
     console.log(`📚 ============================\n`);
 
-    // 세트 번호 매핑 (Module 1: sets [1,2], Module 2: sets [3,4])
-    const sets = {
-        fillblanks: [moduleNumber * 2 - 1, moduleNumber * 2],
-        daily1:     [moduleNumber * 2 - 1, moduleNumber * 2],
-        daily2:     [moduleNumber * 2 - 1, moduleNumber * 2],
-        academic:   [moduleNumber]
-    };
-
-    // 7개 세트 시퀀스 정의
-    const sequence = [
-        { type: 'fillblanks', setNum: sets.fillblanks[0], questionsPerSet: 10, label: '빈칸채우기 세트1' },
-        { type: 'fillblanks', setNum: sets.fillblanks[1], questionsPerSet: 10, label: '빈칸채우기 세트2' },
-        { type: 'daily1',     setNum: sets.daily1[0],     questionsPerSet: 2,  label: '일상지문1 세트1' },
-        { type: 'daily1',     setNum: sets.daily1[1],     questionsPerSet: 2,  label: '일상지문1 세트2' },
-        { type: 'daily2',     setNum: sets.daily2[0],     questionsPerSet: 3,  label: '일상지문2 세트1' },
-        { type: 'daily2',     setNum: sets.daily2[1],     questionsPerSet: 3,  label: '일상지문2 세트2' },
-        { type: 'academic',   setNum: sets.academic[0],   questionsPerSet: 5,  label: '학술지문' }
-    ];
+    // 이번 회차 세트 목록 (구성표 0장). 목록에 없는 회차는 대시보드 시작 전 확인에서 이미 걸러진다.
+    const plan = getReadingModulePlan(moduleNumber);
+    const sequence = plan.sequence;
+    console.log(`📚 구성: ${plan.kind === 'academic' ? '학술형' : '일상형'} (${sequence.length}세트)`);
 
     // 모듈 상태 객체 생성
     window.currentReadingModule = {
         moduleNum: moduleNumber,
         sequence: sequence,
-        components: [],       // 7개 컴포넌트 인스턴스
-        currentIndex: 0,      // 현재 세트 인덱스 (0~6)
-        totalQuestions: 35,
+        components: [],       // 세트별 컴포넌트 인스턴스
+        currentIndex: 0,      // 현재 세트 인덱스
+        totalQuestions: sequence.reduce(function(sum, s) { return sum + s.questionsPerSet; }, 0),
         answers: {},          // 세트별 채점 결과
         timer: null,
         isRetake: false       // 다시풀기 여부
@@ -103,10 +162,10 @@ async function startReadingModule(moduleNumber) {
         }
     }
 
-    // 7개 컴포넌트 한꺼번에 생성
+    // 세트 컴포넌트 한꺼번에 생성
     _createAllComponents();
 
-    // 타이머 시작 (20분)
+    // 타이머 시작 (READING_MODULE_TIME_LIMIT_SEC)
     _startTimer();
 
     // 첫 세트 시작
@@ -114,14 +173,14 @@ async function startReadingModule(moduleNumber) {
 }
 
 // ============================================================
-// 2. 컴포넌트 생성 (7개 한꺼번에)
+// 2. 컴포넌트 생성 (세트 수만큼 한꺼번에)
 // ============================================================
 
 function _createAllComponents() {
     var mod = window.currentReadingModule;
     if (!mod) return;
 
-    console.log('📦 7개 컴포넌트 생성 시작...');
+    console.log('📦 ' + mod.sequence.length + '개 컴포넌트 생성 시작...');
 
     mod.components = mod.sequence.map(function(seq, index) {
         var comp = null;
@@ -161,7 +220,7 @@ function _createAllComponents() {
         return comp;
     });
 
-    console.log('📦 7개 컴포넌트 생성 완료');
+    console.log('📦 ' + mod.sequence.length + '개 컴포넌트 생성 완료');
 }
 
 // ============================================================
@@ -170,7 +229,7 @@ function _createAllComponents() {
 
 /**
  * 특정 세트로 이동 (init 호출)
- * @param {number} setIndex - 0~6
+ * @param {number} setIndex - 0 ~ (세트 수 - 1)
  */
 async function _goToSet(setIndex) {
     var mod = window.currentReadingModule;
@@ -185,7 +244,7 @@ async function _goToSet(setIndex) {
     var seq = mod.sequence[setIndex];
     var comp = mod.components[setIndex];
 
-    console.log(`\n▶️ [${setIndex + 1}/7] ${seq.label} 이동`);
+    console.log(`\n▶️ [${setIndex + 1}/${mod.sequence.length}] ${seq.label} 이동`);
 
     // 로딩 오버레이 표시 (데이터 로드 완료까지 클릭 차단)
     _showSetLoading();
@@ -514,7 +573,7 @@ function _updateButtons() {
     var isFirstSet = (mod.currentIndex === 0);
     var isLastSet = (mod.currentIndex === mod.sequence.length - 1);
 
-    // 전체 35문제 기준 첫 문제 / 마지막 문제 판단
+    // 모듈 전체 기준 첫 문제 / 마지막 문제 판단
     var isVeryFirst = isFirstSet;
     var isVeryLast = false;
 
@@ -587,14 +646,14 @@ function _setAcademicButtons(isVeryFirst, isVeryLast, comp) {
 }
 
 // ============================================================
-// 8. 타이머 (20분)
+// 8. 타이머 (READING_MODULE_TIME_LIMIT_SEC)
 // ============================================================
 
 function _startTimer() {
     var mod = window.currentReadingModule;
     if (!mod) return;
 
-    var timeLimit = 20 * 60; // 1200초
+    var timeLimit = READING_MODULE_TIME_LIMIT_SEC;
 
     mod.timer = {
         startTime: Date.now(),
@@ -603,7 +662,10 @@ function _startTimer() {
         interval: null
     };
 
-    console.log('⏱️ 20분 타이머 시작');
+    console.log('⏱️ ' + (timeLimit / 60) + '분 타이머 시작');
+
+    // 시작하는 순간 바로 그린다 (1초 뒤 첫 그림을 기다리면 HTML 자리 표시나 직전 회차 남은 시간이 보임)
+    _updateTimerDisplay();
 
     mod.timer.interval = setInterval(function() {
         var elapsed = Math.floor((Date.now() - mod.timer.startTime) / 1000);

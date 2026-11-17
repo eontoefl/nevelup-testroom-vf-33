@@ -276,7 +276,7 @@ async function openIntroBookGuide(params) {
  */
 /**
  * 과제 시작 확인 팝업 (자체 UI)
- * 연습코스에서는 마감 관련 문구 숨김
+ * (정규코스 전용: 연습코스는 executeTask에서 팝업 없이 바로 실행)
  */
 function confirmTaskStart(taskName, onConfirm) {
     // 기존 팝업 제거
@@ -290,11 +290,14 @@ function confirmTaskStart(taskName, onConfirm) {
     overlay.id = 'taskStartOverlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;';
 
-    // 연습코스 여부
-    var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
-    var bodyText = inPractice
-        ? '제한시간 20분이 바로 시작됩니다.'
-        : '제한시간 20분이 바로 시작됩니다.<br>' +
+    // 제한시간: 리딩은 회차 구성표의 상수(reading-module-controller.js), 그 밖의 과제는 기존 문구 그대로
+    // (연습코스는 executeTask에서 이 팝업 없이 바로 실행되므로 여기는 정규코스 문구만 둔다)
+    var limitMinutes = 20;
+    var parsedTask = (typeof parseTaskName === 'function') ? parseTaskName(taskName) : null;
+    if (parsedTask && parsedTask.type === 'reading' && typeof READING_MODULE_TIME_LIMIT_SEC === 'number') {
+        limitMinutes = READING_MODULE_TIME_LIMIT_SEC / 60;
+    }
+    var bodyText = '제한시간 ' + limitMinutes + '분이 바로 시작됩니다.<br>' +
           '첫 풀이 결과는 차트 및 포트폴리오에<br>' +
           '<strong style="color:#ef4444;">영구 반영</strong>되며, 재시도할 수 없습니다.';
 

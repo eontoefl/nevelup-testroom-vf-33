@@ -287,6 +287,17 @@ async function _onPracticeClick() {
  * @returns {Promise<boolean>} 데이터 존재 여부
  */
 async function _checkProblemDataExists(sectionType, moduleNumber) {
+    // 리딩: 회차 구성표(reading-module-controller.js)에 없는 회차면 조회 없이 "문제 준비 중"
+    // (아래 조회의 try/catch는 오류 때 진행을 허용하므로 그 밖에서 먼저 판단한다)
+    var readingPlan = null;
+    if (sectionType === 'reading') {
+        readingPlan = (typeof getReadingModulePlan === 'function') ? getReadingModulePlan(moduleNumber) : null;
+        if (!readingPlan) {
+            console.log('⚠️ [대시보드] 리딩 회차 구성표에 없는 회차:', moduleNumber);
+            return false;
+        }
+    }
+
     if (typeof supabaseSelect !== 'function') {
         console.warn('⚠️ [대시보드] supabaseSelect 없음 — 체크 생략');
         return true; // DB 함수 없으면 체크 생략 (진행 허용)
@@ -298,9 +309,9 @@ async function _checkProblemDataExists(sectionType, moduleNumber) {
         
         switch (sectionType) {
             case 'reading':
-                // fillblanks: Module N → set (2N-1), (2N)
+                // 회차 구성표의 첫 세트(빈칸)만 확인
                 table = 'tr_reading_fillblanks';
-                setNum = moduleNumber * 2 - 1; // 첫 번째 세트만 확인
+                setNum = readingPlan.sequence[0].setNum;
                 setIdPrefix = 'fillblank_set_' + String(setNum).padStart(4, '0');
                 break;
             case 'listening':

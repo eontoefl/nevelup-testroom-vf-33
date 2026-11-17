@@ -15,7 +15,7 @@
 
 | 섹션 | 모듈 구성 | 총 문제 수 | 시간 제한 |
 |---|---|---|---|
-| **Reading** | 빈칸채우기×2 + Daily1×2 + Daily2×2 + Academic×1 | 35문제 | 20분 |
+| **Reading** | 회차마다 두 구성 중 하나 — 일상형: 빈칸채우기×2 + Daily1×2 + Daily2×2 + Academic×1 / 학술형: 빈칸채우기×2 + Daily1×1 + Daily2×1 + Academic×2 (회차별 구성표: reading-module-controller.js 0장) | 35문제 | 18분 |
 | **Listening** | 응답고르기 + 대화 + 공지사항 + 렉쳐 | 전 유형 포함 | 유형별 제한 |
 | **Writing** | Arrange + Email + Discussion | 전 유형 포함 | 유형별 제한 |
 | **Speaking** | Repeat×1 + Interview×1 | 11문제 | 유형별 내부 타이머 |
