@@ -1,0 +1,535 @@
+/* 학생 서재 v2(book-v3) 화면 틀 2026-11-15: book-v2-viewer.css 복사 + 맨 끝에 BookPage 종이 규칙 */
+/* =====================================================================
+   입문서 뷰어 v2 (에디터 콘텐츠 렌더) — 깔끔한 책 읽기 화면
+   ===================================================================== */
+:root {
+  --v2-primary: #006688;
+  --v2-primary-light: #50c9ff;
+  --v2-surface: #f4f6f7;
+  --v2-paper: #ffffff;
+  --v2-text: #1f2937;
+  --v2-text-soft: #4b5563;
+  --v2-amb: 0 18px 50px rgba(20, 30, 40, 0.10);
+}
+* { box-sizing: border-box; }
+.bookv2-body {
+  margin: 0;
+  font-family: "Pretendard", -apple-system, sans-serif;
+  background: var(--v2-surface);
+  color: var(--v2-text);
+  -webkit-font-smoothing: antialiased;
+  /* 본문 선택·복사 차단 (불법복제 방지) */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+/* 입력창은 선택·편집 가능해야 함 (메모/페이지이동) */
+.bookv2-body input, .bookv2-body textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* ===== 상단바 ===== */
+.bookv2-top {
+  position: fixed; inset: 0 0 auto 0; height: 58px;
+  background: rgba(255,255,255,0.85); backdrop-filter: blur(10px);
+  display: flex; align-items: center; gap: 14px; padding: 0 18px;
+  z-index: 50; box-shadow: 0 1px 0 rgba(20,30,40,0.05);
+}
+.bookv2-icon {
+  width: 38px; height: 38px; border: none; background: transparent;
+  color: var(--v2-text-soft); font-size: 16px; cursor: pointer; border-radius: 10px;
+}
+.bookv2-icon:hover { background: rgba(0,0,0,0.05); }
+.bookv2-title { flex: 1; font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+.bookv2-icon.sm { width: 30px; height: 30px; font-size: 12px; }
+
+/* 줌 컨트롤 */
+.bookv2-zoom {
+  display: flex; align-items: center; gap: 2px;
+  background: rgba(0,0,0,0.04); border-radius: 10px; padding: 2px;
+}
+.bookv2-zoom-level { font-size: 12px; font-weight: 600; color: var(--v2-text-soft); min-width: 42px; text-align: center; }
+
+/* 페이지 인디케이터(버튼) */
+.bookv2-page-ind {
+  font-size: 14px; font-weight: 600; color: var(--v2-text-soft);
+  border: none; background: transparent; cursor: pointer; padding: 8px 12px; border-radius: 10px;
+  transition: background .15s ease;
+}
+.bookv2-page-ind:hover { background: rgba(0,0,0,0.05); color: var(--v2-primary); }
+.bookv2-page-ind .sep { opacity: 0.4; margin: 0 2px; }
+
+/* ===== 페이지 이동 모달 ===== */
+.bookv2-modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(15,23,42,0.28); backdrop-filter: blur(2px);
+  align-items: center; justify-content: center;
+}
+.bookv2-modal-overlay.open { display: flex; }
+.bookv2-modal {
+  background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 320px;
+  box-shadow: 0 24px 60px rgba(20,30,40,0.22); text-align: center;
+}
+.bookv2-modal h3 { margin: 0 0 16px; font-size: 17px; font-weight: 700; color: var(--v2-text); }
+.bookv2-modal input {
+  width: 100%; padding: 12px 14px; font-size: 16px; text-align: center;
+  border: none; background: #eef1f3; border-radius: 10px; outline: none;
+}
+.bookv2-modal input:focus { box-shadow: 0 0 0 2px var(--v2-primary-light); }
+.bookv2-modal-hint { font-size: 12px; color: var(--v2-text-soft); margin: 10px 0 18px; }
+.bookv2-modal-actions { display: flex; gap: 8px; }
+.bookv2-modal-actions button { flex: 1; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.bookv2-btn-cancel { background: #eef1f3; color: var(--v2-text-soft); }
+.bookv2-btn-confirm { background: linear-gradient(135deg, var(--v2-primary), var(--v2-primary-light)); color: #fff; }
+
+/* ===== 진행률 ===== */
+.bookv2-progress { position: fixed; top: 58px; left: 0; right: 0; height: 3px; background: rgba(0,0,0,0.05); z-index: 49; }
+.bookv2-progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--v2-primary), var(--v2-primary-light)); transition: width .3s ease; }
+
+/* ===== 무대 ===== */
+/* 종이째 확대(applyZoom)로 종이가 화면보다 넓어져도 왼쪽이 잘리지 않게, 가운데 정렬은 양쪽 버튼의 margin auto로 한다
+   (넓으면 가운데, 넘치면 왼쪽부터 붙고 옆으로 밀어서 봄. 2026-10-29 꾸밈 책, 2026-11-13 모든 책) */
+.bookv2-stage {
+  display: flex; align-items: flex-start; justify-content: flex-start;
+  gap: 12px; padding: 84px 16px 72px; min-height: 100vh;
+}
+
+/* ===== 보안 띠 ===== (하단 고정, 또렷한 경고 / 본문 안 가림) */
+.bookv2-guard {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 32px; padding: 0 16px;
+  background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(6px);
+  color: #cbd5e1; font-size: 11.5px; font-weight: 500; letter-spacing: 0.01em;
+  white-space: nowrap; overflow: hidden;
+}
+.bookv2-guard i { color: #fbbf24; font-size: 11px; flex-shrink: 0; }
+.bookv2-guard span { overflow: hidden; text-overflow: ellipsis; }
+.bookv2-guard b { color: #fff; font-weight: 700; }
+.bookv2-nav {
+  position: sticky; top: 50vh; flex-shrink: 0;
+  width: 46px; height: 46px; border: none; border-radius: 50%;
+  background: var(--v2-paper); color: var(--v2-primary); font-size: 16px;
+  cursor: pointer; box-shadow: 0 6px 18px rgba(20,30,40,0.12);
+  transition: transform .15s ease, opacity .15s ease;
+}
+.bookv2-nav:hover:not(:disabled) { transform: scale(1.08); }
+.bookv2-nav:disabled { opacity: 0.25; cursor: default; }
+#btnPrev { margin-left: auto; }
+#btnNext { margin-right: auto; }
+
+/* ===== 종이 ===== */
+.bookv2-paper {
+  position: relative; width: 100%; max-width: 760px; flex-shrink: 0;
+  background: var(--v2-paper); border-radius: 16px; box-shadow: var(--v2-amb);
+  padding: 56px 60px 72px; min-height: calc(100vh - 200px); overflow: hidden;
+}
+
+/* ===== 워터마크 (이름·이메일 옅게 타일) ===== */
+.bookv2-watermark {
+  position: absolute; inset: -25%; pointer-events: none; user-select: none;
+  display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
+  gap: 230px 360px; transform: rotate(-24deg); opacity: 0.06; z-index: 4;
+}
+.bookv2-watermark span { font-size: 12px; font-weight: 500; white-space: nowrap; color: #64748b; letter-spacing: 0.04em; }
+
+/* ===== 콘텐츠 (에디터 lossy HTML 렌더) ===== */
+/* 글자 크기는 고정(확대는 종이째 zoom). 나머지는 em으로 비율 유지 */
+.bookv2-content { position: relative; z-index: 1; font-size: 17px; line-height: 1.85; color: var(--v2-text); word-break: keep-all; }
+.bookv2-content h1 {
+  font-size: 1.76em; font-weight: 800; letter-spacing: -0.02em; color: #111827;
+  margin: 0 0 0.9em; padding-bottom: 0.45em; border-bottom: 3px solid var(--v2-primary-light);
+}
+.bookv2-content h2 {
+  font-size: 1.35em; font-weight: 700; color: #111827;
+  margin: 1.5em 0 0.6em; padding-left: 0.6em; border-left: 5px solid var(--v2-primary);
+}
+.bookv2-content h3 { font-size: 1.12em; font-weight: 700; color: var(--v2-text-soft); margin: 1.4em 0 0.5em; }
+.bookv2-content p { margin: 0 0 15px; }
+.bookv2-content strong { font-weight: 700; }
+.bookv2-content ul, .bookv2-content ol { padding-left: 24px; margin: 0 0 16px; }
+.bookv2-content li { margin-bottom: 8px; }
+.bookv2-content li p { margin: 0; } /* bn-inline-content 여백 제거 */
+.bookv2-content a { color: var(--v2-primary); text-decoration: underline; }
+.bookv2-content img { max-width: 100%; border-radius: 12px; margin: 16px 0; box-shadow: 0 6px 18px rgba(20,30,40,0.12); }
+
+/* 영상 */
+.bookv2-content video { display: block; max-width: 100%; width: 100%; border-radius: 12px; margin: 18px 0; background: #000; box-shadow: 0 6px 18px rgba(20,30,40,0.18); outline: none; }
+/* 음성 */
+.bookv2-content audio { display: block; width: 100%; margin: 14px 0; }
+/* 첨부 파일 링크 */
+.bookv2-content a[data-url] { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--v2-surface); border-radius: 10px; color: var(--v2-primary); font-weight: 600; text-decoration: none; margin: 8px 0; }
+.bookv2-content a[data-url]:hover { background: #e6f4fb; }
+.bookv2-content a[data-url]::before { content: "\f0c6"; font-family: "Font Awesome 6 Free"; font-weight: 900; }
+
+/* 표 */
+.bookv2-content table { width: 100%; border-collapse: collapse; margin: 1.1em 0; font-size: 0.88em; }
+.bookv2-content td, .bookv2-content th { padding: 10px 13px; vertical-align: top; background: #fff; box-shadow: 0 0 0 1px rgba(20,30,40,0.08); }
+.bookv2-content td p { margin: 0; }
+.bookv2-content tr:first-child td { background: #f0f9ff; font-weight: 700; }
+.bookv2-content colgroup, .bookv2-content col { width: auto; }
+
+/* ===== 북마크 버튼(활성) ===== */
+.bookv2-icon.bookmarked { color: var(--v2-primary); }
+
+/* ===== 사이드바 ===== */
+.bookv2-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.28);
+  opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease; z-index: 150;
+}
+.bookv2-overlay.open { opacity: 1; visibility: visible; }
+.bookv2-sidebar {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 300px; max-width: 84vw;
+  background: #fff; box-shadow: -12px 0 40px rgba(20,30,40,0.12);
+  transform: translateX(100%); transition: transform .25s ease; z-index: 160;
+  display: flex; flex-direction: column;
+}
+.bookv2-sidebar.open { transform: translateX(0); }
+.bookv2-sidebar-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 18px 14px;
+}
+.bookv2-sidebar-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--v2-text); display: flex; align-items: center; gap: 8px; }
+.bookv2-sidebar-head h3 i { color: var(--v2-primary); }
+
+.bookv2-bm-list { flex: 1; overflow-y: auto; padding: 4px 12px 20px; }
+.bookv2-bm-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-radius: 10px; cursor: pointer; color: var(--v2-text);
+  transition: background .15s ease;
+}
+.bookv2-bm-item:hover { background: var(--v2-surface); }
+.bookv2-bm-item > span { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 500; }
+.bookv2-bm-item > span i { color: var(--v2-primary); font-size: 13px; }
+.bookv2-bm-remove {
+  width: 26px; height: 26px; border: none; background: transparent; color: #94a3b8;
+  border-radius: 7px; cursor: pointer; font-size: 12px;
+}
+.bookv2-bm-remove:hover { background: #fee2e2; color: #dc2626; }
+.bookv2-bm-empty { text-align: center; color: var(--v2-text-soft); font-size: 13px; line-height: 1.7; padding: 40px 24px; }
+
+/* 사이드바 탭 */
+.bookv2-tabs { display: flex; gap: 4px; }
+.bookv2-tab {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: var(--v2-text-soft);
+  padding: 6px 10px; border-radius: 8px; display: flex; align-items: center; gap: 6px;
+}
+.bookv2-tab i { font-size: 12px; }
+.bookv2-tab:hover { background: var(--v2-surface); }
+.bookv2-tab.active { color: var(--v2-primary); background: rgba(80,201,255,0.12); }
+.bookv2-tab-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.bookv2-tab-panel.hidden { display: none; }
+
+/* 메모 목록 아이템 (페이지 + 미리보기) */
+.bookv2-memo-item {
+  padding: 12px 14px; border-radius: 10px; cursor: pointer; transition: background .15s ease;
+}
+.bookv2-memo-item:hover { background: var(--v2-surface); }
+.bookv2-memo-item-top { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--v2-primary); margin-bottom: 4px; }
+.bookv2-memo-item-top i { font-size: 12px; }
+.bookv2-memo-item-preview { font-size: 13px; color: var(--v2-text-soft); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ===== 메모 ===== */
+.bookv2-icon { position: relative; }
+.bookv2-memo-dot {
+  position: absolute; top: 5px; right: 5px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--v2-primary-light); display: none;
+  box-shadow: 0 0 0 2px #fff;
+}
+.bookv2-memo-dot.on { display: block; }
+
+.bookv2-memo-panel {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 340px; max-width: 88vw;
+  background: #fff; box-shadow: 12px 0 40px rgba(20,30,40,0.12);
+  transform: translateX(-100%); transition: transform .25s ease; z-index: 160;
+  display: flex; flex-direction: column;
+}
+.bookv2-memo-panel.open { transform: translateX(0); }
+.bookv2-memo-head {
+  display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 12px;
+}
+.bookv2-memo-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--v2-text); display: flex; align-items: center; gap: 8px; }
+.bookv2-memo-head h3 i { color: var(--v2-primary); }
+.bookv2-memo-body { flex: 1; display: flex; flex-direction: column; padding: 4px 18px 0; }
+.bookv2-memo-body textarea {
+  flex: 1; width: 100%; border: none; resize: none; outline: none;
+  background: #f4f6f7; border-radius: 12px; padding: 16px; font-size: 15px; line-height: 1.7;
+  color: var(--v2-text); font-family: inherit;
+}
+.bookv2-memo-body textarea:focus { box-shadow: 0 0 0 2px var(--v2-primary-light); }
+.bookv2-memo-count { text-align: right; font-size: 12px; color: var(--v2-text-soft); padding: 8px 2px 0; }
+.bookv2-memo-foot { display: flex; gap: 8px; padding: 14px 18px 18px; }
+.bookv2-memo-foot button { padding: 12px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.bookv2-memo-del { background: #f4f6f7; color: #94a3b8; flex: 0 0 auto; width: 84px; }
+.bookv2-memo-del:hover { background: #fee2e2; color: #dc2626; }
+.bookv2-memo-del.hidden { display: none; }
+.bookv2-memo-save { flex: 1; background: linear-gradient(135deg, var(--v2-primary), var(--v2-primary-light)); color: #fff; }
+.bookv2-memo-save:disabled { opacity: 0.5; cursor: default; }
+
+/* ===== 목차 ===== */
+.bookv2-toc-item {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: background .15s ease;
+}
+.bookv2-toc-item:hover { background: var(--v2-surface); }
+.bookv2-toc-item.lv2 { padding-left: 28px; }
+.bookv2-toc-item.current { background: rgba(80,201,255,0.14); }
+.bookv2-toc-title { font-size: 14px; color: var(--v2-text); line-height: 1.45; }
+.bookv2-toc-item.lv1 .bookv2-toc-title { font-weight: 700; }
+.bookv2-toc-item.lv2 .bookv2-toc-title { font-weight: 500; color: var(--v2-text-soft); }
+.bookv2-toc-page { font-size: 12px; font-weight: 600; color: var(--v2-text-soft); flex-shrink: 0; }
+
+/* ===== 완독 모달 ===== */
+.bookv2-done { text-align: center; }
+.bookv2-done-icon { font-size: 52px; color: #22c55e; margin-bottom: 14px; }
+.bookv2-done h3 { font-size: 19px; }
+.bookv2-done-desc { font-size: 14px; color: var(--v2-text-soft); line-height: 1.7; margin: 8px 0 20px; }
+.bookv2-done .bookv2-modal-actions button { width: 100%; }
+
+/* ===== 숨김(수정 중) 안내 ===== */
+.bookv2-maint {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(15, 23, 42, 0.42); backdrop-filter: blur(3px);
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.bookv2-maint.open { display: flex; }
+.bookv2-maint-box {
+  text-align: center; max-width: 380px;
+  background: #fff; border-radius: 20px; padding: 38px 34px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.32);
+}
+.bookv2-maint-icon { font-size: 56px; margin-bottom: 18px; }
+.bookv2-maint-box h2 { font-size: 21px; font-weight: 800; color: var(--v2-text); margin: 0 0 14px; letter-spacing: -0.02em; word-break: keep-all; }
+.bookv2-maint-box p { font-size: 15px; color: var(--v2-text-soft); line-height: 1.75; margin: 0 0 28px; word-break: keep-all; }
+.bookv2-maint-btn { padding: 13px 30px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--v2-primary), var(--v2-primary-light)); color: #fff; font: 600 15px "Pretendard", sans-serif; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.bookv2-maint-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,102,136,0.3); }
+
+/* ===== 토스트 ===== */
+.bookv2-toast {
+  position: fixed; left: 50%; bottom: 56px; transform: translate(-50%, 12px);
+  background: rgba(15,23,42,0.92); color: #fff; padding: 11px 20px; border-radius: 12px;
+  font-size: 13.5px; font-weight: 500; z-index: 300; opacity: 0;
+  transition: opacity .25s ease, transform .25s ease; pointer-events: none;
+}
+.bookv2-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ===== 로딩 ===== */
+.bookv2-loading {
+  position: fixed; inset: 0; background: var(--v2-surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; color: var(--v2-text-soft); z-index: 100;
+}
+.bookv2-spinner {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid rgba(0,0,0,0.08); border-top-color: var(--v2-primary-light);
+  animation: bookv2-spin .8s linear infinite;
+}
+@keyframes bookv2-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 720px) {
+  .bookv2-paper { padding: 40px 24px 56px; }
+  .bookv2-nav { width: 40px; height: 40px; }
+  .bookv2-stage { gap: 6px; padding: 76px 8px 50px; }
+  .bookv2-content h1 { font-size: 25px; }
+}
+@media (max-width: 680px) { .bookv2-paper { margin: 0 auto; } }
+
+/* ===== 처음 열 때 확인 전: 뒤 내용 흐리게 (2026-10-28) ===== */
+body.bookv2-confirming .bookv2-stage,
+body.bookv2-confirming .bookv2-progress { filter: blur(8px); pointer-events: none; }
+.bookv2-icon[hidden] { display: none; }
+.bookv2-icon:disabled { opacity: .5; cursor: default; }
+
+/* ===== 단어장 표: 단어 중간에서 줄 바꾸지 않기 (2026-10-29) =====
+   띄어쓰기 자리에서만 줄을 바꾸고, 한 단어가 칸보다 길면 칸이 그만큼 넓어진다(표 폭 자동). */
+.bookv2-content.book-content.bt-eon.bt-book-voca table { table-layout: auto !important; }
+.bookv2-content.book-content.bt-eon.bt-book-voca table td, .bookv2-content.book-content.bt-eon.bt-book-voca table th { overflow-wrap: normal !important; word-break: keep-all !important; }
+
+/* ===== PDF 저장·인쇄 (2026-10-28) =====
+   책 한 쪽 = A4 한 장. 쪽마다 내용이 칸에 다 들어가도록 JS(fitPrintPages)가 배율(zoom)을 정한다.
+   표지·뒷표지는 종이를 꽉 채움. 이름·이메일은 모든 장 위쪽 오른편.
+   여백은 @page가 아니라 장 안쪽 padding → 인쇄 창 여백 설정과 상관없이 같은 모양. */
+.bookv2-print-root, .bookv2-print-block { display: none; }
+/* 크기 재기·인쇄 공통 (재는 동안은 화면 밖에 펼쳐 둠) */
+.bookv2-print-root.is-measuring { display: block !important; position: absolute; left: -99999px; top: 0; }
+.bookv2-print-sheet, .bookv2-print-cover { position: relative; width: 210mm; height: 297mm; overflow: hidden; box-sizing: border-box; background: #fff; }
+.bookv2-print-sheet { padding: 7mm 12mm 8mm; display: flex; flex-direction: column; }
+.bookv2-print-sheet > .bookv2-print-stamp { display: block; flex: none; height: 5mm; text-align: right; }
+.bookv2-print-stamp { font-size: 8.5pt; color: #6b7280; letter-spacing: .03em; white-space: nowrap; }
+.bookv2-print-fit { flex: 1; min-height: 0; overflow: hidden; }
+.bookv2-print-fit > .bookv2-content.book-content { min-height: 0 !important; padding: 0 !important; margin: 0 !important; font-size: 15px; }
+/* 단어 표는 인쇄용으로 촘촘하게: 칸 위아래 여백·줄 간격 줄이고 풀이 칸을 넓게 */
+.bookv2-print-fit table td, .bookv2-print-fit table th { padding-top: 2px !important; padding-bottom: 2px !important; line-height: 1.25 !important; }
+.bookv2-print-fit .bookv2-content.book-content.bt-eon.bt-book-voca table { table-layout: auto !important; width: 100% !important; }
+.bookv2-print-fit .bt-book-voca colgroup col:nth-child(1) { width: 19% !important; }
+.bookv2-print-fit .bt-book-voca colgroup col:nth-child(2) { width: 21% !important; }
+.bookv2-print-fit .bt-book-voca colgroup col:nth-child(3) { width: 60% !important; }
+.bookv2-print-cover .book-cover { aspect-ratio: auto !important; width: 100% !important; height: 297mm !important; min-height: 0 !important; margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+.bookv2-print-cover > .bookv2-content.book-content { width: 100% !important; max-width: none !important; height: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+.bookv2-print-cover > .bookv2-print-stamp { position: absolute; top: 6mm; right: 14mm; z-index: 2; }
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html, body.bookv2-body { background: #fff !important; height: auto !important; overflow: visible !important; margin: 0 !important; }
+  body.bookv2-body > * { display: none !important; }
+  body.bookv2-body.bookv2-print-ok > #printRoot { display: block !important; position: static !important; }
+  body.bookv2-body:not(.bookv2-print-ok) > #printBlock { display: block !important; padding: 40mm 0; text-align: center; font-size: 16px; color: #475569; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bookv2-print-sheet, .bookv2-print-cover { break-after: page; page-break-after: always; }
+  .bookv2-print-root > :last-child { break-after: auto; page-break-after: auto; }
+}
+
+/* 목차: "07 첫 단어 ~ 끝 단어" 제목 (단어장 v2 단어 쪽) — 작은 알약 칩 + 두 줄 (book-v2-viewer.js renderToc) 2026-11-13 */
+.bookv2-toc-item.rg { justify-content: flex-start; align-items: flex-start; gap: 10px; padding: 8px 14px; }
+.bookv2-toc-item.rg.current { background: transparent; }
+.bookv2-toc-chip { flex: none; box-sizing: border-box; height: 18px; min-width: 26px; padding: 0 6px; margin-top: 1px; border-radius: 99px; background: #F1EDF8; color: #6B5C8E; font: 500 10.5px/18px Outfit, Pretendard, sans-serif; text-align: center; font-variant-numeric: tabular-nums; }
+.bookv2-toc-rg { min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.bookv2-toc-rg b { font-size: 14px; font-weight: 600; color: #2E2A3A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookv2-toc-rg span { font-size: 12px; color: #A39BB8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bookv2-toc-item.rg.current .bookv2-toc-chip { background: #5B4A7D; color: #fff; }
+.bookv2-toc-item.rg.current .bookv2-toc-rg b { color: #5B4A7D; }
+
+/* PDF 저장·인쇄: HTML 책(인쇄 쪽 그대로) — 210×280 종이 그대로, 여백·축소 없음, 이름은 위에 겹쳐 찍음 (book-v2-viewer.js buildPrintRoot) 2026-11-13 */
+.bookv2-print-html { position: relative; width: 210mm; height: 280mm; overflow: hidden; box-sizing: border-box; background: #fff; }
+.bookv2-print-html > .bookv2-content.book-content { width: 210mm !important; max-width: none !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.bookv2-print-html > .bookv2-print-stamp { position: absolute; top: 2.2mm; right: 10mm; z-index: 5; font-size: 6.5pt; color: #8a8f9c; }
+@media print {
+  .bookv2-print-html { break-after: page; page-break-after: always; }
+  .bookv2-print-root.is-html > :last-child { break-after: auto; page-break-after: auto; }
+}
+
+
+/* ===== BookPage 종이 (PC + HTML 책) 2026-11-15 ===== */
+body.bookv3-bp .bookv2-paper { width: auto; max-width: none; padding: 0; min-height: 0; border-radius: 6px; background: #fff; flex-shrink: 0; overflow: hidden; }
+body.bookv3-bp #content { display: none; }
+.bp-box { position: relative; overflow: hidden; }
+.bp-print-host { display: block; }
+
+
+/* =====================================================================
+   펼친 면 화면 (PC + HTML 책) 2026-11-15 대표 확정 시안
+   왼쪽 세로 줄 · 위 가운데 "12–13 / 45쪽" · 두 쪽을 붙인 책 + 가운데 접힘 그림자 · 쪽 옆 북마크·메모
+   ===================================================================== */
+.v3-rail { display: none; }
+body.bookv3-bp { background: #F6F5F9; color: #2E2747; overflow: hidden; }
+body.bookv3-bp .v3-rail {
+  position: fixed; left: 0; top: 0; bottom: 32px; width: 58px; z-index: 170;
+  background: #3F3566; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 12px;
+}
+.v3-rbtn { width: 40px; height: 40px; border: none; border-radius: 11px; background: transparent; color: #CFC6EC; font-size: 15px; cursor: pointer; display: grid; place-items: center; transition: background .15s ease, color .15s ease; }
+.v3-rbtn:hover { background: rgba(255,255,255,.08); color: #fff; }
+.v3-rbtn.on { background: #5D4F8E; color: #fff; }
+.v3-rbtn.v3-rbot { margin-top: auto; margin-bottom: 14px; }
+.v3-rbtn[hidden] { display: none; }
+
+/* 위쪽 막대 */
+body.bookv3-bp .bookv2-top { left: 58px; height: 62px; background: #fff; backdrop-filter: none; box-shadow: none; border-bottom: 1px solid #ECE9F2; padding: 0 22px; }
+body.bookv3-bp .bookv2-top > .bookv2-icon { display: none; }
+body.bookv3-bp .bookv2-title { flex: 0 1 auto; max-width: 30%; font-size: 15px; color: #2E2747; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.bookv3-bp .bookv2-zoom { margin-left: auto; background: transparent; gap: 4px; }
+body.bookv3-bp .bookv2-zoom .bookv2-icon { color: #6F6884; }
+body.bookv3-bp .bookv2-zoom-level { color: #6F6884; font-size: 13px; font-weight: 500; }
+body.bookv3-bp .bookv2-page-ind { position: absolute; left: 50%; transform: translateX(-50%); padding: 6px 12px; display: flex; align-items: baseline; gap: 8px; }
+body.bookv3-bp .bookv2-page-ind:hover { background: #F3F0FA; }
+.v3-pn { font: 600 17px Pretendard, sans-serif; color: #2E2747; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.v3-pt { font: 500 13.5px Pretendard, sans-serif; color: #A69EBF; }
+body.bookv3-bp .bookv2-progress { top: 62px; left: 58px; background: #ECE9F2; }
+body.bookv3-bp .bookv2-progress-fill { background: #8C7AB8; }
+
+/* 무대: 책이 화면보다 커지면 옆·아래로 밀어서 본다 */
+body.bookv3-bp .bookv2-stage {
+  position: fixed; left: 58px; right: 0; top: 65px; bottom: 32px; min-height: 0;
+  display: flex; align-items: flex-start; justify-content: flex-start; overflow: auto;
+  padding: 22px 92px; gap: 0;
+}
+body.bookv3-bp .bookv2-paper { margin: auto; width: auto; max-width: none; padding: 0; min-height: 0; background: transparent; box-shadow: none; border-radius: 0; overflow: visible; flex-shrink: 0; }
+body.bookv3-bp .bookv2-nav { position: fixed; top: calc(50% + 16px); transform: translateY(-50%); width: 36px; height: 36px; font-size: 14px; color: #6F6884; z-index: 40; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+body.bookv3-bp .bookv2-nav:hover:not(:disabled) { transform: translateY(-50%) scale(1.08); }
+body.bookv3-bp .bookv2-nav.prev { left: calc(58px + 28px); }
+body.bookv3-bp .bookv2-nav.next { right: 28px; }
+
+/* 책 */
+.v3-book { position: relative; display: flex; margin: 0 44px; }
+.v3-book.two { box-shadow: 0 16px 36px rgba(40,30,80,.16), 0 2px 6px rgba(40,30,80,.08); border-radius: 2px; }
+.v3-book:not(.two) .v3-sheet:not(.empty) .bp-box { box-shadow: 0 16px 36px rgba(40,30,80,.16), 0 2px 6px rgba(40,30,80,.08); }
+.v3-book.two::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 56px; margin-left: -28px; pointer-events: none; z-index: 2;
+  background: linear-gradient(90deg, rgba(40,30,80,0) 0%, rgba(40,30,80,.05) 30%, rgba(40,30,80,.16) 48%, rgba(40,30,80,.22) 50%, rgba(40,30,80,.16) 52%, rgba(40,30,80,.05) 70%, rgba(40,30,80,0) 100%);
+}
+.v3-sheet { position: relative; }
+.v3-sheet .bp-box { background: #fff; }
+/* 한 쪽만 있는 면(앞표지·뒤표지 등)은 빈 자리를 없애 가운데에 놓는다 (2026-11-15 대표) */
+.v3-sheet.empty { display: none; }
+.v3-sheet.empty .v3-side { display: none; }
+.v3-book.single .v3-sheet.l { display: none; }
+.v3-wm { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+
+/* 쪽 옆 북마크·메모 (종이 바깥) */
+.v3-side { position: absolute; top: 0; display: flex; flex-direction: column; gap: 6px; }
+.v3-side.l { right: 100%; margin-right: 10px; }
+.v3-side.r { left: 100%; margin-left: 10px; }
+.v3-sbtn { position: relative; width: 34px; height: 34px; border: none; border-radius: 10px; background: #fff; box-shadow: 0 1px 4px rgba(40,30,80,.08); color: #9C92BD; font-size: 13px; cursor: pointer; display: grid; place-items: center; transition: color .15s ease, background .15s ease; }
+.v3-sbtn:hover { color: #5B4A9C; background: #FBFAFE; }
+.v3-sbtn.on { color: #E0457A; }
+.v3-sbtn.open { background: #5D4F8E; color: #fff; }
+.v3-sbtn[hidden] { display: none; }
+.v3-sbtn .v3-dot { position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: #E0457A; display: none; }
+.v3-sbtn.has .v3-dot { display: block; }
+.v3-sbtn.has i { color: #5B4A9C; }
+.v3-sbtn.open i { color: #fff; }
+
+/* 목록·메모 창은 왼쪽 세로 줄 옆에서 열린다 */
+body.bookv3-bp .bookv2-sidebar { left: 58px; right: auto; bottom: 32px; transform: translateX(calc(-100% - 58px)); box-shadow: 12px 0 40px rgba(40,30,80,0.12); }
+body.bookv3-bp .bookv2-sidebar.open { transform: translateX(0); }
+body.bookv3-bp .bookv2-memo-panel { left: 58px; bottom: 32px; transform: translateX(calc(-100% - 58px)); }
+body.bookv3-bp .bookv2-memo-panel.open { transform: translateX(0); }
+body.bookv3-bp .bookv2-overlay { left: 58px; }
+
+/* 펼친 면 화면 색: 시안 보라 */
+body.bookv3-bp { --v2-primary: #5B4A9C; --v2-primary-light: #8C7AB8; }
+body.bookv3-bp .bookv2-memo-panel.at-right { left: auto; right: 0; transform: translateX(100%); box-shadow: -12px 0 40px rgba(40,30,80,0.12); }
+body.bookv3-bp .bookv2-memo-panel.at-right.open { transform: translateX(0); }
+body.bookv3-bp .bookv2-nav:focus:not(:focus-visible), .v3-sbtn:focus:not(:focus-visible), .v3-rbtn:focus:not(:focus-visible) { outline: none; }
+body.bookv3-bp { --v2-surface: #F6F5F9; }
+body.bookv3-bp .bookv2-tab.active { background: #F0EDF8; }
+body.bookv3-bp .bookv2-toc-item.current { background: #F0EDF8; }
+body.bookv3-bp .bookv2-toc-item.rg.current { background: transparent; }
+body.bookv3-bp .bookv2-memo-body textarea { background: #F6F5F9; }
+body.bookv3-bp .bookv2-memo-save { background: #5B4A9C; }
+
+/* 책장 넘김 효과 (가) 2026-11-15 */
+.v3-book { perspective: 2600px; }
+.v3-leaf { position: absolute; top: 0; z-index: 5; transform-style: preserve-3d; pointer-events: none; will-change: transform; }
+.v3-leaf.fwd { transform-origin: 0 50%; }
+.v3-leaf.back { transform-origin: 100% 50%; }
+.v3-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; background: #fff; }
+.v3-face.back { transform: rotateY(180deg); }
+.v3-face .bp-box { position: relative; overflow: hidden; }
+.v3-shade { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.v3-leaf.fwd .v3-face.front .v3-shade, .v3-leaf.back .v3-face.back .v3-shade { background: linear-gradient(90deg, rgba(40,30,80,.55), rgba(40,30,80,.15)); }
+.v3-leaf.fwd .v3-face.back .v3-shade, .v3-leaf.back .v3-face.front .v3-shade { background: linear-gradient(90deg, rgba(40,30,80,.15), rgba(40,30,80,.55)); }
+.v3-book.flipping .v3-side { pointer-events: none; }
+
+/* 스프링 책(2026-11-15 대표 확정): 커버 목업, 빈 면, 연한 은색 이중 와이어 */
+.v3-cv { font: 600 13px Outfit, sans-serif; letter-spacing: .22em; color: #2E2747; padding-left: .22em; }
+.v3-sheet.blank .bp-box { background: #fff; }
+.v3-sheet.blank .v3-side { display: none; }
+.v3-book.spiral .v3-sheet.coverpg .bp-box { box-shadow: 0 16px 36px rgba(40,30,80,.16), 0 2px 6px rgba(40,30,80,.08); }
+.v3-book.cover-front .v3-sheet.coverpg .bp-box { border-radius: 3px 6px 6px 3px; }
+.v3-book.cover-back .v3-sheet.coverpg .bp-box { border-radius: 6px 3px 3px 6px; }
+.v3-sheet.coverpg .v3-side { display: none; }
+.v3-coil { position: absolute; top: 0; bottom: 0; width: calc(72px * var(--k, 1)); z-index: 6; pointer-events: none; }
+.v3-coil.c { left: 50%; margin-left: calc(-36px * var(--k, 1)); }
+.v3-coil.l { left: calc(-36px * var(--k, 1)); }
+.v3-coil.r { right: calc(-36px * var(--k, 1)); }
+.v3-coil .v3-coil-defs { position: absolute; width: 0; height: 0; }
+.v3-coil .v3-coil-gut { position: absolute; top: 0; bottom: 0; left: 50%; width: calc(18px * var(--k, 1)); margin-left: calc(-9px * var(--k, 1)); background: linear-gradient(90deg, rgba(46,41,64,0) 0%, rgba(46,41,64,.16) 50%, rgba(46,41,64,0) 100%); }
+.v3-coil i { position: absolute; left: 0; width: 100%; height: calc(16px * var(--k, 1)); margin-top: calc(-8px * var(--k, 1)); }
+.v3-coil i svg { display: block; width: 100%; height: 100%; overflow: visible; }
+body.v3-flipping .bookv2-stage { overflow: hidden !important; }
+.v3-book.covering .v3-side { opacity: 0; }
+.v3-sheet { transition: none; }
