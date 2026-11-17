@@ -551,15 +551,21 @@ body.v3-phone .bookv2-paper { padding: 18px 16px 24px; min-height: 0; border-rad
 .v3-ph-page { position: fixed; top: 10px; right: 10px; z-index: 55; background: rgba(255,255,255,.94); box-shadow: 0 1px 6px rgba(40,30,70,.14); border-radius: 99px; padding: 5px 11px; font: 500 12.5px Pretendard, sans-serif; color: #6E6886; transition: opacity .2s; }
 .v3-ph-page b { color: #2E2A3A; font-weight: 700; }
 body.v3-phone.v3-ui .v3-ph-page { opacity: 0; pointer-events: none; }
-.v3-ph-bar { position: fixed; left: 10px; right: 10px; bottom: calc(40px + env(safe-area-inset-bottom)); z-index: 55; height: 62px; background: #fff; border-radius: 18px; box-shadow: 0 8px 26px rgba(30,24,48,.18); display: flex; align-items: center; padding: 0 4px; transform: translateY(160%); transition: transform .22s ease; }
+/* 아래 바 (다-2) 반투명 유리 2026-11-17 */
+.v3-ph-bar { position: fixed; left: 0; right: 0; bottom: calc(44px + env(safe-area-inset-bottom)); z-index: 55; height: 62px; pointer-events: none; transform: translateY(170%); transition: transform .22s ease; }
 body.v3-phone.v3-ui .v3-ph-bar { transform: none; }
-.v3-ph-bar button { border: 0; background: transparent; font-family: Pretendard, sans-serif; color: #6E6886; -webkit-tap-highlight-color: transparent; }
-.v3-ph-nav { width: 52px; height: 52px; font-size: 17px; color: #4E3D73 !important; flex: none; }
-.v3-ph-nav:disabled { opacity: .3; }
-.v3-ph-tool { flex: 1; min-width: 0; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; position: relative; }
-.v3-ph-tool i { font-size: 18px; }
+.v3-ph-bar > * { pointer-events: auto; }
+.v3-ph-glass { background: rgba(255,255,255,.72); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(124,107,176,.22); box-shadow: 0 8px 22px rgba(30,24,48,.12); }
+.v3-ph-bar button { border: 0; background: transparent; font-family: Pretendard, sans-serif; color: #4E3D73; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+.v3-ph-bar .v3-ph-nav { position: absolute; top: 2px; width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; color: #4E3D73; border: 1px solid rgba(124,107,176,.22); background: rgba(255,255,255,.72); }
+.v3-ph-bar .v3-ph-nav.prev { left: 12px; } .v3-ph-bar .v3-ph-nav.next { right: 12px; }
+.v3-ph-bar .v3-ph-nav:disabled { opacity: .35; }
+.v3-ph-bar .v3-ph-nav:active, .v3-ph-tool:active { transform: scale(.94); }
+.v3-ph-pill { position: absolute; left: 84px; right: 84px; top: 3px; height: 56px; border-radius: 99px; display: flex; align-items: center; padding: 0 6px; }
+.v3-ph-tool { flex: 1; min-width: 0; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10.5px; font-weight: 700; color: #4E3D73 !important; position: relative; }
+.v3-ph-tool i { font-size: 17px; }
 .v3-ph-tool span { white-space: nowrap; }
-.v3-ph-dot { display: none; position: absolute; top: 9px; left: calc(50% + 8px); width: 7px; height: 7px; border-radius: 50%; background: #E0587F; box-shadow: 0 0 0 2px #fff; }
+.v3-ph-dot { display: none; position: absolute; top: 7px; left: calc(50% + 7px); width: 7px; height: 7px; border-radius: 50%; background: #E0587F; box-shadow: 0 0 0 2px #F6F4FA; }
 .v3-ph-dot.on { display: block; }
 .v3-ph-hint { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); z-index: 70; background: rgba(46,42,58,.86); color: #fff; font: 600 13px Pretendard, sans-serif; padding: 10px 15px; border-radius: 12px; transition: opacity .5s; }
 .v3-ph-hint.out { opacity: 0; }

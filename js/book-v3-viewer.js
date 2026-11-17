@@ -1240,12 +1240,15 @@ function setupPhoneUI() {
   document.body.classList.add("v3-phone");
   const pill = document.createElement("div"); pill.id = "v3PhPage"; pill.className = "v3-ph-page"; document.body.appendChild(pill);
   const bar = document.createElement("div"); bar.id = "v3PhBar"; bar.className = "v3-ph-bar";
+  // 2026-11-17 대표 선택 (다-2) 반투명 유리: 양 끝 동그라미 = 쪽 넘기기(화살표만), 가운데 알약 = 목차(쪽수)·메모·글자 크기
   bar.innerHTML =
-    '<button type="button" class="v3-ph-nav" id="phPrev" aria-label="이전 쪽"><i class="fa-solid fa-chevron-left"></i></button>' +
-    '<button type="button" class="v3-ph-tool" id="phToc"><i class="fa-solid fa-list-ul"></i><span id="phTocTxt">목차</span></button>' +
-    '<button type="button" class="v3-ph-tool" id="phMemo"><i class="fa-regular fa-comment-dots"></i><span>메모</span><b class="v3-ph-dot" id="phMemoDot"></b></button>' +
-    '<button type="button" class="v3-ph-tool" id="phText"><i class="fa-solid fa-font"></i><span id="phTextTxt">글자 크기</span></button>' +
-    '<button type="button" class="v3-ph-nav" id="phNext" aria-label="다음 쪽"><i class="fa-solid fa-chevron-right"></i></button>';
+    '<button type="button" class="v3-ph-nav v3-ph-glass prev" id="phPrev" aria-label="이전 쪽"><i class="fa-solid fa-arrow-left"></i></button>' +
+    '<div class="v3-ph-pill v3-ph-glass">' +
+      '<button type="button" class="v3-ph-tool" id="phToc" aria-label="목차"><i class="fa-solid fa-list-ul"></i><span id="phTocTxt">목차</span></button>' +
+      '<button type="button" class="v3-ph-tool" id="phMemo" aria-label="메모"><i class="fa-regular fa-comment-dots"></i><span>메모</span><b class="v3-ph-dot" id="phMemoDot"></b></button>' +
+      '<button type="button" class="v3-ph-tool" id="phText" aria-label="글자 크기"><i class="fa-solid fa-font"></i><span id="phTextTxt">글자</span></button>' +
+    '</div>' +
+    '<button type="button" class="v3-ph-nav v3-ph-glass next" id="phNext" aria-label="다음 쪽"><i class="fa-solid fa-arrow-right"></i></button>';
   document.body.appendChild(bar);
   phEl("phPrev").addEventListener("click", (e) => { e.stopPropagation(); go(-1); });
   phEl("phNext").addEventListener("click", (e) => { e.stopPropagation(); go(1); });
@@ -1288,13 +1291,13 @@ function phTextSize(step) {
   PH.mute = Date.now() + 500;
   const c = document.getElementById("content"); if (c) c.style.zoom = PH.size === 1 ? "" : String(PH.size);
   try { localStorage.setItem("v3PhText", String(PH.size)); } catch (_) {}
-  const t = phEl("phTextTxt"); if (t) t.textContent = PH.size === 1 ? "글자 크기" : "글자 " + Math.round(PH.size * 100) + "%";
+  const t = phEl("phTextTxt"); if (t) t.textContent = PH.size === 1 ? "글자" : Math.round(PH.size * 100) + "%";
 }
 function phSync() {
   if (!PH.on) return;
   const cur = V2.idx + 1, tot = V2.pages.length;
   const pill = phEl("v3PhPage"); if (pill) pill.innerHTML = "<b>" + cur + "</b> / " + tot;
-  const tt = phEl("phTocTxt"); if (tt) tt.textContent = "목차 " + cur + "/" + tot;
+  const tt = phEl("phTocTxt"); if (tt) tt.textContent = cur + " / " + tot;
   const md = phEl("phMemoDot"), dot = document.getElementById("memoDot"); if (md) md.classList.toggle("on", !!(dot && dot.classList.contains("on")));
   const pv = phEl("phPrev"), nx = phEl("phNext"), bp = document.getElementById("btnPrev"), bn = document.getElementById("btnNext");
   if (pv && bp) pv.disabled = bp.disabled; if (nx && bn) nx.disabled = bn.disabled;
