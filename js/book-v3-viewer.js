@@ -603,6 +603,7 @@ function render() {
   if (typeof phSync === "function" && PH.on) setTimeout(phSync, 0);   // 휴대폰 바(쪽수·메모 점) 갱신
   // 페이지 넘기면 맨 위로
   window.scrollTo({ top: 0, behavior: "instant" in document.documentElement.style ? "instant" : "auto" });
+  if (typeof PH !== "undefined" && PH.on) phToTop();   // 휴대폰: 손가락으로 밀던 관성이 남아 있어도 새 쪽은 맨 위부터 (2026-11-17 실제 아이폰 확인)
   const paper = document.getElementById("paper");
   if (paper) paper.scrollTop = 0;
   if (bp) { const st = document.querySelector(".bookv2-stage"); st.scrollTop = 0; st.scrollLeft = Math.max(0, (st.scrollWidth - st.clientWidth) / 2); }
@@ -1327,4 +1328,16 @@ function phSync() {
   if (pv && bp) pv.disabled = bp.disabled; if (nx && bn) nx.disabled = bn.disabled;
   phTextSize(false);
   PH.mute = Date.now() + 500; PH.lastY = window.scrollY; phShow(true);
+}
+
+// 휴대폰에서 쪽을 넘길 때 맨 위로. 아이폰은 손가락으로 민 뒤 관성이 남아 있으면 scrollTo를 무시해서,
+// 잠깐 스크롤을 멈췄다가(overflow hidden) 맨 위로 보내고, 그림·글꼴이 늦게 들어와도 몇 번 더 맞춘다.
+function phToTop() {
+  const el = document.scrollingElement || document.documentElement;
+  const go0 = () => { window.scrollTo(0, 0); el.scrollTop = 0; document.body.scrollTop = 0; PH.lastY = 0; };
+  PH.mute = Date.now() + 700;
+  el.style.overflow = "hidden"; go0();
+  requestAnimationFrame(() => { el.style.overflow = ""; go0(); });
+  [60, 180, 400].forEach((t) => setTimeout(() => { if (window.scrollY > 0 && Date.now() < PH.mute) go0(); }, t));
+  phShow(true);
 }
