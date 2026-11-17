@@ -546,7 +546,7 @@ ORDER BY practice_number ASC
 |------|------|
 | **Practice 번호** | Practice 1, Practice 2, ... |
 | **모듈 번호** | Module 13, Module 14, ... |
-| **1차 레벨** | 소수점 1자리 (예: 3.8) |
+| **첫 풀이 정답률** | 세로축 0~100%, 점 표시 "17% (6 / 35)" — initial_record의 totalCorrect/totalQuestions로 계산 (2026-11-17부터 학생 화면에 레벨 표시 안 함, initial_level은 계속 저장) |
 | **완료 일시** | 날짜 + 시간 |
 | **평균/최고/최저** | 해당 영역 전체 레벨의 통계값 |
 
@@ -888,7 +888,7 @@ INSERT INTO tr_practice_schedule (practice_number, tasks) VALUES
       <h2 class="section-title">
         <i class="fa-solid fa-chart-line"></i> 나의 성적 추이
       </h2>
-      <p class="section-desc">Practice별 1차 레벨 점수 변화를 확인합니다</p>
+      <p class="section-desc">Practice별 첫 풀이 정답률 변화를 확인합니다. 실제 시험 레벨(1~6)로 바꾼 점수는 아니에요.</p>
 
       <!-- 탭 -->
       <div class="score-tabs">

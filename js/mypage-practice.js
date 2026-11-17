@@ -220,14 +220,14 @@ function buildPracticeStatusMap() {
 }
 
 // ================================================
-// 3. 성적 추이 차트 (initial_level 기반)
+// 3. 성적 추이 차트 (첫 풀이 정답률 기반 — 레벨은 학생에게 보여 주지 않는다, 2026-11-17)
 // ================================================
 let scoreChartInstance = null;
 let currentScoreTab = 'reading';
 
 function buildChartData(sectionType) {
     const filtered = mpPracticeResults
-        .filter(r => r.section_type === sectionType && r.initial_level != null)
+        .filter(r => r.section_type === sectionType && _firstAttemptScore(r))
         .sort((a, b) => {
             const pA = a.practice_number || 0;
             const pB = b.practice_number || 0;
@@ -236,16 +236,33 @@ function buildChartData(sectionType) {
         });
 
     const labels = [];
-    const levels = [];
+    const percents = [];
+    const counts = [];
 
     filtered.forEach(r => {
         const p = r.practice_number || '?';
         const m = r.module_number || '?';
+        const s = _firstAttemptScore(r);
         labels.push('P' + p + ' M' + m);
-        levels.push(r.initial_level);
+        percents.push(Math.round(s.correct / s.total * 100));
+        counts.push(s.correct + ' / ' + s.total);
     });
 
-    return { labels, levels };
+    return { labels, percents, counts };
+}
+
+/**
+ * 첫 풀이 기록의 맞힌 수·전체 문항 수 (리딩·리스닝 기록의 totalCorrect / totalQuestions)
+ * @returns {{correct:number,total:number}|null}
+ */
+function _firstAttemptScore(r) {
+    let rec = r.initial_record;
+    if (!rec) return null;
+    if (typeof rec === 'string') {
+        try { rec = JSON.parse(rec); } catch (e) { return null; }
+    }
+    if (rec.totalCorrect == null || !rec.totalQuestions) return null;
+    return { correct: rec.totalCorrect, total: rec.totalQuestions };
 }
 
 function renderScoreChart() {
@@ -275,7 +292,7 @@ function renderScoreChart() {
             labels: data.labels,
             datasets: [{
                 label: 'Level',
-                data: data.levels,
+                data: data.percents,
                 borderColor: '#9480c5',
                 backgroundColor: 'rgba(148, 128, 197, 0.08)',
                 borderWidth: 2.5,
@@ -305,17 +322,17 @@ function renderScoreChart() {
                     displayColors: false,
                     callbacks: {
                         title: function(ctx) { return ctx[0].label; },
-                        label: function(ctx) { return 'Level ' + ctx.raw.toFixed(1); }
+                        label: function(ctx) { return ctx.raw + '%  (' + data.counts[ctx.dataIndex] + ')'; }
                     }
                 }
             },
             scales: {
                 y: {
-                    min: 1.0,
-                    max: 6.0,
+                    min: 0,
+                    max: 100,
                     ticks: {
-                        stepSize: 0.5,
-                        callback: function(v) { return v.toFixed(1); },
+                        stepSize: 20,
+                        callback: function(v) { return v + '%'; },
                         font: { size: 12, weight: '500' },
                         color: '#99aabb'
                     },
@@ -421,6 +438,9 @@ function renderRecentRecords() {
             } else if (rec.arrange && rec.arrange.total != null) {
                 // 라이팅: 단어배열(arrange) 정답수로 표시 (이메일/토론은 자동 채점 대상 아님)
                 scoreText = `${rec.arrange.correct || 0} / ${rec.arrange.total}`;
+            } else if (rec.totalCorrect != null && rec.totalQuestions) {
+                // 리딩·리스닝: 맞힌 수 / 전체 (정답률)
+                scoreText = `${rec.totalCorrect} / ${rec.totalQuestions} (${Math.round(rec.totalCorrect / rec.totalQuestions * 100)}%)`;
             }
         }
 

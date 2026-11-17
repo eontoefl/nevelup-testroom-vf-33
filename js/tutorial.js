@@ -156,7 +156,7 @@ const TutorialSystem = (() => {
                 <ul class="tutorial-bullet-list">
                     <li><strong>출석 잔디</strong> — 날짜별 과제 완료 현황을 색으로 확인 (진한 초록 = 100%, 연한 초록 = 50%, 빨강 = 미제출)</li>
                     <li><strong>인증률</strong> — 전체 인증 달성 비율</li>
-                    <li><strong>성적 추이</strong> — 리딩/리스닝 모듈별 레벨 변화 차트</li>
+                    <li><strong>성적 추이</strong> — 리딩/리스닝 모듈별 정답률 변화 차트</li>
                 </ul>
             `
         }

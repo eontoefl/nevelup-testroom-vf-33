@@ -336,10 +336,10 @@
     min-width: 0;
 }
 
-/* ─── 요약 카드 (총점 + 레벨) ─── */
+/* ─── 요약 카드 (맞힌 문제 · 틀린 문제 · 정답률) ─── */
 .sd-summary-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 12px;
     margin-top: 4px;
 }
@@ -355,7 +355,7 @@
     color: #fff;
 }
 
-.sd-card-level {
+.sd-card-plain {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     color: #334155;
@@ -374,7 +374,7 @@
     color: rgba(255, 255, 255, 0.85);
 }
 
-.sd-card-level .sd-summary-card-label {
+.sd-card-plain .sd-summary-card-label {
     color: #94a3b8;
 }
 
@@ -388,8 +388,13 @@
     color: #fff;
 }
 
-.sd-card-level .sd-summary-card-value {
+.sd-card-plain .sd-summary-card-value {
     color: #9480c5;
+}
+
+/* 틀린 문제 수 */
+.sd-card-plain .sd-summary-card-value.sd-value-wrong {
+    color: #e05a5a;
 }
 
 .sd-summary-card-sub {
@@ -408,7 +413,7 @@
     color: rgba(255, 255, 255, 0.85);
 }
 
-/* Efficiency 뱃지 (TOTAL SCORE 카드 하단) */
+/* 뱃지 (스피킹 COMPLETED 카드의 All Done) */
 .sd-efficiency-badge {
     display: inline-block;
     background: rgba(255, 255, 255, 0.25);
@@ -417,21 +422,6 @@
     font-weight: 600;
     padding: 3px 12px;
     border-radius: 20px;
-}
-
-.sd-card-level .sd-summary-card-extra {
-    color: #77bf7e;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-
-/* 체크 아이콘 (ACHIEVED LEVEL 카드) */
-.sd-check-icon {
-    vertical-align: middle;
-    flex-shrink: 0;
 }
 
 /* ─── 스피킹 오디오 플레이어 ─── */

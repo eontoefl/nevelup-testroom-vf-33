@@ -32,16 +32,6 @@ const SECTION_LABELS = {
     speaking: '스피킹'
 };
 
-// ─── 레벨별 코멘트 매핑 ───
-function _getLevelComment(level) {
-    var lv = Number(level) || 0;
-    if (lv >= 6.0) return 'Perfect Mastery!';
-    if (lv >= 5.0) return 'Excellent Command!';
-    if (lv >= 4.0) return 'Strong Performance!';
-    if (lv >= 3.0) return 'Advancing Steady!';
-    if (lv >= 2.0) return 'Making Progress!';
-    return 'Just Getting Started!';
-}
 
 /**
  * 과제 대시보드 열기
@@ -702,29 +692,28 @@ function _renderProgressRow(label, correct, total) {
 }
 
 /**
- * 총점 + 레벨 요약 카드 (2열 그리드)
+ * 맞힌 문제 · 틀린 문제 · 정답률 요약 카드 (3열 그리드)
  */
 function _renderSummaryCards(data) {
+    // 맞힌 문제 · 틀린 문제 · 정답률 (레벨은 학생에게 보여 주지 않는다 — 실제 시험 레벨로 오해하지 않게, 2026-11-17)
     if (data.totalCorrect === undefined || data.totalQuestions === undefined) return '';
-    var totalPercent = Math.round((data.totalCorrect / data.totalQuestions) * 100);
-    var levelStr = data.level ? Number(data.level).toFixed(1) : null;
-    var comment = data.level ? _getLevelComment(data.level) : '';
+    var correct = data.totalCorrect;
+    var total = data.totalQuestions;
+    var percent = total ? Math.round((correct / total) * 100) : 0;
     
     var html = '<div class="sd-summary-grid">';
-    // 총점 카드
     html += '<div class="sd-summary-card sd-card-score">';
-    html += '<div class="sd-summary-card-label">TOTAL SCORE</div>';
-    html += '<div class="sd-summary-card-value">' + data.totalCorrect + '<span class="sd-summary-card-sub"> / ' + data.totalQuestions + '</span></div>';
-    html += '<div class="sd-summary-card-extra"><span class="sd-efficiency-badge">' + totalPercent + '% Efficiency</span></div>';
+    html += '<div class="sd-summary-card-label">맞힌 문제</div>';
+    html += '<div class="sd-summary-card-value">' + correct + '<span class="sd-summary-card-sub"> / ' + total + '</span></div>';
     html += '</div>';
-    // 레벨 카드
-    if (levelStr) {
-        html += '<div class="sd-summary-card sd-card-level">';
-        html += '<div class="sd-summary-card-label">ACHIEVED LEVEL</div>';
-        html += '<div class="sd-summary-card-value">Level ' + levelStr + '</div>';
-        html += '<div class="sd-summary-card-extra"><svg class="sd-check-icon" viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M3 8.5l3.5 3.5 6.5-8" stroke="#77bf7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ' + comment + '</div>';
-        html += '</div>';
-    }
+    html += '<div class="sd-summary-card sd-card-plain">';
+    html += '<div class="sd-summary-card-label">틀린 문제</div>';
+    html += '<div class="sd-summary-card-value sd-value-wrong">' + (total - correct) + '<span class="sd-summary-card-sub">개</span></div>';
+    html += '</div>';
+    html += '<div class="sd-summary-card sd-card-plain">';
+    html += '<div class="sd-summary-card-label">정답률</div>';
+    html += '<div class="sd-summary-card-value">' + percent + '<span class="sd-summary-card-sub">%</span></div>';
+    html += '</div>';
     html += '</div>';
     return html;
 }

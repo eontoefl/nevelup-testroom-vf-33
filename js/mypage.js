@@ -795,18 +795,18 @@ function buildCompletedMap() {
 // 잔디 판정이 dayNum 번호 비교에서 실제 마감 시각 비교로 변경되어 더 이상 불필요
 
 // ================================================
-// ③ 성적 추이 라인 차트 (initial_level 기반)
+// ③ 성적 추이 라인 차트 (첫 풀이 정답률 기반 — 레벨은 학생에게 보여 주지 않는다, 2026-11-17)
 // ================================================
 let scoreChartInstance = null;  // Chart.js 인스턴스
 let currentScoreTab = 'reading'; // 현재 활성 탭
 
 /**
  * 특정 section_type의 차트 데이터 생성
- * → 모듈 번호 순 정렬, 라벨 + initial_level 배열 반환
+ * → 모듈 번호 순 정렬, 라벨 + 정답률(%) + "맞힌 수 / 전체" 배열 반환
  */
 function buildChartData(sectionType) {
     const filtered = mpV3Results
-        .filter(r => r.section_type === sectionType && r.initial_level != null)
+        .filter(r => r.section_type === sectionType && _firstAttemptScore(r))
         .sort((a, b) => {
             const wA = extractNum(a.week) * 100 + (a.module_number || 0);
             const wB = extractNum(b.week) * 100 + (b.module_number || 0);
@@ -814,15 +814,32 @@ function buildChartData(sectionType) {
         });
 
     const labels = [];
-    const levels = [];
+    const percents = [];
+    const counts = [];
 
     filtered.forEach(r => {
         const m = r.module_number || '?';
+        const s = _firstAttemptScore(r);
         labels.push('M' + m);
-        levels.push(r.initial_level);
+        percents.push(Math.round(s.correct / s.total * 100));
+        counts.push(s.correct + ' / ' + s.total);
     });
 
-    return { labels, levels };
+    return { labels, percents, counts };
+}
+
+/**
+ * 첫 풀이 기록의 맞힌 수·전체 문항 수 (리딩·리스닝 기록의 totalCorrect / totalQuestions)
+ * @returns {{correct:number,total:number}|null}
+ */
+function _firstAttemptScore(r) {
+    let rec = r.initial_record;
+    if (!rec) return null;
+    if (typeof rec === 'string') {
+        try { rec = JSON.parse(rec); } catch (e) { return null; }
+    }
+    if (rec.totalCorrect == null || !rec.totalQuestions) return null;
+    return { correct: rec.totalCorrect, total: rec.totalQuestions };
 }
 
 /**
@@ -859,7 +876,7 @@ function renderScoreChart() {
             labels: data.labels,
             datasets: [{
                 label: 'Level',
-                data: data.levels,
+                data: data.percents,
                 borderColor: '#9480c5',
                 backgroundColor: 'rgba(148, 128, 197, 0.08)',
                 borderWidth: 2.5,
@@ -889,17 +906,17 @@ function renderScoreChart() {
                     displayColors: false,
                     callbacks: {
                         title: function(ctx) { return 'Module ' + ctx[0].label.replace('M',''); },
-                        label: function(ctx) { return 'Level ' + ctx.raw.toFixed(1); }
+                        label: function(ctx) { return ctx.raw + '%  (' + data.counts[ctx.dataIndex] + ')'; }
                     }
                 }
             },
             scales: {
                 y: {
-                    min: 1.0,
-                    max: 6.0,
+                    min: 0,
+                    max: 100,
                     ticks: {
-                        stepSize: 0.5,
-                        callback: function(v) { return v.toFixed(1); },
+                        stepSize: 20,
+                        callback: function(v) { return v + '%'; },
                         font: { size: 12, weight: '500' },
                         color: '#99aabb'
                     },
