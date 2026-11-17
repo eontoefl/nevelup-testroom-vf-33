@@ -583,3 +583,5 @@ body.v3-phone #btnBookmark:disabled, .v3-ph-tool:disabled { opacity: .3; }
 .v3-ph-cover-host { position: absolute; left: 0; top: 0; }
 .v3-ph-cover-cap { font: 700 11px Outfit, Pretendard, sans-serif; letter-spacing: .24em; color: #8A80A6; }
 body.v3-phone.v3-ph-cover-on .bookv2-paper { background: transparent; box-shadow: none; }
+
+.v3-dbg { position: fixed; left: 6px; top: 60px; z-index: 99; background: rgba(0,0,0,.75); color: #fff; font: 11px/1.4 monospace; padding: 6px 8px; border-radius: 6px; white-space: pre; pointer-events: none; }
