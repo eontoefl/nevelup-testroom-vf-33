@@ -533,3 +533,35 @@ body.bookv3-bp .bookv2-memo-save { background: #5B4A9C; }
 body.v3-flipping .bookv2-stage { overflow: hidden !important; }
 .v3-book.covering .v3-side { opacity: 0; }
 .v3-sheet { transition: none; }
+
+
+/* ===== 휴대폰 (나) 몰입형 2026-11-17 ===== */
+body.v3-phone .bookv2-top { display: flex !important; flex-wrap: nowrap; align-items: center; grid-template-columns: none; height: 54px; padding: 0 4px; gap: 0; background: #fff; backdrop-filter: none; box-shadow: 0 1px 0 #EEEAF5; transform: translateY(-110%); transition: transform .22s ease; }
+body.v3-phone.v3-ui .bookv2-top { transform: none; }
+body.v3-phone .bookv2-top > #btnMemo, body.v3-phone .bookv2-top > #btnSidebar, body.v3-phone .bookv2-top > #btnPrint,
+body.v3-phone .bookv2-top > .bookv2-zoom, body.v3-phone .bookv2-top > #btnPageJump { display: none !important; }
+body.v3-phone .bookv2-top > .bookv2-icon { width: 46px; height: 46px; font-size: 18px; color: #4E3D73; }
+body.v3-phone .bookv2-title { grid-column: auto !important; order: 0; flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.v3-phone #btnBookmark.bookmarked i { color: #7C6BB0; }
+body.v3-phone .bookv2-progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60; background: #ECE8F4; }
+body.v3-phone .bookv2-progress-fill { background: #7C6BB0; }
+body.v3-phone .bookv2-nav { display: none !important; }
+body.v3-phone .bookv2-stage { padding: 8px 6px 110px; }
+body.v3-phone .bookv2-paper { padding: 14px 0 24px; min-height: 0; border-radius: 12px; }
+.v3-ph-page { position: fixed; top: 10px; right: 10px; z-index: 55; background: rgba(255,255,255,.94); box-shadow: 0 1px 6px rgba(40,30,70,.14); border-radius: 99px; padding: 5px 11px; font: 500 12.5px Pretendard, sans-serif; color: #6E6886; transition: opacity .2s; }
+.v3-ph-page b { color: #2E2A3A; font-weight: 700; }
+body.v3-phone.v3-ui .v3-ph-page { opacity: 0; pointer-events: none; }
+.v3-ph-bar { position: fixed; left: 10px; right: 10px; bottom: calc(40px + env(safe-area-inset-bottom)); z-index: 55; height: 62px; background: #fff; border-radius: 18px; box-shadow: 0 8px 26px rgba(30,24,48,.18); display: flex; align-items: center; padding: 0 4px; transform: translateY(160%); transition: transform .22s ease; }
+body.v3-phone.v3-ui .v3-ph-bar { transform: none; }
+.v3-ph-bar button { border: 0; background: transparent; font-family: Pretendard, sans-serif; color: #6E6886; -webkit-tap-highlight-color: transparent; }
+.v3-ph-nav { width: 52px; height: 52px; font-size: 17px; color: #4E3D73 !important; flex: none; }
+.v3-ph-nav:disabled { opacity: .3; }
+.v3-ph-tool { flex: 1; min-width: 0; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; position: relative; }
+.v3-ph-tool i { font-size: 18px; }
+.v3-ph-tool span { white-space: nowrap; }
+.v3-ph-dot { display: none; position: absolute; top: 9px; left: calc(50% + 8px); width: 7px; height: 7px; border-radius: 50%; background: #E0587F; box-shadow: 0 0 0 2px #fff; }
+.v3-ph-dot.on { display: block; }
+.v3-ph-hint { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); z-index: 70; background: rgba(46,42,58,.86); color: #fff; font: 600 13px Pretendard, sans-serif; padding: 10px 15px; border-radius: 12px; transition: opacity .5s; }
+.v3-ph-hint.out { opacity: 0; }
+
+body.v3-phone #btnBack { order: -1; flex: none; } body.v3-phone #btnBookmark { order: 1; flex: none; }

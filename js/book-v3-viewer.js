@@ -588,6 +588,7 @@ function render() {
   if (isMemoOpen()) refreshMemoPanel();
   debounceSaveProgress();
 
+  if (typeof phSync === "function" && PH.on) setTimeout(phSync, 0);   // 휴대폰 바(쪽수·메모 점) 갱신
   // 페이지 넘기면 맨 위로
   window.scrollTo({ top: 0, behavior: "instant" in document.documentElement.style ? "instant" : "auto" });
   const paper = document.getElementById("paper");
@@ -963,6 +964,7 @@ function showToast(msg) {
 }
 
 function bindEvents() {
+  setTimeout(() => { try { setupPhoneUI(); } catch (e) { console.warn("휴대폰 바", e); } }, 0);
   document.getElementById("btnPrev").addEventListener("click", () => go(-1));
   document.getElementById("btnNext").addEventListener("click", () => go(1));
   document.getElementById("btnBack").addEventListener("click", () => history.back());
@@ -1222,4 +1224,80 @@ function escapeHtml(s) {
   const d = document.createElement("div");
   d.textContent = s;
   return d.innerHTML;
+}
+
+
+// =====================================================================
+// 휴대폰 화면 (2026-11-17 대표 선택 (나) 몰입형): 읽을 때는 오른쪽 위 쪽수와 맨 위 진행 막대만.
+// 화면을 한 번 누르거나 위로 살짝 밀면 위 바(뒤로·제목·북마크)와 아래 바(이전·목차·메모·글자 크기·다음)가 나온다.
+// 쪽 맨 위와 맨 끝에서는 저절로 나온다. 옆으로 밀면 쪽을 넘긴다. 휴대폰(isPhone)에서만 켜진다.
+// =====================================================================
+const PH = { on: false, ui: true, lastY: 0, size: 1, mute: 0 };   // mute: 쪽 넘김·글자 크기 바꾼 직후 생기는 스크롤은 무시
+function phEl(id) { return document.getElementById(id); }
+function setupPhoneUI() {
+  if (!isPhone() || PH.on) return;
+  PH.on = true;
+  document.body.classList.add("v3-phone");
+  const pill = document.createElement("div"); pill.id = "v3PhPage"; pill.className = "v3-ph-page"; document.body.appendChild(pill);
+  const bar = document.createElement("div"); bar.id = "v3PhBar"; bar.className = "v3-ph-bar";
+  bar.innerHTML =
+    '<button type="button" class="v3-ph-nav" id="phPrev" aria-label="이전 쪽"><i class="fa-solid fa-chevron-left"></i></button>' +
+    '<button type="button" class="v3-ph-tool" id="phToc"><i class="fa-solid fa-list-ul"></i><span id="phTocTxt">목차</span></button>' +
+    '<button type="button" class="v3-ph-tool" id="phMemo"><i class="fa-regular fa-comment-dots"></i><span>메모</span><b class="v3-ph-dot" id="phMemoDot"></b></button>' +
+    '<button type="button" class="v3-ph-tool" id="phText"><i class="fa-solid fa-font"></i><span id="phTextTxt">글자 크기</span></button>' +
+    '<button type="button" class="v3-ph-nav" id="phNext" aria-label="다음 쪽"><i class="fa-solid fa-chevron-right"></i></button>';
+  document.body.appendChild(bar);
+  phEl("phPrev").addEventListener("click", (e) => { e.stopPropagation(); go(-1); });
+  phEl("phNext").addEventListener("click", (e) => { e.stopPropagation(); go(1); });
+  phEl("phToc").addEventListener("click", (e) => { e.stopPropagation(); openSidebar(); try { switchTab("toc"); } catch (_) {} });
+  phEl("phMemo").addEventListener("click", (e) => { e.stopPropagation(); isMemoOpen() ? closeMemo() : openMemo(); });
+  phEl("phText").addEventListener("click", (e) => { e.stopPropagation(); phTextSize(true); phShow(true); });
+  try { PH.size = parseFloat(localStorage.getItem("v3PhText") || "1") || 1; } catch (_) {}
+  phTextSize(false);
+  // 보이기·숨기기
+  PH.lastY = window.scrollY;
+  window.addEventListener("scroll", () => {
+    const y = window.scrollY, d = y - PH.lastY; PH.lastY = y;
+    if (Date.now() < PH.mute) return;
+    const atTop = y < 30, atEnd = window.innerHeight + y >= document.documentElement.scrollHeight - 40;
+    if (atTop || atEnd) return phShow(true);
+    if (d > 6) phShow(false); else if (d < -6) phShow(true);
+  }, { passive: true });
+  document.addEventListener("click", (e) => {
+    if (!PH.on) return;
+    if (e.target.closest("a,button,input,textarea,select,label,[role=button],.v3-ph-bar,.bookv2-top,.bookv2-sidebar,.bookv2-memo-panel,.bookv2-modal-overlay,.bookv2-overlay,video,audio")) return;
+    if (!e.target.closest("#paper,.bookv2-stage")) return;
+    phShow(!PH.ui);
+  });
+  // 옆으로 밀어 넘기기
+  let sx = 0, sy = 0, st = 0;
+  document.addEventListener("touchstart", (e) => { if (e.touches.length !== 1) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    const t = e.changedTouches && e.changedTouches[0]; if (!t || !st) return;
+    const dx = t.clientX - sx, dy = t.clientY - sy, dt = Date.now() - st; st = 0;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && dt < 700 && !document.body.classList.contains("bookv2-sidebar-open")) go(dx < 0 ? 1 : -1);
+  }, { passive: true });
+  // 처음 한 번만 안내
+  try { if (!localStorage.getItem("v3PhHint")) { localStorage.setItem("v3PhHint", "1"); const h = document.createElement("div"); h.className = "v3-ph-hint"; h.textContent = "화면을 누르면 메뉴가 나와요"; document.body.appendChild(h); setTimeout(() => h.classList.add("out"), 2600); setTimeout(() => h.remove(), 3200); } } catch (_) {}
+  phSync(); phShow(true);
+}
+function phShow(v) { PH.ui = !!v; document.body.classList.toggle("v3-ui", PH.ui); }
+function phTextSize(step) {
+  const sizes = [1, 1.15, 1.3];
+  if (step) PH.size = sizes[(sizes.indexOf(PH.size) + 1) % sizes.length] || 1;
+  PH.mute = Date.now() + 500;
+  const c = document.getElementById("content"); if (c) c.style.zoom = PH.size === 1 ? "" : String(PH.size);
+  try { localStorage.setItem("v3PhText", String(PH.size)); } catch (_) {}
+  const t = phEl("phTextTxt"); if (t) t.textContent = PH.size === 1 ? "글자 크기" : "글자 " + Math.round(PH.size * 100) + "%";
+}
+function phSync() {
+  if (!PH.on) return;
+  const cur = V2.idx + 1, tot = V2.pages.length;
+  const pill = phEl("v3PhPage"); if (pill) pill.innerHTML = "<b>" + cur + "</b> / " + tot;
+  const tt = phEl("phTocTxt"); if (tt) tt.textContent = "목차 " + cur + "/" + tot;
+  const md = phEl("phMemoDot"), dot = document.getElementById("memoDot"); if (md) md.classList.toggle("on", !!(dot && dot.classList.contains("on")));
+  const pv = phEl("phPrev"), nx = phEl("phNext"), bp = document.getElementById("btnPrev"), bn = document.getElementById("btnNext");
+  if (pv && bp) pv.disabled = bp.disabled; if (nx && bn) nx.disabled = bn.disabled;
+  phTextSize(false);
+  PH.mute = Date.now() + 500; PH.lastY = window.scrollY; phShow(true);
 }
