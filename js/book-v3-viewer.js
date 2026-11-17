@@ -1298,13 +1298,6 @@ function setupPhoneUI() {
   // 처음 한 번만 안내
   try { if (!localStorage.getItem("v3PhHint")) { localStorage.setItem("v3PhHint", "1"); const h = document.createElement("div"); h.className = "v3-ph-hint"; h.textContent = "화면을 누르면 메뉴가 나와요"; document.body.appendChild(h); setTimeout(() => h.classList.add("out"), 2600); setTimeout(() => h.remove(), 3200); } } catch (_) {}
   phSync(); phShow(true);
-  // 확인용 숫자 (주소에 &debug=1 붙였을 때만): 실제 휴대폰에서 바·종이 위치를 잼
-  if (new URLSearchParams(location.search).get("debug") === "1") {
-    const d = document.createElement("div"); d.className = "v3-dbg"; document.body.appendChild(d);
-    const upd = () => { const vv = window.visualViewport; const h = document.querySelector(".bookv2-top").getBoundingClientRect(), p = document.getElementById("paper").getBoundingClientRect();
-      d.textContent = "inner " + innerWidth + "x" + innerHeight + "\nvv " + (vv ? Math.round(vv.width) + "x" + Math.round(vv.height) + " top " + Math.round(vv.offsetTop) + " scale " + vv.scale.toFixed(2) : "-") + "\nscrollY " + Math.round(scrollY) + " doc " + document.documentElement.scrollHeight + "\nbar " + Math.round(h.top) + "~" + Math.round(h.bottom) + "\npaper " + Math.round(p.top) + "~" + Math.round(p.bottom); };
-    setInterval(upd, 400); upd();
-  }
 }
 function phShow(v) { PH.ui = !!v; document.body.classList.toggle("v3-ui", PH.ui); }
 function phTextSize(step) {
