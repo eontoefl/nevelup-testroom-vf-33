@@ -14,11 +14,36 @@
  */
 const V2 = { book: null, pages: [], idx: 0, zoom: 17, user: null, progress: null, bookmarks: [], memos: {}, toc: [], hasPParam: false, locked: false };
 let progressTimer = null;
+// 2026-11-17 관리자 "학생 화면으로 보기": 공홈 관리자 화면(eonfl.com) 안에 넣어 열면, 그 화면이 관리자임을 알려 준 경우에만 미리보기 모드
+//  (숨긴 책도 보임, 처음 열 때 확인 건너뜀, 진도·북마크·메모 저장 안 함). 다른 사이트에 넣거나 주소만 바꿔서는 켜지지 않는다.
+let ADMIN_PREVIEW = false, PREVIEW_PARENT = null;
+const PREVIEW_PARENTS = ["https://eonfl.com", "https://www.eonfl.com"];
+function adminPreviewHandshake() {
+  const q = new URLSearchParams(location.search);
+  if (q.get("preview") !== "admin" || window.parent === window) return Promise.resolve(false);
+  const isLocal = (h) => ["localhost", "127.0.0.1", "[::1]"].includes(h);
+  return new Promise((resolve) => {
+    let done = false;
+    const onMsg = (e) => {
+      if (!e.data || e.data.type !== "bookv3-preview-ok" || e.source !== window.parent) return;
+      let ok = PREVIEW_PARENTS.includes(e.origin);
+      if (!ok && isLocal(location.hostname)) { try { ok = isLocal(new URL(e.origin).hostname); } catch (_) {} }
+      if (!ok) return;
+      done = true; window.removeEventListener("message", onMsg);
+      ADMIN_PREVIEW = true; PREVIEW_PARENT = e.origin; document.body.classList.add("v3-admin-preview");
+      resolve(true);
+    };
+    window.addEventListener("message", onMsg);
+    try { window.parent.postMessage({ type: "bookv3-preview-hello" }, "*"); } catch (_) {}
+    setTimeout(() => { if (!done) { window.removeEventListener("message", onMsg); resolve(false); } }, 5000);
+  });
+}
 const ZOOM_MIN = 13, ZOOM_MAX = 29, ZOOM_STEP = 2, ZOOM_BASE = 17;
 
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
+  await adminPreviewHandshake();
   resolveUser();
   preventDownload();
   setupWatermark();
@@ -94,6 +119,7 @@ async function init() {
 
 // 책 화면에서 나가기: 내 서재에서 새 창으로 열렸으면 창을 닫고, 아니면 뒤로/테스트룸 첫 화면
 function leaveViewer() {
+  if (ADMIN_PREVIEW) { try { window.parent.postMessage({ type: "bookv3-preview-leave" }, PREVIEW_PARENT); } catch (_) {} return; }
   if (window.opener && !window.opener.closed) { window.close(); return; }
   if (history.length > 1) history.back(); else location.href = "index.html";
 }
@@ -114,6 +140,7 @@ async function userHasAccess(bookId, userId) {
 
 // ?dev=1 미리보기(숨김·지정 학생·처음 열 때 확인 건너뜀)는 내 컴퓨터(localhost)에서만 (2026-10-28)
 function isPreview() {
+  if (ADMIN_PREVIEW) return true;
   return new URLSearchParams(location.search).get("dev") === "1" &&
     ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
 }
@@ -145,6 +172,7 @@ function resolveUser() {
   let u = null;
   try { u = JSON.parse(sessionStorage.getItem("currentUser") || "null"); } catch (_) {}
   if ((!u || !u.id) && isPreview()) u = { id: "demo-preview", name: "데모 학생", email: "demo@eontoefl.com" };
+  if (ADMIN_PREVIEW) u = { id: "demo-preview", name: "예시 학생", email: "student@example.com" };   // 관리자 미리보기: 실제 로그인과 상관없이 예시 학생 (기록 안 남김)
   V2.user = (u && u.id) ? u : null;
 }
 
@@ -981,7 +1009,7 @@ function bindEvents() {
   setTimeout(() => { try { setupPhoneUI(); } catch (e) { console.warn("휴대폰 바", e); } }, 0);
   document.getElementById("btnPrev").addEventListener("click", () => go(-1));
   document.getElementById("btnNext").addEventListener("click", () => go(1));
-  document.getElementById("btnBack").addEventListener("click", () => history.back());
+  document.getElementById("btnBack").addEventListener("click", () => { if (ADMIN_PREVIEW) leaveViewer(); else history.back(); });
   document.getElementById("maintBack").addEventListener("click", () => {
     if (!V2.user) { location.href = "index.html"; return; }   // 로그인 안내 → 테스트룸 첫 화면(로그인)
     if (history.length > 1) history.back(); else location.href = "index.html";
