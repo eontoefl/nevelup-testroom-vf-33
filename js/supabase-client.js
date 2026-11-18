@@ -830,6 +830,47 @@ async function getCompletedTasksPractice(userId) {
 }
 
 // ================================================
+// 리딩 세트 배정용 — 이 학생이 받은 리딩 세트
+// ================================================
+
+/**
+ * 이 학생의 리딩 기록에서 "어느 회차에 어떤 세트를 받았는지"만 읽는다.
+ * 리딩 시작 때 세트를 정하는 데 쓴다(reading-module-controller.js getReadingModulePlan).
+ * 범위: 지금 수강의 정규 기록(수강 꼬리표) + 연습 기록 전부(연습 기록에는 꼬리표가 없다).
+ * 읽기 실패와 "기록 없음"을 구분해야 해서, 실패를 빈 목록으로 바꾸는 supabaseSelect 대신 supabaseRequest를 쓴다.
+ *
+ * @param {string} userId
+ * @returns {Promise<Array<{moduleNumber, week, day, practiceNumber, first, retake}>|null>}
+ *   first = 첫 풀이 기록의 세트 이름 목록(예: ['fillblanks_set13', 'daily1_set13', ...]), retake = 다시풀기 기록의 것. 없으면 null.
+ *   읽기에 실패하면 null.
+ */
+async function getReadingReceivedSets(userId) {
+    var filter = 'user_id=eq.' + userId + '&section_type=eq.reading';
+    var sets = 'module_number,first:initial_record->sets,retake:current_record->sets';
+    var results = await Promise.all([
+        supabaseRequest('/rest/v1/' + _getV3Table('reading') + '?' + filter + enrollmentQuery() + '&select=week,day,' + sets),
+        supabaseRequest('/rest/v1/study_results_practice?' + filter + '&select=practice_number,' + sets)
+    ]);
+    if (!Array.isArray(results[0]) || !Array.isArray(results[1])) {
+        console.error('❌ [리딩 세트] 받은 세트 기록 읽기 실패');
+        return null;
+    }
+    function namesOf(setsObj) {
+        return (setsObj && typeof setsObj === 'object') ? Object.keys(setsObj) : null;
+    }
+    return results[0].concat(results[1]).map(function(row) {
+        return {
+            moduleNumber: row.module_number,
+            week: row.week != null ? String(row.week) : null,
+            day: row.day != null ? row.day : null,
+            practiceNumber: row.practice_number != null ? row.practice_number : null,
+            first: namesOf(row.first),
+            retake: namesOf(row.retake)
+        };
+    });
+}
+
+// ================================================
 // 첨삭(FEEDBACK) 관련 함수들
 // ================================================
 

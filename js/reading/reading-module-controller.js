@@ -66,37 +66,106 @@ var READING_MODULE_KIND_LIST = [
 
 /**
  * 회차 번호 → 이번 회차 세트 목록.
- * 세트 번호는 "쓰이는 순서대로 +1": 앞 회차들이 쓴 유형별 세트 수 다음 번호부터.
- * 목록에 없는 회차면 null (대시보드의 시작 전 확인이 "문제 준비 중" 팝업을 띄움).
+ *
+ * 받은 세트는 학생 기록이 정본이고, 구성표는 아직 안 받은 세트를 고를 때만 쓴다.
+ *  - 구성표 기본 번호는 "쓰이는 순서대로 +1": 앞 회차들이 구성표대로 쓴 유형별 세트 수 다음 번호부터.
+ *  - 학생 기록(student)을 함께 주면:
+ *      · 이 회차 기록이 있으면 그 기록의 세트를 그대로 낸다(다시 풀기 = 처음 받은 세트).
+ *      · 없으면 기본 번호 중 이 학생이 이미 받은 세트를 건너뛰고, 안 받은 세트 중 가장 앞 번호로 채운다.
+ *        안 받은 세트가 하나도 안 남으면 기본 번호를 그대로 쓴다(풀이를 막지 않음).
+ *  - 유형 안에서는 항상 번호 순: 해설·대시보드가 세트를 번호 순으로 늘어놓으므로 풀이 순서와 같아야 한다.
+ *  - student 없이 부르면 구성표 기본값(대시보드의 "있는 회차인가" 확인, 로그인 없는 개발 화면).
+ * 목록에 없는 회차면 null (대시보드가 "문제 준비 중" 팝업을 띄움).
+ *
  * @param {number} moduleNumber
+ * @param {{own: string[]|null, received: string[], available: Object<string, number[]>}} [student]
+ *   own = 이 회차 기록의 세트 이름(예: 'daily1_set13'), received = 리딩 전체에서 받은 세트 이름,
+ *   available = 문제 표에 실제로 있는 유형별 세트 번호(작은 수부터). _readReadingStudent가 만든다.
  * @returns {{kind: string, sequence: Array<{type, setNum, questionsPerSet, label}>}|null}
  */
-function getReadingModulePlan(moduleNumber) {
+function getReadingModulePlan(moduleNumber, student) {
     var m = parseInt(moduleNumber, 10);
     if (!(m >= 1 && m <= READING_MODULE_KIND_LIST.length)) return null;
 
+    // 구성표 기본값
     var used = {};
     READING_SET_TYPES.forEach(function(t) { used[t.type] = 0; });
     for (var i = 0; i < m - 1; i++) {
         var prevCounts = READING_MODULE_KINDS[READING_MODULE_KIND_LIST[i]];
         READING_SET_TYPES.forEach(function(t) { used[t.type] += prevCounts[t.type]; });
     }
-
     var kind = READING_MODULE_KIND_LIST[m - 1];
-    var counts = READING_MODULE_KINDS[kind];
-    var sequence = [];
+    var setNums = {};
     READING_SET_TYPES.forEach(function(t) {
-        var n = counts[t.type];
-        for (var k = 0; k < n; k++) {
-            sequence.push({
-                type: t.type,
-                setNum: used[t.type] + k + 1,
-                questionsPerSet: t.questionsPerSet,
-                label: n > 1 ? t.label + ' 세트' + (k + 1) : t.label
+        setNums[t.type] = [];
+        for (var k = 0; k < READING_MODULE_KINDS[kind][t.type]; k++) setNums[t.type].push(used[t.type] + k + 1);
+    });
+
+    // 학생 기록 반영
+    if (student) {
+        var available = student.available || {};
+        var own = _groupReadingSetNames(student.own);
+        var ownKind = _readingKindOf(own, available);
+        if (ownKind) {
+            kind = ownKind;
+            setNums = own;
+        } else {
+            var received = _groupReadingSetNames(student.received);
+            READING_SET_TYPES.forEach(function(t) {
+                var got = received[t.type];
+                var keep = setNums[t.type].filter(function(n) { return got.indexOf(n) === -1; });
+                var skipped = setNums[t.type].filter(function(n) { return got.indexOf(n) !== -1; });
+                var spare = (available[t.type] || []).filter(function(n) { return got.indexOf(n) === -1 && keep.indexOf(n) === -1; });
+                while (skipped.length) {
+                    var back = skipped.shift();
+                    keep.push(spare.length ? spare.shift() : back);
+                }
+                setNums[t.type] = keep.sort(function(a, b) { return a - b; });
             });
         }
+    }
+
+    var sequence = [];
+    READING_SET_TYPES.forEach(function(t) {
+        var nums = setNums[t.type];
+        nums.forEach(function(setNum, k) {
+            sequence.push({
+                type: t.type,
+                setNum: setNum,
+                questionsPerSet: t.questionsPerSet,
+                label: nums.length > 1 ? t.label + ' 세트' + (k + 1) : t.label
+            });
+        });
     });
     return { kind: kind, sequence: sequence };
+}
+
+/** 기록의 세트 이름 목록(['daily1_set13', ...]) → 유형별 번호 목록(작은 수부터, 중복 없이). 모르는 이름은 무시. */
+function _groupReadingSetNames(names) {
+    var grouped = {};
+    READING_SET_TYPES.forEach(function(t) { grouped[t.type] = []; });
+    (names || []).forEach(function(name) {
+        var parts = /^([a-z0-9]+)_set(\d+)$/.exec(String(name));
+        var list = parts && grouped[parts[1]];
+        var num = parts ? parseInt(parts[2], 10) : 0;
+        if (list && num > 0 && list.indexOf(num) === -1) list.push(num);
+    });
+    READING_SET_TYPES.forEach(function(t) { grouped[t.type].sort(function(a, b) { return a - b; }); });
+    return grouped;
+}
+
+/**
+ * 이 회차 기록의 세트를 그대로 다시 낼 수 있으면 그 구성 이름('daily' | 'academic'), 아니면 null.
+ * 세트 수가 두 구성 중 하나와 같고(개편 전 7세트 기록 = 일상형과 같은 모양), 세트가 모두 문제 표에 있을 때만 그대로 낸다.
+ */
+function _readingKindOf(own, available) {
+    return Object.keys(READING_MODULE_KINDS).filter(function(kindName) {
+        return READING_SET_TYPES.every(function(t) {
+            var nums = own[t.type];
+            return nums.length === READING_MODULE_KINDS[kindName][t.type]
+                && nums.every(function(n) { return (available[t.type] || []).indexOf(n) !== -1; });
+        });
+    })[0] || null;
 }
 
 // ============================================================
@@ -115,7 +184,8 @@ async function startReadingModule(moduleNumber) {
     // 로딩 표시는 과제 대시보드(실전 풀이 버튼)가 켜고, 이 함수가 끝나면 끈다.
 
     // 이번 회차 세트 목록 (구성표 0장). 목록에 없는 회차는 대시보드 시작 전 확인에서 이미 걸러진다.
-    const plan = getReadingModulePlan(moduleNumber);
+    // 학생이 받은 세트 기록을 먼저 읽어 반영한다(다시 풀기 = 처음 받은 세트, 다른 회차에서 받은 세트는 다시 안 나옴).
+    const plan = getReadingModulePlan(moduleNumber, await _readReadingStudent(moduleNumber));
     const sequence = plan.sequence;
     console.log(`📚 구성: ${plan.kind === 'academic' ? '학술형' : '일상형'} (${sequence.length}세트)`);
 
@@ -152,6 +222,58 @@ async function startReadingModule(moduleNumber) {
 
     // 첫 세트 표시 (로딩 표시는 이 함수가 끝나면 대시보드가 끔)
     await _goToSet(0);
+}
+
+/**
+ * 세트를 정하는 데 쓸 학생 정보(getReadingModulePlan의 student)를 읽는다.
+ * 로그인한 학생이 아니면 null(구성표 기본값으로 시작).
+ * 기록을 못 읽으면 오류를 던진다 → 대시보드(_startSectionModule)가 "문제를 불러오지 못했어요" 팝업을 띄우고 시작하지 않는다.
+ * (기록 없이 시작하면 이미 받은 세트가 다시 나올 수 있다)
+ * 문제 표 4개는 여기서 같이 받는다 — 로더가 보낸 요청을 캐시하므로 뒤의 세트별 load()는 같은 표를 다시 받지 않는다.
+ * @param {number} moduleNumber
+ */
+async function _readReadingStudent(moduleNumber) {
+    var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
+    if (!user || !user.id || user.id === 'dev-user-001') return null;
+
+    var tableLoaders = {
+        fillblanks: loadFillBlanksData,
+        daily1: loadDaily1Data,
+        daily2: loadDaily2Data,
+        academic: loadAcademicData
+    };
+    var loaded = await Promise.all([getReadingReceivedSets(user.id)].concat(
+        READING_SET_TYPES.map(function(t) { return tableLoaders[t.type](); })
+    ));
+    var records = loaded[0];
+    if (!records) throw new Error('리딩 기록을 읽지 못함');
+
+    // 문제 표에 실제로 있는 세트 번호 (id 끝자리 숫자, 작은 수부터)
+    var available = {};
+    READING_SET_TYPES.forEach(function(t, idx) {
+        var table = loaded[idx + 1];
+        available[t.type] = ((table && table.sets) || []).map(function(set) {
+            var parts = /_set_(\d+)$/.exec(String(set.id || ''));
+            return parts ? parseInt(parts[1], 10) : 0;
+        }).filter(function(n) { return n > 0; }).sort(function(a, b) { return a - b; });
+    });
+
+    // 이 회차 기록: 대시보드가 이 과제의 기록을 찾는 것과 같은 자리(정규 = 회차·주차·요일, 연습 = 회차·Practice 번호)
+    var state = window._taskDashboardState || {};
+    var ownRecord = records.filter(function(r) {
+        if (Number(r.moduleNumber) !== Number(moduleNumber)) return false;
+        if (state.isPractice) return r.practiceNumber != null && Number(r.practiceNumber) === Number(state.practiceNumber);
+        return r.practiceNumber == null && r.week === String(state.week) && r.day === state.day;
+    })[0];
+
+    var received = [];
+    records.forEach(function(r) { received = received.concat(r.first || [], r.retake || []); });
+
+    return {
+        own: ownRecord ? (ownRecord.first || ownRecord.retake) : null,
+        received: received,
+        available: available
+    };
 }
 
 /**
