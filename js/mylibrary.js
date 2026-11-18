@@ -80,7 +80,7 @@
           meta: (b.total_pages || 0) + "쪽",
           icon: "fa-file-lines",
           kind: "pages",
-          url: "book-v2.html?book=" + b.id,
+          url: "book-v3.html?book=" + b.id,   // 2026-11-17 새 서재(book-v3: PC 펼친 면, 휴대폰 몰입형)로 전환. 옛 book-v2.html은 한동안 그대로 둠
           needsConfirm: needs,
           confirmedAt: needs ? (confirmed[b.id] || null) : null,
         });
