@@ -274,6 +274,8 @@ function _onSelectExplain(mode) {
     }
 
     // 각 유형별 show 함수 호출 → 빨간 그릇에 데이터 채움
+    // (유형 순서 = 시험 순서이므로, 앞 유형들의 문항 수를 더해 화면 위쪽 문항 범위를 만든다)
+    var nextQuestionNumber = 1;
     typeDefs.forEach(function(def) {
         try {
             var showFn = window[def.showFn];
@@ -312,6 +314,7 @@ function _onSelectExplain(mode) {
 
             // ── 일반 유형: 기존 방식 ──
             showFn(data, mode);
+            nextQuestionNumber = _fillResultBadgeRange(screen, data, nextQuestionNumber);
             st.visibleScreens.push({ screenId: def.screenId });
             console.log('📖 [해설] ' + def.type + ' 렌더링 완료');
 
@@ -335,6 +338,25 @@ function _onSelectExplain(mode) {
     }
 
     console.log('📖 [해설] ' + mode + ' 해설 보기 완료 — ' + st.visibleScreens.length + '개 화면');
+}
+
+/**
+ * 해설 화면 위쪽 문항 범위 표시(예: "Q21 ~ Q22 · DAILY 1")를 기록의 문항 수로 채운다.
+ * 회차 구성(유형별 세트 수)이 달라도 맞게 나오도록 화면 파일에는 유형 이름만 두고 번호는 여기서 계산.
+ * 세트 목록(리딩·리스닝)이 아닌 유형은 손대지 않는다.
+ * @returns {number} 다음 유형의 첫 문항 번호
+ */
+function _fillResultBadgeRange(screen, data, firstNumber) {
+    if (!Array.isArray(data)) return firstNumber;
+    var count = data.reduce(function(n, set) {
+        return n + ((set && Array.isArray(set.answers)) ? set.answers.length : 0);
+    }, 0);
+    var badge = screen.querySelector('.result-badge');
+    if (badge && count > 0) {
+        var label = badge.textContent.split('·').pop().trim();
+        badge.textContent = 'Q' + firstNumber + ' ~ Q' + (firstNumber + count - 1) + ' · ' + label;
+    }
+    return firstNumber + count;
 }
 
 // ============================================================
