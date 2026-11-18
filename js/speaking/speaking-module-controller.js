@@ -64,38 +64,10 @@ async function startSpeakingModule(moduleNumber) {
         audioPlayer: audioPlayer // AudioPlayer 인스턴스 (공유)
     };
 
-    // 다시풀기 여부 확인
-    // 기준: initial_record 존재 OR 마감 지남 → current_record에 저장
+    // 다시풀기 여부: 과제 대시보드가 버튼을 정할 때 한 번 판단한 값을 쓴다(첫 풀이 기록 있음·마감 지남·정지 중이면 다시 풀기).
+    // 판단 지점이 하나라 시작 팝업 여부와 저장 칸(initial/current)이 항상 같다.
     var state = window._taskDashboardState;
-    var deadlinePassed = (window._deadlinePassedMode || window._pausedMode) || false;   // 일시정지 중(실전 기록 있는 과제)도 다시풀기 모드
-    var inPractice = state && state.isPractice;
-    if (deadlinePassed && !inPractice) {
-        window.currentSpeakingModule.isRetake = true;
-        console.log('🔄 다시풀기 모드 (마감 지남)');
-    } else if (state) {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (user && user.id && user.id !== 'dev-user-001') {
-            try {
-                var existing;
-                if (inPractice && typeof getStudyResultPractice === 'function') {
-                    existing = await getStudyResultPractice(
-                        user.id, 'speaking', moduleNumber, state.practiceNumber
-                    );
-                } else {
-                    existing = await getStudyResultV3(
-                        user.id, 'speaking', moduleNumber,
-                        state.week, state.day
-                    );
-                }
-                if (existing && existing.initial_record != null) {
-                    window.currentSpeakingModule.isRetake = true;
-                    console.log('🔄 다시풀기 모드 (initial_record 존재)');
-                }
-            } catch (e) {
-                console.warn('⚠️ 다시풀기 확인 실패 (무시하고 진행):', e);
-            }
-        }
-    }
+    window.currentSpeakingModule.isRetake = !!(state && state.isRetake);
 
     // 컴포넌트 2개 생성
     _createSpeakingComponents(moduleNumber);
@@ -405,35 +377,23 @@ async function _finishSpeakingModule() {
         var day = inPractice2 ? null : ct.currentDay;
 
         try {
-            if (inPractice2) {
-                var pNum = state2.practiceNumber;
-                // 연습코스: 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
-                var saveOk = await SaveGuard.attempt(function() {
-                    return mod.isRetake
-                        ? upsertCurrentRecordPractice(user.id, 'speaking', mod.moduleNum, pNum, recordJson)
-                        : upsertInitialRecordPractice(user.id, 'speaking', mod.moduleNum, pNum, recordJson);
-                });
-                if (!saveOk) {
-                    _hideSubmitLoading();
-                    SaveGuard.showFailurePopup({
-                        sectionType: 'speaking',
-                        moduleNumber: mod.moduleNum,
-                        practiceNumber: pNum,
-                        taskLabel: '스피킹 ' + mod.moduleNum + ' (P' + pNum + (mod.isRetake ? ', 다시풀기' : '') + ')',
-                        record: recordJson,
-                        onDone: function() {
-                            backToTaskDashboard();
-                        }
-                    });
-                    return;
+            // 정규·연습 공용 저장: 재시도 → 최종 실패 시 제출 로딩을 끄고 실패 팝업(SaveGuard.saveRecord)
+            var saved = await SaveGuard.saveRecord({
+                userId: user.id,
+                sectionType: 'speaking',
+                moduleNumber: mod.moduleNum,
+                practiceNumber: inPractice2 ? state2.practiceNumber : null,
+                week: week,
+                day: day,
+                isRetake: mod.isRetake,
+                record: recordJson,
+                taskLabel: '스피킹 ' + mod.moduleNum,
+                onDone: function() {
+                    backToTaskDashboard();
                 }
-            } else if (mod.isRetake) {
-                await upsertCurrentRecord(user.id, 'speaking', mod.moduleNum, week, day, recordJson);
-                console.log('💾 current_record 저장 완료');
-            } else {
-                await upsertInitialRecord(user.id, 'speaking', mod.moduleNum, week, day, recordJson);
-                console.log('💾 initial_record 저장 완료');
-            }
+            });
+            if (!saved) return;
+            console.log('💾 ' + (mod.isRetake ? 'current' : 'initial') + '_record 저장 완료');
 
             // 저장 성공 → 대시보드 복귀 (cleanup은 backToTaskDashboard → cleanupSpeakingModule에서 일괄 수행)
             _hideSubmitLoading();

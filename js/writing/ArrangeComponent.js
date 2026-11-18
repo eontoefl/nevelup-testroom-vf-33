@@ -30,9 +30,10 @@ class ArrangeComponent {
     }
     
     /**
-     * 컴포넌트 초기화
+     * 문제 받기 (화면은 안 바뀜) — 모듈 시작 때 컨트롤러가 세 파트를 한꺼번에 부른다
+     * @returns {Promise<boolean>} 못 받으면 false
      */
-    async init() {
+    async load() {
         console.log('[ArrangeComponent] 초기화 시작');
         
         try {
@@ -54,13 +55,26 @@ class ArrangeComponent {
             this.setData = allData.sets[setIndex];
             console.log('[ArrangeComponent] 세트 데이터 로드 완료:', this.setData);
             
-            // 3. 첫 번째 문제 로드
-            this.loadQuestion(0);
+            return true;
             
         } catch (error) {
             console.error('[ArrangeComponent] 초기화 실패:', error);
-            alert('단어배열 데이터를 불러오는데 실패했습니다.');
+            return false;
         }
+    }
+
+    /**
+     * 첫 화면 그리기 — load() 성공 뒤, 이 파트에 도착했을 때 컨트롤러가 부른다
+     */
+    show() {
+        this.loadQuestion(0);
+    }
+
+    /**
+     * [임시 — 2026-11-18 배포 직후 옛 컨트롤러와 섞일 때만 쓰임, 다음 정리 때 삭제] 예전 이름: 받기 + 그리기
+     */
+    async init() {
+        if (await this.load()) this.show();
     }
     
     /**

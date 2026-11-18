@@ -1,9 +1,12 @@
 /**
  * ================================================
- * save-failure.js — 연습코스 저장 실패 대응 (SaveGuard)
+ * save-failure.js — 학습 기록 저장과 실패 대응 (SaveGuard) — 정규·연습 공용
  * ================================================
  *
- * 흐름 (연습코스 전용 — 정규코스는 기존 동작 유지):
+ * 저장은 SaveGuard.saveRecord() 하나로만 한다(리딩·리스닝·라이팅·스피킹·단어시험·입문서, 2026-11-18).
+ * 정규인지 연습인지, 첫 풀이인지 다시 풀기인지에 따라 맞는 저장 함수를 고르고 아래 흐름을 탄다.
+ *
+ * 흐름:
  *  1. 저장 시도 → 실패하면 간격을 두고 자동 재시도 (즉시 → 3초 → 10초)
  *     재시도 중에는 상단 토스트로 "다시 시도하고 있어요 (n/3)" 안내
  *  2. 최종 실패 → 팝업: "저장에 실패했어요" + [관리자에게 보고하기]
@@ -18,6 +21,57 @@ var SaveGuard = {
     WEBHOOK_URL: 'https://eontoefl.app.n8n.cloud/webhook/save-failure-report',
     RETRY_DELAYS: [0, 3000, 10000],   // 1차 즉시, 2차 3초 뒤, 3차 10초 뒤
     STASH_KEY: 'sg_pending_reports',
+
+    // ========================================
+    // 0. 공용 저장 (정규·연습 모두 이 함수만 부른다)
+    // ========================================
+    /**
+     * 학습 기록 저장 → 실패하면 재시도 → 최종 실패 시 제출 로딩을 끄고 실패 팝업까지 띄운다.
+     * @param {object} ctx
+     *   userId, sectionType, moduleNumber, record(저장할 JSON)
+     *   practiceNumber(연습이면 번호, 정규면 null) / week, day(정규)
+     *   isRetake(다시 풀기면 true → current_record)
+     *   extras(첫 풀이 때 함께 저장할 칸, 정규·연습 공통) / regularExtras(정규에만 있는 칸)
+     *   taskLabel(예: '리딩 Module 6' — 연습 번호·주차·요일·다시풀기는 여기서 붙임)
+     *   onDone(선택 — 실패 팝업을 닫은 뒤 실행)
+     * @returns 저장된 행 또는 null(최종 실패 — 팝업은 이미 떠 있음)
+     */
+    saveRecord: async function(ctx) {
+        window._sgLastError = null;   // 이번 저장의 실패 원인만 보고에 실리게
+        var isPractice = ctx.practiceNumber != null;
+        // 함께 저장할 칸은 첫 풀이 저장에만 쓰인다(다시 풀기 저장 함수는 칸을 받지 않음) — 보고에도 같은 값
+        var extras = ctx.isRetake ? {} : Object.assign({}, ctx.extras || {}, isPractice ? {} : (ctx.regularExtras || {}));
+        var saveFn;
+        if (isPractice) {
+            saveFn = ctx.isRetake
+                ? function() { return upsertCurrentRecordPractice(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.practiceNumber, ctx.record); }
+                : function() { return upsertInitialRecordPractice(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.practiceNumber, ctx.record, extras); };
+        } else {
+            saveFn = ctx.isRetake
+                ? function() { return upsertCurrentRecord(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day, ctx.record); }
+                : function() { return upsertInitialRecord(ctx.userId, ctx.sectionType, ctx.moduleNumber, ctx.week, ctx.day, ctx.record, extras); };
+        }
+
+        var saved = await this.attempt(saveFn);
+        if (saved) return saved;
+
+        if (typeof _hideSubmitLoading === 'function') _hideSubmitLoading();
+        this.showFailurePopup(Object.assign({}, ctx, {
+            extras: extras,
+            taskLabel: this._taskLabel(ctx),
+            table: isPractice ? 'study_results_practice' : ((typeof _getV3Table === 'function') ? _getV3Table(ctx.sectionType) : 'study_results_v3')
+        }));
+        return null;
+    },
+
+    // '리딩 Module 6' → '리딩 Module 6 (2주 수)' / '리딩 Module 14 (P2, 다시풀기)'
+    _taskLabel: function(ctx) {
+        var where = ctx.practiceNumber != null
+            ? 'P' + ctx.practiceNumber
+            : (ctx.week != null ? ctx.week + '주 ' : '') + (ctx.day || '');
+        return (ctx.taskLabel || (ctx.sectionType + ' M' + ctx.moduleNumber)) +
+            ' (' + where + (ctx.isRetake ? ', 다시풀기' : '') + ')';
+    },
 
     // ========================================
     // 1. 재시도 래퍼
@@ -51,9 +105,7 @@ var SaveGuard = {
     // 2. 실패 팝업
     // ========================================
     /**
-     * @param {object} ctx
-     *   sectionType, moduleNumber, practiceNumber, taskLabel, record(저장하려던 JSON),
-     *   onDone(선택 — 보고/보관 완료 후 실행. 보통 backToTaskDashboard)
+     * @param {object} ctx  saveRecord()가 넘기는 값 그대로 (onDone: 보고/보관 완료 후 실행)
      */
     showFailurePopup: function(ctx) {
         this._injectStyles();
@@ -65,9 +117,9 @@ var SaveGuard = {
             '<div class="sg-popup">' +
             '  <div class="sg-icon">⚠️</div>' +
             '  <h3 class="sg-title">저장에 실패했어요</h3>' +
-            '  <p class="sg-body">인터넷 연결 문제로 풀이 기록이 저장되지 못했어요.<br>' +
+            '  <p class="sg-body">학습 기록이 저장되지 못했어요.<br>' +
             '     여러 번 다시 시도했지만 전송이 되지 않았습니다.<br><br>' +
-            '     아래 버튼을 누르면 <b>지금 푼 기록 전체가 관리자에게 안전하게 전달</b>됩니다.</p>' +
+            '     아래 버튼을 누르면 <b>지금 한 학습 기록 전체가 관리자에게 안전하게 전달</b>됩니다.</p>' +
             '  <button class="sg-btn sg-btn-primary" id="sgReportBtn">관리자에게 보고하기</button>' +
             '</div>';
         document.body.appendChild(overlay);
@@ -82,13 +134,13 @@ var SaveGuard = {
 
             if (sent) {
                 SaveGuard._swapPopup('✅', '전달 완료!',
-                    '푼 기록이 관리자에게 잘 전달되었어요.<br>' +
+                    '학습 기록이 관리자에게 잘 전달되었어요.<br>' +
                     '관리자가 기록을 <b>복구</b>하고, 오류가 있다면 <b>고칠게요</b>.<br>' +
                     '불편을 드려 죄송합니다. 이용해 주셔서 감사해요!', ctx);
             } else {
                 SaveGuard._stash(payload);
                 SaveGuard._swapPopup('📦', '기기에 안전하게 보관했어요',
-                    '지금은 연결이 어려워서 푼 기록을 이 기기(브라우저)에 보관해 두었어요.<br>' +
+                    '지금은 연결이 어려워서 학습 기록을 이 기기(브라우저)에 보관해 두었어요.<br>' +
                     '<b>다음에 접속하면 자동으로 관리자에게 전송</b>됩니다.<br>' +
                     '같은 브라우저로 다시 접속해 주세요!', ctx);
             }
@@ -141,6 +193,13 @@ var SaveGuard = {
             sectionType: ctx.sectionType,
             moduleNumber: ctx.moduleNumber,
             practiceNumber: ctx.practiceNumber,
+            // 관리자 복구에 필요한 값 (정규: 주차·요일·수강 꼬리표 / 공통: 첫·다시 구분·함께 저장할 칸·대상 표)
+            week: ctx.week != null ? ctx.week : null,
+            day: ctx.day || null,
+            enrollmentId: (typeof getCurrentEnrollmentId === 'function') ? getCurrentEnrollmentId() : null,
+            isRetake: !!ctx.isRetake,
+            extras: ctx.extras || {},
+            table: ctx.table || null,
             failReason: failReason,
             failDetail: String(failDetail).slice(0, 800),
             retries: this.RETRY_DELAYS.length,

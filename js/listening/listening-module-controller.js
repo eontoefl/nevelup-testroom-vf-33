@@ -127,8 +127,7 @@ async function startListeningModule(moduleNumber) {
         cleanupListeningModule();
     }
 
-    // 시작부터 문제를 다 받을 때까지 화면 전체 로딩 표시(리딩과 같은 공용 로딩). 다시풀기 판단 조회도 이 안에서 기다린다.
-    _showSetLoading();
+    // 로딩 표시는 과제 대시보드(실전 풀이 버튼)가 켜고, 이 함수가 끝나면 끈다.
 
     // 세트 번호 매핑 (module-definitions.js 규칙 기반)
     // Response: 모듈당 1세트 (Module 1 → set 1, Module 2 → set 2)
@@ -166,38 +165,10 @@ async function startListeningModule(moduleNumber) {
         soundCheckHeard: false                  // 사운드 체크 1회 이상 청취 여부
     };
 
-    // 다시풀기 여부 확인
-    // 기준: initial_record 존재 OR 마감 지남 → current_record에 저장
+    // 다시풀기 여부: 과제 대시보드가 버튼을 정할 때 한 번 판단한 값을 쓴다(첫 풀이 기록 있음·마감 지남·정지 중이면 다시 풀기).
+    // 판단 지점이 하나라 시작 팝업 여부와 저장 칸(initial/current)이 항상 같다.
     var state = window._taskDashboardState;
-    var deadlinePassed = (window._deadlinePassedMode || window._pausedMode) || false;   // 일시정지 중(실전 기록 있는 과제)도 다시풀기 모드
-    var inPractice = state && state.isPractice;
-    if (deadlinePassed && !inPractice) {
-        window.currentListeningModule.isRetake = true;
-        console.log('🔄 다시풀기 모드 (마감 지남)');
-    } else if (state) {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (user && user.id && user.id !== 'dev-user-001') {
-            try {
-                var existing;
-                if (inPractice && typeof getStudyResultPractice === 'function') {
-                    existing = await getStudyResultPractice(
-                        user.id, 'listening', moduleNumber, state.practiceNumber
-                    );
-                } else {
-                    existing = await getStudyResultV3(
-                        user.id, 'listening', moduleNumber,
-                        state.week, state.day
-                    );
-                }
-                if (existing && existing.initial_record != null) {
-                    window.currentListeningModule.isRetake = true;
-                    console.log('🔄 다시풀기 모드 (initial_record 존재)');
-                }
-            } catch (e) {
-                console.warn('⚠️ 다시풀기 확인 실패 (무시하고 진행):', e);
-            }
-        }
-    }
+    window.currentListeningModule.isRetake = !!(state && state.isRetake);
 
     // 9개 컴포넌트 한꺼번에 생성
     _createAllListeningComponents();
@@ -209,7 +180,6 @@ async function startListeningModule(moduleNumber) {
         cleanupListeningModule();
         return;
     }
-    _hideSetLoading();
 
     // 사운드 체크 화면부터 시작 (음량 확인 + 오디오 잠금 해제 → 이후 자동재생)
     _showListeningSoundCheck();
@@ -842,40 +812,25 @@ async function _finishListeningModule() {
         var day = inPractice2 ? null : ct.currentDay;
 
         try {
-            if (inPractice2) {
-                var pNum = state2.practiceNumber;
-                // 연습코스: 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
-                var saveOk = await SaveGuard.attempt(function() {
-                    return mod.isRetake
-                        ? upsertCurrentRecordPractice(user.id, 'listening', mod.moduleNum, pNum, recordJson)
-                        : upsertInitialRecordPractice(user.id, 'listening', mod.moduleNum, pNum, recordJson, {
-                            initial_level: level
-                        });
-                });
-                if (!saveOk) {
-                    _hideSubmitLoading();
-                    SaveGuard.showFailurePopup({
-                        sectionType: 'listening',
-                        moduleNumber: mod.moduleNum,
-                        practiceNumber: pNum,
-                        taskLabel: '리스닝 Module ' + mod.moduleNum + ' (P' + pNum + (mod.isRetake ? ', 다시풀기' : '') + ')',
-                        record: recordJson,
-                        onDone: function() {
-                            // 모듈 종료는 backToTaskDashboard → cleanupListeningModule 한 곳에서만 수행
-                            backToTaskDashboard();
-                        }
-                    });
-                    return;
+            // 정규·연습 공용 저장: 재시도 → 최종 실패 시 제출 로딩을 끄고 실패 팝업(SaveGuard.saveRecord)
+            var saved = await SaveGuard.saveRecord({
+                userId: user.id,
+                sectionType: 'listening',
+                moduleNumber: mod.moduleNum,
+                practiceNumber: inPractice2 ? state2.practiceNumber : null,
+                week: week,
+                day: day,
+                isRetake: mod.isRetake,
+                record: recordJson,
+                extras: { initial_level: level },
+                taskLabel: '리스닝 Module ' + mod.moduleNum,
+                onDone: function() {
+                    // 모듈 종료는 backToTaskDashboard → cleanupListeningModule 한 곳에서만 수행
+                    backToTaskDashboard();
                 }
-            } else if (mod.isRetake) {
-                await upsertCurrentRecord(user.id, 'listening', mod.moduleNum, week, day, recordJson);
-                console.log('💾 current_record 저장 완료');
-            } else {
-                await upsertInitialRecord(user.id, 'listening', mod.moduleNum, week, day, recordJson, {
-                    initial_level: level
-                });
-                console.log('💾 initial_record 저장 완료');
-            }
+            });
+            if (!saved) return;
+            console.log('💾 ' + (mod.isRetake ? 'current' : 'initial') + '_record 저장 완료');
 
             // ✅ 저장 성공 → 대시보드 복귀
             // (모듈 종료·오디오 해제는 backToTaskDashboard → cleanupListeningModule 한 곳에서만 수행)

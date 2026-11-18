@@ -278,28 +278,20 @@ async function openIntroBookGuide(params) {
  * 과제 시작 확인 팝업 (자체 UI)
  * (정규코스 전용: 연습코스는 executeTask에서 팝업 없이 바로 실행)
  */
-function confirmTaskStart(taskName, onConfirm) {
+function confirmTaskStart(sectionType, onConfirm) {
     // 기존 팝업 제거
     var existing = document.getElementById('taskStartPopup');
     if (existing) existing.remove();
     var existingOverlay = document.getElementById('taskStartOverlay');
     if (existingOverlay) existingOverlay.remove();
 
-    // 오버레이
+    // 오버레이 (눌러도 닫히지 않음 — 실전 풀이를 빠르게 두 번 눌러도 팝업이 바로 닫히지 않게, 닫기는 [돌아가기]로만)
     var overlay = document.createElement('div');
     overlay.id = 'taskStartOverlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;';
 
-    // 제한시간: 리딩은 회차 구성표의 상수(reading-module-controller.js), 그 밖의 과제는 기존 문구 그대로
-    // (연습코스는 executeTask에서 이 팝업 없이 바로 실행되므로 여기는 정규코스 문구만 둔다)
-    var limitMinutes = 20;
-    var parsedTask = (typeof parseTaskName === 'function') ? parseTaskName(taskName) : null;
-    if (parsedTask && parsedTask.type === 'reading' && typeof READING_MODULE_TIME_LIMIT_SEC === 'number') {
-        limitMinutes = READING_MODULE_TIME_LIMIT_SEC / 60;
-    }
-    var bodyText = '제한시간 ' + limitMinutes + '분이 바로 시작됩니다.<br>' +
-          '첫 풀이 결과는 차트 및 포트폴리오에<br>' +
-          '<strong style="color:#ef4444;">영구 반영</strong>되며, 재시도할 수 없습니다.';
+    var bodyText = _taskStartMessage(sectionType) + '<br><br>' +
+        '첫 풀이 결과는 차트와 주간체크에 그대로 남아요.<br>다시 풀어도 첫 결과는 바뀌지 않아요.';
 
     // 팝업
     var popup = document.createElement('div');
@@ -307,7 +299,7 @@ function confirmTaskStart(taskName, onConfirm) {
     popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:90%;z-index:99999;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
     popup.innerHTML = 
         '<div style="font-size:40px;margin-bottom:12px;">⚠️</div>' +
-        '<h3 style="margin:0 0 16px;font-size:17px;color:#1a1a1a;line-height:1.5;">과제를 시작하시겠습니까?</h3>' +
+        '<h3 style="margin:0 0 16px;font-size:17px;color:#1a1a1a;line-height:1.5;">실전 풀이를 시작할까요?</h3>' +
         '<p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.7;">' + bodyText + '</p>' +
         '<div style="display:flex;gap:10px;">' +
             '<button id="taskStartBack" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:14px;font-weight:600;color:#666;cursor:pointer;">돌아가기</button>' +
@@ -322,10 +314,6 @@ function confirmTaskStart(taskName, onConfirm) {
         overlay.remove();
         popup.remove();
     };
-    overlay.onclick = function() {
-        overlay.remove();
-        popup.remove();
-    };
 
     // 시작하기
     document.getElementById('taskStartGo').onclick = function() {
@@ -333,6 +321,32 @@ function confirmTaskStart(taskName, onConfirm) {
         popup.remove();
         onConfirm();
     };
+}
+
+/**
+ * 시작 팝업 본문 — 영역별 실제 제한시간 (리딩·라이팅은 각 컨트롤러의 시간 상수에서)
+ */
+function _taskStartMessage(sectionType) {
+    function mmss(sec) {
+        var m = Math.floor(sec / 60), r = sec % 60;
+        return m + '분' + (r ? ' ' + r + '초' : '');
+    }
+    switch (sectionType) {
+        case 'reading':
+            var readingSec = (typeof READING_MODULE_TIME_LIMIT_SEC === 'number') ? READING_MODULE_TIME_LIMIT_SEC : 18 * 60;
+            return '실전 풀이를 시작하면 <strong>' + mmss(readingSec) + '</strong> 타이머가 바로 시작돼요.';
+        case 'listening':
+            return '문항마다 제한시간이 있어요. <strong>응답고르기·대화·공지 20초, 렉쳐 30초</strong>예요.<br>음성은 한 번만 나와요.';
+        case 'writing':
+            var w = (typeof WRITING_TIME_LIMITS === 'object' && WRITING_TIME_LIMITS) ? WRITING_TIME_LIMITS : { arrange: 410, email: 420, discussion: 600 };
+            return '<strong>문장배열 ' + mmss(w.arrange) + ' → 이메일 ' + mmss(w.email) + ' → 토론 ' + mmss(w.discussion) + '</strong>이 차례로 시작돼요.';
+        case 'speaking':
+            return '따라 말하기는 문장마다, 인터뷰는 질문마다(<strong>45초</strong>) 정해진 시간 안에 답해요.';
+        case 'vocab':
+            return '제한시간은 없어요. 정답률이 30% 미만이면 인증되지 않아요.';
+        default:
+            return '';
+    }
 }
 
 /**
@@ -366,10 +380,9 @@ function executeTask(taskName) {
         return;
     }
 
-    // ── 정규코스: 시작 확인 팝업 → "시작하기" 누르면 실제 실행 ──
-    confirmTaskStart(taskName, function() {
-        _executeTaskCore(taskName);
-    });
+    // ── 정규코스: 바로 실행. 시작 확인 팝업은 실제 시작 순간에 뜬다
+    //    (4개 영역: 대시보드 [실전 풀이] / 단어시험: _executeTaskCore에서 마감 판단 뒤)
+    _executeTaskCore(taskName);
 }
 
 /**
@@ -441,9 +454,14 @@ function _executeTaskCore(taskName) {
     
     switch (parsed.type) {
         case 'vocab':
-            // 내벨업보카 시험 시작
+            // 내벨업보카 시험 시작 — 대시보드가 없어 여기서 시작 팝업(정규·마감 전·정지 아님일 때만)
             console.log(`  🔹 내벨업보카 시작 - 페이지: ${parsed.params.pages.join(', ')}`);
-            _launchVocabModule(parsed.params.pages);
+            var inPracticeV = (typeof isPracticeMode === 'function' && isPracticeMode());
+            if (!inPracticeV && !pausedNow && !window._deadlinePassedMode) {
+                confirmTaskStart('vocab', function() { _launchVocabModule(parsed.params.pages); });
+            } else {
+                _launchVocabModule(parsed.params.pages);
+            }
             break;
             
         case 'intro-book':

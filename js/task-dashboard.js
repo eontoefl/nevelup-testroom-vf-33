@@ -167,6 +167,16 @@ async function _loadAndApplyDashboardState(sectionType, moduleNumber, week, day)
  * | 마감 지남 + current만 있음          | 🔄 다시 풀기 (활성) | 📖 해설 보기 (활성)  |
  */
 function _applyButtonStates(hasInitial, hasCurrent, deadlinePassed, pausedMode) {
+    // 다시풀기 여부는 여기서 한 번만 판단하고, 영역 시작 함수는 이 값을 쓴다.
+    // (deadlinePassed·pausedMode는 정규에서만 참 — 호출하는 쪽에서 연습코스는 false로 넘김)
+    var dashState = window._taskDashboardState;
+    var isRetakeMode = !!(hasInitial || deadlinePassed || pausedMode);
+    if (dashState) {
+        dashState.isRetake = isRetakeMode;
+        // 시작 확인 팝업: 정규·첫 풀이·마감 전·정지 아님일 때만
+        dashState.needsStartConfirm = !dashState.isPractice && !isRetakeMode;
+    }
+
     const btnPractice = document.getElementById('taskBtnPractice');
     const btnPracticeIcon = document.getElementById('taskBtnPracticeIcon');
     const btnPracticeText = document.getElementById('taskBtnPracticeText');
@@ -214,137 +224,71 @@ function _applyButtonStates(hasInitial, hasCurrent, deadlinePassed, pausedMode) 
 
 /**
  * 실전풀이 / 다시풀기 버튼 클릭 핸들러
+ * 정규·첫 풀이·마감 전이면 시작 확인 팝업(영역별 제한시간) → [시작하기] 뒤 시작. 그 밖에는 바로 시작.
  */
-async function _onPracticeClick() {
+function _onPracticeClick() {
     const state = window._taskDashboardState;
     if (!state) {
         console.error('❌ [대시보드] 상태 없음');
         return;
     }
-    
-    console.log(`▶️ [대시보드] 풀이 시작 — ${state.sectionType} Module ${state.moduleNumber}`);
-    
-    // ── 문제 데이터 존재 여부 사전 체크 ──
-    var hasData = await _checkProblemDataExists(state.sectionType, state.moduleNumber);
-    if (!hasData) {
-        console.log('⚠️ [대시보드] 문제 데이터 없음 — 준비 중 팝업 표시');
-        _showProblemNotReadyPopup();
+    if (state.needsStartConfirm && typeof confirmTaskStart === 'function') {
+        confirmTaskStart(state.sectionType, function() { _startSectionModule(state); });
         return;
     }
-    
-    // 섹션별 모듈 컨트롤러 호출
-    // 모듈 컨트롤러가 아직 없으면 콘솔 로그만 출력
-    switch (state.sectionType) {
-        case 'reading':
-            if (typeof startReadingModule === 'function') {
-                startReadingModule(state.moduleNumber);
-            } else {
-                console.log('🚧 [대시보드] startReadingModule 미구현');
-            }
-            break;
-        case 'listening':
-            if (typeof startListeningModule === 'function') {
-                startListeningModule(state.moduleNumber);
-            } else {
-                console.log('🚧 [대시보드] startListeningModule 미구현');
-            }
-            break;
-        case 'writing':
-            if (typeof startWritingModule === 'function') {
-                startWritingModule(state.moduleNumber);
-            } else {
-                console.log('🚧 [대시보드] startWritingModule 미구현');
-            }
-            break;
-        case 'speaking':
-            if (typeof startSpeakingModule === 'function') {
-                startSpeakingModule(state.moduleNumber);
-            } else {
-                console.log('🚧 [대시보드] startSpeakingModule 미구현');
-            }
-            break;
-        default:
+    _startSectionModule(state);
+}
+
+// 영역별 모듈 시작 함수
+var SECTION_START_FUNCTIONS = {
+    reading:   function(n) { return startReadingModule(n); },
+    listening: function(n) { return startListeningModule(n); },
+    writing:   function(n) { return startWritingModule(n); },
+    speaking:  function(n) { return startSpeakingModule(n); }
+};
+
+/**
+ * 모듈 시작 — 로딩 표시는 이 함수 한 곳에서 켜고 끈다(누르는 순간 켜서 반응을 보이고, 두 번째 클릭을 막음).
+ * 각 영역 시작 함수는 문제를 다 받아 첫 화면을 띄운 뒤(또는 못 받아 안내를 띄운 뒤) 끝난다.
+ */
+async function _startSectionModule(state) {
+    console.log(`▶️ [대시보드] 풀이 시작 — ${state.sectionType} Module ${state.moduleNumber}`);
+    _showSetLoading();
+    try {
+        // 리딩: 회차 구성표에 없는 회차면 "문제 준비 중"(다른 영역은 1~42회차 문제가 모두 있음 — 2026-11-18 확인)
+        if (state.sectionType === 'reading' && typeof getReadingModulePlan === 'function' && !getReadingModulePlan(state.moduleNumber)) {
+            console.log('⚠️ [대시보드] 리딩 회차 구성표에 없는 회차:', state.moduleNumber);
+            _showProblemNotReadyPopup();
+            return;
+        }
+        var start = SECTION_START_FUNCTIONS[state.sectionType];
+        if (!start) {
             console.error('❌ [대시보드] 알 수 없는 섹션:', state.sectionType);
+            return;
+        }
+        await start(state.moduleNumber);
+    } catch (e) {
+        console.error('❌ [대시보드] 모듈 시작 중 오류:', e);
+        _showProblemNotReadyPopup({
+            icon: '📶',
+            title: '문제를 불러오지 못했어요',
+            messageHtml: '인터넷 연결을 확인한 뒤 다시 눌러 주세요.'
+        });
+    } finally {
+        _hideSetLoading();
     }
 }
 
-/**
- * 문제 데이터 존재 여부 사전 체크
- * 영역별 대표 테이블 1개를 가볍게 조회하여 해당 모듈의 세트가 존재하는지 확인
- * 
- * @param {string} sectionType - 'reading' | 'listening' | 'writing' | 'speaking'
- * @param {number} moduleNumber - 모듈 번호
- * @returns {Promise<boolean>} 데이터 존재 여부
- */
-async function _checkProblemDataExists(sectionType, moduleNumber) {
-    // 리딩: 회차 구성표(reading-module-controller.js)에 없는 회차면 조회 없이 "문제 준비 중"
-    // (아래 조회의 try/catch는 오류 때 진행을 허용하므로 그 밖에서 먼저 판단한다)
-    var readingPlan = null;
-    if (sectionType === 'reading') {
-        readingPlan = (typeof getReadingModulePlan === 'function') ? getReadingModulePlan(moduleNumber) : null;
-        if (!readingPlan) {
-            console.log('⚠️ [대시보드] 리딩 회차 구성표에 없는 회차:', moduleNumber);
-            return false;
-        }
-    }
+/** 모듈 시작 로딩 표시 (화면 전체를 덮어 클릭 차단) */
+function _showSetLoading() {
+    var overlay = document.getElementById('setLoadingOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
 
-    if (typeof supabaseSelect !== 'function') {
-        console.warn('⚠️ [대시보드] supabaseSelect 없음 — 체크 생략');
-        return true; // DB 함수 없으면 체크 생략 (진행 허용)
-    }
-    
-    try {
-        // 영역별 대표 테이블 + 세트 ID 패턴
-        var table, setIdPrefix, setNum;
-        
-        switch (sectionType) {
-            case 'reading':
-                // 회차 구성표의 첫 세트(빈칸)만 확인
-                table = 'tr_reading_fillblanks';
-                setNum = readingPlan.sequence[0].setNum;
-                setIdPrefix = 'fillblank_set_' + String(setNum).padStart(4, '0');
-                break;
-            case 'listening':
-                // response: Module N → set N
-                table = 'tr_listening_response';
-                setIdPrefix = 'response_set_' + String(moduleNumber).padStart(4, '0');
-                break;
-            case 'writing':
-                // arrange: Module N → set N
-                table = 'tr_writing_arrange';
-                setIdPrefix = 'arrange_set_' + String(moduleNumber).padStart(4, '0');
-                break;
-            case 'speaking':
-                // repeat: Module N → set N
-                table = 'tr_speaking_repeat';
-                setIdPrefix = 'repeat_set_' + String(moduleNumber).padStart(4, '0');
-                break;
-            default:
-                return true; // 알 수 없는 타입은 체크 생략
-        }
-        
-        console.log(`🔍 [대시보드] 문제 데이터 확인: ${table}, setId=${setIdPrefix}`);
-        
-        // set_id 또는 id 기준으로 1건만 조회 (가벼운 쿼리)
-        var query;
-        if (sectionType === 'reading' || sectionType === 'speaking') {
-            // fillblanks, repeat: id 컬럼이 세트 ID
-            query = 'select=id&id=eq.' + setIdPrefix + '&limit=1';
-        } else {
-            // response, arrange: set_id 컬럼
-            query = 'select=set_id&set_id=eq.' + setIdPrefix + '&limit=1';
-        }
-        
-        var rows = await supabaseSelect(table, query);
-        var exists = rows && rows.length > 0;
-        
-        console.log(`🔍 [대시보드] 결과: ${exists ? '✅ 존재' : '❌ 없음'}`);
-        return exists;
-        
-    } catch (e) {
-        console.warn('⚠️ [대시보드] 문제 데이터 체크 실패 (진행 허용):', e);
-        return true; // 체크 실패 시 진행 허용 (기존 동작 유지)
-    }
+/** 모듈 시작 로딩 표시 끄기 */
+function _hideSetLoading() {
+    var overlay = document.getElementById('setLoadingOverlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 /**

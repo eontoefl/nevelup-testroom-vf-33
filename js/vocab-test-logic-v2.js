@@ -426,14 +426,17 @@ function submitVocabTest() {
         return;
     }
     
-    // 마지막 페이지면 제출
+    // 마지막 페이지면 제출 (저장 재시도 중에 다시 눌러도 한 번만 처리)
+    if (_vocabSubmitting) return;
     if (!confirm('제출하시겠습니까?')) {
         return;
     }
     
     // 채점 화면으로 이동
-    showVocabTestResult();
+    _vocabSubmitting = true;
+    showVocabTestResult().finally(function() { _vocabSubmitting = false; });
 }
+var _vocabSubmitting = false;
 
 // 채점 결과 화면 표시
 async function showVocabTestResult() {
@@ -528,12 +531,14 @@ async function showVocabTestResult() {
     
     const percentage = Math.round((correctCount / totalCount) * 100);
     
-    // ── Supabase에 보카 학습 기록 저장 ──
+    // ── Supabase에 보카 학습 기록 저장 (재시도 동안 멈춘 것처럼 보이지 않게 제출 로딩 표시) ──
+    if (typeof _showSubmitLoading === 'function') _showSubmitLoading();
     try {
         await saveVocabRecord(correctCount, totalCount, percentage, results);
     } catch(e) {
         console.error('📝 [Vocab] 저장 에러:', e);
     }
+    if (typeof _hideSubmitLoading === 'function') _hideSubmitLoading();
     
     // 결과 렌더링
     renderVocabResult(results, correctCount, totalCount, percentage);
@@ -800,48 +805,48 @@ async function saveVocabRecord(correctCount, totalCount, percentage, results) {
         words: results || []   // 단어별 답안(학생이 쓴 칸 순서): [{ headword, total, matched, allCorrect, answers: [{ userAnswer, status: ok|typo|wrong|blank|dup, answer: 그 칸에 붙은 교재 정답 }] }]
     };
 
+    var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
+    var vocabPNum = window._vocabPracticeNumber;
+    var vocabPracticeNumber = (inPractice && vocabPNum) ? vocabPNum : null;
+    var vocabLabel = '내벨업보카 ' + (currentPages || '') + 'pg';
+    // 연습: 마감 지난 모드면 다시풀기 칸 / 정규: 마감 후 제출 또는 정지 중 다시풀기 → current_record(인증률 무관)
+    var vocabIsRetake = vocabPracticeNumber != null
+        ? !!window._deadlinePassedMode
+        : !!(window._deadlinePassedMode || window._pausedMode);
+
     try {
-        var inPractice = typeof isPracticeMode === 'function' && isPracticeMode();
-        var vocabPNum = window._vocabPracticeNumber;
-        
-        if (inPractice && vocabPNum) {
-            // 연습코스: study_results_practice에 저장
-            // 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
-            // ※ locked_auth_rate 컬럼은 이 테이블에 없으므로 넘기지 않는다 (넘기면 400).
-            var vocabSaveOk = await SaveGuard.attempt(function() {
-                return window._deadlinePassedMode
-                    ? upsertCurrentRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson)
-                    : upsertInitialRecordPractice(user.id, 'vocab', 1, vocabPNum, recordJson);
-            });
-            if (!vocabSaveOk) {
-                SaveGuard.showFailurePopup({
-                    sectionType: 'vocab',
-                    moduleNumber: 1,
-                    practiceNumber: vocabPNum,
-                    taskLabel: '내벨업보카 ' + (currentPages || '') + 'pg (P' + vocabPNum + ')',
-                    record: recordJson
-                    // onDone 없음 — 팝업 닫으면 채점 결과 화면 유지
-                });
-                return;
-            }
-            console.log('📝 [Vocab] 연습코스 기록 저장 완료');
-        } else if (window._deadlinePassedMode || window._pausedMode) {
-            // 마감 후 제출(또는 일시정지 중 다시풀기) → current_record에 저장 (연습 기록, 인증률 무관)
-            await upsertCurrentRecord(user.id, 'vocab', 1, scheduleInfo.week, scheduleInfo.day, recordJson);
-            console.log('📝 [Vocab] 마감 후 제출 — current_record 저장 완료');
-        } else {
-            // 마감 전 제출 → initial_record에 저장 + locked_auth_rate 즉시 확정
-            await upsertInitialRecord(user.id, 'vocab', 1, scheduleInfo.week, scheduleInfo.day, recordJson, {
-                locked_auth_rate: authRate
-            });
-            console.log('📝 [Vocab] 기록 저장 완료, 인증률:', authRate + '%');
-        }
+        // 정규·연습 공용 저장: 재시도 → 최종 실패 시 실패 팝업(SaveGuard.saveRecord). 팝업을 닫으면 채점 결과 화면 유지.
+        var saved = await SaveGuard.saveRecord({
+            userId: user.id,
+            sectionType: 'vocab',
+            moduleNumber: 1,
+            practiceNumber: vocabPracticeNumber,
+            week: scheduleInfo.week,
+            day: scheduleInfo.day,
+            isRetake: vocabIsRetake,
+            record: recordJson,
+            // 마감 전 첫 제출은 인증률을 바로 확정. 연습 표에는 이 칸이 없음(넘기면 400)
+            regularExtras: { locked_auth_rate: authRate },
+            taskLabel: vocabLabel
+        });
+        if (!saved) return;
+        console.log('📝 [Vocab] 기록 저장 완료' + (vocabIsRetake ? ' (다시풀기 칸)' : ', 인증률: ' + authRate + '%'));
 
         if (window.ProgressTracker) {
             ProgressTracker.markCompleted('vocab', 1);
         }
     } catch (e) {
+        // 예상 못 한 오류도 조용히 넘기지 않고 같은 실패 팝업으로 보고 길을 연다
         console.error('📝 [Vocab] 저장 실패:', e);
+        if (typeof _hideSubmitLoading === 'function') _hideSubmitLoading();
+        if (typeof SaveGuard !== 'undefined' && SaveGuard.showFailurePopup) {
+            SaveGuard.showFailurePopup({
+                sectionType: 'vocab', moduleNumber: 1, practiceNumber: vocabPracticeNumber,
+                week: scheduleInfo.week, day: scheduleInfo.day, isRetake: vocabIsRetake,
+                taskLabel: vocabLabel, record: recordJson
+            });
+        }
+        return;
     }
 
     if (percentage < 30) {

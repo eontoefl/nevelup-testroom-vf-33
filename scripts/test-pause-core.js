@@ -252,7 +252,7 @@ console.log('[7] refreshPauseState — DB 재조회로 user 갱신 (모의 fetch
     const srcBook = fs.readFileSync(path.join(ROOT, 'js', 'book-viewer.js'), 'utf8');
     const srcOmr = fs.readFileSync(path.join(ROOT, 'omr-card.html'), 'utf8');
     check('입문서: 주소 paused 표시를 만들지도 읽지도 않음', srcRouter.indexOf('paused=1') < 0 && srcBook.indexOf("get('paused')") < 0);
-    check('입문서: 인증 저장 전에 _canCertifyNow 판정', /await _canCertifyNow\(\)[\s\S]*upsertInitialRecord\(\s*BookViewer\.userId/.test(srcBook));
+    check('입문서: 인증 저장 전에 _canCertifyNow 판정', /await _canCertifyNow\(\)[\s\S]*SaveGuard\.saveRecord\(\{\s*userId: BookViewer\.userId/.test(srcBook));
     check('OMR: 공통 판정 파일을 인라인 스크립트보다 먼저 로드 + 새 제출 전 검사', srcOmr.indexOf('js/supabase-client.js') > 0 && srcOmr.indexOf('js/supabase-client.js') < srcOmr.indexOf('var SUPABASE_URL') && /getOmrStopMessage\(\)[\s\S]*renderOMRForm\(\);\s*\r?\n\s*document\.getElementById\('omrLoading'\)\.style\.display = 'none';\s*\r?\n\s*document\.getElementById\('omrForm'\)\.style\.display = 'block';\s*\r?\n\s*document\.getElementById\('omrSubmitArea'\)/.test(srcOmr));
 
     console.log('\n' + pass + ' passed, ' + fail + ' failed');

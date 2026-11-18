@@ -1382,20 +1382,25 @@ async function checkAndCertify() {
         return;
     }
 
-    // DB 저장
+    // DB 저장 (정규·연습 공용 저장: 재시도 → 최종 실패 시 실패 팝업. 실패하면 인증 표시 없이 보고로 처리)
     try {
-        if (typeof upsertInitialRecord === 'function') {
-            await upsertInitialRecord(
-                BookViewer.userId,
-                BookViewer.sectionType,
-                tp.current,
-                tp.week,
-                tp.day,
-                { memo_count: memoCount, completedAt: new Date().toISOString() },
-                { locked_auth_rate: 100 }
-            );
-            console.log('✅ [TaskBar] study_results_v3 저장 완료');
+        var saved = await SaveGuard.saveRecord({
+            userId: BookViewer.userId,
+            sectionType: BookViewer.sectionType,
+            moduleNumber: tp.current,
+            practiceNumber: null,
+            week: tp.week,
+            day: tp.day,
+            isRetake: false,
+            record: { memo_count: memoCount, completedAt: new Date().toISOString() },
+            regularExtras: { locked_auth_rate: 100 },
+            taskLabel: '입문서 정독 ' + tp.current + '일차'
+        });
+        if (!saved) {
+            updateTaskBar();
+            return;
         }
+        console.log('✅ [TaskBar] study_results_v3 저장 완료');
 
         BookViewer.isCertified = true;
         updateTaskBar();

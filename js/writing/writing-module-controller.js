@@ -60,42 +60,21 @@ async function startWritingModule(moduleNumber) {
         isRetake: false       // 다시풀기 여부
     };
 
-    // 다시풀기 여부 확인
-    // 기준: initial_record 존재 OR 마감 지남 → current_record에 저장
+    // 다시풀기 여부: 과제 대시보드가 버튼을 정할 때 한 번 판단한 값을 쓴다(첫 풀이 기록 있음·마감 지남·정지 중이면 다시 풀기).
+    // 판단 지점이 하나라 시작 팝업 여부와 저장 칸(initial/current)이 항상 같다.
     var state = window._taskDashboardState;
-    var deadlinePassed = (window._deadlinePassedMode || window._pausedMode) || false;   // 일시정지 중(실전 기록 있는 과제)도 다시풀기 모드
-    if (deadlinePassed) {
-        window.currentWritingModule.isRetake = true;
-        console.log('🔄 다시풀기 모드 (마감 지남)');
-    } else if (state) {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (user && user.id && user.id !== 'dev-user-001') {
-            try {
-                // 연습모드는 week/day가 없으므로 연습 전용 보관함을 조회해야 한다.
-                // (정규모드 함수에 null week/day를 넘기면 항상 첫 풀이로 오인됨)
-                var existing;
-                if (state.isPractice) {
-                    existing = await getStudyResultPractice(
-                        user.id, 'writing', moduleNumber, state.practiceNumber
-                    );
-                } else {
-                    existing = await getStudyResultV3(
-                        user.id, 'writing', moduleNumber,
-                        state.week, state.day
-                    );
-                }
-                if (existing && existing.initial_record != null) {
-                    window.currentWritingModule.isRetake = true;
-                    console.log('🔄 다시풀기 모드 (initial_record 존재)');
-                }
-            } catch (e) {
-                console.warn('⚠️ 다시풀기 확인 실패 (무시하고 진행):', e);
-            }
-        }
-    }
+    window.currentWritingModule.isRetake = !!(state && state.isRetake);
 
     // 3개 컴포넌트 생성
     _createAllWritingComponents();
+
+    // 세 파트의 문제를 먼저 받는다(리딩·리스닝과 같은 공용 함수) — 파트에 도착했는데 문제가 없고 타이머만 흐르는 일이 없음
+    // (못 받으면 _loadAllComponents가 안내 팝업을 띄움 → 모듈을 만들지 않고 끝, 학생은 대시보드에 그대로)
+    if (!(await _loadAllComponents(window.currentWritingModule.components))) {
+        console.error('❌ 라이팅 문제를 받지 못해 시작하지 않음');
+        window.currentWritingModule = null;
+        return;
+    }
 
     // 첫 유형(Arrange) 시작
     await _startWritingType(0);
@@ -170,8 +149,8 @@ async function _startWritingType(typeIndex) {
         showScreen(screenId);
     }
 
-    // 컴포넌트 초기화
-    await comp.init();
+    // 첫 화면 그리기 (문제는 모듈 시작 때 받아 둠)
+    comp.show();
 
     // 타이머 시작
     _startWritingTimer(seq.type);
@@ -568,52 +547,29 @@ async function _finishWritingModule() {
         var day = inPractice2 ? null : ct.currentDay;
 
         try {
-            var saveResult;
-            if (inPractice2) {
-                var pNum = state2.practiceNumber;
-                // 연습코스: 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
-                // email/discussion 원문은 recordJson(initial_record)에 이미 포함됨.
-                // study_results_practice에는 별도 텍스트 컬럼이 없으므로 extras를 넘기지 않는다.
-                saveResult = await SaveGuard.attempt(function() {
-                    return mod.isRetake
-                        ? upsertCurrentRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson)
-                        : upsertInitialRecordPractice(user.id, 'writing', mod.moduleNum, pNum, recordJson);
-                });
-                if (!saveResult) {
-                    if (typeof _hideSubmitLoading === 'function') {
-                        _hideSubmitLoading();
-                    }
-                    SaveGuard.showFailurePopup({
-                        sectionType: 'writing',
-                        moduleNumber: mod.moduleNum,
-                        practiceNumber: pNum,
-                        taskLabel: '라이팅 ' + mod.moduleNum + ' (P' + pNum + (mod.isRetake ? ', 다시풀기' : '') + ')',
-                        record: recordJson,
-                        onDone: function() {
-                            window.currentWritingModule = null;
-                            backToTaskDashboard();
-                        }
-                    });
-                    return;
-                }
-            } else if (mod.isRetake) {
-                saveResult = await upsertCurrentRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson);
-                console.log('💾 current_record 저장 완료');
-            } else {
-                // 실전풀이: extras로 email/discussion 텍스트 별도 컬럼 저장
-                var extras = {
+            // 정규·연습 공용 저장: 재시도 → 최종 실패 시 제출 로딩을 끄고 실패 팝업(SaveGuard.saveRecord)
+            var saved = await SaveGuard.saveRecord({
+                userId: user.id,
+                sectionType: 'writing',
+                moduleNumber: mod.moduleNum,
+                practiceNumber: inPractice2 ? state2.practiceNumber : null,
+                week: week,
+                day: day,
+                isRetake: mod.isRetake,
+                record: recordJson,
+                regularExtras: {
+                    // 실전풀이 원문 2칸은 정규 표에만 있음(연습 표엔 없어 넘기면 400)
                     writing_email_text: mod.results.email ? mod.results.email.userAnswer : '',
                     writing_discussion_text: mod.results.discussion ? mod.results.discussion.userAnswer : ''
-                };
-                saveResult = await upsertInitialRecord(user.id, 'writing', mod.moduleNum, week, day, recordJson, extras);
-                console.log('💾 initial_record 저장 완료');
-            }
-
-            // 저장 검증: DB 함수는 실패 시 예외 대신 null을 반환하므로 명시적으로 확인한다.
-            // (이 검증이 없으면 저장 실패가 조용히 묻히고 답안이 사라짐)
-            if (!saveResult) {
-                throw new Error('DB 저장 실패 (응답 없음)');
-            }
+                },
+                taskLabel: '라이팅 ' + mod.moduleNum,
+                onDone: function() {
+                    window.currentWritingModule = null;
+                    backToTaskDashboard();
+                }
+            });
+            if (!saved) return;
+            console.log('💾 ' + (mod.isRetake ? 'current' : 'initial') + '_record 저장 완료');
 
             // ✅ 저장 성공 → 정리 + 대시보드 복귀
             if (typeof _hideSubmitLoading === 'function') {

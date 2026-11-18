@@ -112,8 +112,7 @@ async function startReadingModule(moduleNumber) {
     console.log(`📚 리딩 Module ${moduleNumber} 시작`);
     console.log(`📚 ============================\n`);
 
-    // 시작부터 문제를 다 받을 때까지 화면 전체 로딩 표시(뒤 버튼 막힘). 다시풀기 판단 조회도 이 안에서 기다린다.
-    _showSetLoading();
+    // 로딩 표시는 과제 대시보드(실전 풀이 버튼)가 켜고, 이 함수가 끝나면 끈다.
 
     // 이번 회차 세트 목록 (구성표 0장). 목록에 없는 회차는 대시보드 시작 전 확인에서 이미 걸러진다.
     const plan = getReadingModulePlan(moduleNumber);
@@ -132,38 +131,10 @@ async function startReadingModule(moduleNumber) {
         isRetake: false       // 다시풀기 여부
     };
 
-    // 다시풀기 여부 확인
-    // 기준: initial_record 존재 OR 마감 지남 → current_record에 저장
+    // 다시풀기 여부: 과제 대시보드가 버튼을 정할 때 한 번 판단한 값을 쓴다(첫 풀이 기록 있음·마감 지남·정지 중이면 다시 풀기).
+    // 판단 지점이 하나라 시작 팝업 여부와 저장 칸(initial/current)이 항상 같다.
     var state = window._taskDashboardState;
-    var deadlinePassed = (window._deadlinePassedMode || window._pausedMode) || false;   // 일시정지 중(실전 기록 있는 과제)도 다시풀기 모드
-    var inPractice = state && state.isPractice;
-    if (deadlinePassed && !inPractice) {
-        window.currentReadingModule.isRetake = true;
-        console.log('🔄 다시풀기 모드 (마감 지남)');
-    } else if (state) {
-        var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : window.currentUser;
-        if (user && user.id && user.id !== 'dev-user-001') {
-            try {
-                var existing;
-                if (inPractice && typeof getStudyResultPractice === 'function') {
-                    existing = await getStudyResultPractice(
-                        user.id, 'reading', moduleNumber, state.practiceNumber
-                    );
-                } else {
-                    existing = await getStudyResultV3(
-                        user.id, 'reading', moduleNumber,
-                        state.week, state.day
-                    );
-                }
-                if (existing && existing.initial_record != null) {
-                    window.currentReadingModule.isRetake = true;
-                    console.log('🔄 다시풀기 모드 (initial_record 존재)');
-                }
-            } catch (e) {
-                console.warn('⚠️ 다시풀기 확인 실패 (무시하고 진행):', e);
-            }
-        }
-    }
+    window.currentReadingModule.isRetake = !!(state && state.isRetake);
 
     // 세트 컴포넌트 한꺼번에 생성
     _createAllComponents();
@@ -179,14 +150,13 @@ async function startReadingModule(moduleNumber) {
     // 타이머 시작 (READING_MODULE_TIME_LIMIT_SEC) — 문제를 다 받은 뒤부터 18:00
     _startTimer();
 
-    // 첫 세트 표시 후 로딩 표시 걷기
+    // 첫 세트 표시 (로딩 표시는 이 함수가 끝나면 대시보드가 끔)
     await _goToSet(0);
-    _hideSetLoading();
 }
 
 /**
  * 모듈 시작 때 모든 세트의 문제 받기 (리딩·리스닝 공용, 화면은 안 바뀜)
- * 하나라도 못 받으면 로딩 표시를 걷고 "문제를 불러오지 못했어요" 팝업 → false.
+ * 하나라도 못 받으면 "문제를 불러오지 못했어요" 팝업 → false(로딩 표시는 대시보드가 끔).
  * 학생은 대시보드에 그대로 남아 실전풀이를 다시 누른다(못 받은 표는 캐시되지 않아 다시 받음).
  * @param {Array} components - 세트별 컴포넌트(load() 보유)
  * @returns {Promise<boolean>} 모두 받으면 true
@@ -197,7 +167,6 @@ async function _loadAllComponents(components) {
     }));
     if (results.length > 0 && results.every(function(ok) { return ok === true; })) return true;
 
-    _hideSetLoading();
     if (typeof _showProblemNotReadyPopup === 'function') {
         _showProblemNotReadyPopup({
             icon: '📶',
@@ -435,22 +404,6 @@ function _showSubmitLoading() {
  */
 function _hideSubmitLoading() {
     var overlay = document.getElementById('submitLoadingOverlay');
-    if (overlay) overlay.style.display = 'none';
-}
-
-/**
- * 세트 전환 로딩 오버레이 표시 (데이터 로드 완료까지 클릭 차단)
- */
-function _showSetLoading() {
-    var overlay = document.getElementById('setLoadingOverlay');
-    if (overlay) overlay.style.display = 'flex';
-}
-
-/**
- * 세트 전환 로딩 오버레이 숨기기
- */
-function _hideSetLoading() {
-    var overlay = document.getElementById('setLoadingOverlay');
     if (overlay) overlay.style.display = 'none';
 }
 
@@ -926,40 +879,25 @@ async function _finishReadingModule() {
         var day = inPractice2 ? null : ct.currentDay;
 
         try {
-            if (inPractice2) {
-                var pNum = state2.practiceNumber;
-                // 연습코스: 자동 재시도 → 최종 실패 시 보고 팝업 (SaveGuard)
-                var saveOk = await SaveGuard.attempt(function() {
-                    return mod.isRetake
-                        ? upsertCurrentRecordPractice(user.id, 'reading', mod.moduleNum, pNum, recordJson)
-                        : upsertInitialRecordPractice(user.id, 'reading', mod.moduleNum, pNum, recordJson, {
-                            initial_level: level
-                        });
-                });
-                if (!saveOk) {
-                    _hideSubmitLoading();
-                    SaveGuard.showFailurePopup({
-                        sectionType: 'reading',
-                        moduleNumber: mod.moduleNum,
-                        practiceNumber: pNum,
-                        taskLabel: '리딩 Module ' + mod.moduleNum + ' (P' + pNum + (mod.isRetake ? ', 다시풀기' : '') + ')',
-                        record: recordJson,
-                        onDone: function() {
-                            window.currentReadingModule = null;
-                            backToTaskDashboard();
-                        }
-                    });
-                    return;
+            // 정규·연습 공용 저장: 재시도 → 최종 실패 시 제출 로딩을 끄고 실패 팝업(SaveGuard.saveRecord)
+            var saved = await SaveGuard.saveRecord({
+                userId: user.id,
+                sectionType: 'reading',
+                moduleNumber: mod.moduleNum,
+                practiceNumber: inPractice2 ? state2.practiceNumber : null,
+                week: week,
+                day: day,
+                isRetake: mod.isRetake,
+                record: recordJson,
+                extras: { initial_level: level },
+                taskLabel: '리딩 Module ' + mod.moduleNum,
+                onDone: function() {
+                    window.currentReadingModule = null;
+                    backToTaskDashboard();
                 }
-            } else if (mod.isRetake) {
-                await upsertCurrentRecord(user.id, 'reading', mod.moduleNum, week, day, recordJson);
-                console.log('💾 current_record 저장 완료');
-            } else {
-                await upsertInitialRecord(user.id, 'reading', mod.moduleNum, week, day, recordJson, {
-                    initial_level: level
-                });
-                console.log('💾 initial_record 저장 완료');
-            }
+            });
+            if (!saved) return;
+            console.log('💾 ' + (mod.isRetake ? 'current' : 'initial') + '_record 저장 완료');
 
             // ✅ 저장 성공 → 모듈 데이터 초기화 + 대시보드 복귀
             _hideSubmitLoading();
