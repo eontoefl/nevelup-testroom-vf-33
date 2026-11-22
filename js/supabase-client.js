@@ -15,6 +15,17 @@ const SUPABASE_CONFIG = {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwcWpldmVjamVqdmJldW9ndGJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDAxNDEsImV4cCI6MjA4Njk3NjE0MX0.pJvY4u9oHQYa7IvAjWluHMow_4WIkONDBBasnXxF5Gc'
 };
 
+// Supabase 요청 헤더를 만드는 한 곳. 이 파일 안에서만 쓴다.
+// extra 의 헤더는 기본 3개 뒤에 순서대로 붙고, 이름이 같으면 그 자리의 값만 바뀐다.
+const supabaseHeaders = function (extra) {
+    return {
+        'apikey': SUPABASE_CONFIG.anonKey,
+        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+        'Content-Type': 'application/json',
+        ...extra
+    };
+};
+
 /**
  * Supabase REST API 호출 공통 함수
  * @param {string} endpoint - 예: '/rest/v1/users?email=eq.test@test.com'
@@ -24,13 +35,10 @@ const SUPABASE_CONFIG = {
 async function supabaseRequest(endpoint, options = {}) {
     const url = `${SUPABASE_CONFIG.url}${endpoint}`;
     
-    const headers = {
-        'apikey': SUPABASE_CONFIG.anonKey,
-        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
-        'Content-Type': 'application/json',
+    const headers = supabaseHeaders({
         'Prefer': options.prefer || 'return=representation',
         ...options.headers
-    };
+    });
 
     try {
         const response = await fetch(url, {
@@ -1113,12 +1121,10 @@ async function supabaseStorageUpload(bucket, path, file) {
         var url = SUPABASE_CONFIG.url + '/storage/v1/object/' + bucket + '/' + path;
         var response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'apikey': SUPABASE_CONFIG.anonKey,
-                'Authorization': 'Bearer ' + SUPABASE_CONFIG.anonKey,
+            headers: supabaseHeaders({
                 'Content-Type': file.type || 'application/octet-stream',
                 'x-upsert': 'true'
-            },
+            }),
             body: file
         });
 
