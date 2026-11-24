@@ -327,4 +327,25 @@ export const MUTANTS = [
         name: '다른 화면(책)에도 인증 모듈을 실음', section: 'static', expect: /book\.html: 기준보다 더 싣는 정적 파일이 0개가 아님/,
         edits: [['book.html', '<script src="js/auth.js?v=20261108_extsync"></script>', '<script src="js/auth-session.js"></script><script src="js/auth.js?v=20261108_extsync"></script>']],
     },
+    // ---- 합성 자료 SQL 의 글자 점검(2차)
+    {
+        name: 'SQL: extract 에 스키마 이름을 붙임', section: 'tools', tool: 'sql', expect: /SQL fixtures_up\.sql: 특수 문법에 스키마 이름을 붙임/,
+        edits: [['tests/auth-session/sql/fixtures_up.sql', "((extract(epoch from pg_catalog.now()))::bigint - 86400) * 1000", "(pg_catalog.extract(epoch from pg_catalog.now())::bigint - 86400) * 1000"]],
+    },
+    {
+        name: 'SQL: 마감 연장을 번호만으로 지움', section: 'tools', tool: 'sql', expect: /SQL fixtures_down\.sql: public\.tr_deadline_extensions 를 지우는 문장에 주인 조건이 없음/,
+        edits: [['tests/auth-session/sql/fixtures_down.sql', "   where e.id = x->>'id' and e.user_id = x->>'user_id' and e.enrollment_id::pg_catalog.text = x->>'enrollment_id';", "   where e.id = x->>'id';"]],
+    },
+    {
+        name: 'SQL: 신청서를 번호만으로 되돌림', section: 'tools', tool: 'sql', expect: /SQL fixtures_reset\.sql: public\.applications 를 고치는 문장에 주인 조건이 없음/,
+        edits: [['tests/auth-session/sql/fixtures_reset.sql', "     where a.id = (x->>'id')::pg_catalog.uuid and a.user_id = x->>'member_id' and a.email = x->>'email'\n       and a.self_paced_schedule is distinct from (x->>'self_paced_schedule');", "     where a.id = (x->>'id')::pg_catalog.uuid\n       and a.self_paced_schedule is distinct from (x->>'self_paced_schedule');"]],
+    },
+    {
+        name: 'SQL: 합성 밖 회원 행의 집계에 비밀번호 열을 넣음', section: 'tools', tool: 'sql', expect: /SQL state_rows\.sql: 회원 표의 집계에서 비밀번호 열을 빼지 않음/,
+        edits: [['tests/auth-session/sql/state_rows.sql', "pg_catalog.md5((pg_catalog.to_jsonb(u) - 'password')::pg_catalog.text)", "pg_catalog.md5(pg_catalog.to_jsonb(u)::pg_catalog.text)"]],
+    },
+    {
+        name: 'SQL: raise 의 자리 수와 값의 수가 다름', section: 'tools', tool: 'sql', expect: /SQL fixtures_down\.sql: raise 의 자리 2개에 값 1개/,
+        edits: [['tests/auth-session/sql/fixtures_down.sql', "목록 밖의 합성 행이 %개 있다. 아무것도 지우지 않았다', v_bad, v_n; end if;", "목록 밖의 합성 행이 %개 있다. 아무것도 지우지 않았다', v_bad; end if;"]],
+    },
 ];

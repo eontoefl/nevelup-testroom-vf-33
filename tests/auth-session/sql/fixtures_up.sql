@@ -10,9 +10,10 @@
 -- (묶음0\구조추출\결과\목록_시험_적용후.json)에서 읽은 것이다 — 그 뒤 바뀌었으면 맞지 않는다.
 --
 -- ★ 신청서 표에는 트리거가 셋 있다(applications_protect_resume_approval_fields, applications_start_notice,
---   applications_sync_correction_schedule). 합성 신청서를 넣거나 옛 길이 일정표를 고칠 때 이 트리거들이 돈다.
---   작업방은 그 함수의 본문을 보지 못했다 — **바깥으로 알림을 보내거나 다른 표에 행을 만드는지 브레인방이 먼저 읽는다.**
---   읽고 나서 같은 요청의 맨 앞에 set b3b.app_triggers_reviewed = 'yes'; 를 둔다(없으면 멈춘다).
+--   applications_sync_correction_schedule). 브레인방이 2026-11-24 에 시험 프로젝트에서 읽었다(b3B_결과\신청서표_트리거_확인_2026-11-24.json):
+--   재개 승인 두 열의 보호(바깥 호출 없음) / 시작 알림은 시험 프로젝트에서 꺼져 있음(tgenabled = D) / 첨삭 날짜 네 열이 고쳐질 때만 correction_schedules 를 맞춤.
+--   이 파일은 그 읽은 상태가 지금도 같은지 넣기 전에 다시 본다: 트리거가 그 셋뿐이고 시작 알림이 꺼져 있어야 한다(아니면 멈춘다).
+--   같은 요청의 맨 앞에 set b3b.app_triggers_reviewed = 'yes'; 를 둔다(없으면 멈춘다).
 --   (첨삭 일정 동기화를 피하려고 합성 신청서는 전부 correction_enabled = false 로 넣는다.)
 --
 -- 받는 값(같은 요청의 맨 앞에서 정한다)
@@ -33,7 +34,8 @@
 --
 -- 마지막 결과(한 칸 jsonb)
 --   students     실행기의 'fixtures' 멈춤에 그대로 준다: { 유형: { memberId, appIds, recordIds } }
---   created      만든 행의 정확한 번호와, 옛 길이 고치는 칸의 처음 값·그 밖의 칸의 지문
+--   created      만든 행의 정확한 번호·주인(회원번호·이메일·신청서 번호)과, 옛 길이 고치는 칸의 처음 값·그 밖의 칸의 지문
+--                (회원 표의 비밀번호 열은 어디에도 내보내지 않는다)
 --   down_input   created 를 한 줄 글자로 쓴 것 — fixtures_reset.sql · fixtures_down.sql 에 그대로 넘긴다(set b3b.created = '…')
 --   counts       넣은 수
 -- =====================================================================
@@ -61,6 +63,18 @@ begin
   end if;
   if coalesce(pg_catalog.current_setting('b3b.app_triggers_reviewed', true), '') <> 'yes' then
     raise exception 'zzb3b 합성 자료 중단: 신청서 표의 트리거 셋을 읽었다는 확인(set b3b.app_triggers_reviewed = ''yes'')이 없다. 아무것도 바꾸지 않았다';
+  end if;
+  -- 신청서 표의 트리거가 브레인방이 읽은 그 셋뿐이고, 시작 알림은 꺼져 있다(켜져 있으면 합성 신청서가 알림 함수를 부를 수 있다)
+  select pg_catalog.count(*) into v_n from pg_catalog.pg_trigger tg
+   where tg.tgrelid = 'public.applications'::pg_catalog.regclass and not tg.tgisinternal
+     and tg.tgname not in ('applications_protect_resume_approval_fields', 'applications_start_notice', 'applications_sync_correction_schedule');
+  if v_n <> 0 then
+    raise exception 'zzb3b 합성 자료 중단: 신청서 표에 읽지 않은 트리거가 %개 있다. 아무것도 바꾸지 않았다', v_n;
+  end if;
+  select pg_catalog.count(*) into v_n from pg_catalog.pg_trigger tg
+   where tg.tgrelid = 'public.applications'::pg_catalog.regclass and tg.tgname = 'applications_start_notice' and tg.tgenabled <> 'D';
+  if v_n <> 0 then
+    raise exception 'zzb3b 합성 자료 중단: 신청서 표의 시작 알림 트리거가 켜져 있다(읽었을 때는 꺼져 있었다). 아무것도 바꾸지 않았다';
   end if;
   -- 이 DB 가 운영이 아니라는 DB 안의 증거(3-0 과 같은 방식): 파일 객체가 하나도 없다
   select pg_catalog.count(*) into v_n from storage.objects;
@@ -161,8 +175,8 @@ select t.id, 'zzb3b_' || t.label || '@member.zzb3b.invalid', t.member_id::pg_cat
                        'dates', (select pg_catalog.jsonb_agg((d.start_day + g.i)::pg_catalog.text order by g.i) from pg_catalog.generate_series(0, 23) as g(i)))::pg_catalog.text
            end as schedule_text,
            case when p.label = 'refund' then 'refunded' end as app_status,
-           case when p.label = 'refund' then (pg_catalog.extract(epoch from pg_catalog.now())::bigint - 86400) * 1000 end as refund_at,
-           (pg_catalog.extract(epoch from pg_catalog.now())::bigint - 40 * 86400) * 1000 as created_ms
+           case when p.label = 'refund' then ((extract(epoch from pg_catalog.now()))::bigint - 86400) * 1000 end as refund_at,
+           ((extract(epoch from pg_catalog.now()))::bigint - 40 * 86400) * 1000 as created_ms
       from zzb3b_plan p cross join zzb3b_dates d
      where p.label not in ('noapp', 'unconf')
     union all
@@ -170,7 +184,7 @@ select t.id, 'zzb3b_' || t.label || '@member.zzb3b.invalid', t.member_id::pg_cat
     select p.label, p.member_id, case when p.label = 'unconf' then p.app1 else p.app2 end, case when p.label = 'unconf' then 1 else 2 end,
            p.label = 'restart2', '내벨업챌린지 - Fast', case when p.label = 'restart' then d.start_day + 28 else d.start_day end,
            '[]'::pg_catalog.jsonb, '[]'::pg_catalog.jsonb, false, null, null, null, null, null,
-           (pg_catalog.extract(epoch from pg_catalog.now())::bigint - 3 * 86400) * 1000
+           ((extract(epoch from pg_catalog.now()))::bigint - 3 * 86400) * 1000
       from zzb3b_plan p cross join zzb3b_dates d
      where p.label in ('unconf', 'restart', 'restart2')
   ) t;
@@ -222,17 +236,18 @@ with made as (
   select pg_catalog.jsonb_build_object(
     'accounts', (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('label', p.label, 'auth_user_id', p.auth_id, 'member_id', p.member_id) order by p.label) from zzb3b_plan p),
     -- 옛 길이 고치는 칸(self_paced_schedule)의 처음 값과, 그 밖의 칸의 지문
-    'applications', (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id', a.id, 'self_paced_schedule', a.self_paced_schedule,
+    'applications', (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id', a.id, 'member_id', a.user_id, 'email', a.email, 'self_paced_schedule', a.self_paced_schedule,
                               'rest_md5', pg_catalog.md5((pg_catalog.to_jsonb(a) - 'self_paced_schedule')::pg_catalog.text)) order by a.id)
                        from public.applications a where a.email like 'zzb3b\_%@member.zzb3b.invalid' escape '\'),
     -- 옛 길이 고치는 칸(locked_auth_rate)의 처음 값과, 그 밖의 칸의 지문
-    'records', (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id', s.id, 'locked_auth_rate', s.locked_auth_rate,
+    'records', (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id', s.id, 'user_id', s.user_id, 'enrollment_id', s.enrollment_id, 'locked_auth_rate', s.locked_auth_rate,
                          'rest_md5', pg_catalog.md5((pg_catalog.to_jsonb(s) - 'locked_auth_rate')::pg_catalog.text)) order by s.id)
                   from public.study_results_v3 s where s.user_id in (select p.member_id::pg_catalog.text from zzb3b_plan p)),
-    'extensions', (select pg_catalog.jsonb_agg(e.id order by e.id) from public.tr_deadline_extensions e where e.user_id in (select p.member_id::pg_catalog.text from zzb3b_plan p)),
+    'extensions', coalesce((select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id', e.id, 'user_id', e.user_id, 'enrollment_id', e.enrollment_id) order by e.id)
+                              from public.tr_deadline_extensions e where e.user_id in (select p.member_id::pg_catalog.text from zzb3b_plan p)), '[]'::pg_catalog.jsonb),
     -- tr_user_map: 처음부터 있던 행(그 밖의 합성 회원의 행은 "원래 없음")
-    'user_map', (select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('user_id', m.user_id, 'email', m.email, 'name', m.name, 'updated_at', m.updated_at) order by m.user_id)
-                   from public.tr_user_map m where m.user_id in (select p.member_id from zzb3b_plan p))
+    'user_map', coalesce((select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('user_id', m.user_id, 'email', m.email, 'name', m.name, 'updated_at', m.updated_at) order by m.user_id)
+                   from public.tr_user_map m where m.user_id in (select p.member_id from zzb3b_plan p)), '[]'::pg_catalog.jsonb)
   ) as j
 )
 select pg_catalog.jsonb_build_object(

@@ -266,3 +266,116 @@ export function testScreenText(mutate) {
     if (/screenshot|tracing\.start|recordHar|storageState\(/.test(code)) problems.push('실행기: 화면 캡처·추적·HAR·상태 내보내기를 씀');
     return { problems, note: '' };
 }
+
+// ---- 합성 자료 SQL 네 파일의 글자 점검. **SQL 을 실행하지 않는다 — 문법이 맞다는 증거가 아니다.**
+//      확실히 틀리는 모양(특수 문법에 스키마 이름, 짝이 맞지 않는 괄호·따옴표, raise 의 자리 수)과
+//      고치고 지우는 문장마다 그 행의 주인(회원번호·이메일·신청서 번호)을 함께 거는지만 본다.
+const SQL_FILES = ['fixtures_up.sql', 'fixtures_reset.sql', 'fixtures_down.sql', 'state_rows.sql'];
+// 주석을 걷고(글자 안의 -- 는 둔다), 글자 밖에서만 문장을 가른다
+function sqlScan(text) {
+    let code = '';
+    const stmts = [];
+    let cur = '';
+    let depth = 0;
+    let minDepth = 0;
+    let openQuote = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '-' && text[i + 1] === '-') { while (i < text.length && text[i] !== '\n') i++; code += '\n'; cur += '\n'; continue; }
+        if (ch === "'") {
+            let j = i + 1;
+            openQuote = true;
+            while (j < text.length) { if (text[j] === "'") { if (text[j + 1] === "'") { j += 2; continue; } openQuote = false; break; } j++; }
+            const lit = text.slice(i, j + 1);
+            code += lit; cur += lit; i = j;
+            continue;
+        }
+        if (ch === '(') depth++;
+        if (ch === ')') { depth--; if (depth < minDepth) minDepth = depth; }
+        code += ch;
+        if (ch === ';') { stmts.push(cur.trim()); cur = ''; } else cur += ch;
+    }
+    return { code, stmts, depth, minDepth, openQuote };
+}
+const noStrings = (s) => s.replace(/'(?:[^']|'')*'/g, "''");
+// 맨 바깥의 쉼표로 가른 인자의 수
+function topArgs(s) {
+    const t = noStrings(s).trim();
+    if (!t) return 0;
+    let d = 0; let n = 1;
+    for (const ch of t) { if (ch === '(') d++; else if (ch === ')') d--; else if (ch === ',' && d === 0) n++; }
+    return n;
+}
+const OWNER = {
+    'public.applications': ["a.id = (x->>'id')::pg_catalog.uuid", "a.user_id = x->>'member_id'", "a.email = x->>'email'"],
+    'public.study_results_v3': ["s.id = (x->>'id')::pg_catalog.uuid", "s.user_id = x->>'user_id'", "s.enrollment_id::pg_catalog.text = x->>'enrollment_id'"],
+    'public.tr_deadline_extensions': ["e.id = x->>'id'", "e.user_id = x->>'user_id'", "e.enrollment_id::pg_catalog.text = x->>'enrollment_id'"],
+    'public.tr_user_map': ['m.user_id = any (v_members)'],
+    'public.users': ["u.id = (x->>'member_id')::pg_catalog.uuid", "u.email = 'zzb3b_' || (x->>'label') || '@member.zzb3b.invalid'"],
+    'security_private.member_identity': ["mi.auth_user_id = (x->>'auth_user_id')::pg_catalog.uuid", "mi.member_id = (x->>'member_id')::pg_catalog.uuid"],
+};
+export function testSqlText(mutate) {
+    const problems = [];
+    let writes = 0;
+    let raises = 0;
+    for (const f of SQL_FILES) {
+        const rel = DIR + 'sql/' + f;
+        const raw = workFile(rel);
+        if (raw === null) { problems.push('SQL ' + f + ': 파일이 없음'); continue; }
+        const text = (mutate ? mutate(rel, raw) : raw).replace(/\r\n/g, '\n');
+        const sc = sqlScan(text);
+        const bare = noStrings(sc.code);
+        if (sc.openQuote) problems.push('SQL ' + f + ': 닫히지 않은 따옴표');
+        if (sc.depth !== 0 || sc.minDepth < 0) problems.push('SQL ' + f + ': 괄호의 짝이 맞지 않음');
+        if ((bare.match(/\$zz_b3b\$/g) || []).length % 2 !== 0) problems.push('SQL ' + f + ': 달러 따옴표의 짝이 맞지 않음');
+        // 특수 문법(이름 뒤가 보통의 인자 목록이 아닌 것)에는 스키마 이름을 붙이지 않는다
+        const special = bare.match(/pg_catalog\.(extract|coalesce|nullif|greatest|least|position|substring|trim|overlay|cast|exists|current_date|current_timestamp|localtimestamp)\b/gi);
+        if (special) problems.push('SQL ' + f + ': 특수 문법에 스키마 이름을 붙임(' + [...new Set(special.map((s) => s.toLowerCase()))].join(', ') + ')');
+        if (/\bextract\s*\(/i.test(bare) && !/\(extract\(epoch from pg_catalog\.now\(\)\)\)::bigint/.test(bare)) problems.push('SQL ' + f + ': extract 의 모양이 정해 둔 것((extract(epoch from …))::bigint)이 아님');
+        // raise 의 자리 수 = 넘긴 값의 수
+        for (const st of sc.stmts) {
+            const m = st.match(/raise exception '((?:[^']|'')*)'([\s\S]*)$/);
+            if (!m) continue;
+            raises++;
+            const holes = (m[1].replace(/%%/g, '').match(/%/g) || []).length;
+            const rest = m[2].trim();
+            const args = rest === '' ? 0 : (rest.startsWith(',') ? topArgs(rest.slice(1)) : -1);
+            if (args !== holes) problems.push('SQL ' + f + ': raise 의 자리 ' + holes + '개에 값 ' + args + '개');
+        }
+        // 고치고 지우는 문장마다 그 행의 주인을 함께 건다
+        for (const st of sc.stmts) {
+            const m = st.match(/\b(delete from|update)\s+((?:public|security_private|auth|storage)\.[a-z_0-9]+)/);
+            if (!m) continue;
+            writes++;
+            const need = OWNER[m[2]];
+            if (!need) { problems.push('SQL ' + f + ': 정해 두지 않은 표를 고치거나 지움(' + m[2] + ')'); continue; }
+            const body = st.slice(m.index);
+            for (const n of need) if (!body.includes(n)) problems.push('SQL ' + f + ': ' + m[2] + ' 를 ' + (m[1] === 'update' ? '고치는' : '지우는') + ' 문장에 주인 조건이 없음');
+        }
+        // 넣는 표는 올리기에서만, 정해 둔 여섯 표만
+        const ins = [...bare.matchAll(/\binsert into\s+([a-z_.0-9]+)/g)].map((m) => m[1]);
+        const okIns = f === 'fixtures_up.sql' ? ['zzb3b_plan', 'public.users', 'security_private.member_identity', 'public.applications', 'public.study_results_v3', 'public.tr_deadline_extensions', 'public.tr_user_map']
+            : f === 'fixtures_reset.sql' ? ['zzb3b_reset_result'] : f === 'fixtures_down.sql' ? ['zzb3b_down_result'] : [];
+        for (const t of ins) if (!okIns.includes(t)) problems.push('SQL ' + f + ': 정해 두지 않은 표에 넣음(' + t + ')');
+        if (f === 'state_rows.sql') {
+            if (/\b(insert|update|delete|create|alter|drop|truncate|grant|set)\b/i.test(bare.replace(/pg_catalog\.current_setting/g, ''))) problems.push('SQL state_rows.sql: 읽기만 하는 파일에 바꾸는 문장');
+            if (!sc.code.includes("(pg_catalog.to_jsonb(u) - 'password')")) problems.push('SQL state_rows.sql: 회원 표의 집계에서 비밀번호 열을 빼지 않음');
+            for (const t of ['users', 'member_identity', 'applications', 'study_results_v3', 'tr_user_map', 'tr_deadline_extensions']) if (!new RegExp("'outside'[\\s\\S]*'" + t + "', \\(select pg_catalog\\.jsonb_build_object\\('rows'").test(sc.code)) problems.push('SQL state_rows.sql: 합성 밖 행의 집계 지문에 ' + t + ' 가 없음');
+        } else {
+            if ((bare.match(/^begin;$/gm) || []).length !== 1 || (bare.match(/^commit;$/gm) || []).length !== 1) problems.push('SQL ' + f + ': begin·commit 이 한 번씩이 아님');
+            if (!sc.code.includes("current_setting('b3b.test_project_ref', true), '') <> 'hmncdheiwqwekdbtijar'")) problems.push('SQL ' + f + ': 대상 확인 값을 보지 않음');
+        }
+        // 되돌리기·내리기: 목록 자체의 검사(겹친 번호·주인)가 고치고 지우는 문장보다 앞에 있다
+        if (f === 'fixtures_reset.sql' || f === 'fixtures_down.sql') {
+            const iList = sc.code.indexOf('목록에 겹친(또는 빠진) 번호가');
+            const iOwn = sc.code.indexOf('목록의 마감 연장 %개가 목록의 합성 회원');
+            const firstWrite = Math.min(...['update public.', 'delete from public.', 'delete from security_private.'].map((w) => { const i = sc.code.indexOf(w); return i < 0 ? Infinity : i; }));
+            if (!(iList > 0 && iOwn > iList && iOwn < firstWrite)) problems.push('SQL ' + f + ': 목록 자체의 검사(겹친 번호·주인)가 고치고 지우는 문장보다 앞에 있지 않음');
+        }
+        // 비밀번호 열의 원문은 어디에도 내보내지 않는다: 올리기의 넣는 자리 한 곳에서만 읽는다
+        const pwReads = (sc.code.match(/current_setting\('b3b\.legacy_pw'/g) || []).length;
+        if (f === 'fixtures_up.sql' ? pwReads !== 2 : pwReads !== 0) problems.push('SQL ' + f + ': 옛 길 비밀번호 값을 읽는 곳이 정해 둔 수가 아님');
+        if (/u\.password|'password',|\bpassword\s*(as|=)/i.test(bare.replace(/insert into public\.users \(id, email, password,/, ''))) problems.push('SQL ' + f + ': 비밀번호 열을 읽거나 내보냄');
+    }
+    return { problems, note: '글자만 봤다(실행 0 — 문법이 맞다는 증거가 아니다). 고치고 지우는 문장 ' + writes + '개, raise ' + raises + '개' };
+}

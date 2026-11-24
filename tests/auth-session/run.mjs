@@ -12,9 +12,9 @@ import { OLD_PATH } from './scenarios.mjs';
 import * as ON from './on-tests.mjs';
 import { MUTANTS, applyEdits } from './mutants.mjs';
 import { compareWithGolden } from './protocol.mjs';
-import { testDecider, testCore, testServer, testScreenText } from './tool-tests.mjs';
+import { testDecider, testCore, testServer, testScreenText, testSqlText } from './tool-tests.mjs';
 
-const TOOLS = { decider: testDecider, core: testCore, server: testServer, text: async (m) => testScreenText(m) };
+const TOOLS = { decider: testDecider, core: testCore, server: testServer, text: async (m) => testScreenText(m), sql: async (m) => testSqlText(m) };
 
 const lines = [];
 const out = (s) => { lines.push(s); console.log(s); };
@@ -158,7 +158,7 @@ proto.problems.forEach((p) => fail('규약', p));
 out(`    - [8] 두 저장소의 모듈이 같은 규약(공홈 ${proto.golden ? proto.golden.commit : '?'} 의 js/auth-session.js 로 만든 기준표와 대조 — 같은 입력 ${proto.vectors}가지·${proto.steps}걸음의 상태·이유·요청): 어긋남 ${proto.problems.length}`);
 
 // 시험 도구 자신(브라우저 없이)
-for (const [key, title] of [['decider', '차단기의 범위 규칙(회원 표는 정확한 두 조회, 쓰기는 합성 행·허용한 열, 목록을 받기 전에는 전부 막음)'], ['core', '실행기의 판단 부분(저장 계획 검사·합성 자료의 목록·차례·보관함·원복 표시)'], ['server', '화면 시험용 로컬 서버의 몸통'], ['text', '실행기가 판단 부분을 실제로 쓰는가(글자)']]) {
+for (const [key, title] of [['decider', '차단기의 범위 규칙(회원 표는 정확한 두 조회, 쓰기는 합성 행·허용한 열, 목록을 받기 전에는 전부 막음)'], ['core', '실행기의 판단 부분(저장 계획 검사·합성 자료의 목록·차례·보관함·원복 표시)'], ['server', '화면 시험용 로컬 서버의 몸통'], ['text', '실행기가 판단 부분을 실제로 쓰는가(글자)'], ['sql', '합성 자료 SQL 네 파일의 글자(특수 문법·괄호·raise 의 자리 수, 고치고 지우는 문장의 주인 조건, 합성 밖 지문)']]) {
     const r = await TOOLS[key](null);
     r.problems.forEach((p) => fail('도구', p));
     out(`    - [8] 도구 › ${title}: 어긋남 ${r.problems.length}${r.note ? ' — ' + r.note : ''}`);
