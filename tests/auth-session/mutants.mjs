@@ -269,7 +269,7 @@ export const MUTANTS = [
         edits: [['tests/auth-session/request-log.mjs', "    if (spec === 'E') return !!st && v === 'eq.' + st.email;", "    if (spec === 'E') return v.startsWith('eq.');"]],
     },
     {
-        name: '차단기: 준비 전(예행 전·합성 목록 전)에도 업무 요청을 내보냄', section: 'tools', tool: 'decider', expect: /차단기 › 준비 전 › /,
+        name: '차단기: 준비 전(예행 전·합성 목록 전)에도 업무 요청을 내보냄', section: 'tools', tool: 'decider', expect: /차단기 › 준비 전 › (회원 표|쓰기|읽기|합성 응답)/,
         edits: [['tests/auth-session/request-log.mjs', "    if (!ctx.ready) return stop('not_ready', false);                    // 예행 전·합성 목록을 확인하기 전: 업무 요청 0\n", '']],
     },
     {
@@ -286,11 +286,11 @@ export const MUTANTS = [
     },
     {
         name: '차단기: tr_user_map 의 회원번호와 이메일의 짝을 보지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기\(꺼짐\): tr_user_map\(짝이 맞지 않음[^:]*: 막아야 하는데 내보냄/,
-        edits: [['tests/auth-session/request-log.mjs', " && body.user_id === st.memberId && body.email === st.email;", " && (body.user_id === st.memberId || body.email === st.email);"]],
+        edits: [['tests/auth-session/screen-core.mjs', "    return v.user_id === expect.memberId && v.email === expect.email && typeof v.name === 'string'", "    return (v.user_id === expect.memberId || v.email === expect.email) && typeof v.name === 'string'"]],
     },
     {
-        name: '차단기: 읽기를 허용 목록으로 가리지 않음(목록에 없는 표·조건도 내보냄)', section: 'tools', tool: 'decider', expect: /차단기 › 읽기: (목록에 없는 표|신청서\(정해 두지 않은 열\)|공지\(다른 조건\)|학습 기록\(정해 두지 않은 조건\)): 막아야 하는데 내보냄/,
-        edits: [['tests/auth-session/request-log.mjs', "    return listed ? { table, write: false, blocked: [], unsafe: false } : stop('read_not_listed', false);", "    return { table, write: false, blocked: [], unsafe: false };"]],
+        name: '차단기: 읽기를 허용 목록으로 가리지 않음(목록에 없는 표·조건도 내보냄)', section: 'tools', tool: 'decider', expect: /차단기 › 읽기: (목록에 없는 표|신청서\(정해 두지 않은 열\)|공지\(다른 조건\)|학습 기록\(정해 두지 않은 조건\)|설정\((다른 키|전체)\)): 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "    return stop('read_not_listed', false);\n}", "    return { table, write: false, blocked: [], unsafe: false };\n}"]],
     },
     {
         name: '차단기: 읽기의 값을 그 학생의 것으로 좁히지 않음(다른 합성 학생의 행도 읽음)', section: 'tools', tool: 'decider', expect: /차단기 › 읽기: (신청서\(다른 합성 학생의 번호\)|학습 기록\(다른 합성 학생\)): 막아야 하는데 내보냄/,
@@ -302,7 +302,35 @@ export const MUTANTS = [
     },
     {
         name: '차단기: 옛 길의 쓰기에서 열을 보지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기\(꺼짐\): 신청서의 (다른 열|일정표 \+ 다른 열): 막아야 하는데 내보냄/,
-        edits: [['tests/auth-session/request-log.mjs', "ok = shapeOk(q, [['id', 'A']], st) && keysAre(['self_paced_schedule']) && typeof body.self_paced_schedule === 'string';", "ok = shapeOk(q, [['id', 'A']], st);"]],
+        edits: [['tests/auth-session/request-log.mjs', "ok = shapeOk(q, [['id', 'A']], st) && keysAre(['self_paced_schedule']) && scheduleOf(body.self_paced_schedule) !== null;", "ok = shapeOk(q, [['id', 'A']], st);"]],
+    },
+    {
+        name: '차단기: 옛 길의 일정표 값의 모양을 보지 않음(아무 글자나 내보냄)', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기\(꺼짐\): 신청서의 일정표(가 아무 글자|가 빈 객체| 날짜가 23개|에 다른 키): 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', " && scheduleOf(body.self_paced_schedule) !== null;", " && typeof body.self_paced_schedule === 'string';"]],
+    },
+    {
+        name: '차단기: 옛 길의 tr_user_map 에서 이름·시각을 보지 않음(빠져도 내보냄)', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기\(꺼짐\): tr_user_map\((이름이 빠짐|시각이 빠짐|시각의 모양이 다름|이름이 글자가 아님)\): 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "ok = shapeOk(q, [['on_conflict', 'user_id']], st) && userMapOk(body, st);", "ok = shapeOk(q, [['on_conflict', 'user_id']], st) && keysAre(['user_id', 'email', 'name', 'updated_at']) && body.user_id === st.memberId && body.email === st.email;"]],
+    },
+    {
+        name: '차단기: 합성 학생의 자료가 아닌 읽기를 실제로 내보냄(설정·공지·일정 배정)', section: 'tools', tool: 'decider', expect: /차단기 › 합성 응답: [^:]*: 합성 응답으로 답해야 하는데 실제로 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "return { table, write: false, blocked: [], unsafe: false, synthetic: true };", "return { table, write: false, blocked: [], unsafe: false };"]],
+    },
+    {
+        name: '차단기: 인증의 예외를 경로만 보고 줌(메서드·쿼리·자격의 조합을 보지 않음)', section: 'tools', tool: 'decider', expect: /차단기 › 인증의 모양: [^:]*: 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "        if (ownOk(ctx)) return NONE;\n", "        return NONE;\n"]],
+    },
+    {
+        name: '차단기: 회원 자격이 필요한 주소에 공개 키로 다시 보내는 요청을 내보냄', section: 'tools', tool: 'decider', expect: /차단기 › 인증의 모양: (본인|접근) 확인을 공개 키로\(거절 뒤 다시 보내기\): 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "    if (ctx.target === 'logout' || ctx.target === 'my_profile' || ctx.target === 'my_site_access') return ctx.cred === 'member';", "    if (ctx.target === 'logout') return ctx.cred === 'member';\n    if (ctx.target === 'my_profile' || ctx.target === 'my_site_access') return ctx.cred === 'member' || ctx.cred === 'anon';"]],
+    },
+    {
+        name: '차단기: 로그인 요청에 비밀번호가 실렸는지 보지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 인증의 모양: 로그인인데 비밀번호가 없음: 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "    if (ctx.target === 'login') return ctx.cred === 'anon' && ctx.items.password === true && ctx.items.refreshToken === false;", "    if (ctx.target === 'login') return ctx.cred === 'anon';"]],
+    },
+    {
+        name: '차단기: 준비 전에도 인증 요청은 내보냄', section: 'tools', tool: 'decider', expect: /차단기 › 준비 전 › 인증 모듈: /,
+        edits: [['tests/auth-session/request-log.mjs', "        if (!ctx.ready) return { table: 'none', write: !read, blocked: ['not_ready'], unsafe: false };\n", '']],
     },
     {
         name: '차단기: 인증률 확정의 행을 보지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기\(꺼짐\): (인증률 확정\((합성이 아닌 행|다른 합성 학생의 행)\)|학습 기록을 회원 조건으로[^:]*): 막아야 하는데 내보냄/,

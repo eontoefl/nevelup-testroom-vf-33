@@ -27,6 +27,7 @@
 //   종료 코드: 0 통과 / 1 통과 아님 / 2 환경 / 3 원복 확인을 받지 못함·중단 / 4 예행(P) 실패 — 뒤의 경우를 돌리지 않음 / 5 결과에 비밀값의 흔적
 
 import fs from 'node:fs';
+import os from 'node:os';
 import net from 'node:net';
 import dns from 'node:dns';
 import http from 'node:http';
@@ -40,7 +41,7 @@ import { TEST_URL, TEST_REF, CONFIG_FILE, readProdConfig } from './rewrite.mjs';
 import { FakeRest } from './fake-rest.mjs';
 import { STUDENTS, ENTERING, authAccount } from './fixtures.mjs';
 import { createCore, makeIgnore } from './serve-core.mjs';
-import { makeDecider, summarize } from './request-log.mjs';
+import { makeDecider, summarize, SYNTHETIC_BODY } from './request-log.mjs';
 import { FakeSupabase, fakeJwt } from './fake-supabase.mjs';
 import { ISSUER, PauseTimeout, PauseBoard, makeVault, runSequence, confirmRevert, browserEnv, controlPassOk, checkPlan, checkSynthetic, rosterOk } from './screen-core.mjs';
 
@@ -61,9 +62,16 @@ const PAUSE_TIMEOUT = Number(arg('--pause-timeout-ms', '600000'));
 //   --selftest bad-plan             화면에서 읽은 저장 계획에 합성 행이 아닌 행을 끼워 넣는다 → 넘기지 않아야 한다(그 경우는 기대와 다름)
 //   --selftest bad-control-pass     예행의 대조용 요청을 자격·본문이 실린 POST 로 보낸다 → 예외로 내보내지 않아야 한다(수신 0, 종료 코드 4)
 //   --selftest unsafe-write         켜진 화면에서 업무 쓰기를 시켜 본다 → 전송 전에 막고, 그 경우를 끝내고, 뒤의 경우를 시작하지 않아야 한다(종료 코드 6)
+//   --selftest loose-owner          새 문서의 소유 판정(연 창·쥠 표식·창 이름·탐색 종류·놓은 시각)을 뺀 모듈을 내준다 → 실제 복제본이 이어받는 것을 WN·TD 가 잡아야 한다(종료 코드 1)
 const SELFTEST = arg('--selftest', null);
 if (SELFTEST && !FAKE) stop('--selftest 는 --fake 에서만 쓴다');
-if (SELFTEST && !['leaky-blocker', 'silent-operator', 'bad-plan', 'bad-control-pass', 'unsafe-write'].includes(SELFTEST)) stop('--selftest 의 값이 맞지 않음');
+if (SELFTEST && !['leaky-blocker', 'silent-operator', 'bad-plan', 'bad-control-pass', 'unsafe-write', 'loose-owner'].includes(SELFTEST)) stop('--selftest 의 값이 맞지 않음');
+// 손으로 재는 창(--fake 에서만): 가짜 서버·지어낸 자격으로 보이는 브라우저를 띄워 두고, 사람이 탭 복제·닫은 탭 되살리기·새로 고침을 한다.
+// 실행기는 문서마다 브라우저가 준 것(탐색 종류 등)과 모듈의 판정·나간 인증 요청을 적는다. B3B_CHROMIUM 에 Edge 의 실행 파일을 주면 Edge 로 잰다.
+const MANUAL = flag('--manual');
+if (MANUAL && !FAKE) stop('--manual 은 --fake 에서만 쓴다(가짜 서버·지어낸 자격으로 손으로 재는 창이다)');
+if (MANUAL && SELFTEST) stop('--manual 과 --selftest 는 함께 쓰지 않는다');
+const MANUAL_MS = Math.max(5000, Number(arg('--manual-minutes', '5')) * 60000);
 const OUT = path.resolve(arg('--out', path.join(ROOT, 'tests', 'auth-session', '.run', `screen-${FAKE ? 'fake' : 'real'}.json`)));
 
 // ---------------------------------------------------------------------------
@@ -111,8 +119,9 @@ const fakeEmail = (k) => `zzb3b_${k}@member.zz.invalid`;      // --fake 의 합�
     vault = makeVault(values);
     SCAN.push(PW, LEGACY_PW, ANON, CONTROL_SECRET, ...(FAKE ? [] : Object.values(EMAIL)));
 }
-const SINGLE = ['W', 'E', 'RG', 'LO', 'EX', 'MT', 'WN', 'NM', 'BC', 'OFF'];
-const EXPECTED_IDS = ['P', 'F', ...KEYS.map((k) => 'S-' + k), ...SINGLE];
+// TD(실제 탭 복제·되살리기)는 --fake 에서만 돈다: 브라우저의 프로필 폴더가 디스크에 생기므로 실제 자격으로는 돌리지 않는다
+const SINGLE = ['W', 'E', 'RG', 'LO', 'EX', 'MT', 'WN', 'NM', 'BC', ...(FAKE ? ['TD'] : []), 'OFF'];
+const EXPECTED_IDS = MANUAL ? ['P', 'HM'] : ['P', 'F', ...KEYS.map((k) => 'S-' + k), ...SINGLE];
 
 const pwPath = process.env.B3B_PLAYWRIGHT;
 const chromePath = process.env.B3B_CHROMIUM;
@@ -338,6 +347,13 @@ const INIT_SCRIPT = `(() => {
     return out;
   };
   b.rawGet = Storage.prototype.getItem;
+  // 이 문서가 읽힌 순간: 복사돼 온(또는 남아 있던) 쥠 표식의 상태와 창 이름이 있는가(값은 보지 않는다 — 정해 둔 이름만)
+  b.start = { holder: 'none', named: false };
+  b.docKey = Math.random().toString(36).slice(2);
+  try { const h = JSON.parse(b.rawGet.call(window.sessionStorage, 'tr_auth_v1:holder')); if (h && (h.state === 'held' || h.state === 'released')) b.start.holder = h.state; } catch (e) {}
+  try { b.start.named = window.name !== '' && window.name !== '__b3bDup'; } catch (e) {}
+  // 브라우저가 이 문서에 준 탐색 종류(정해 둔 이름만)
+  b.nav = () => { try { const v = performance.getEntriesByType('navigation')[0].type; return ['reload', 'navigate', 'back_forward', 'prerender'].includes(v) ? v : 'other'; } catch (e) { return 'unknown'; } };
   const tickFrame = () => { b.sample(); requestAnimationFrame(tickFrame); };
   requestAnimationFrame(tickFrame);
   setInterval(b.sample, 100);
@@ -398,6 +414,9 @@ const STATIC_BODY = { stylesheet: 'text/css', font: 'font/woff2', image: 'image/
 
 async function newCx(id) {
     const context = await browser.newContext({ serviceWorkers: 'block' });      // 디스크에 남지 않는 새 상태
+    return wireCx(id, context);
+}
+async function wireCx(id, context) {
     const cx = { id, context, records: [], hooks: {}, dialogs: [], store: {}, events: [], seen: { profileKeysOk: null, sids: {}, names: {}, lastLoginSid: null, states: [] }, account: null };
     await context.exposeBinding('__b3bEvent', (src, name) => { if (['pageshow-persisted', 'pageshow-normal', 'broadcast'].includes(name)) cx.events.push(name); });
     await context.addInitScript(INIT_SCRIPT);
@@ -407,6 +426,50 @@ async function newCx(id) {
     cx.page = () => context.newPage();
     return cx;
 }
+
+// (경우 TD — --fake 에서만) 실제 탭 복제·닫은 탭 되살리기를 부를 수 있는 브라우저 상태.
+// 브라우저의 그 명령은 화면의 스크립트로는 부를 수 없다 — 권한 tabs·sessions 만 가진 작은 확장을 임시 폴더에 만들어 싣고,
+// 그 확장의 화면에서 chrome.tabs.duplicate·chrome.tabs.remove·chrome.sessions.restore 를 부른다.
+// 확장이 필요해 프로필 폴더가 디스크에 생긴다(가짜 서버의 지어낸 로그인 상태만 들어간다). 경우가 끝나면 둘 다 지운다.
+// 차단기는 다른 경우와 같다(이 브라우저도 127.0.0.1 말고는 이름을 풀지 못한다).
+async function persistentCx(id, { extension, visible }) {
+    const extDir = extension ? fs.mkdtempSync(path.join(os.tmpdir(), 'b3b-ext-')) : null;
+    const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'b3b-profile-'));
+    const wipe = () => { for (const d of [extDir, profile]) { if (!d) continue; try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch (e) { TD_LEFT.push('folder'); } } };
+    try {
+        const args = ['--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'];
+        if (!visible) args.unshift('--headless=new');          // 확장은 새 헤드리스에서만 실린다(창은 뜨지 않는다)
+        let extId = null;
+        if (extension) {
+            // 확장의 번호를 미리 알려고 공개 키를 실행마다 새로 만든다(비공개 키는 만들자마자 버린다 — 어디에도 쓰지 않는다)
+            const der = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 }).publicKey.export({ type: 'spki', format: 'der' });
+            extId = [...crypto.createHash('sha256').update(der).digest().subarray(0, 16)].map((x) => String.fromCharCode(97 + (x >> 4)) + String.fromCharCode(97 + (x & 15))).join('');
+            fs.writeFileSync(path.join(extDir, 'manifest.json'), JSON.stringify({ manifest_version: 3, name: 'b3b tab duplication (local test only)', version: '1', key: der.toString('base64'), permissions: ['tabs', 'sessions'] }));
+            fs.writeFileSync(path.join(extDir, 'page.html'), '<!doctype html><meta charset="utf-8"><title>b3b</title>');
+            args.push('--disable-extensions-except=' + extDir, '--load-extension=' + extDir);
+        }
+        const context = await chromium.launchPersistentContext(profile, { executablePath: chromePath, headless: false, args, env: browserEnv(process.env), serviceWorkers: 'block' });
+        const cx = await wireCx(id, context);
+        cx.cleanup = wipe;
+        if (extension) {
+            cx.ext = await context.newPage();
+            await cx.ext.goto('chrome-extension://' + extId + '/page.html');
+        }
+        return cx;
+    } catch (e) { wipe(); throw e; }
+}
+const realDupCx = (id) => persistentCx(id, { extension: true, visible: false });
+// 손으로 재는 창: 확장 없이, 보이는 창으로(점검용 --manual-headless 는 창 없이)
+const manualCx = (id) => persistentCx(id, { extension: false, visible: !flag('--manual-headless') });
+const TD_LEFT = [];          // 지우지 못한 임시 폴더가 있었는가(있으면 결과에 적는다)
+// 대조 실험 loose-owner 가 모듈에서 빼는 줄(새 문서의 소유 판정)
+const LOOSE_LINES = [
+    "        if (opened) return Promise.resolve('foreign');",
+    "        if (h.state !== 'released') return Promise.resolve('foreign');",
+    "        if (!h.name || h.name !== name) return Promise.resolve('foreign');",
+    "        if (navType() !== 'reload') return Promise.resolve('foreign');",
+    "        if (began === null || typeof nowMs !== 'number' || !(h.at >= began && h.at <= nowMs)) return Promise.resolve('foreign');",
+];
 
 // 응답에서 정해 둔 것만 본다(본문을 기록하지 않는다)
 function observe(cx, rec, out) {
@@ -440,6 +503,10 @@ function observe(cx, rec, out) {
 
 const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': '*' };
 let HALT = false;          // 안전 조건을 어긴 요청이 나왔다: 그 경우를 끝내고 뒤의 경우를 시작하지 않는다
+// 요청을 낸 탭의 번호(작은 정수 — 경우 안에서 탭마다 하나)
+const TAB_NO = new WeakMap();
+let tabSeq = 0;
+function tabNoOf(page) { if (!page) return 0; if (!TAB_NO.has(page)) TAB_NO.set(page, ++tabSeq); return TAB_NO.get(page); }
 // 그 요청을 낸 화면이 어느 서버의 것인가(켜짐·꺼짐). 모르면 null — 차단기는 켜진 화면으로 본다(더 막는 쪽)
 function pageModeOf(r) {
     try {
@@ -460,6 +527,7 @@ async function handleRoute(route, cx) {
     const d = decide({ url: r.url(), method: r.method(), headers, postData: r.postData(), resourceType: r.resourceType(), isNavigation: r.isNavigationRequest(), pageMode: pageModeOf(r), student: studentOf(cx) });
     const rec = d.record;
     rec.sent = false;
+    try { rec.tab = tabNoOf(r.frame().page()); } catch (e) { rec.tab = 0; }
     cx.records.push(rec);
     // 안전 조건을 어긴 요청(켜진 화면의 회원 표·쓰기, 꺼진 화면의 범위 밖 회원 표·쓰기, 용도 밖의 자격): 보내지 않고,
     // 이 경우를 끝내고(브라우저 상태를 닫는다), 뒤의 경우를 시작하지 않는다
@@ -489,6 +557,8 @@ async function handleRoute(route, cx) {
         return route.fulfill({ response: resp });
     }
     if (d.action === 'abort') return route.abort('blockedbyclient');
+    // 합성 학생의 자료가 아닌 읽기(설정·공지·일정 배정): 시험 프로젝트로 내보내지 않고 빈 목록으로 답한다(가짜 서버 상대에서도 같다)
+    if (d.action === 'synthetic') { rec.how = 'synthetic-response'; rec.status = 200; return route.fulfill({ status: 200, headers: Object.assign({ 'content-type': 'application/json' }, CORS), body: SYNTHETIC_BODY }); }
     if (rec.where === 'local') return route.continue();                        // data:·blob:·about: — 네트워크로 나가지 않는다
     if (rec.where === 'static-allowed') {                                       // 허용 목록의 정적 자원: 보내지 않고 빈 응답(화면 시험에 필요 없다)
         rec.how = 'fulfilled-empty';
@@ -579,6 +649,9 @@ const phase = (cx, from) => {
         usersReads: sent.filter((r) => r.table === 'users').length,
         usersBlocked: list.filter((r) => r.table === 'users' && r.aborted).length,
         tableReads: sent.filter((r) => r.table !== 'none' && !r.write).length,
+        realReads: sent.filter((r) => r.table !== 'none' && !r.write && !r.synthetic).length,      // 실제로 내보낸 읽기(합성 응답 제외)
+        synthetic: sent.filter((r) => r.synthetic).length,
+        syntheticOther: sent.filter((r) => r.synthetic && !['tr_app_settings', 'tr_notices', 'tr_schedule_assignment'].includes(r.table)).length,
         readsBlocked: list.filter((r) => r.scopeBlocked && r.scopeBlocked.includes('read_not_listed')).length,
         businessTried: list.filter((r) => r.table !== 'none').length,          // 업무 요청의 시도(나간 것 + 막힌 것)
         member: sent.filter((r) => r.credential === 'member').length,
@@ -629,19 +702,20 @@ const baseline = (cx, ck) => {
     else ck('대조: 자격의 용도가 맞지 않는 요청을 전송 전에 막음', s.leakBlocked >= 1);
     // 대조 단계는 수신기가 살아 있음을 보이려고 정상 요청 1건을 일부러 시험 목적지로 보낸다
     ck('회원 자격이 필요한 주소에 공개 키로 나간 것 0', s.publicRetry === 0);
+    ck('회원 자격이 필요한 주소에 공개 키로 다시 보내려던 시도 0·인증 요청의 모양이 다른 시도 0(전송 전에 막는다)', s.publicRetryBlocked === 0 && s.authShapeBlocked === 0);
     ck(cx.id === 'P' ? '허용 밖으로 보낸 것은 대조용 1건뿐(차단기의 결정)' : '허용 밖으로 보낸 것 0(차단기의 결정)', s.outsideSent === (cx.id === 'P' ? 1 : 0));
     ck('service_role 자격 0', s.serviceRole === 0);
     ck('안전 조건을 어긴 요청 0(켜진 화면의 회원 표·쓰기, 꺼진 화면의 범위 밖 회원 표·쓰기)', s.unsafe === 0 && !cx.unsafe);
     ck('안전 조건을 어긴 요청이 나간 것 0(차단기의 결정)', s.unsafeSent === 0);
     return s;
 };
-async function execCase(id, title, fn, { required = true } = {}) {
+async function execCase(id, title, fn, { required = true, makeCx = null } = {}) {
     const entry = { id, title, required, verdict: 'unknown', checks: [], summary: null, storage: null, records: [] };
     results.push(entry);
     let cx = null;
     const t0 = Date.now();
     try {
-        cx = await newCx(id);
+        cx = await (makeCx ? makeCx(id) : newCx(id));
         const { list, ck } = makeChecks();
         entry.checks = list;
         const sink0 = siteOn.core.counts.sink + siteOff.core.counts.sink;
@@ -664,6 +738,7 @@ async function execCase(id, title, fn, { required = true } = {}) {
             entry.readsBlocked = s.readsBlocked;            // 허용 목록에 없는 읽기(전송 전에 막힘) — 판정에 넣지 않고 적어 둔다
             entry.unsafe = s.unsafe;
             await cx.context.close().catch(() => {});
+            if (cx.cleanup) cx.cleanup();                   // (TD) 임시 프로필·확장 폴더를 지운다
         }
         entry.verdict = entry.checks.some((c) => c.ok === false) ? 'differs' : (entry.checks.some((c) => c.ok === null) || entry.checks.length === 0 ? 'unknown' : 'pass');
         console.log(`  ${id.padEnd(4)} ${entry.verdict === 'pass' ? '통과' : (entry.verdict === 'differs' ? '기대와 다름' : '미확인')}  ${title}  (${Math.round((Date.now() - t0) / 100) / 10}초)`);
@@ -788,6 +863,7 @@ async function buildCases() {
             ck('새 길: 쓰기 시도(전송 전에 막힌 것) 0', nph.writesBlocked === 0);
             ck('새 길: 회원 표 요청 0(시도 포함)', nph.usersReads === 0 && nph.usersBlocked === 0);
             ck('새 길: 허용 목록에 없는 읽기 0(화면의 정상 요청이 막히지 않음)', nph.readsBlocked === 0);
+            ck('합성 응답으로 답한 읽기는 학생과 무관한 세 표(설정·공지·일정 배정)뿐 — 옛 길·새 길 모두', oph.syntheticOther === 0 && nph.syntheticOther === 0);
             ck('새 길: 로그인 요청 1·확인 요청 둘', count(cx, 'login') === 1 && count(cx, 'my_profile') >= 1 && count(cx, 'my_site_access') >= (key === 'blocked' ? 0 : 1));
             if (key === 'blocked') ck('새 길: 차단 — rejected·blocked, 표 요청 0', st.state === 'rejected' && st.reason === 'blocked' && nph.tableReads === 0);
             else ck('새 길: 로그인 확인 상태 signed_in', st.state === 'signed_in');
@@ -995,11 +1071,23 @@ async function buildCases() {
         mark = cx.records.length;
         const dup = await openChild(A, "window.open('index.html', '__b3bDup')");
         await foreign('탭 복제(흉내)', dup, mark);
+        // 복제(흉내)본이 첫 읽기에서 모듈을 받지 못한 뒤 새로 고침: 사본이 지워지지 않은 채 탐색 종류가 reload 가 된다 — 그래도 인증 요청 0
+        mark = cx.records.length;
+        cx.withholdModule = true;
+        const gotDup2 = cx.context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+        await A.evaluate("window.open('index.html', '__b3bDup')").catch(() => {});
+        const dup2 = await gotDup2;
+        if (dup2) { await dup2.waitForLoadState('domcontentloaded').catch(() => {}); await until(dup2, "typeof handleLogin === 'function' && !!document.getElementById('loginBtn')", 15000); await sleep(1500); }
+        ck('모듈 없이 읽힌 복제(흉내)본: 사본이 남은 닫힌 화면(시험의 전제)', !!dup2 && (await sessionKeys(dup2)).includes('tr_auth_v1') && (await messageOf(dup2)) === 'unavailable' && authCount(cx, mark) === 0);
+        cx.withholdModule = false;
+        if (dup2) { await dup2.reload({ waitUntil: 'domcontentloaded' }).catch(() => {}); await settled(dup2, 15000); await sleep(800); }
+        ck('모듈 없이 읽힌 복제(흉내)본의 새로 고침: 브라우저가 준 탐색 종류는 reload', !!dup2 && (await dup2.evaluate(() => window.__b3b.nav()).catch(() => null)) === 'reload');
+        await foreign('모듈 없이 읽힌 복제(흉내)본의 새로 고침', dup2, mark);
         // 원래 창은 그대로
         const stA = await stateOf(A);
         ck('원래 창: 로그인·currentUser·작성 중 값이 그대로', stA.state === 'signed_in' && (await userJson(A)) === userA && (await A.evaluate(() => window.sessionStorage.getItem('zz_b3b_draft'))) === '작성 중' && (await scheduleShown(A)));
         ck('창 사이 통로로 오간 것 0', !cx.events.includes('broadcast'));
-        for (const c of [c1, c2, c3, omr, dup]) if (c) await c.close().catch(() => {});
+        for (const c of [c1, c2, c3, omr, dup, dup2]) if (c) await c.close().catch(() => {});
         // 원래 창의 새로 고침: 같은 탭에서 바로 앞 문서를 갈아 낀 문서 — 이어받는다
         await A.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
         ck('원래 창의 새로 고침: 다시 확인한 뒤 일정 화면(이어받음)', await until(A, SCHEDULE, 20000) && (await stateOf(A)).state === 'signed_in');
@@ -1112,6 +1200,157 @@ async function buildCases() {
         ck('쓰기 전송 0', phase(cx, 0).writesSent === 0);
     });
 
+    // ---- TD. 실제 탭 복제·닫은 탭 되살리기(브라우저의 확장 API) — --fake 에서만 ----
+    if (FAKE) await runCase('TD', '실제 탭 복제·닫은 탭 되살리기(브라우저의 명령 — 확장 API): 원본의 새로 고침만 이어받고, 복제본·되살린 탭·모듈 없이 읽힌 복제본의 새로 고침은 인증 요청 0', async (cx, ck) => {
+        const info = (p) => p.evaluate(() => ({ nav: window.__b3b.nav(), holder: window.__b3b.start.holder, named: window.__b3b.start.named })).catch(() => ({ nav: 'unknown', holder: 'none', named: false }));
+        const tabsWith = (prefix) => cx.ext.evaluate(async (o) => (await chrome.tabs.query({})).filter((x) => (x.url || '').startsWith(o)).map((x) => x.id), prefix).catch(() => []);
+        // 그 주소를 연 탭이 정확히 하나일 때만 그 탭을 복제한다(브라우저의 "탭 복제" 명령)
+        const duplicate = async (prefix) => {
+            const ids = await tabsWith(prefix);
+            if (ids.length !== 1) return null;
+            const got = cx.context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+            await cx.ext.evaluate((tabId) => chrome.tabs.duplicate(tabId), ids[0]).catch(() => {});
+            const p = await got;
+            if (p) await p.waitForLoadState('domcontentloaded').catch(() => {});
+            return p;
+        };
+        const ready = async (p) => { if (p) { await until(p, "typeof handleLogin === 'function' && !!document.getElementById('loginBtn')", 15000); await settled(p, 15000); await sleep(1000); } };
+        // 이어받지 않은 문서: 요청 기록으로 잰다(인증 요청 0 — 확인·갱신·종료·로그인 전부), 화면은 그 다음
+        const unproven = async (name, p, mark) => {
+            const st = p ? await stateOf(p) : { state: 'other', reason: 'other' };
+            ck(`${name}: 그 뒤 나간 인증 요청 0(복사된 자격의 사용 0·확인 0·갱신 0)`, authCount(cx, mark) === 0 && cx.records.slice(mark).filter((r) => r.where === 'test-project' && r.credential === 'member').length === 0);
+            ck(`${name}: 이어받지 않음(signed_out·window_unproven)`, st.state === 'signed_out' && st.reason === 'window_unproven');
+            ck(`${name}: 일정 화면 0(자동 진입 0)·로그인 화면·안내`, !!p && !(await scheduleShown(p)) && (await loginShown(p)) && (await messageOf(p)) === 'unproven');
+            ck(`${name}: 그 탭의 사본(새 모듈의 값·currentUser)이 지워짐`, !!p && (await sessionKeys(p)).every((k) => !k.startsWith('tr_auth_v1') && k !== 'currentUser'));
+        };
+        const notes = {};
+        const A = await cx.page();
+        const r = await doLogin(cx, A, 'std');
+        ck('원본: 로그인, 일정 화면', r.schedule);
+        const userA = await userJson(A);
+        await A.evaluate(() => window.sessionStorage.setItem('zz_b3b_draft', '작성 중'));
+        const original = async (name) => ck(`${name}: 원본의 로그인·currentUser·작성 중인 값이 그대로`, (await stateOf(A)).state === 'signed_in' && (await userJson(A)) === userA && (await A.evaluate(() => window.sessionStorage.getItem('zz_b3b_draft'))) === '작성 중' && (await scheduleShown(A)));
+
+        // (1) 원본의 새로 고침: 이어받는다
+        await A.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+        ck('원본의 새로 고침: 다시 확인한 뒤 일정 화면(이어받음)', await until(A, SCHEDULE, 20000) && (await stateOf(A)).state === 'signed_in');
+        notes.reload = await info(A);
+        ck('원본의 새로 고침: 브라우저가 준 탐색 종류는 reload, 앞 문서가 놓은 표식', notes.reload.nav === 'reload' && notes.reload.holder === 'released');
+
+        // (2) 살아 있는 원본을 복제
+        let mark = cx.records.length;
+        const D = await duplicate(ON + '/index.html');
+        ck('탭 복제: 브라우저가 새 탭을 만듦', !!D);
+        await ready(D);
+        notes.duplicate = D ? await info(D) : null;
+        await unproven('살아 있는 원본의 복제본', D, mark);
+        // (3) 그 복제본을 새로 고침(탐색 종류 reload): 지워진 뒤라 로그인 전일 뿐 — 인증 요청 0
+        if (D) { await D.reload({ waitUntil: 'domcontentloaded' }).catch(() => {}); await ready(D); }
+        const d1 = D ? await stateOf(D) : { state: 'other' };
+        ck('복제본의 새로 고침: 로그인 전(인증 요청 0·일정 화면 0)', d1.state === 'signed_out' && authCount(cx, mark) === 0 && !!D && !(await scheduleShown(D)));
+        await original('복제 뒤');
+        if (D) await D.close().catch(() => {});
+
+        // (4) 복제본이 첫 읽기에서 모듈을 받지 못한 뒤 새로 고침: 사본이 지워지지 않은 채 탐색 종류가 reload 가 된다
+        mark = cx.records.length;
+        cx.withholdModule = true;
+        const D2 = await duplicate(ON + '/index.html');
+        if (D2) { await until(D2, "typeof handleLogin === 'function' && !!document.getElementById('loginBtn')", 15000); await sleep(1500); }
+        ck('모듈 없이 읽힌 복제본: 사본이 남은 닫힌 화면(시험의 전제)', !!D2 && (await sessionKeys(D2)).includes('tr_auth_v1') && (await messageOf(D2)) === 'unavailable' && authCount(cx, mark) === 0);
+        cx.withholdModule = false;
+        if (D2) { await D2.reload({ waitUntil: 'domcontentloaded' }).catch(() => {}); await ready(D2); }
+        notes.duplicateReloaded = D2 ? await info(D2) : null;
+        ck('모듈 없이 읽힌 복제본의 새로 고침: 브라우저가 준 탐색 종류는 reload(탐색 종류만으로는 가를 수 없는 경우다)', !!notes.duplicateReloaded && notes.duplicateReloaded.nav === 'reload');
+        await unproven('모듈 없이 읽힌 복제본의 새로 고침', D2, mark);
+        await original('모듈 없이 읽힌 복제본의 새로 고침 뒤');
+        if (D2) await D2.close().catch(() => {});
+
+        // (5) 원본이 모듈을 싣지 않는 화면에 있는 동안 복제: 복제본이 먼저 첫 화면으로, 원본이 나중에 — 어느 쪽도 이어받지 않는다
+        await A.goto(ON + '/__b3b/blank', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await sleep(1500);
+        mark = cx.records.length;
+        const D3 = await duplicate(ON + '/__b3b/blank');
+        ck('다른 화면에서의 탭 복제: 브라우저가 새 탭을 만듦', !!D3);
+        if (D3) { await D3.goto(ON + '/index.html', { waitUntil: 'domcontentloaded' }).catch(() => {}); await ready(D3); }
+        notes.duplicateElsewhere = D3 ? await info(D3) : null;
+        await unproven('다른 화면에서 복제된 탭 — 먼저 돌아온 복제본', D3, mark);
+        await A.goto(ON + '/index.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await ready(A);
+        await unproven('다른 화면에서 복제된 탭 — 나중에 돌아온 원본', A, mark);
+        if (D3) await D3.close().catch(() => {});
+
+        // (6) 닫은 탭 되살리기: 원본에서 다시 로그인한 뒤, 브라우저의 명령으로 닫고 되살린다
+        const again = await doLogin(cx, A, 'std', { goto: false });
+        ck('원본에서 다시 로그인: 일정 화면', again.schedule && again.message === 'welcome');
+        const ids = await tabsWith(ON + '/index.html');
+        ck('닫을 탭이 하나', ids.length === 1);
+        await cx.ext.evaluate((tabId) => chrome.tabs.remove(tabId), ids[0]).catch(() => {});
+        await sleep(1500);
+        mark = cx.records.length;
+        const gotR = cx.context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+        const restored = await cx.ext.evaluate(async () => { try { await chrome.sessions.restore(); return true; } catch (e) { return false; } }).catch(() => false);
+        const Rt = await gotR;
+        ck('닫은 탭 되살리기: 브라우저가 탭을 되살림', restored === true && !!Rt);
+        if (Rt) { await Rt.waitForLoadState('domcontentloaded').catch(() => {}); await ready(Rt); }
+        notes.restored = Rt ? await info(Rt) : null;
+        await unproven('닫았다가 되살린 탭', Rt, mark);
+        ck('쓰기 전송 0', phase(cx, 0).writesSent === 0);
+        cx.notes = notes;       // 브라우저가 준 것(탐색 종류·복사돼 온 표식의 상태·창 이름이 있었는가) — 정해 둔 이름만
+    }, { makeCx: realDupCx });
+
+    // ---- HM. 손으로 재는 창(--fake --manual 에서만) ----
+    if (MANUAL) await runCase('HM', '손으로 재는 창(가짜 서버·지어낸 자격): 사람이 탭 복제·닫은 탭 되살리기·새로 고침을 하고, 문서마다 브라우저가 준 것과 모듈의 판정·나간 인증 요청을 적는다', async (cx, ck) => {
+        const A = await cx.page();
+        const r = await doLogin(cx, A, 'std');
+        ck('원본: 로그인, 일정 화면', r.schedule);
+        const tabA = tabNoOf(A);
+        const docKey = (p) => p.evaluate(() => (window.__b3b ? window.__b3b.docKey : null)).catch(() => null);
+        const seen = new Map([[A, await docKey(A)]]);
+        const since = new Map([[tabA, cx.records.length]]);
+        const rows = [];
+        console.log('');
+        console.log('  [손으로 재는 창] 첫 탭에 지어낸 학생으로 로그인해 두었다(가짜 서버 — 실제 서버로 가는 요청은 없다).');
+        console.log('   이 창에서 차례로 해 본다: ① 탭 메뉴의 "탭 복제" ② 첫 탭에서 새로 고침(F5) ③ 복제된 탭에서 새로 고침');
+        console.log('   ④ 첫 탭을 닫고 "닫은 탭 다시 열기"(Ctrl+Shift+T) ⑤ 주소창에 다른 주소(' + ON + '/__b3b/blank)로 갔다가 뒤로 가기. 로그인은 다시 하지 않는다.');
+        console.log(`   ${Math.round(MANUAL_MS / 1000)}초 동안 본다. 새 문서가 읽힐 때마다 한 줄씩 적는다.`);
+        if (flag('--manual-headless')) {
+            // 점검용(사람 없이): 실행기가 새로 고침 한 번과 새 창 하나를 만든다
+            setTimeout(() => { A.reload().catch(() => {}); }, 1500);
+            setTimeout(() => { A.evaluate("window.open('index.html', '_blank')").catch(() => {}); }, 6000);
+        }
+        const end = Date.now() + MANUAL_MS;
+        while (Date.now() < end) {
+            await sleep(700);
+            for (const p of cx.context.pages()) {
+                if (p.isClosed() || pathOf(p) !== '/index.html' || !p.url().startsWith(ON)) continue;
+                const key = await docKey(p);
+                if (!key || seen.get(p) === key) continue;
+                seen.set(p, key);
+                await until(p, "typeof handleLogin === 'function'", 10000);
+                await settled(p, 10000);
+                await sleep(2500);
+                const tab = tabNoOf(p);
+                const from = since.has(tab) ? since.get(tab) : 0;
+                const got = await p.evaluate(() => ({ nav: window.__b3b.nav(), holder: window.__b3b.start.holder, named: window.__b3b.start.named })).catch(() => ({ nav: 'unknown', holder: 'none', named: false }));
+                const st = await stateOf(p);
+                const row = {
+                    tab, original: tab === tabA, nav: got.nav, holder: got.holder, named: got.named, state: st.state, reason: st.reason,
+                    schedule: await scheduleShown(p),
+                    authRequests: cx.records.slice(from).filter((x) => x.tab === tab && x.where === 'test-project' && AUTH_TARGETS.includes(x.target)).length,
+                    memberRequests: cx.records.slice(from).filter((x) => x.tab === tab && x.where === 'test-project' && x.credential === 'member').length,
+                };
+                since.set(tab, cx.records.length);
+                rows.push(row);
+                console.log(`   문서 ${rows.length}: 탭 ${tab}${row.original ? '(첫 탭)' : ''} · 탐색 종류 ${row.nav} · 읽힐 때의 표식 ${row.holder} · 창 이름 ${row.named ? '있음' : '없음'} → ${row.state}${row.reason ? '·' + row.reason : ''} · 일정 화면 ${row.schedule ? '보임' : '없음'} · 인증 요청 ${row.authRequests}(회원 자격 ${row.memberRequests})`);
+            }
+        }
+        cx.notes = { documents: rows };
+        ck('잰 문서가 둘 이상(사람이 만든 것)', rows.length >= 2 ? true : null);
+        ck('첫 탭이 아닌 탭의 문서: 이어받은 것 0(인증 요청 0·회원 자격 0·일정 화면 0)', rows.filter((x) => !x.original).every((x) => x.state !== 'signed_in' && x.authRequests === 0 && x.memberRequests === 0 && !x.schedule));
+        ck('탐색 종류가 reload 가 아닌 문서: 이어받은 것 0', rows.filter((x) => x.nav !== 'reload').every((x) => x.state !== 'signed_in' && x.authRequests === 0 && !x.schedule));
+        ck('읽힐 때의 표식이 "놓음"이 아닌 문서: 이어받은 것 0', rows.filter((x) => x.holder !== 'released').every((x) => x.state !== 'signed_in' && x.authRequests === 0));
+    }, { makeCx: manualCx });
+
     // ---- OFF. 꺼짐 대조 ----
     await runCase('OFF', '꺼짐 대조: 인증 모듈은 아무것도 하지 않음(늘어난 정적 요청은 js/auth-session.js 1개)', async (cx, ck) => {
         const sdk0 = siteOff.core.counts.sdk;
@@ -1155,7 +1394,18 @@ async function main() {
             const p = String(req.url).split('?')[0];
             if (p === '/vendor/supabase-2.116.0.js') site.core.counts.sdk++;
             if (p === '/js/auth-session.js') site.core.counts.authModule++;
-            return respond(req);
+            const out = respond(req);
+            if (SELFTEST === 'loose-owner' && site === siteOn && p === '/js/auth-session.js' && out && out.status === 200) {
+                // 대조 실험(--fake 에서만): 새 문서의 소유 판정을 뺀 모듈을 내준다(저장된 것이 있고 차례표가 맞으면 이어받는다)
+                let text = out.body.toString('utf8');
+                for (const line of LOOSE_LINES) {
+                    if (text.split(line).length !== 2) stop('대조 실험(loose-owner): 뺄 줄을 정확히 1곳 찾지 못함');
+                    text = text.replace(line, () => '/* 대조 실험: 뺌 */');
+                }
+                const body = Buffer.from(text, 'utf8');
+                return { status: 200, headers: Object.assign({}, out.headers, { 'Content-Length': String(body.length) }), body };
+            }
+            return out;
         };
     }
     await startControl();
@@ -1184,7 +1434,7 @@ async function main() {
     try {
         const plan = await buildCases();
         const first = plan.find((c) => c.id === 'P');
-        const rest = plan.filter((c) => c.id !== 'P' && (!ONLY || ONLY.has(c.id)));
+        const rest = plan.filter((c) => c.id !== 'P' && (MANUAL ? c.id === 'HM' : (!ONLY || ONLY.has(c.id))));
         // 예행(P)은 언제나 먼저 돈다. P 의 판정이 전부 참이 아니면 뒤의 경우를 하나도 시작하지 않는다(보관함도 열리지 않는다)
         seq = await runSequence({
             preflight: async () => { await first.run(); return results.find((r) => r.id === 'P'); },
@@ -1232,12 +1482,14 @@ async function main() {
             runnerConnections: egress,                      // 실행기가 연 연결: local / testProject / blocked(막은 시도)
             requestsSentToTestProject: all.filter((r) => r.where === 'test-project' && r.sent).length,
             requestsAnsweredByFakeServer: all.filter((r) => r.how && r.how.startsWith('fake-server')).length,
+            requestsAnsweredSynthetically: all.filter((r) => r.how === 'synthetic-response').length,      // 내보내지 않고 실행기가 빈 목록으로 답한 읽기(설정·공지·일정 배정)
             staticAllowedFulfilledLocally: all.filter((r) => r.where === 'static-allowed').length,
             // 화면의 내용 보안 정책이 요청을 만들기 전에 막은 것(바깥 스크립트 — Sentry 등. 차단기까지 오지 않는다)
             cspBlockedInBrowser: siteOn.core.counts.csp + siteOff.core.counts.csp,
         },
         summary: summarize(all),
         pendingRevert: board.pendingRevert,                 // null 이 아니면 브레인방이 건 DB 변경이 남아 있을 수 있다
+        tempFoldersLeft: TD_LEFT.length,                    // (TD) 지우지 못한 임시 폴더의 수(0 이어야 한다 — 가짜 서버의 지어낸 값만 들어 있다)
         operatorLeftovers: board.leftovers,                 // 브레인방이 만든 것이 남아 있을 수 있음(로그인 기록 — 정리는 브레인방이 DB 로)
         pauses: board.history,
         cases: results,

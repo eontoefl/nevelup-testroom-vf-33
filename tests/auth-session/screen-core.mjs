@@ -209,6 +209,24 @@ export function browserEnv(env) {
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$/;
 const onlyKeys = (obj, keys) => !!obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).every((k) => keys.includes(k));
+// 값의 모양(저장 계획 검사와 차단기가 같은 것을 쓴다 — 옛 길의 쓰기도 보내기 전에 같은 검사를 거친다)
+//   자기주도 일정표: 글자이고, 풀면 { end: 날짜, dates: 날짜 24개 } 뿐이다. 맞으면 그 값을, 아니면 null
+export function scheduleOf(text) {
+    if (typeof text !== 'string') return null;
+    let s = null;
+    try { s = JSON.parse(text); } catch (e) { s = null; }
+    if (!s || typeof s !== 'object' || Array.isArray(s) || Object.keys(s).length !== 2 || !onlyKeys(s, ['end', 'dates'])) return null;
+    if (typeof s.end !== 'string' || !YMD.test(s.end) || !Array.isArray(s.dates) || s.dates.length !== 24 || !s.dates.every((d) => typeof d === 'string' && YMD.test(d))) return null;
+    return { end: s.end, dates: s.dates };
+}
+//   tr_user_map: 네 칸이 전부 있고, 회원번호·이메일이 그 학생의 짝이고, 이름은 글자(100자 이하), 시각은 정해 둔 모양
+export function userMapOk(v, expect) {
+    if (!v || typeof v !== 'object' || Array.isArray(v) || !expect) return false;
+    const keys = Object.keys(v);
+    if (keys.length !== 4 || !['user_id', 'email', 'name', 'updated_at'].every((k) => keys.includes(k))) return false;
+    return v.user_id === expect.memberId && v.email === expect.email && typeof v.name === 'string' && v.name.length <= 100 && typeof v.updated_at === 'string' && ISO.test(v.updated_at);
+}
+export const RATES = [0, 50, 100];
 export function checkPlan(plan, expect) {
     const no = (why) => ({ ok: false, why });
     if (!plan || typeof plan !== 'object' || !Array.isArray(plan.items)) return no('shape');
@@ -222,14 +240,13 @@ export function checkPlan(plan, expect) {
         if (!onlyKeys(it, ['table', 'method', 'match', 'onConflict', 'values']) || !it.values || typeof it.values !== 'object') return no('item_shape');
         if (it.table === 'applications') {
             if (it.method !== 'PATCH' || it.match !== 'id=eq.' + plan.applicationId || !onlyKeys(it.values, ['self_paced_schedule'])) return no('applications_row_or_column');
-            let s = null;
-            try { s = JSON.parse(it.values.self_paced_schedule); } catch (e) { s = null; }
-            if (typeof it.values.self_paced_schedule !== 'string' || !onlyKeys(s, ['end', 'dates']) || !YMD.test(s.end) || !Array.isArray(s.dates) || s.dates.length !== 24 || !s.dates.every((d) => YMD.test(d))) return no('schedule_value');
+            const s = scheduleOf(it.values.self_paced_schedule);
+            if (!s) return no('schedule_value');
             items.push({ table: 'applications', match: it.match, values: { self_paced_schedule: JSON.stringify({ end: s.end, dates: s.dates }) } });
         } else if (it.table === 'tr_user_map') {
             const v = it.values;
             if (it.method !== 'POST' || it.onConflict !== 'user_id' || !onlyKeys(v, ['user_id', 'email', 'name', 'updated_at'])) return no('user_map_row_or_column');
-            if (v.user_id !== expect.memberId || v.email !== expect.email || typeof v.name !== 'string' || v.name.length > 100 || !ISO.test(String(v.updated_at))) return no('user_map_value');
+            if (!userMapOk(v, expect)) return no('user_map_value');
             items.push({ table: 'tr_user_map', match: 'on_conflict=user_id', values: { user_id: v.user_id, email: v.email, name: v.name, updated_at: v.updated_at } });
         } else if (it.table === 'study_results_v3') {
             const id = typeof it.match === 'string' && it.match.startsWith('id=eq.') ? it.match.slice(6) : null;

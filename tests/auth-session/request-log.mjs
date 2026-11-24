@@ -20,6 +20,7 @@
 
 import { TEST_URL } from './rewrite.mjs';
 import { STATIC_ALLOW } from './serve-core.mjs';
+import { scheduleOf, userMapOk, RATES } from './screen-core.mjs';
 
 // 시험 프로젝트로 가는 요청의 이름(이 밖은 무리 이름으로만 적는다)
 const NAMED = {
@@ -102,6 +103,9 @@ function targetName(method, u) {
 //   * 꺼진 화면: 회원 표는 그 학생의 이메일로 정확한 두 조회만, 쓰기는 옛 길의 세 가지를 그 학생의 행·허용한 열·정해 둔 값으로 보낼 때만.
 //     벗어나면 막는다 — 안전 조건 위반(unsafe)
 //   * 읽기는 허용 목록(이 조각의 흐름이 실제로 읽는 표·조건·열 목록, 값은 그 학생의 것)만 내보낸다. 그 밖의 읽기는 막고 센다(위반으로 치지는 않는다)
+//   * 합성 학생의 자료가 아닌 읽기(설정·공지·일정 배정)는 **내보내지 않고 합성 응답(빈 목록)으로 답한다** — 요청의 모양만 본다(실제 업무 성공으로 세지 않는다)
+//   * 인증 모듈 자신의 요청은 경로만 보지 않는다: 정확한 메서드·쿼리이고 자격의 조합이 맞을 때만 예외다.
+//     회원 자격이 필요한 주소에 공개 키로 가려는 요청(거절 뒤 다시 보내기)은 전송 전에 막는다
 const TABLES = ['users', 'applications', 'tr_user_map', 'study_results_v3', 'tr_deadline_extensions', 'tr_auth_tokens', 'tr_notifications', 'tr_app_settings', 'tr_notices', 'tr_schedule_assignment'];
 const USERS_COLS = ['id,name,email,phone,role,blocked,timezone', 'password'];
 // 신청서의 열 목록(js/auth.js 의 _appCols 와 글자까지 같아야 한다 — 회귀시험이 견준다)
@@ -116,10 +120,14 @@ const READS = [
     ['study_results_v3', [['user_id', 'M'], ['locked_auth_rate', 'is.null'], ['completed_at', 'not.is.null'], ['enrollment_id', 'A'], ['select', 'id,initial_record,error_note_submitted,week,day']]],
     ['tr_deadline_extensions', [['enrollment_id', 'A'], ['select', 'original_date,extra_days']]],
     ['tr_notifications', [['user_id', 'M'], ['order', 'created_at.desc'], ['limit', '20']]],
+];
+// 합성 학생의 자료가 아닌 읽기(학생과 무관한 표 전체·시각 조건뿐인 조회): 실제로 내보내지 않는다 — 실행기가 빈 목록으로 답한다
+const SYNTH_READS = [
     ['tr_app_settings', [['key', 'eq.vocab_version'], ['select', 'value']]],
     ['tr_notices', [['active_until', 'T'], ['order', 'sort_order.asc']]],
     ['tr_schedule_assignment', [['select', '*'], ['order', 'id.asc']]],
 ];
+export const SYNTHETIC_BODY = '[]';
 const TIME = /^gt\.\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$/;
 function valueOk(spec, v, st) {
     if (Array.isArray(spec)) return spec.includes(v);
@@ -134,11 +142,27 @@ function shapeOk(q, params, st) {
     return q.length === params.length && params.every(([k, spec], i) => q[i][0] === k && valueOk(spec, q[i][1], st));
 }
 const NONE = { table: 'none', write: false, blocked: [], unsafe: false };
+// 인증 모듈 자신의 요청으로 보는 조합(정확한 메서드·경로·쿼리는 targetName 이 가린다 — 여기서는 자격의 조합)
+//   login: 공개 키 + 본문에 비밀번호(갱신값 없음) / refresh: 공개 키 + 본문에 갱신값(비밀번호 없음)
+//   logout·my_profile·my_site_access: 회원 JWT. 전부 apikey 머리글이 공개 키여야 한다
+function ownOk(ctx) {
+    if (!ctx.apikeyOk) return false;
+    if (ctx.target === 'login') return ctx.cred === 'anon' && ctx.items.password === true && ctx.items.refreshToken === false;
+    if (ctx.target === 'refresh') return ctx.cred === 'anon' && ctx.items.refreshToken === true && ctx.items.password === false;
+    if (ctx.target === 'logout' || ctx.target === 'my_profile' || ctx.target === 'my_site_access') return ctx.cred === 'member';
+    return false;
+}
 function scopeOf(method, u, postData, ctx) {
     const p = u.pathname;
-    const own = ['/auth/v1/token', '/auth/v1/logout', '/rest/v1/rpc/my_profile', '/rest/v1/rpc/my_site_access'];
-    if (own.includes(p)) return NONE;
     const read = method === 'GET' || method === 'HEAD';
+    const ownPath = ['/auth/v1/token', '/auth/v1/logout', '/rest/v1/rpc/my_profile', '/rest/v1/rpc/my_site_access'].includes(p);
+    if (ownPath) {
+        // 준비 전에는 인증 요청도 나갈 일이 없다(첫 로그인은 합성 자료의 목록을 받은 뒤다)
+        if (!ctx.ready) return { table: 'none', write: !read, blocked: ['not_ready'], unsafe: false };
+        if (ownOk(ctx)) return NONE;
+        // 경로는 인증 모듈의 것인데 메서드·쿼리·자격의 조합이 다르다(다른 grant_type, scope=global, 공개 키로 다시 보낸 본인 확인 등)
+        return { table: 'none', write: !read, blocked: ['auth_shape'], unsafe: true };
+    }
     const rest = p.startsWith('/rest/v1/') && !p.startsWith('/rest/v1/rpc/');
     const name = rest ? p.slice('/rest/v1/'.length) : '';
     const table = rest ? (TABLES.includes(name) ? name : 'other') : 'other';
@@ -161,15 +185,19 @@ function scopeOf(method, u, postData, ctx) {
         const plain = !!body && typeof body === 'object' && !Array.isArray(body);
         const keysAre = (allowed) => plain && Object.keys(body).length > 0 && Object.keys(body).every((k) => allowed.includes(k));
         let ok = false;
-        if (st && table === 'applications' && method === 'PATCH') ok = shapeOk(q, [['id', 'A']], st) && keysAre(['self_paced_schedule']) && typeof body.self_paced_schedule === 'string';
-        else if (st && table === 'tr_user_map' && method === 'POST') ok = shapeOk(q, [['on_conflict', 'user_id']], st) && keysAre(['user_id', 'email', 'name', 'updated_at']) && body.user_id === st.memberId && body.email === st.email;
-        else if (st && table === 'study_results_v3' && method === 'PATCH') ok = q.length === 1 && q[0][0] === 'id' && st.recordIds.some((id) => q[0][1] === 'eq.' + id) && keysAre(['locked_auth_rate']) && [0, 50, 100].includes(body.locked_auth_rate);
+        // 값의 모양은 저장 계획 검사(checkPlan)와 같은 검사다 — 보내기 전에 본다
+        if (st && table === 'applications' && method === 'PATCH') ok = shapeOk(q, [['id', 'A']], st) && keysAre(['self_paced_schedule']) && scheduleOf(body.self_paced_schedule) !== null;
+        else if (st && table === 'tr_user_map' && method === 'POST') ok = shapeOk(q, [['on_conflict', 'user_id']], st) && userMapOk(body, st);
+        else if (st && table === 'study_results_v3' && method === 'PATCH') ok = q.length === 1 && q[0][0] === 'id' && st.recordIds.some((id) => q[0][1] === 'eq.' + id) && keysAre(['locked_auth_rate']) && RATES.includes(body.locked_auth_rate);
         return ok ? { table, write: true, blocked: [], unsafe: false } : stop('write_not_allowed', true);
     }
     // 읽기: 허용 목록만. 그 밖은 막고 센다
     if (!rest) return stop('read_not_listed', false);
     const listed = READS.some(([tb, params]) => tb === name && shapeOk(q, params, st));
-    return listed ? { table, write: false, blocked: [], unsafe: false } : stop('read_not_listed', false);
+    if (listed) return { table, write: false, blocked: [], unsafe: false };
+    // 학생의 자료가 아닌 읽기: 내보내지 않고 합성 응답으로 답한다
+    if (SYNTH_READS.some(([tb, params]) => tb === name && shapeOk(q, params, st))) return { table, write: false, blocked: [], unsafe: false, synthetic: true };
+    return stop('read_not_listed', false);
 }
 
 // issuer·memberEmails(배열 또는 배열을 돌려주는 함수)를 주면 회원 JWT 의 출처도 본다
@@ -220,12 +248,15 @@ export function makeDecider({ selfOrigins, anonKey, issuer, memberEmails, ready 
         // 표 요청의 범위(테스트룸): 회원 표는 정확한 두 조회만, 쓰기는 이번 실행의 합성 행·허용한 열만
         const isReady = typeof ready === 'function' ? ready() === true : false;
         const mode = req.pageMode === 'off' ? 'off' : 'on';            // 모르면 켜진 화면으로 본다(더 막는 쪽)
-        const scope = where === 'test-project' && !nav ? scopeOf(rawMethod, u, req.postData, { ready: isReady, mode, student: req.student || null }) : NONE;
+        const apikeyOk = !!anonKey && headerOf(req.headers, 'apikey') === anonKey;
+        const scope = where === 'test-project' && !nav ? scopeOf(rawMethod, u, req.postData, { ready: isReady, mode, student: req.student || null, target, cred, items, apikeyOk }) : NONE;
         const allowed = placeOk && !leak && scope.blocked.length === 0;
+        // 합성 응답: 시험 프로젝트로 내보내지 않고 실행기가 빈 목록으로 답한다
+        const synthetic = allowed && scope.synthetic === true;
         // 안전 조건 위반: 준비가 끝난 뒤에 자격이 용도 밖으로 가려 했거나, 범위 규칙의 위반(회원 표·쓰기)이 있었다. 전송 전에 막는다
         const unsafe = isReady && (leak || scope.unsafe === true);
         return {
-            action: allowed ? 'continue' : 'abort',
+            action: !allowed ? 'abort' : (synthetic ? 'synthetic' : 'continue'),
             record: {
                 where, target, nav, type, method,
                 apikey: headerOf(req.headers, 'apikey') !== null,
@@ -240,6 +271,7 @@ export function makeDecider({ selfOrigins, anonKey, issuer, memberEmails, ready 
                 scopeBlocked: scope.blocked,
                 pageMode: where === 'test-project' ? (req.pageMode === 'off' ? 'off' : (req.pageMode === 'on' ? 'on' : 'unknown')) : 'none',
                 unsafe,
+                synthetic,
                 aborted: !allowed,
             },
         };
@@ -252,16 +284,19 @@ export function makeDecider({ selfOrigins, anonKey, issuer, memberEmails, ready 
 export function summarize(records) {
     const is = (fn) => records.filter(fn).length;
     const byTarget = {};
-    for (const r of records) if (r.where === 'test-project' && !r.aborted) byTarget[r.target] = (byTarget[r.target] || 0) + 1;
+    for (const r of records) if (r.where === 'test-project' && !r.aborted && !r.synthetic) byTarget[r.target] = (byTarget[r.target] || 0) + 1;
     return {
         total: records.length,
         self: is((r) => r.where === 'self' && !r.aborted),
-        testProject: is((r) => r.where === 'test-project' && !r.aborted),
+        testProject: is((r) => r.where === 'test-project' && !r.aborted && !r.synthetic),
+        syntheticAnswered: is((r) => r.where === 'test-project' && r.synthetic === true),      // 내보내지 않고 합성 응답으로 답한 읽기
         testProjectByTarget: byTarget,
         staticAllowed: is((r) => r.where === 'static-allowed'),
         leakBlocked: is((r) => r.leak && r.aborted),
         leakSent: is((r) => r.leak && !r.aborted),
         publicRetry: is((r) => r.publicRetry && !r.aborted),
+        publicRetryBlocked: is((r) => r.publicRetry && r.aborted),         // 공개 키로 다시 보내려던 시도(전송 전에 막힘)
+        authShapeBlocked: is((r) => r.scopeBlocked && r.scopeBlocked.includes('auth_shape')),
         serviceRole: is((r) => r.credential === 'service_role'),
         sinkAttempts: is((r) => r.where === 'sink'),
         outsideBlockedNavigation: is((r) => (r.where === 'outside' || r.where === 'sink' || (r.where === 'test-project' && r.nav)) && r.nav && r.aborted),

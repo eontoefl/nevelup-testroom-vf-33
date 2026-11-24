@@ -54,7 +54,12 @@ export async function testDecider(mutate) {
     const A = STU.a;
     const B = STU.b;
     const appByEmail = (email) => '/rest/v1/applications?email=eq.' + enc(email) + '&deposit_confirmed_by_admin=eq.true&order=created_at.desc&limit=1&select=' + APP_COLS;
-    const map = (user_id, email) => R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id, email, name: 'n', updated_at: 't' });
+    const WHEN = '2026-11-24T06:00:00.000Z';
+    const map = (user_id, email) => R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id, email, name: 'n', updated_at: WHEN });
+    const mapRaw = (body) => R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', body);
+    const days = (n) => Array.from({ length: n }, (_, i) => '2026-12-' + String(1 + i).padStart(2, '0'));
+    const SCHED = JSON.stringify({ end: '2026-12-31', dates: days(24) });
+    const memberHeaders = { apikey: FAKE_ANON, Authorization: 'Bearer ' + member };
     const studyRead = (m, app) => '/rest/v1/study_results_v3?user_id=eq.' + m + '&locked_auth_rate=is.null&completed_at=not.is.null&enrollment_id=eq.' + app + '&select=id,initial_record,error_note_submitted,week,day';
     // [이름, 요청, 화면(on·off), 그 학생, 나가는가, 안전 조건 위반으로 세는가]
     const cases = [
@@ -77,20 +82,28 @@ export async function testDecider(mutate) {
         ['회원 표(켜짐): 옛 길의 둘째 조회', R('GET', U(A.email) + '&select=password'), 'on', A, false, true],
         ['회원 표(화면을 모름): 옛 길의 둘째 조회', R('GET', U(A.email) + '&select=password'), undefined, A, false, true],
         // 쓰기 — 꺼진 화면, 그 학생의 행·허용한 열·정해 둔 값만
-        ['쓰기(꺼짐): 신청서의 일정표(그 학생의 행)', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}' }), 'off', A, true, false],
+        ['쓰기(꺼짐): 신청서의 일정표(그 학생의 행)', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: SCHED }), 'off', A, true, false],
         ['쓰기(꺼짐): 신청서의 다른 열', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { deposit_confirmed_by_admin: true }), 'off', A, false, true],
-        ['쓰기(꺼짐): 신청서의 일정표 + 다른 열', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}', status: 'x' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서의 일정표 + 다른 열', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: SCHED, status: 'x' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서의 일정표가 아무 글자', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: 'zz' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서의 일정표가 빈 객체', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서의 일정표 날짜가 23개', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: JSON.stringify({ end: '2026-12-31', dates: days(23) }) }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서의 일정표에 다른 키', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: JSON.stringify({ end: '2026-12-31', dates: days(24), note: 'x' }) }), 'off', A, false, true],
         ['쓰기(꺼짐): 신청서의 일정표가 글자가 아님', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: { a: 1 } }), 'off', A, false, true],
-        ['쓰기(꺼짐): 다른 합성 학생의 신청서', R('PATCH', '/rest/v1/applications?id=eq.zz-app-b1', { self_paced_schedule: '{}' }), 'off', A, false, true],
-        ['쓰기(꺼짐): 합성이 아닌 신청서', R('PATCH', '/rest/v1/applications?id=eq.real-app-1', { self_paced_schedule: '{}' }), 'off', A, false, true],
-        ['쓰기(꺼짐): 신청서 조건 없음', R('PATCH', '/rest/v1/applications', { self_paced_schedule: '{}' }), 'off', A, false, true],
-        ['쓰기(꺼짐): 신청서 조건 둘', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1&email=neq.x', { self_paced_schedule: '{}' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 다른 합성 학생의 신청서', R('PATCH', '/rest/v1/applications?id=eq.zz-app-b1', { self_paced_schedule: SCHED }), 'off', A, false, true],
+        ['쓰기(꺼짐): 합성이 아닌 신청서', R('PATCH', '/rest/v1/applications?id=eq.real-app-1', { self_paced_schedule: SCHED }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서 조건 없음', R('PATCH', '/rest/v1/applications', { self_paced_schedule: SCHED }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서 조건 둘', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1&email=neq.x', { self_paced_schedule: SCHED }), 'off', A, false, true],
         ['쓰기(꺼짐): 신청서 지우기', R('DELETE', '/rest/v1/applications?id=eq.zz-app-a1'), 'off', A, false, true],
         ['쓰기(꺼짐): tr_user_map(그 학생의 회원번호·이메일)', map(A.memberId, A.email), 'off', A, true, false],
         ['쓰기(꺼짐): tr_user_map(짝이 맞지 않음 — 그 학생의 회원번호 + 다른 학생의 이메일)', map(A.memberId, B.email), 'off', A, false, true],
         ['쓰기(꺼짐): tr_user_map(짝이 맞지 않음 — 다른 학생의 회원번호 + 그 학생의 이메일)', map(B.memberId, A.email), 'off', A, false, true],
         ['쓰기(꺼짐): tr_user_map(다른 합성 학생의 짝)', map(B.memberId, B.email), 'off', A, false, true],
         ['쓰기(꺼짐): tr_user_map(합성이 아닌 회원)', map('real-member', A.email), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(이름이 빠짐)', mapRaw({ user_id: A.memberId, email: A.email, updated_at: WHEN }), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(시각이 빠짐)', mapRaw({ user_id: A.memberId, email: A.email, name: 'n' }), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(시각의 모양이 다름)', mapRaw({ user_id: A.memberId, email: A.email, name: 'n', updated_at: 'now' }), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(이름이 글자가 아님)', mapRaw({ user_id: A.memberId, email: A.email, name: { a: 1 }, updated_at: WHEN }), 'off', A, false, true],
         ['쓰기(꺼짐): tr_user_map(다른 열)', R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id: A.memberId, email: A.email, role: 'admin' }), 'off', A, false, true],
         ['쓰기(꺼짐): 인증률 확정(그 학생의 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { locked_auth_rate: 50 }), 'off', A, true, false],
         ['쓰기(꺼짐): 인증률 확정(다른 합성 학생의 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-b1', { locked_auth_rate: 50 }), 'off', A, false, true],
@@ -104,7 +117,7 @@ export async function testDecider(mutate) {
         ['쓰기(꺼짐): 함수 부르기', R('POST', '/functions/v1/anything', { a: 1 }), 'off', A, false, true],
         ['쓰기(꺼짐): 다른 RPC', R('POST', '/rest/v1/rpc/anything', {}), 'off', A, false, true],
         // 쓰기 — 켜진 화면에서는 무조건(꺼짐에서라면 나갈 모양이어도)
-        ['쓰기(켜짐): 신청서의 일정표(그 학생의 행)', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}' }), 'on', A, false, true],
+        ['쓰기(켜짐): 신청서의 일정표(그 학생의 행)', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: SCHED }), 'on', A, false, true],
         ['쓰기(켜짐): tr_user_map(그 학생의 짝)', map(A.memberId, A.email), 'on', A, false, true],
         ['쓰기(켜짐): 인증률 확정(그 학생의 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { locked_auth_rate: 50 }), 'on', A, false, true],
         ['쓰기(켜짐): 다른 RPC', R('POST', '/rest/v1/rpc/anything', {}), 'on', A, false, true],
@@ -125,33 +138,59 @@ export async function testDecider(mutate) {
         ['읽기: 마감 연장(그 학생의 신청서)', R('GET', '/rest/v1/tr_deadline_extensions?enrollment_id=eq.zz-app-a1&select=original_date,extra_days'), 'on', A, true, false],
         ['읽기: 알림(그 학생)', R('GET', '/rest/v1/tr_notifications?user_id=eq.zz-member-a&order=created_at.desc&limit=20'), 'on', A, true, false],
         ['읽기: 알림(다른 회원)', R('GET', '/rest/v1/tr_notifications?user_id=eq.dev-user-001&order=created_at.desc&limit=20'), 'on', A, false, false],
-        ['읽기: 공지(정해진 조건)', R('GET', '/rest/v1/tr_notices?active_until=gt.2026-11-24T10:00:00.000Z&order=sort_order.asc'), 'on', null, true, false],
+        // 합성 학생의 자료가 아닌 읽기: 내보내지 않고 합성 응답으로 답한다
+        ['합성 응답: 공지(정해진 조건)', R('GET', '/rest/v1/tr_notices?active_until=gt.2026-11-24T10:00:00.000Z&order=sort_order.asc'), 'on', null, 'synthetic', false],
+        ['합성 응답: 설정(vocab_version)', R('GET', '/rest/v1/tr_app_settings?key=eq.vocab_version&select=value'), 'off', A, 'synthetic', false],
+        ['읽기: 설정(다른 키)', R('GET', '/rest/v1/tr_app_settings?key=eq.anything&select=value'), 'on', A, false, false],
+        ['읽기: 설정(전체)', R('GET', '/rest/v1/tr_app_settings?select=*'), 'on', A, false, false],
         ['읽기: 공지(다른 조건)', R('GET', '/rest/v1/tr_notices?select=*'), 'on', A, false, false],
-        ['읽기: 설정·일정 배정(정해진 조건)', R('GET', '/rest/v1/tr_schedule_assignment?select=*&order=id.asc'), 'on', null, true, false],
+        ['합성 응답: 일정 배정(정해진 조건)', R('GET', '/rest/v1/tr_schedule_assignment?select=*&order=id.asc'), 'on', null, 'synthetic', false],
         ['읽기: 목록에 없는 표', R('GET', '/rest/v1/toefl_actual_scores?user_id=eq.zz-member-a&order=test_date.asc'), 'on', A, false, false],
         ['읽기: 저장소', R('GET', '/storage/v1/object/public/x/y.png'), 'on', A, false, false],
         ['읽기: 다른 RPC 를 GET 으로', R('GET', '/rest/v1/rpc/anything'), 'on', A, false, false],
         // 인증 모듈 자신의 요청
-        ['인증 모듈: 로그인', R('POST', '/auth/v1/token?grant_type=password', { email: A.email, password: 'zz' }), 'on', A, true, false],
-        ['인증 모듈: 본인 확인(회원 자격)', R('POST', '/rest/v1/rpc/my_profile', {}, { apikey: FAKE_ANON, Authorization: 'Bearer ' + member }), 'on', A, true, false],
+        // 인증 모듈 자신의 요청: 정확한 메서드·쿼리·자격의 조합일 때만
+        ['인증 모듈: 로그인(공개 키 + 비밀번호)', R('POST', '/auth/v1/token?grant_type=password', { email: A.email, password: 'zz' }), 'on', A, true, false],
+        ['인증 모듈: 갱신(공개 키 + 갱신값)', R('POST', '/auth/v1/token?grant_type=refresh_token', { refresh_token: 'zz-r' }), 'on', A, true, false],
+        ['인증 모듈: 종료(scope=local, 회원 자격)', R('POST', '/auth/v1/logout?scope=local', undefined, memberHeaders), 'on', A, true, false],
+        ['인증 모듈: 본인 확인(회원 자격)', R('POST', '/rest/v1/rpc/my_profile', {}, memberHeaders), 'on', A, true, false],
+        ['인증 모듈: 접근 확인(회원 자격)', R('POST', '/rest/v1/rpc/my_site_access', {}, memberHeaders), 'on', A, true, false],
+        ['인증의 모양: 로그인인데 비밀번호가 없음', R('POST', '/auth/v1/token?grant_type=password', { email: A.email }), 'on', A, false, true],
+        ['인증의 모양: 로그인에 회원 자격', R('POST', '/auth/v1/token?grant_type=password', { email: A.email, password: 'zz' }, memberHeaders), 'on', A, false, true],
+        ['인증의 모양: 다른 grant_type', R('POST', '/auth/v1/token?grant_type=pkce', { auth_code: 'x' }), 'on', A, false, true],
+        ['인증의 모양: 쿼리 없는 token', R('POST', '/auth/v1/token', { email: A.email }), 'on', A, false, true],
+        ['인증의 모양: 갱신인데 갱신값이 없음', R('POST', '/auth/v1/token?grant_type=refresh_token', { x: 1 }), 'on', A, false, true],
+        ['인증의 모양: 갱신에 비밀번호가 함께 실림', R('POST', '/auth/v1/token?grant_type=refresh_token', { refresh_token: 'zz-r', password: 'zz' }), 'on', A, false, true],
+        ['인증의 모양: 종료 scope=global', R('POST', '/auth/v1/logout?scope=global', undefined, memberHeaders), 'on', A, false, true],
+        ['인증의 모양: 종료를 공개 키로', R('POST', '/auth/v1/logout?scope=local'), 'on', A, false, true],
+        ['인증의 모양: 종료를 GET 으로', R('GET', '/auth/v1/logout?scope=local', undefined, memberHeaders), 'on', A, false, true],
+        ['인증의 모양: 본인 확인을 공개 키로(거절 뒤 다시 보내기)', R('POST', '/rest/v1/rpc/my_profile', {}), 'on', A, false, true],
+        ['인증의 모양: 접근 확인을 공개 키로(거절 뒤 다시 보내기)', R('POST', '/rest/v1/rpc/my_site_access', {}), 'on', A, false, true],
+        ['인증의 모양: 본인 확인에 apikey 가 없음', R('POST', '/rest/v1/rpc/my_profile', {}, { Authorization: 'Bearer ' + member }), 'on', A, false, true],
+        ['인증의 모양: 본인 확인에 쿼리를 붙임', R('POST', '/rest/v1/rpc/my_profile?select=*', {}, memberHeaders), 'on', A, false, true],
+        ['인증의 모양: 본인 확인을 GET 으로', R('GET', '/rest/v1/rpc/my_profile', undefined, memberHeaders), 'on', A, false, true],
+        ['인증의 모양: 다른 인증 경로(읽기)', R('GET', '/auth/v1/user', undefined, memberHeaders), 'on', A, false, true],
+        ['인증의 모양: 다른 인증 경로(쓰기)', R('POST', '/auth/v1/signup', { email: 'x@real.invalid' }), 'off', A, false, true],
         ['회원 자격으로 표 읽기(용도 밖)', R('GET', '/rest/v1/tr_schedule_assignment?select=*&order=id.asc', undefined, { apikey: FAKE_ANON, Authorization: 'Bearer ' + member }), 'on', A, false, true],
     ];
     for (const [name, req, pageMode, student, want, unsafe] of cases) {
         const d = dec(Object.assign({}, req, { pageMode, student }));
-        if ((d.action === 'continue') !== want) problems.push('차단기 › ' + name + ': ' + (want ? '내보내야 하는데 막음' : '막아야 하는데 내보냄'));
+        const wantAction = want === 'synthetic' ? 'synthetic' : (want ? 'continue' : 'abort');
+        if (d.action !== wantAction) problems.push('차단기 › ' + name + ': ' + (wantAction === 'abort' ? '막아야 하는데 내보냄' : (wantAction === 'synthetic' ? (d.action === 'continue' ? '합성 응답으로 답해야 하는데 실제로 내보냄' : '합성 응답으로 답해야 하는데 막음') : '내보내야 하는데 ' + (d.action === 'synthetic' ? '합성 응답으로 답함' : '막음'))));
+        if ((want === 'synthetic') !== (d.record.synthetic === true)) problems.push('차단기 › ' + name + ': 합성 응답의 표시가 다름');
+        if (/공개 키로\(거절 뒤 다시 보내기\)/.test(name) && d.record.publicRetry !== true) problems.push('차단기 › ' + name + ': 공개 키로 다시 보낸 것으로 적지 않음');
         if (d.record.unsafe !== unsafe) problems.push('차단기 › ' + name + ': 안전 조건 위반으로 ' + (unsafe ? '세지 않음' : '셈'));
         if (d.record.unsafe && d.action !== 'abort') problems.push('차단기 › ' + name + ': 위반인데 내보냄');
         const text = JSON.stringify(d.record);
         if (text.includes('zz_a@') || text.includes('zz_b@') || text.includes('zz-member') || text.includes('zz-app') || text.includes('zz-rec')) problems.push('차단기 › ' + name + ': 기록에 자유 형식의 글자가 남음');
     }
-    // 준비 전(예행 전·합성 자료의 목록을 확인하기 전): 시험 프로젝트로 가는 업무 요청을 전부 막는다(읽기 포함). 인증 모듈 자신의 요청은 자격 규칙만 본다
+    // 준비 전(예행 전·합성 자료의 목록을 확인하기 전): 시험 프로젝트로 가는 요청을 전부 막는다(읽기·합성 응답·인증 요청 포함)
     const early = mk(false);
     let earlyCount = 0;
     for (const [name, req, pageMode, student, , ] of cases) {
-        const own = name.startsWith('인증 모듈: ');
         const d = early(Object.assign({}, req, { pageMode, student }));
         earlyCount++;
-        if (!own && d.action !== 'abort') problems.push('차단기 › 준비 전 › ' + name + ': 내보냄');
+        if (d.action !== 'abort') problems.push('차단기 › 준비 전 › ' + name + ': 내보냄');
         if (d.record.unsafe) problems.push('차단기 › 준비 전 › ' + name + ': 준비 전의 시도를 위반으로 셈(예행의 대조 요청이 실행을 멈추게 된다)');
     }
     // 열 목록이 화면의 것과 글자까지 같은가
