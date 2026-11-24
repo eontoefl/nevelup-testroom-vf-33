@@ -62,10 +62,11 @@ const PAUSE_TIMEOUT = Number(arg('--pause-timeout-ms', '600000'));
 //   --selftest bad-plan             화면에서 읽은 저장 계획에 합성 행이 아닌 행을 끼워 넣는다 → 넘기지 않아야 한다(그 경우는 기대와 다름)
 //   --selftest bad-control-pass     예행의 대조용 요청을 자격·본문이 실린 POST 로 보낸다 → 예외로 내보내지 않아야 한다(수신 0, 종료 코드 4)
 //   --selftest unsafe-write         켜진 화면에서 업무 쓰기를 시켜 본다 → 전송 전에 막고, 그 경우를 끝내고, 뒤의 경우를 시작하지 않아야 한다(종료 코드 6)
+//   --selftest public-retry         켜진 화면에서 본인 확인을 공개 키로 보낸다(거절 뒤 다시 보내는 모양) → 전송 전에 막고 뒤의 경우를 시작하지 않아야 한다(종료 코드 6)
 //   --selftest loose-owner          새 문서의 소유 판정(연 창·쥠 표식·창 이름·탐색 종류·놓은 시각)을 뺀 모듈을 내준다 → 실제 복제본이 이어받는 것을 WN·TD 가 잡아야 한다(종료 코드 1)
 const SELFTEST = arg('--selftest', null);
 if (SELFTEST && !FAKE) stop('--selftest 는 --fake 에서만 쓴다');
-if (SELFTEST && !['leaky-blocker', 'silent-operator', 'bad-plan', 'bad-control-pass', 'unsafe-write', 'loose-owner'].includes(SELFTEST)) stop('--selftest 의 값이 맞지 않음');
+if (SELFTEST && !['leaky-blocker', 'silent-operator', 'bad-plan', 'bad-control-pass', 'unsafe-write', 'public-retry', 'loose-owner'].includes(SELFTEST)) stop('--selftest 의 값이 맞지 않음');
 // 손으로 재는 창(--fake 에서만): 가짜 서버·지어낸 자격으로 보이는 브라우저를 띄워 두고, 사람이 탭 복제·닫은 탭 되살리기·새로 고침을 한다.
 // 실행기는 문서마다 브라우저가 준 것(탐색 종류 등)과 모듈의 판정·나간 인증 요청을 적는다. B3B_CHROMIUM 에 Edge 의 실행 파일을 주면 Edge 로 잰다.
 const MANUAL = flag('--manual');
@@ -854,6 +855,11 @@ async function buildCases() {
                 // 대조 실험(--fake 에서만): 켜진 화면에서 업무 쓰기를 시켜 본다(공개 키, 이 학생의 합성 행) → 전송 전에 막혀야 한다
                 const tried = await p2.evaluate((id) => fetch(SUPABASE_CONFIG.url + '/rest/v1/applications?id=eq.' + id, { method: 'PATCH', headers: { apikey: SUPABASE_CONFIG.anonKey, Authorization: 'Bearer ' + SUPABASE_CONFIG.anonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ self_paced_schedule: 'zz' }) }).then(() => 'sent', () => 'blocked'), syn.appIds[0]).catch(() => 'blocked');
                 ck('대조 실험: 켜진 화면의 쓰기가 전송 전에 막힘', tried === 'blocked');
+            }
+            if (SELFTEST === 'public-retry' && entering) {
+                // 대조 실험(--fake 에서만): 회원 자격이 필요한 본인 확인을 공개 키로 보내 본다(거절 뒤 공개 키로 다시 보내는 모양) → 전송 전에 막혀야 한다
+                const tried = await p2.evaluate(() => fetch(SUPABASE_CONFIG.url + '/rest/v1/rpc/my_profile', { method: 'POST', headers: { apikey: SUPABASE_CONFIG.anonKey, Authorization: 'Bearer ' + SUPABASE_CONFIG.anonKey, 'Content-Type': 'application/json' }, body: '{}' }).then(() => 'sent', () => 'blocked')).catch(() => 'blocked');
+                ck('대조 실험: 공개 키로 보낸 본인 확인이 전송 전에 막힘', tried === 'blocked');
             }
             const nph = phase(cx, mark);
             ck('새 길: 안내가 옛 길과 같음', n.message === o.message);
