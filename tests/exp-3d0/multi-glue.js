@@ -7,6 +7,7 @@
     var auth = (window.EonAuth && typeof window.EonAuth.isOn === 'function' && window.EonAuth.isOn() === true) ? window.EonAuth : null;
     var rawGet = Storage.prototype.getItem;
     var rawSet = Storage.prototype.setItem;
+    window.__trRawGetItem = rawGet;      // 모듈은 저장된 그대로 읽는다
     var shownFor = null;         // 이 문서가 화면을 그릴 때 확인돼 있던 로그인 기록
     var state = window.__trMulti = { module: !!auth, started: false, writesDropped: 0 };
 

@@ -37,7 +37,7 @@ const RUN = WANT === 'all' ? VARIANTS : WANT.split(',');
 if (!RUN.every((v) => VARIANTS.includes(v))) stop('--variant 는 base·frame·multi·all');
 const OUT_DIR = path.resolve(arg('--out', path.join(ROOT, 'tests', 'exp-3d0', '.run')));
 const REFRESH_SEC = Number(arg('--refresh-sec', '200'));          // 가짜 서버가 내주는 로그인의 수명(짧게 — 갱신이 실제로 일어나게)
-const ONLY_PHASE = arg('--phase', null);                           // (점검용) 1·2·3·4·5 가운데 일부만: 예 --phase 1,3
+const ONLY_PHASE = arg('--phase', null);                           // (점검용) 1~6 가운데 일부만: 예 --phase 1,3
 
 const pwPath = process.env.B3B_PLAYWRIGHT;
 const chromePath = process.env.B3B_CHROMIUM;
@@ -141,6 +141,7 @@ const INIT_SCRIPT = `(() => {
   const shown = (el) => { try { if (!el) return false; if (getComputedStyle(document.documentElement).visibility === 'hidden') return false; const fe = window.frameElement; if (fe && getComputedStyle(fe).display === 'none') return false; return el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden'; } catch (e) { return false; } };
   b.shown = shown;
   b.reset = () => { b.names = []; b.draftSeen = false; };
+  b.left = () => { try { return { stored: rawGet.call(window.sessionStorage, 'tr_auth_v1') !== null, user: rawGet.call(window.sessionStorage, 'currentUser') !== null, holder: rawGet.call(window.sessionStorage, 'tr_auth_v1:holder') !== null }; } catch (e) { return null; } };
   const tick = () => { try {
     const n = document.getElementById('userName'); const main = document.getElementById('mainContent');
     if (n && main && shown(main)) { const t = String(n.textContent || '').trim(); if (t && t !== '-' && b.names.indexOf(t) < 0) b.names.push(t); }
@@ -161,6 +162,7 @@ const DOC_INFO = () => {
         start: b.start || null, restored: b.restored || 0, module: typeof window.EonAuth !== 'undefined', sdk: !!(window.supabase && window.supabase.AuthClient),
         state: null, reason: null, name: null, notLogged: false, schedule: false, login: false, loginMessage: false, draftDate: null, draftTime: null, modal: false,
         names: (b.names || []).slice(), draftSeen: !!b.draftSeen, childOpen: null, asks: null, hosted: null,
+        left: b.left ? b.left() : null,
         why: Array.isArray(window.__trHandoffWhy) ? window.__trHandoffWhy.filter((x) => /^[a-z_:]{1,40}$/.test(x)).slice(-6) : [] };
     try { if (window.EonAuth && window.EonAuth.isOn && window.EonAuth.isOn()) { out.state = String(window.EonAuth.state()); out.reason = window.EonAuth.reason() === null ? null : String(window.EonAuth.reason()); } else if (window.EonAuth) out.state = 'module-off'; } catch (e) {}
     if (file === '/mypage.html') {
@@ -210,13 +212,13 @@ async function measure(variant) {
     let tabSeq = 0;
     const tabOf = (page) => { if (!tabNo.has(page)) tabNo.set(page, ++tabSeq); return tabNo.get(page); };
 
-    async function openBrowser({ noLocks = false } = {}) {
+    async function openBrowser({ noLocks = false, noBfcache = false } = {}) {
         const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'exp3d0-profile-'));
         profiles.push(profile);
         const context = await chromium.launchPersistentContext(profile, {
             executablePath: chromePath, headless: false,
             args: ['--headless=new', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', '--disable-extensions-except=' + extDir, '--load-extension=' + extDir],
-            env: browserEnv(process.env), serviceWorkers: 'block', ignoreDefaultArgs: ['--disable-back-forward-cache'],
+            env: browserEnv(process.env), serviceWorkers: 'block', ignoreDefaultArgs: noBfcache ? [] : ['--disable-back-forward-cache'],
         });
         const cx = { context, records: [], outside: 0, withholdModule: false, origin: site.origin };
         if (noLocks) await context.addInitScript(NO_LOCKS_SCRIPT);
@@ -343,6 +345,7 @@ async function measure(variant) {
             module: info.module, sdkLoaded: info.sdk, state: info.state, reason: info.reason, person, notLogged: info.notLogged, schedule: info.schedule, loginScreen: info.login,
             draft: info.file === '/mypage.html' ? (info.draftDate === DRAFT.date && info.draftTime === DRAFT.time ? 'kept' : (info.draftDate || info.draftTime ? 'other' : 'empty')) : null, modalOpen: info.modal,
             peopleSeen: seen, draftSeen: info.draftSeen, childOpen: info.childOpen, asks: info.asks, hosted: info.hosted, why: info.why,
+            leftStored: info.left ? info.left.stored : null, leftUser: info.left ? info.left.user : null, leftHolder: info.left ? info.left.holder : null,
             auth: counts(mine), memberRequests: mine.filter((r) => r.member).length, businessReads: mine.filter((r) => r.target === 'read').length, businessWrites: mine.filter((r) => r.target === 'write').length,
         };
     }
@@ -355,7 +358,7 @@ async function measure(variant) {
     function pushStep(id, title, rows, extra) {
         const step = Object.assign({ id, title, docs: rows }, extra || {});
         result.steps.push(step);
-        const brief = rows.map((r) => (r.gone ? `${r.label}: 없음` : `${r.label}[${r.file}${r.hash || ''} ${r.nav}/${r.activation} 시작:${r.startHolder}${r.restored ? ' 되살아남' : ''}] ${r.state || (r.module ? '?' : '모듈 없음')}${r.reason ? '·' + r.reason : ''} 사람:${r.person || '-'}${r.draft ? ' 초안:' + r.draft : ''} 인증:${JSON.stringify(r.auth)}${r.why && r.why.length ? ' 승계:' + r.why.join('>') : ''}`)).join('\n        ');
+        const brief = rows.map((r) => (r.gone ? `${r.label}: 없음` : `${r.label}[${r.file}${r.hash || ''} ${r.nav}/${r.activation} 시작:${r.startHolder}${r.restored ? ' 되살아남' : ''}] ${r.state || (r.module ? '?' : '모듈 없음')}${r.reason ? '·' + r.reason : ''} 사람:${r.person || '-'}${r.draft ? ' 초안:' + r.draft + (r.draftSeen ? '(보임)' : '') : ''} 남은값:${r.leftStored ? '로그인' : ''}${r.leftUser ? '+화면값' : ''}${!r.leftStored && !r.leftUser ? '없음' : ''} 인증:${JSON.stringify(r.auth)}${r.why && r.why.length ? ' 승계:' + r.why.join('>') : ''}`)).join('\n        ');
         console.log(`  [${variant}] ${id} ${title}\n        ${brief}${extra && extra.note ? '\n        · ' + extra.note : ''}`);
         return step;
     }
@@ -456,7 +459,7 @@ async function measure(variant) {
 
             // 3.4 같은 목적지를 동시에 여는 탭: window.open / target=_blank 링크 / ctrl 클릭
             await ensureDrafted(T1);
-            await T1.evaluate(() => { for (const [id, target] of [['expBlank', '_blank'], ['expPlain', '']]) { if (document.getElementById(id)) continue; const a = document.createElement('a'); a.id = id; a.href = 'mypage.html'; if (target) a.target = target; a.textContent = id; a.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483647;background:#fff;padding:2px;font-size:10px;'; document.body.appendChild(a); } }).catch(() => {});
+            await T1.evaluate(() => { for (const [id, target] of [['expBlank', '_blank'], ['expPlain', '']]) { if (document.getElementById(id)) continue; const a = document.createElement('a'); a.id = id; a.href = 'mypage.html'; if (target) a.target = target; a.textContent = id; a.style.cssText = 'position:fixed;left:0;top:' + (target ? 0 : 24) + 'px;z-index:2147483647;background:#fff;padding:2px;font-size:10px;'; document.body.appendChild(a); } }).catch(() => {});
             for (const [name, act] of [
                 ['window.open(_blank)', () => T1.evaluate(() => { window.open('mypage.html', '_blank'); })],
                 ['target=_blank 링크', () => T1.click('#expBlank')],
@@ -572,7 +575,25 @@ async function measure(variant) {
             await cx.context.close().catch(() => {});
             cx = null;
         }
-        result.facts.outsideBlockedInBrowser = 'counted per browser — see evidence';
+        // ================= 6. 화면 보관(뒤로 가기용 보관)이 꺼진 브라우저 =================
+        if (phaseOn(6)) {
+            cx = await openBrowser({ noBfcache: true });
+            const P = await cx.context.newPage();
+            await P.goto(site.origin + '/index.html', { waitUntil: 'domcontentloaded' });
+            await login(cx, P, 'std');
+            let m6 = cx.records.length;
+            await goMypage(cx, P);
+            await typeDraft(P);
+            pushStep('6.1', '화면 보관이 꺼진 브라우저: 로그인 → 이동 → 값을 적음', await rowsOf(cx, '원본', P, m6));
+            m6 = cx.records.length;
+            await traverse(cx, P, -1);
+            pushStep('6.2', '화면 보관이 꺼진 브라우저: 뒤로', await rowsOf(cx, '원본', P, m6));
+            m6 = cx.records.length;
+            await traverse(cx, P, +1);
+            pushStep('6.3', '화면 보관이 꺼진 브라우저: 앞으로', await rowsOf(cx, '원본', P, m6));
+            await cx.context.close().catch(() => {});
+            cx = null;
+        }
     } catch (e) {
         result.error = String(e && e.message).split('\n')[0];
         console.log(`  [${variant}] 실행 도중 예외: ${result.error}`);
@@ -602,7 +623,7 @@ for (const v of RUN) {
     all.push(r);
     const file = path.join(OUT_DIR, `result-${v}.json`);
     const text = JSON.stringify(Object.assign({ tool: 'tests/exp-3d0/run.mjs', note: '로컬 가짜 서버를 상대로 잰 값이다 — 실제 서버의 증거가 아니다', refreshSec: REFRESH_SEC, runnerConnections: Object.assign({}, egress) }, r), null, 1);
-    if (text.includes(PW) || /eyJ[A-Za-z0-9_-]{8,}/.test(text)) { console.error('중단: 결과에 자격의 흔적이 있어 파일을 쓰지 않는다'); process.exitCode = 5; } else { fs.writeFileSync(file, text); console.log(`  결과: ${file}`); }
+    if (text.includes(PW) || /eyJ[A-Za-z0-9_-]{8,}/.test(text) || /fake-refresh-/.test(text)) { console.error('중단: 결과에 자격의 흔적이 있어 파일을 쓰지 않는다'); process.exitCode = 5; } else { fs.writeFileSync(file, text); console.log(`  결과: ${file}`); }
 }
 console.log(`\n이 프로세스가 연 연결 — 로컬 ${egress.local} · 막은 시도 ${egress.blocked}. 남은 임시 폴더 ${all.reduce((n, r) => n + r.leftFolders, 0)}`);
 setTimeout(() => process.exit(process.exitCode || (all.some((r) => r.error) ? 1 : 0)), 300);
