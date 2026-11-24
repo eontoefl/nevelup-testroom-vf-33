@@ -1085,6 +1085,8 @@ async function main() {
             requestsSentToTestProject: all.filter((r) => r.where === 'test-project' && r.sent).length,
             requestsAnsweredByFakeServer: all.filter((r) => r.how && r.how.startsWith('fake-server')).length,
             staticAllowedFulfilledLocally: all.filter((r) => r.where === 'static-allowed').length,
+            // 화면의 내용 보안 정책이 요청을 만들기 전에 막은 것(바깥 스크립트 — Sentry 등. 차단기까지 오지 않는다)
+            cspBlockedInBrowser: siteOn.core.counts.csp + siteOff.core.counts.csp,
         },
         summary: summarize(all),
         pendingRevert: board.pendingRevert,                 // null 이 아니면 브레인방이 건 DB 변경이 남아 있을 수 있다
