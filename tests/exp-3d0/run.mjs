@@ -141,15 +141,17 @@ const INIT_SCRIPT = `(() => {
   const shown = (el) => { try { if (!el) return false; if (getComputedStyle(document.documentElement).visibility === 'hidden') return false; const fe = window.frameElement; if (fe && getComputedStyle(fe).display === 'none') return false; return el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden'; } catch (e) { return false; } };
   b.shown = shown;
   b.reset = () => { b.names = []; b.draftSeen = false; };
+  // 화면에 보인 것을 실행기에 바로 알린다(문서가 다시 읽혀도 기록이 남게)
+  const note = (k, v) => { try { if (typeof window.__expNote === 'function') window.__expNote(k, v); } catch (e) {} };
   b.left = () => { try { return { stored: rawGet.call(window.sessionStorage, 'tr_auth_v1') !== null, user: rawGet.call(window.sessionStorage, 'currentUser') !== null, holder: rawGet.call(window.sessionStorage, 'tr_auth_v1:holder') !== null }; } catch (e) { return null; } };
   const tick = () => { try {
     const n = document.getElementById('userName'); const main = document.getElementById('mainContent');
-    if (n && main && shown(main)) { const t = String(n.textContent || '').trim(); if (t && t !== '-' && b.names.indexOf(t) < 0) b.names.push(t); }
-    const d = document.getElementById('toeflExamDate'); if (d && d.value && shown(d)) b.draftSeen = true;
+    if (n && main && shown(main)) { const t = String(n.textContent || '').trim(); if (t && t !== '-' && b.names.indexOf(t) < 0) { b.names.push(t); note('name', t); } }
+    const d = document.getElementById('toeflExamDate'); if (d && d.value && shown(d) && !b.draftSeen) { b.draftSeen = true; note('draft', ''); }
   } catch (e) {} };
   setInterval(tick, 40);
   const frame = () => { tick(); requestAnimationFrame(frame); }; requestAnimationFrame(frame);
-  window.addEventListener('pageshow', (ev) => { if (ev.persisted) b.restored = (b.restored || 0) + 1; }, true);
+  window.addEventListener('pageshow', (ev) => { if (ev.persisted) { b.restored = (b.restored || 0) + 1; b.reset(); } }, true);      // 되살아난 화면에 보이는 것은 다시 센다
 })();`;
 const NO_LOCKS_SCRIPT = `(() => { try { Object.defineProperty(Navigator.prototype, 'locks', { get() { return undefined; }, configurable: true }); } catch (e) {} })();`;
 
@@ -220,7 +222,8 @@ async function measure(variant) {
             args: ['--headless=new', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', '--disable-extensions-except=' + extDir, '--load-extension=' + extDir],
             env: browserEnv(process.env), serviceWorkers: 'block', ignoreDefaultArgs: noBfcache ? [] : ['--disable-back-forward-cache'],
         });
-        const cx = { context, records: [], outside: 0, withholdModule: false, origin: site.origin };
+        const cx = { context, records: [], seen: [], outside: 0, withholdModule: false, origin: site.origin };
+        await context.exposeBinding('__expNote', (source, kind, value) => { try { cx.seen.push({ tab: tabOf(source.page), kind: kind === 'draft' ? 'draft' : 'name', who: kind === 'name' ? who(String(value)) : null }); } catch (e) { /* 기록일 뿐 */ } });
         if (noLocks) await context.addInitScript(NO_LOCKS_SCRIPT);
         await context.addInitScript(INIT_SCRIPT);
         await context.route('**/*', (route) => handleRoute(route, cx).catch(() => route.abort('blockedbyclient').catch(() => {})));
@@ -359,7 +362,7 @@ async function measure(variant) {
         const step = Object.assign({ id, title, docs: rows }, extra || {});
         result.steps.push(step);
         const brief = rows.map((r) => (r.gone ? `${r.label}: 없음` : `${r.label}[${r.file}${r.hash || ''} ${r.nav}/${r.activation} 시작:${r.startHolder}${r.restored ? ' 되살아남' : ''}] ${r.state || (r.module ? '?' : '모듈 없음')}${r.reason ? '·' + r.reason : ''} 사람:${r.person || '-'}${r.draft ? ' 초안:' + r.draft + (r.draftSeen ? '(보임)' : '') : ''} 남은값:${r.leftStored ? '로그인' : ''}${r.leftUser ? '+화면값' : ''}${!r.leftStored && !r.leftUser ? '없음' : ''} 인증:${JSON.stringify(r.auth)}${r.why && r.why.length ? ' 승계:' + r.why.join('>') : ''}`)).join('\n        ');
-        console.log(`  [${variant}] ${id} ${title}\n        ${brief}${extra && extra.note ? '\n        · ' + extra.note : ''}`);
+        console.log(`  [${variant}] ${id} ${title}\n        ${brief}${extra && extra.shownDuringStep ? '\n        · 이 단계에서 화면에 보인 것: ' + (extra.shownDuringStep.join(', ') || '없음') : ''}`);
         return step;
     }
     const refreshDocs = (cx, mark) => [...new Set(cx.records.slice(mark).filter((r) => r.target === 'refresh' && r.status === 200).map((r) => `${r.tab}/${r.frame}${r.file}`))];
@@ -525,7 +528,9 @@ async function measure(variant) {
             await T2.goto(site.origin + '/index.html', { waitUntil: 'domcontentloaded' });
             await login(cx, T2, 'fast');
             await goMypage(cx, T2);
-            pushStep('4.1', '다른 탭에서 B 로 로그인하고 그 화면으로', [...await rowsOf(cx, 'A 의 탭', T1, mark), ...await rowsOf(cx, 'B 의 탭', T2, mark)]);
+            const bTab = tabOf(T2);
+            result.facts.otherTabBSawA = cx.seen.some((s) => s.tab === bTab && (s.who === 'A' || s.kind === 'draft'));
+            pushStep('4.1', '다른 탭에서 B 로 로그인하고 그 화면으로', [...await rowsOf(cx, 'A 의 탭', T1, mark), ...await rowsOf(cx, 'B 의 탭', T2, mark)], { bTabSawA: result.facts.otherTabBSawA });
             await T2.close().catch(() => {});
             // 4.2 같은 탭에서: A 가 값을 적어 둔 채 로그아웃 → B 로 로그인 → 그 화면으로
             await ensureDrafted(T1);
@@ -537,21 +542,34 @@ async function measure(variant) {
             const afterLogout = await rowsOf(cx, '같은 탭(A 로그아웃 뒤)', T1, mark);
             await login(cx, T1, 'fast');
             for (const f of T1.frames()) await f.evaluate(() => { if (window.__exp) window.__exp.reset(); }).catch(() => {});     // 여기서부터 보이는 것은 B 의 것이어야 한다
+            const seenFrom = cx.seen.length;
+            // A 때 열었던 화면의 항목이 앞쪽에 남아 있으면(문서를 떠나지 않는 안) 그리로 앞으로 가 본다
+            const fwdMark = cx.records.length;
+            if (await traverse(cx, T1, +1)) {
+                await sleep(700);
+                pushStep('4.2b', 'B 로그인 직후 앞으로(A 때 열었던 화면의 항목으로)', await rowsOf(cx, '같은 탭(B)', T1, fwdMark), { shownDuringStep: [...new Set(cx.seen.slice(seenFrom).map((s) => (s.kind === 'draft' ? 'A 의 초안' : s.who)))] });
+            }
             await goMypage(cx, T1);
             pushStep('4.2', '같은 탭에서 A 로그아웃 → B 로그인 → 그 화면으로', [...afterLogout, ...await rowsOf(cx, '같은 탭(B)', T1, mark)]);
             // 4.3 그 탭에서 뒤로 여러 번(A 때의 항목까지): A 의 이름·초안이 B 에게 보이는가
             const seenAll = [];
+            const stepStart = {};
+            const before0 = (i) => stepStart[i];
             for (let i = 1; i <= 4; i++) {
                 stepMark();
+                stepStart[i] = cx.seen.length;
                 const moved = await traverse(cx, T1, -1);
                 if (!moved) break;
                 await sleep(700);
                 const rows = await rowsOf(cx, `같은 탭(B) — 뒤로 ${i}번`, T1, mark);
                 seenAll.push(...rows);
-                pushStep('4.3', `B 로 로그인한 탭에서 뒤로 ${i}번째`, rows);
+                const during = cx.seen.slice(before0(i));
+                pushStep('4.3', `B 로 로그인한 탭에서 뒤로 ${i}번째`, rows, { shownDuringStep: [...new Set(during.map((s) => (s.kind === 'draft' ? 'A 의 초안' : s.who)))] });
             }
-            result.facts.aSeenAfterB = seenAll.some((r) => (r.peopleSeen || []).includes('A') || r.person === 'A');
-            result.facts.aDraftSeenAfterB = seenAll.some((r) => r.draftSeen === true || r.draft === 'kept');
+            const after = cx.seen.slice(seenFrom);
+            result.facts.aSeenAfterB = after.some((s) => s.who === 'A') || seenAll.some((r) => (r.peopleSeen || []).includes('A') || r.person === 'A');
+            result.facts.aDraftSeenAfterB = after.some((s) => s.kind === 'draft') || seenAll.some((r) => r.draftSeen === true);
+            result.facts.aDraftValueLeftInInputs = seenAll.some((r) => r.draft === 'kept');
         }
         await cx.context.close().catch(() => {});
         cx = null;
