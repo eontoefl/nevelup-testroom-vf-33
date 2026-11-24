@@ -34,72 +34,130 @@ const SYN = {
 };
 const enc = encodeURIComponent;
 
-// ---- 차단기의 범위 규칙
+// 지금 돌리는 합성 학생 둘(차단기는 "그 학생"의 것만 내보낸다)
+const STU = {
+    a: { email: SYN.emails[0], memberId: 'zz-member-a', appIds: ['zz-app-a1'], recordIds: ['zz-rec-a1', 'zz-rec-a2'] },
+    b: { email: SYN.emails[1], memberId: 'zz-member-b', appIds: ['zz-app-b1'], recordIds: ['zz-rec-b1'] },
+};
+
+// ---- 차단기의 범위 규칙: 켜짐·꺼짐, 지금의 합성 학생, 읽기의 허용 목록, 준비 전
 export async function testDecider(mutate) {
     const problems = [];
-    const { makeDecider } = await load('request-log.mjs', mutate);
+    const { makeDecider, APP_COLS } = await load('request-log.mjs', mutate);
     const iss = TEST_URL + '/auth/v1';
     const member = fakeJwt({ iss, role: 'authenticated', sub: 'auth-a', email: SYN.emails[0], session_id: 's1' });
     const anon = { apikey: FAKE_ANON, Authorization: 'Bearer ' + FAKE_ANON };
-    const mk = (syn) => makeDecider({ selfOrigins: ['http://127.0.0.1:8787'], anonKey: FAKE_ANON, issuer: iss, memberEmails: () => SYN.emails, synthetic: () => syn });
-    const dec = mk(SYN);
+    const mk = (ready) => makeDecider({ selfOrigins: ['http://127.0.0.1:8787'], anonKey: FAKE_ANON, issuer: iss, memberEmails: () => SYN.emails, ready: () => ready });
+    const dec = mk(true);
     const R = (method, p, body, headers) => ({ url: TEST_URL + p, method, headers: headers || anon, postData: body === undefined ? null : JSON.stringify(body), resourceType: 'fetch', isNavigation: false });
-    const U = `/rest/v1/users?email=eq.${enc(SYN.emails[0])}`;
+    const U = (email) => '/rest/v1/users?email=eq.' + enc(email);
+    const A = STU.a;
+    const B = STU.b;
+    const appByEmail = (email) => '/rest/v1/applications?email=eq.' + enc(email) + '&deposit_confirmed_by_admin=eq.true&order=created_at.desc&limit=1&select=' + APP_COLS;
+    const map = (user_id, email) => R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id, email, name: 'n', updated_at: 't' });
+    const studyRead = (m, app) => '/rest/v1/study_results_v3?user_id=eq.' + m + '&locked_auth_rate=is.null&completed_at=not.is.null&enrollment_id=eq.' + app + '&select=id,initial_record,error_note_submitted,week,day';
+    // [이름, 요청, 화면(on·off), 그 학생, 나가는가, 안전 조건 위반으로 세는가]
     const cases = [
-        // [이름, 요청, 나가는가]
-        ['회원 표: 옛 길의 첫 조회(정해진 열)', R('GET', U + '&select=id,name,email,phone,role,blocked,timezone'), true],
-        ['회원 표: 옛 길의 둘째 조회(password 한 열)', R('GET', U + '&select=password'), true],
-        ['회원 표: select=*', R('GET', U + '&select=*'), false],
-        ['회원 표: 열 목록에 password 를 섞음', R('GET', U + '&select=id,name,password'), false],
-        ['회원 표: 필터 없음', R('GET', '/rest/v1/users?select=password'), false],
-        ['회원 표: 필터도 열도 없음', R('GET', '/rest/v1/users'), false],
-        ['회원 표: 합성이 아닌 이메일', R('GET', `/rest/v1/users?email=eq.${enc('someone@real.invalid')}&select=password`), false],
-        ['회원 표: 다른 조건을 덧붙임', R('GET', U + '&select=password&limit=1000'), false],
-        ['회원 표: 다른 연산(like)', R('GET', `/rest/v1/users?email=like.${enc('%')}&select=password`), false],
-        ['회원 표: 번호로 조회(책 연결의 길 — 이 실행기에서는 내보내지 않는다)', R('GET', '/rest/v1/users?id=eq.zz-member-a&select=id,name,email,phone&limit=1'), false],
-        ['회원 표: 쓰기', R('PATCH', U, { password: 'x' }), false],
-        ['신청서: 합성 이메일로', R('GET', `/rest/v1/applications?email=eq.${enc(SYN.emails[1])}&order=created_at.desc&limit=1&select=id`), true],
-        ['신청서: 합성 신청서 번호로', R('GET', '/rest/v1/applications?id=eq.zz-app-a1&select=self_paced,self_paced_weeks'), true],
-        ['신청서: 조건 없음', R('GET', '/rest/v1/applications?select=*'), false],
-        ['신청서: 합성이 아닌 이메일', R('GET', `/rest/v1/applications?email=eq.${enc('someone@real.invalid')}&select=id`), false],
-        ['신청서: 합성이 아닌 번호', R('GET', '/rest/v1/applications?id=eq.real-app-1&select=id'), false],
-        ['쓰기: 신청서의 일정표(합성 행)', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}' }), true],
-        ['쓰기: 신청서의 다른 열', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { deposit_confirmed_by_admin: true }), false],
-        ['쓰기: 신청서의 일정표 + 다른 열', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}', status: 'x' }), false],
-        ['쓰기: 합성이 아닌 신청서', R('PATCH', '/rest/v1/applications?id=eq.real-app-1', { self_paced_schedule: '{}' }), false],
-        ['쓰기: 신청서 조건 없음', R('PATCH', '/rest/v1/applications', { self_paced_schedule: '{}' }), false],
-        ['쓰기: 신청서 조건 둘', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1&email=neq.x', { self_paced_schedule: '{}' }), false],
-        ['쓰기: 신청서 지우기', R('DELETE', '/rest/v1/applications?id=eq.zz-app-a1'), false],
-        ['쓰기: tr_user_map(합성 회원)', R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id: 'zz-member-a', email: SYN.emails[0], name: 'n', updated_at: 't' }), true],
-        ['쓰기: tr_user_map(합성이 아닌 회원)', R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id: 'real-member', email: SYN.emails[0], name: 'n', updated_at: 't' }), false],
-        ['쓰기: tr_user_map(합성이 아닌 이메일)', R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id: 'zz-member-a', email: 'x@real.invalid', name: 'n', updated_at: 't' }), false],
-        ['쓰기: tr_user_map(다른 열)', R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id: 'zz-member-a', email: SYN.emails[0], role: 'admin' }), false],
-        ['쓰기: 인증률 확정(합성 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { locked_auth_rate: 50 }), true],
-        ['쓰기: 인증률 확정(합성이 아닌 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.real-rec', { locked_auth_rate: 50 }), false],
-        ['쓰기: 학습 기록의 다른 열', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { initial_record: {} }), false],
-        ['쓰기: 학습 기록을 회원 조건으로(여러 행)', R('PATCH', '/rest/v1/study_results_v3?user_id=eq.zz-member-a', { locked_auth_rate: 0 }), false],
-        ['쓰기: 다른 표', R('POST', '/rest/v1/tr_notifications', { x: 1 }), false],
-        ['쓰기: 책 연결의 값 지우기', R('DELETE', '/rest/v1/tr_auth_tokens?id=eq.x'), false],
-        ['쓰기: 저장소 올리기', R('POST', '/storage/v1/object/x/y.webm', { a: 1 }), false],
-        ['쓰기: 함수 부르기', R('POST', '/functions/v1/anything', { a: 1 }), false],
-        ['쓰기: 다른 RPC', R('POST', '/rest/v1/rpc/anything', {}), false],
-        ['읽기: 다른 표', R('GET', '/rest/v1/tr_notices?select=*'), true],
-        ['읽기: 학습 기록', R('GET', '/rest/v1/study_results_v3?user_id=eq.zz-member-a&locked_auth_rate=is.null&select=id'), true],
-        ['인증 모듈: 로그인', R('POST', '/auth/v1/token?grant_type=password', { email: SYN.emails[0], password: 'zz' }), true],
-        ['인증 모듈: 본인 확인(회원 자격)', R('POST', '/rest/v1/rpc/my_profile', {}, { apikey: FAKE_ANON, Authorization: 'Bearer ' + member }), true],
-        ['회원 자격으로 표 읽기(용도 밖)', R('GET', '/rest/v1/tr_notices?select=*', undefined, { apikey: FAKE_ANON, Authorization: 'Bearer ' + member }), false],
+        // 회원 표 — 꺼진 화면, 그 학생의 정확한 두 조회만
+        ['회원 표(꺼짐): 옛 길의 첫 조회(정해진 열)', R('GET', U(A.email) + '&select=id,name,email,phone,role,blocked,timezone'), 'off', A, true, false],
+        ['회원 표(꺼짐): 옛 길의 둘째 조회(password 한 열)', R('GET', U(A.email) + '&select=password'), 'off', A, true, false],
+        ['회원 표(꺼짐): select=*', R('GET', U(A.email) + '&select=*'), 'off', A, false, true],
+        ['회원 표(꺼짐): 열 목록에 password 를 섞음', R('GET', U(A.email) + '&select=id,name,password'), 'off', A, false, true],
+        ['회원 표(꺼짐): 필터 없음', R('GET', '/rest/v1/users?select=password'), 'off', A, false, true],
+        ['회원 표(꺼짐): 필터도 열도 없음', R('GET', '/rest/v1/users'), 'off', A, false, true],
+        ['회원 표(꺼짐): 합성이 아닌 이메일', R('GET', U('someone@real.invalid') + '&select=password'), 'off', A, false, true],
+        ['회원 표(꺼짐): 다른 합성 학생의 이메일', R('GET', U(B.email) + '&select=password'), 'off', A, false, true],
+        ['회원 표(꺼짐): 그 학생이 정해지지 않음', R('GET', U(A.email) + '&select=password'), 'off', null, false, true],
+        ['회원 표(꺼짐): 다른 조건을 덧붙임', R('GET', U(A.email) + '&select=password&limit=1000'), 'off', A, false, true],
+        ['회원 표(꺼짐): 다른 연산(like)', R('GET', '/rest/v1/users?email=like.' + enc('%') + '&select=password'), 'off', A, false, true],
+        ['회원 표(꺼짐): 번호로 조회(책 연결의 길)', R('GET', '/rest/v1/users?id=eq.zz-member-a&select=id,name,email,phone&limit=1'), 'off', A, false, true],
+        ['회원 표(꺼짐): 쓰기', R('PATCH', U(A.email), { password: 'x' }), 'off', A, false, true],
+        // 회원 표 — 켜진 화면에서는 무조건
+        ['회원 표(켜짐): 옛 길의 첫 조회', R('GET', U(A.email) + '&select=id,name,email,phone,role,blocked,timezone'), 'on', A, false, true],
+        ['회원 표(켜짐): 옛 길의 둘째 조회', R('GET', U(A.email) + '&select=password'), 'on', A, false, true],
+        ['회원 표(화면을 모름): 옛 길의 둘째 조회', R('GET', U(A.email) + '&select=password'), undefined, A, false, true],
+        // 쓰기 — 꺼진 화면, 그 학생의 행·허용한 열·정해 둔 값만
+        ['쓰기(꺼짐): 신청서의 일정표(그 학생의 행)', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}' }), 'off', A, true, false],
+        ['쓰기(꺼짐): 신청서의 다른 열', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { deposit_confirmed_by_admin: true }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서의 일정표 + 다른 열', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}', status: 'x' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서의 일정표가 글자가 아님', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: { a: 1 } }), 'off', A, false, true],
+        ['쓰기(꺼짐): 다른 합성 학생의 신청서', R('PATCH', '/rest/v1/applications?id=eq.zz-app-b1', { self_paced_schedule: '{}' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 합성이 아닌 신청서', R('PATCH', '/rest/v1/applications?id=eq.real-app-1', { self_paced_schedule: '{}' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서 조건 없음', R('PATCH', '/rest/v1/applications', { self_paced_schedule: '{}' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서 조건 둘', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1&email=neq.x', { self_paced_schedule: '{}' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 신청서 지우기', R('DELETE', '/rest/v1/applications?id=eq.zz-app-a1'), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(그 학생의 회원번호·이메일)', map(A.memberId, A.email), 'off', A, true, false],
+        ['쓰기(꺼짐): tr_user_map(짝이 맞지 않음 — 그 학생의 회원번호 + 다른 학생의 이메일)', map(A.memberId, B.email), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(짝이 맞지 않음 — 다른 학생의 회원번호 + 그 학생의 이메일)', map(B.memberId, A.email), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(다른 합성 학생의 짝)', map(B.memberId, B.email), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(합성이 아닌 회원)', map('real-member', A.email), 'off', A, false, true],
+        ['쓰기(꺼짐): tr_user_map(다른 열)', R('POST', '/rest/v1/tr_user_map?on_conflict=user_id', { user_id: A.memberId, email: A.email, role: 'admin' }), 'off', A, false, true],
+        ['쓰기(꺼짐): 인증률 확정(그 학생의 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { locked_auth_rate: 50 }), 'off', A, true, false],
+        ['쓰기(꺼짐): 인증률 확정(다른 합성 학생의 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-b1', { locked_auth_rate: 50 }), 'off', A, false, true],
+        ['쓰기(꺼짐): 인증률 확정(합성이 아닌 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.real-rec', { locked_auth_rate: 50 }), 'off', A, false, true],
+        ['쓰기(꺼짐): 인증률 확정(정해 두지 않은 값)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { locked_auth_rate: 70 }), 'off', A, false, true],
+        ['쓰기(꺼짐): 학습 기록의 다른 열', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { initial_record: {} }), 'off', A, false, true],
+        ['쓰기(꺼짐): 학습 기록을 회원 조건으로(여러 행)', R('PATCH', '/rest/v1/study_results_v3?user_id=eq.zz-member-a', { locked_auth_rate: 0 }), 'off', A, false, true],
+        ['쓰기(꺼짐): 다른 표', R('POST', '/rest/v1/tr_notifications', { x: 1 }), 'off', A, false, true],
+        ['쓰기(꺼짐): 책 연결의 값 지우기', R('DELETE', '/rest/v1/tr_auth_tokens?id=eq.x'), 'off', A, false, true],
+        ['쓰기(꺼짐): 저장소 올리기', R('POST', '/storage/v1/object/x/y.webm', { a: 1 }), 'off', A, false, true],
+        ['쓰기(꺼짐): 함수 부르기', R('POST', '/functions/v1/anything', { a: 1 }), 'off', A, false, true],
+        ['쓰기(꺼짐): 다른 RPC', R('POST', '/rest/v1/rpc/anything', {}), 'off', A, false, true],
+        // 쓰기 — 켜진 화면에서는 무조건(꺼짐에서라면 나갈 모양이어도)
+        ['쓰기(켜짐): 신청서의 일정표(그 학생의 행)', R('PATCH', '/rest/v1/applications?id=eq.zz-app-a1', { self_paced_schedule: '{}' }), 'on', A, false, true],
+        ['쓰기(켜짐): tr_user_map(그 학생의 짝)', map(A.memberId, A.email), 'on', A, false, true],
+        ['쓰기(켜짐): 인증률 확정(그 학생의 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { locked_auth_rate: 50 }), 'on', A, false, true],
+        ['쓰기(켜짐): 다른 RPC', R('POST', '/rest/v1/rpc/anything', {}), 'on', A, false, true],
+        ['쓰기(화면을 모름): 인증률 확정(그 학생의 행)', R('PATCH', '/rest/v1/study_results_v3?id=eq.zz-rec-a2', { locked_auth_rate: 50 }), undefined, A, false, true],
+        // 읽기 — 허용 목록만(그 밖은 막고 센다 — 위반으로 치지는 않는다)
+        ['읽기: 신청서(그 학생의 이메일, 정해진 조건·열)', R('GET', appByEmail(A.email)), 'on', A, true, false],
+        ['읽기: 신청서(꺼진 화면에서도 같다)', R('GET', appByEmail(A.email)), 'off', A, true, false],
+        ['읽기: 신청서(그 학생의 번호, 정해진 열 묶음)', R('GET', '/rest/v1/applications?id=eq.zz-app-a1&select=self_paced,self_paced_weeks'), 'on', A, true, false],
+        ['읽기: 신청서(다른 합성 학생의 이메일)', R('GET', appByEmail(B.email)), 'on', A, false, false],
+        ['읽기: 신청서(다른 합성 학생의 번호)', R('GET', '/rest/v1/applications?id=eq.zz-app-b1&select=self_paced,self_paced_weeks'), 'on', A, false, false],
+        ['읽기: 신청서(합성이 아닌 이메일)', R('GET', appByEmail('someone@real.invalid')), 'on', A, false, false],
+        ['읽기: 신청서(정해 두지 않은 열)', R('GET', '/rest/v1/applications?id=eq.zz-app-a1&select=*'), 'on', A, false, false],
+        ['읽기: 신청서(조건 없음)', R('GET', '/rest/v1/applications?select=*'), 'on', A, false, false],
+        ['읽기: 신청서(그 학생이 정해지지 않음)', R('GET', appByEmail(A.email)), 'on', null, false, false],
+        ['읽기: 학습 기록(그 학생·그 신청서, 정해진 조건·열)', R('GET', studyRead(A.memberId, 'zz-app-a1')), 'on', A, true, false],
+        ['읽기: 학습 기록(다른 합성 학생)', R('GET', studyRead(B.memberId, 'zz-app-b1')), 'on', A, false, false],
+        ['읽기: 학습 기록(정해 두지 않은 조건)', R('GET', '/rest/v1/study_results_v3?user_id=eq.zz-member-a&select=id'), 'on', A, false, false],
+        ['읽기: 마감 연장(그 학생의 신청서)', R('GET', '/rest/v1/tr_deadline_extensions?enrollment_id=eq.zz-app-a1&select=original_date,extra_days'), 'on', A, true, false],
+        ['읽기: 알림(그 학생)', R('GET', '/rest/v1/tr_notifications?user_id=eq.zz-member-a&order=created_at.desc&limit=20'), 'on', A, true, false],
+        ['읽기: 알림(다른 회원)', R('GET', '/rest/v1/tr_notifications?user_id=eq.dev-user-001&order=created_at.desc&limit=20'), 'on', A, false, false],
+        ['읽기: 공지(정해진 조건)', R('GET', '/rest/v1/tr_notices?active_until=gt.2026-11-24T10:00:00.000Z&order=sort_order.asc'), 'on', null, true, false],
+        ['읽기: 공지(다른 조건)', R('GET', '/rest/v1/tr_notices?select=*'), 'on', A, false, false],
+        ['읽기: 설정·일정 배정(정해진 조건)', R('GET', '/rest/v1/tr_schedule_assignment?select=*&order=id.asc'), 'on', null, true, false],
+        ['읽기: 목록에 없는 표', R('GET', '/rest/v1/toefl_actual_scores?user_id=eq.zz-member-a&order=test_date.asc'), 'on', A, false, false],
+        ['읽기: 저장소', R('GET', '/storage/v1/object/public/x/y.png'), 'on', A, false, false],
+        ['읽기: 다른 RPC 를 GET 으로', R('GET', '/rest/v1/rpc/anything'), 'on', A, false, false],
+        // 인증 모듈 자신의 요청
+        ['인증 모듈: 로그인', R('POST', '/auth/v1/token?grant_type=password', { email: A.email, password: 'zz' }), 'on', A, true, false],
+        ['인증 모듈: 본인 확인(회원 자격)', R('POST', '/rest/v1/rpc/my_profile', {}, { apikey: FAKE_ANON, Authorization: 'Bearer ' + member }), 'on', A, true, false],
+        ['회원 자격으로 표 읽기(용도 밖)', R('GET', '/rest/v1/tr_schedule_assignment?select=*&order=id.asc', undefined, { apikey: FAKE_ANON, Authorization: 'Bearer ' + member }), 'on', A, false, true],
     ];
-    for (const [name, req, want] of cases) {
-        const d = dec(req);
-        if ((d.action === 'continue') !== want) problems.push(`차단기 › ${name}: ${want ? '내보내야 하는데 막음' : '막아야 하는데 내보냄'}`);
-        if (JSON.stringify(d.record).includes('zz_a@') || JSON.stringify(d.record).includes('zz-member')) problems.push(`차단기 › ${name}: 기록에 자유 형식의 글자가 남음`);
+    for (const [name, req, pageMode, student, want, unsafe] of cases) {
+        const d = dec(Object.assign({}, req, { pageMode, student }));
+        if ((d.action === 'continue') !== want) problems.push('차단기 › ' + name + ': ' + (want ? '내보내야 하는데 막음' : '막아야 하는데 내보냄'));
+        if (d.record.unsafe !== unsafe) problems.push('차단기 › ' + name + ': 안전 조건 위반으로 ' + (unsafe ? '세지 않음' : '셈'));
+        if (d.record.unsafe && d.action !== 'abort') problems.push('차단기 › ' + name + ': 위반인데 내보냄');
+        const text = JSON.stringify(d.record);
+        if (text.includes('zz_a@') || text.includes('zz_b@') || text.includes('zz-member') || text.includes('zz-app') || text.includes('zz-rec')) problems.push('차단기 › ' + name + ': 기록에 자유 형식의 글자가 남음');
     }
-    // 합성 자료의 목록을 받기 전: 회원 표·신청서 조회와 쓰기를 전부 막는다
-    const early = mk(null);
-    for (const [name, req] of [cases[0], cases[1], cases[11], cases[16], cases[23], cases[27]]) {
-        if (early(req).action !== 'abort') problems.push(`차단기 › 목록을 받기 전 › ${name}: 내보냄`);
+    // 준비 전(예행 전·합성 자료의 목록을 확인하기 전): 시험 프로젝트로 가는 업무 요청을 전부 막는다(읽기 포함). 인증 모듈 자신의 요청은 자격 규칙만 본다
+    const early = mk(false);
+    let earlyCount = 0;
+    for (const [name, req, pageMode, student, , ] of cases) {
+        const own = name.startsWith('인증 모듈: ');
+        const d = early(Object.assign({}, req, { pageMode, student }));
+        earlyCount++;
+        if (!own && d.action !== 'abort') problems.push('차단기 › 준비 전 › ' + name + ': 내보냄');
+        if (d.record.unsafe) problems.push('차단기 › 준비 전 › ' + name + ': 준비 전의 시도를 위반으로 셈(예행의 대조 요청이 실행을 멈추게 된다)');
     }
-    return { problems, note: `요청 ${cases.length}가지 + 목록을 받기 전 6가지` };
+    // 열 목록이 화면의 것과 글자까지 같은가
+    const cols = (workFile('js/auth.js').match(/const _appCols = '([^']+)';/) || [])[1];
+    if (!cols || cols !== APP_COLS) problems.push('차단기 › 신청서의 열 목록이 js/auth.js 의 것과 다름');
+    return { problems, note: '요청 ' + cases.length + '가지(켜짐·꺼짐·화면을 모름 × 그 학생·다른 학생·정해지지 않음) + 준비 전 ' + earlyCount + '가지' };
 }
 
 // ---- 저장 계획 검사·합성 자료 목록·차례·보관함·원복 표시
@@ -199,9 +257,41 @@ export async function testCore(mutate) {
         await s;
         if (board.pendingRevert !== null) problems.push('실행기: 원복 확인을 받았는데 표시가 남음');
     }
+    {   // 안전 조건을 어긴 요청이 나오면: 그 경우 뒤로는 시작하지 않는다(남은 원복 확인은 받는다)
+        const vault = core.makeVault({ PW: 'zz' });
+        const board = mkBoard();
+        const ran = [];
+        let halt = false;
+        const r = await core.runSequence({
+            preflight: async () => ({ checks: [{ ok: true }] }),
+            cases: [
+                { id: 'a', run: async () => { ran.push('a'); halt = true; } },
+                { id: 'b', run: async () => { ran.push('b'); } },
+                { id: 'c', run: async () => { ran.push('c'); } },
+            ],
+            vault, board, halted: () => halt,
+        });
+        if (r.stopped !== 'unsafe' || ran.join() !== 'a' || r.started.join() !== 'a') problems.push('실행기: 안전 조건을 어긴 요청이 나왔는데 다음 경우를 시작함');
+        const r2 = await core.runSequence({ preflight: async () => ({ checks: [{ ok: true }] }), cases: [{ id: 'a', run: async () => { ran.push('z'); } }], vault: core.makeVault({ PW: 'zz' }), board: mkBoard(), halted: () => false });
+        if (r2.stopped !== null) problems.push('실행기: 위반이 없는데 멈춤');
+    }
+    {   // 합성 명단: 정해 둔 합성 이메일과 글자까지 같아야 한다
+        const keys = ['fast', 'std'];
+        const good = { fast: core.syntheticEmail('fast'), std: core.syntheticEmail('std') };
+        if (core.syntheticEmail('fast') !== 'zzb3b_fast@member.zzb3b.invalid' || core.rosterOk(good, keys) !== true) problems.push('합성 명단: 맞는 명단을 받지 않음');
+        for (const [name, bad] of [
+            ['다른 도메인', { fast: 'zzb3b_fast@member.example.invalid', std: good.std }],
+            ['두 유형의 이메일이 바뀜', { fast: good.std, std: good.fast }],
+            ['대문자', { fast: good.fast.toUpperCase(), std: good.std }],
+            ['앞뒤 공백', { fast: ' ' + good.fast, std: good.std }],
+            ['실제 이메일', { fast: 'someone@real.invalid', std: good.std }],
+            ['하나 빠짐', { fast: good.fast }],
+            ['하나 더 있음', { fast: good.fast, std: good.std, extra: core.syntheticEmail('extra') }],
+        ]) if (core.rosterOk(bad, keys) !== false) problems.push('합성 명단 › ' + name + ': 받아들임');
+    }
     const env = core.browserEnv({ PATH: 'p', TEMP: 't', B3B_PW: 'zzsecret', B3B_LEGACY_PW: 'zzsecret', B3B_CONTROL_SECRET: 'zzsecret', B3B_TEST_ANON_KEY: 'zzsecret', B3B_EMAIL_FAST: 'zzsecret' });
     if (JSON.stringify(env).includes('zzsecret') || !env.PATH) problems.push('실행기: 브라우저에 비밀이 든 환경 변수가 넘어감');
-    return { problems, note: `틀린 계획 ${bad.length}가지, 합성 자료의 목록, 차례·보관함·원복 표시` };
+    return { problems, note: `틀린 계획 ${bad.length}가지, 합성 자료의 목록, 차례·보관함·원복 표시, 위반 뒤 멈춤, 합성 명단 7가지` };
 }
 
 // ---- 로컬 서버의 몸통: 내주는 사본에 운영 흔적이 없고, 설정·스위치가 바뀌어 있다
@@ -249,7 +339,11 @@ export function testScreenText(mutate) {
         ['차례를 runSequence 에 맡김', 'seq = await runSequence({'],
         ['브라우저에 필요한 환경 변수만', 'env: browserEnv(process.env)'],
         ['회원 JWT 의 발급자·계정을 차단기에 넘김', 'issuer: ISSUER'],
-        ['표 요청의 범위를 차단기에 넘김(보관함·목록 전에는 전부 막음)', 'synthetic: () => (vault.armed() && SYN ?'],
+        ['준비(보관함·합성 목록)를 차단기에 넘김', 'ready: () => vault.armed() && !!SYN,'],
+        ['요청마다 화면(켜짐·꺼짐)과 지금의 합성 학생을 차단기에 넘김', 'pageMode: pageModeOf(r), student: studentOf(cx) });'],
+        ['안전 조건을 어긴 요청이 나오면 멈춤을 세움', 'if (rec.unsafe) { cx.unsafe = (cx.unsafe || 0) + 1; HALT = true;'],
+        ['멈춤을 차례에 넘김', 'cases: rest, vault, board, halted: () => HALT,'],
+        ['이메일을 합성 명단과 대조', "if (!rosterOk(EMAIL, KEYS)) stop('합성 이메일이 정해 둔 명단"],
         ['옛 길의 쓰기는 원복 대상', "await pause('old-path-begin', { student: key }, { needsRevert: true });"],
         ['옛 길의 원복은 확인을 받음', "await pause('old-path-reset', { student: key }, { revertOf: 'old-path-begin' });"],
         ['로그인 기록 만료는 원복 대상', "await pause('expire-session', { sid }, { needsRevert: true });"],

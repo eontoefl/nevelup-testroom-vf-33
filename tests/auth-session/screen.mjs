@@ -42,7 +42,7 @@ import { STUDENTS, ENTERING, authAccount } from './fixtures.mjs';
 import { createCore, makeIgnore } from './serve-core.mjs';
 import { makeDecider, summarize } from './request-log.mjs';
 import { FakeSupabase, fakeJwt } from './fake-supabase.mjs';
-import { ISSUER, PauseTimeout, PauseBoard, makeVault, runSequence, confirmRevert, browserEnv, controlPassOk, checkPlan, checkSynthetic } from './screen-core.mjs';
+import { ISSUER, PauseTimeout, PauseBoard, makeVault, runSequence, confirmRevert, browserEnv, controlPassOk, checkPlan, checkSynthetic, rosterOk } from './screen-core.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -60,9 +60,10 @@ const PAUSE_TIMEOUT = Number(arg('--pause-timeout-ms', '600000'));
 //   --selftest silent-operator      가짜 조작자가 옛 길의 원복과 원복 확인에 답하지 않는다 → 다음 경우를 시작하지 않아야 한다(종료 코드 3)
 //   --selftest bad-plan             화면에서 읽은 저장 계획에 합성 행이 아닌 행을 끼워 넣는다 → 넘기지 않아야 한다(그 경우는 기대와 다름)
 //   --selftest bad-control-pass     예행의 대조용 요청을 자격·본문이 실린 POST 로 보낸다 → 예외로 내보내지 않아야 한다(수신 0, 종료 코드 4)
+//   --selftest unsafe-write         켜진 화면에서 업무 쓰기를 시켜 본다 → 전송 전에 막고, 그 경우를 끝내고, 뒤의 경우를 시작하지 않아야 한다(종료 코드 6)
 const SELFTEST = arg('--selftest', null);
 if (SELFTEST && !FAKE) stop('--selftest 는 --fake 에서만 쓴다');
-if (SELFTEST && !['leaky-blocker', 'silent-operator', 'bad-plan', 'bad-control-pass'].includes(SELFTEST)) stop('--selftest 의 값이 맞지 않음');
+if (SELFTEST && !['leaky-blocker', 'silent-operator', 'bad-plan', 'bad-control-pass', 'unsafe-write'].includes(SELFTEST)) stop('--selftest 의 값이 맞지 않음');
 const OUT = path.resolve(arg('--out', path.join(ROOT, 'tests', 'auth-session', '.run', `screen-${FAKE ? 'fake' : 'real'}.json`)));
 
 // ---------------------------------------------------------------------------
@@ -100,6 +101,8 @@ const fakeEmail = (k) => `zzb3b_${k}@member.zz.invalid`;      // --fake 의 합�
         if (LEGACY_PW === PW || LEGACY_PW === '999999') stop('B3B_LEGACY_PW 는 B3B_PW 와 달라야 한다(회원 표는 공개 키로 읽힌다 — 로그인 계정의 비밀번호를 거기에 두지 않는다)');
         for (const k of KEYS) { EMAIL[k] = process.env[envKey(k)] || ''; if (!/^[^@\s]+@[^@\s]+$/.test(EMAIL[k])) stop(envKey(k) + ' 가 없음'); }
         if (new Set(Object.values(EMAIL)).size !== KEYS.length) stop('합성 이메일이 서로 달라야 한다');
+        // 받는 이메일은 정해 둔 합성 명단(zzb3b_<유형>@member.zzb3b.invalid 의 정확한 14개)과 글자까지 같아야 한다
+        if (!rosterOk(EMAIL, KEYS)) stop('합성 이메일이 정해 둔 명단(zzb3b_<유형>@member.zzb3b.invalid)과 다름 — ' + KEYS.map(envKey).join(', ') + ' 를 확인할 것');
         CONTROL_SECRET = process.env.B3B_CONTROL_SECRET || '';
         if (CONTROL_SECRET.length < 16) stop('B3B_CONTROL_SECRET 이 없거나 16자보다 짧음(실행마다 새로 만든 값)');
     }
@@ -108,7 +111,7 @@ const fakeEmail = (k) => `zzb3b_${k}@member.zz.invalid`;      // --fake 의 합�
     vault = makeVault(values);
     SCAN.push(PW, LEGACY_PW, ANON, CONTROL_SECRET, ...(FAKE ? [] : Object.values(EMAIL)));
 }
-const SINGLE = ['W', 'E', 'RG', 'LO', 'EX', 'MT', 'WN', 'OFF'];
+const SINGLE = ['W', 'E', 'RG', 'LO', 'EX', 'MT', 'WN', 'NM', 'BC', 'OFF'];
 const EXPECTED_IDS = ['P', 'F', ...KEYS.map((k) => 'S-' + k), ...SINGLE];
 
 const pwPath = process.env.B3B_PLAYWRIGHT;
@@ -354,6 +357,8 @@ const MESSAGES = {
     checkFailed: '수강 정보를 확인하지 못했습니다. 잠시 뒤 다시 시도해주세요.',
     legacy: '이 탭에 다른 방식의 로그인 상태가 남아 있습니다. 이 탭을 닫고 새 탭에서 다시 로그인해 주세요.',
     foreign: '이 창에서는 다른 창의 로그인 상태를 쓰지 않습니다. 새로 고침한 뒤 다시 로그인해 주세요.',
+    unproven: '로그인 상태를 이어받지 못했습니다. 다시 로그인해 주세요.',
+    unavailable: '로그인 기능을 불러오지 못했습니다. 새로 고침해 주세요.',
     logoutUnknown: '로그아웃을 확인하지 못했습니다. 잠시 뒤 다시 시도해주세요.',
     ended: '로그인이 끝났습니다. 다시 로그인해 주세요.',
     unknownState: '로그인 상태를 확인하지 못했습니다. 잠시 뒤 새로 고침해 주세요.',
@@ -370,7 +375,7 @@ const messageId = (text) => {
 };
 const STATES = ['off', 'signed_out', 'restoring', 'signed_in', 'rejected'];
 const REASONS = [null, 'blocked', 'withdrawal_pending', 'no_member', 'not_allowed', 'maintenance', 'network', 'rate_limited', 'expired', 'ended', 'logout_unknown', 'unreadable',
-    'session_changed', 'legacy_present', 'unexpected', 'token_shape', 'unavailable', 'storage', 'error', 'foreign_window'];
+    'session_changed', 'legacy_present', 'unexpected', 'token_shape', 'unavailable', 'storage', 'error', 'foreign_window', 'window_unproven'];
 const PROFILE_KEYS = ['id', 'name', 'nickname', 'email', 'phone', 'timezone'];
 // 서버의 오류 코드는 이 목록의 이름으로만 적는다(그 밖은 other)
 const KNOWN_CODES = ['session_not_found', 'session_expired', 'refresh_token_not_found', 'refresh_token_already_used', 'invalid_credentials',
@@ -430,14 +435,33 @@ function observe(cx, rec, out) {
 }
 
 const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': '*' };
+let HALT = false;          // 안전 조건을 어긴 요청이 나왔다: 그 경우를 끝내고 뒤의 경우를 시작하지 않는다
+// 그 요청을 낸 화면이 어느 서버의 것인가(켜짐·꺼짐). 모르면 null — 차단기는 켜진 화면으로 본다(더 막는 쪽)
+function pageModeOf(r) {
+    try {
+        const o = new URL(r.frame().url()).origin;
+        return o === ON ? 'on' : (o === OFF ? 'off' : null);
+    } catch (e) { return null; }
+}
+// 지금 돌리는 그 합성 학생(이 경우가 마지막으로 로그인을 시킨 유형). 보관함이 열리고 합성 자료의 목록을 받은 뒤에만
+function studentOf(cx) {
+    if (!cx.account || !vault.armed() || !SYN || !SYN.students[cx.account]) return null;
+    const s = SYN.students[cx.account];
+    return { email: vault.get('EMAIL_' + cx.account), memberId: s.memberId, appIds: s.appIds, recordIds: s.recordIds };
+}
 async function handleRoute(route, cx) {
     const r = route.request();
     let headers;
     try { headers = await r.allHeaders(); } catch (e) { headers = r.headers(); }
-    const d = decide({ url: r.url(), method: r.method(), headers, postData: r.postData(), resourceType: r.resourceType(), isNavigation: r.isNavigationRequest() });
+    const d = decide({ url: r.url(), method: r.method(), headers, postData: r.postData(), resourceType: r.resourceType(), isNavigation: r.isNavigationRequest(), pageMode: pageModeOf(r), student: studentOf(cx) });
     const rec = d.record;
     rec.sent = false;
     cx.records.push(rec);
+    // 안전 조건을 어긴 요청(켜진 화면의 회원 표·쓰기, 꺼진 화면의 범위 밖 회원 표·쓰기, 용도 밖의 자격): 보내지 않고,
+    // 이 경우를 끝내고(브라우저 상태를 닫는다), 뒤의 경우를 시작하지 않는다
+    if (rec.unsafe) { cx.unsafe = (cx.unsafe || 0) + 1; HALT = true; rec.aborted = true; setTimeout(() => { cx.context.close().catch(() => {}); }, 0); return route.abort('blockedbyclient'); }
+    // 모듈 파일을 받지 못하는 화면(경우 NM): 그 파일만 내주지 않는다
+    if (cx.withholdModule && rec.where === 'self' && new URL(r.url()).pathname === '/js/auth-session.js') { rec.how = 'module-withheld'; cx.withheld = (cx.withheld || 0) + 1; return route.fulfill({ status: 404, contentType: 'text/plain', body: '' }); }
     if (cx.sinkPass && rec.where === 'sink' && r.url() === cx.sinkPass) {
         // 예행(P)의 대조: 차단하지 않은 정상 요청 1건을 같은 수신기(시험 목적지)가 실제로 받는지 본다 — 이 한 건만 일부러 보낸다.
         // 자격 위반 판정(위의 decide)이 먼저다: 예외로 나갈 수 있는 것은 자격 없는·본문 없는 GET 한 번뿐.
@@ -551,6 +575,8 @@ const phase = (cx, from) => {
         usersReads: sent.filter((r) => r.table === 'users').length,
         usersBlocked: list.filter((r) => r.table === 'users' && r.aborted).length,
         tableReads: sent.filter((r) => r.table !== 'none' && !r.write).length,
+        readsBlocked: list.filter((r) => r.scopeBlocked && r.scopeBlocked.includes('read_not_listed')).length,
+        businessTried: list.filter((r) => r.table !== 'none').length,          // 업무 요청의 시도(나간 것 + 막힌 것)
         member: sent.filter((r) => r.credential === 'member').length,
         auth: sent.filter((r) => AUTH_TARGETS.includes(r.target)).length,
     };
@@ -601,6 +627,8 @@ const baseline = (cx, ck) => {
     ck('회원 자격이 필요한 주소에 공개 키로 나간 것 0', s.publicRetry === 0);
     ck(cx.id === 'P' ? '허용 밖으로 보낸 것은 대조용 1건뿐(차단기의 결정)' : '허용 밖으로 보낸 것 0(차단기의 결정)', s.outsideSent === (cx.id === 'P' ? 1 : 0));
     ck('service_role 자격 0', s.serviceRole === 0);
+    ck('안전 조건을 어긴 요청 0(켜진 화면의 회원 표·쓰기, 꺼진 화면의 범위 밖 회원 표·쓰기)', s.unsafe === 0 && !cx.unsafe);
+    ck('안전 조건을 어긴 요청이 나간 것 0(차단기의 결정)', s.unsafeSent === 0);
     return s;
 };
 async function execCase(id, title, fn, { required = true } = {}) {
@@ -621,6 +649,7 @@ async function execCase(id, title, fn, { required = true } = {}) {
         else entry.checks.push({ name: '실행 도중 예외(경우를 끝까지 돌리지 못함)', ok: null });
     } finally {
         if (cx) {
+            if (cx.unsafe) entry.checks.push({ name: '안전 조건을 어긴 요청이 있었다(전송 전에 막음) — 이 경우를 끝냈고 뒤의 경우를 시작하지 않는다', ok: false });
             entry.storage = cx.store;
             entry.records = cx.records;
             entry.pageshow = cx.events;
@@ -628,6 +657,8 @@ async function execCase(id, title, fn, { required = true } = {}) {
             // 바깥으로 가려던 시도(전송 전에 막힌 것)의 수 — 대조 단계(P) 말고는 0 이 기대다. 판정에는 넣지 않고 적어 둔다
             const s = summarize(cx.records);
             entry.outsideAttempts = s.outsideBlockedRequest + s.outsideBlockedNavigation;
+            entry.readsBlocked = s.readsBlocked;            // 허용 목록에 없는 읽기(전송 전에 막힘) — 판정에 넣지 않고 적어 둔다
+            entry.unsafe = s.unsafe;
             await cx.context.close().catch(() => {});
         }
         entry.verdict = entry.checks.some((c) => c.ok === false) ? 'differs' : (entry.checks.some((c) => c.ok === null) || entry.checks.length === 0 ? 'unknown' : 'pass');
@@ -716,6 +747,7 @@ async function buildCases() {
             ck('합성 자료의 목록을 받았음', !!SYN);
             if (!SYN) return;
             const syn = SYN.students[key];
+            cx.account = key;                                  // 차단기가 내보내는 것은 이 학생의 행뿐이다
             // 옛 길: 실제로 쓴다 — 멈춤을 내놓는 순간 원복 대상이다
             await pause('old-path-begin', { student: key }, { needsRevert: true });
             const p1 = await cx.page();
@@ -724,7 +756,8 @@ async function buildCases() {
             const oldUser = await userJson(p1);
             const oph = phase(cx, 0);
             ck('옛 길: 인증 모듈의 상태는 off, 회원 자격이 실린 요청 0·인증 요청 0', (await stateOf(p1)).state === 'off' && oph.member === 0 && oph.auth === 0);
-            ck('옛 길: 회원 표 조회는 정확한 두 조회 안에서만 나감(범위 밖 0)', oph.usersBlocked === 0 && oph.usersReads >= 1 && oph.usersReads <= 2);
+            ck('옛 길: 회원 표 조회는 이 학생의 정확한 두 조회 안에서만 나감(범위 밖 0)', oph.usersBlocked === 0 && oph.usersReads >= 1 && oph.usersReads <= 2);
+            ck('옛 길: 허용 목록에 없는 읽기 0(화면의 정상 요청이 막히지 않음)', oph.readsBlocked === 0);
             ck(entering ? '옛 길: 일정 화면이 열림' : '옛 길: 화면이 열리지 않고 안내만', entering ? (o.schedule && o.message === 'welcome') : (!o.schedule && ['noApp', 'notConfirmed', 'blocked'].includes(o.message)));
             ck('옛 길: 범위 밖의 쓰기 시도 0(로그인에 딸린 세 가지만 합성 행으로)', oph.writesBlocked === 0 && oph.writesSent === oph.loginWrites);
             await p1.close().catch(() => {});
@@ -738,6 +771,11 @@ async function buildCases() {
             const newUser = await userJson(p2);
             let plan = entering ? await readPlan(p2) : null;
             await sleep(600);
+            if (SELFTEST === 'unsafe-write' && entering) {
+                // 대조 실험(--fake 에서만): 켜진 화면에서 업무 쓰기를 시켜 본다(공개 키, 이 학생의 합성 행) → 전송 전에 막혀야 한다
+                const tried = await p2.evaluate((id) => fetch(SUPABASE_CONFIG.url + '/rest/v1/applications?id=eq.' + id, { method: 'PATCH', headers: { apikey: SUPABASE_CONFIG.anonKey, Authorization: 'Bearer ' + SUPABASE_CONFIG.anonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ self_paced_schedule: 'zz' }) }).then(() => 'sent', () => 'blocked'), syn.appIds[0]).catch(() => 'blocked');
+                ck('대조 실험: 켜진 화면의 쓰기가 전송 전에 막힘', tried === 'blocked');
+            }
             const nph = phase(cx, mark);
             ck('새 길: 안내가 옛 길과 같음', n.message === o.message);
             ck('새 길: 화면(일정 화면이 열렸는가)이 옛 길과 같음', n.schedule === o.schedule);
@@ -745,6 +783,7 @@ async function buildCases() {
             ck('새 길: 쓰기 전송 0', nph.writesSent === 0);
             ck('새 길: 쓰기 시도(전송 전에 막힌 것) 0', nph.writesBlocked === 0);
             ck('새 길: 회원 표 요청 0(시도 포함)', nph.usersReads === 0 && nph.usersBlocked === 0);
+            ck('새 길: 허용 목록에 없는 읽기 0(화면의 정상 요청이 막히지 않음)', nph.readsBlocked === 0);
             ck('새 길: 로그인 요청 1·확인 요청 둘', count(cx, 'login') === 1 && count(cx, 'my_profile') >= 1 && count(cx, 'my_site_access') >= (key === 'blocked' ? 0 : 1));
             if (key === 'blocked') ck('새 길: 차단 — rejected·blocked, 표 요청 0', st.state === 'rejected' && st.reason === 'blocked' && nph.tableReads === 0);
             else ck('새 길: 로그인 확인 상태 signed_in', st.state === 'signed_in');
@@ -792,7 +831,7 @@ async function buildCases() {
     });
 
     // ---- RG. 준비 신호 ----
-    await runCase('RG', '준비 신호: 다시 확인·수강 조회 전에는 표시·currentUser 0(새로 고침·다른 화면에 다녀오기·뒤로 가기)', async (cx, ck) => {
+    await runCase('RG', '준비 신호: 다시 확인·수강 조회 전에는 표시·currentUser 0(새로 고침). 다른 화면에 다녀오면 다시 로그인, 되살아난 같은 문서만 이어받음', async (cx, ck) => {
         const page = await cx.page();
         const r = await doLogin(cx, page, 'std');
         ck('로그인: 일정 화면', r.schedule);
@@ -811,26 +850,41 @@ async function buildCases() {
         ck('새로 고침: 확인 요청을 붙잡음', got === true);
         ck('새로 고침: 다시 확인하기 전에는 일정 화면이 한 번도 보이지 않음', !!during && during.cur.schedule === false && during.scheduleAt < 0);
         ck('새로 고침: 화면을 다 읽은 뒤부터(다른 스크립트의 리스너가 돌 수 있는 때부터) 다시 확인하기 전까지 이 탭에 currentUser 가 없음', !!during && during.cur.user === false && during.userAt < 0);
-        cx.notes = { userPresentWhileLoading: !!during && during.userWhileLoading };      // 인증 모듈이 실리기 전(화면을 읽는 도중)에는 값이 남아 있다 — 판정에 넣지 않고 적어 둔다
+        ck('새로 고침: 화면을 읽는 도중에도(인증 모듈이 실리기 전에도) 이 탭에 currentUser 가 없음 — 화면 머리가 먼저 치운다', !!during && during.userWhileLoading === false);
         ck('새로 고침: 다시 확인하기 전에는 표 요청 0', phase(cx, mark).tableReads === 0 && phase(cx, mark).writesSent === 0);
         release();
         delete cx.hooks.my_site_access;
         await nav;
         ck('새로 고침: 확인 뒤 일정 화면', await until(page, SCHEDULE, 20000));
         ck('새로 고침: currentUser 가 로그인 직후와 같음', (await userJson(page)) === user);
-        // 다른 화면(모듈을 싣지 않는 화면)에 다녀오기 → 이 창의 것으로 이어받는다
-        await page.goto(ON + '/mypage.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
-        await sleep(800);
-        ck('다른 화면: 복사가 아니라 같은 탭 — currentUser 가 그대로 읽힘', (await userJson(page)) !== null);
+        // 다른 화면(모듈을 싣지 않는 화면 — 여기서는 시험 서버의 빈 화면)에 다녀오기: 복제된 탭과 가를 근거가 없다 → 다시 로그인
+        await page.goto(ON + '/__b3b/blank', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await sleep(1200);
+        ck('다른 화면: 같은 탭 — 탭 단위 저장값이 그대로 있음', (await userJson(page)) !== null);
+        let mark2 = cx.records.length;
         await page.goto(ON + '/index.html', { waitUntil: 'domcontentloaded' });
-        ck('다른 화면에 다녀옴: 다시 확인한 뒤 일정 화면', await until(page, SCHEDULE, 20000) && (await stateOf(page)).state === 'signed_in');
-        // 뒤로 가기
-        await page.goto(ON + '/mypage.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
-        await sleep(600);
+        await settled(page, 20000);
+        await sleep(1500);
+        const back = await stateOf(page);
+        ck('다른 화면에 다녀옴: 이어받지 않음(signed_out·window_unproven) — 로그인 화면·안내', back.state === 'signed_out' && back.reason === 'window_unproven' && (await loginShown(page)) && (await messageOf(page)) === 'unproven');
+        ck('다른 화면에 다녀옴: 일정 화면 0·currentUser 0·인증 요청 0(확인·갱신·종료)·표 요청 0', !(await scheduleShown(page)) && (await userJson(page)) === null && authCount(cx, mark2) === 0 && phase(cx, mark2).tableReads === 0);
+        ck('다른 화면에 다녀옴: 이 탭의 새 모듈 값이 지워짐', (await sessionKeys(page)).every((k) => !k.startsWith('tr_auth_v1') && k !== 'currentUser'));
+        const again = await doLogin(cx, page, 'std', { goto: false });
+        ck('다른 화면에 다녀옴: 그 화면에서 다시 로그인하면 들어감', again.schedule && again.message === 'welcome');
+        // 뒤로 가기: 브라우저가 화면을 보관해 뒀다가 되살려 주면(같은 문서) 이어받고, 새로 읽으면 다시 로그인
+        await page.goto(ON + '/__b3b/blank', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await sleep(1200);
+        const shows0 = cx.events.filter((e) => e === 'pageshow-persisted').length;
+        mark2 = cx.records.length;
         await page.goBack({ waitUntil: 'domcontentloaded' }).catch(() => {});
-        ck('뒤로 가기: 다시 확인한 뒤 일정 화면', await until(page, SCHEDULE, 20000) && (await stateOf(page)).state === 'signed_in');
+        await settled(page, 20000);
+        await sleep(2500);
+        const revived = cx.events.filter((e) => e === 'pageshow-persisted').length > shows0;
+        const after = await stateOf(page);
+        if (revived) ck('뒤로 가기(보관된 화면이 되살아남 — 같은 문서): 다시 확인한 뒤 일정 화면', after.state === 'signed_in' && await until(page, SCHEDULE, 20000) && count(cx, 'my_profile', (r) => cx.records.indexOf(r) >= mark2) >= 1);
+        else ck('뒤로 가기(새로 읽힌 문서): 이어받지 않음 — 로그인 화면·인증 요청 0', after.state === 'signed_out' && after.reason === 'window_unproven' && !(await scheduleShown(page)) && authCount(cx, mark2) === 0);
         ck('쓰기 전송 0', phase(cx, 0).writesSent === 0);
-        cx.notes = Object.assign(cx.notes || {}, { bfcache: cx.events.includes('pageshow-persisted') });
+        cx.notes = Object.assign(cx.notes || {}, { bfcache: revived });
     });
 
     // ---- LO. 로그아웃 → 재로그인 → 다른 계정 ----
@@ -893,7 +947,7 @@ async function buildCases() {
     });
 
     // ---- WN. 새 창·탭 복제·탭 닫기 ----
-    await runCase('WN', '새 창 셋·이름 있는 창의 재사용·답안 카드·탭 복제(흉내)·탭 닫고 새 방문: 복사돼 온 보관값을 쓰지 않음', async (cx, ck) => {
+    await runCase('WN', '새 창 셋·이름 있는 창의 재사용·답안 카드·탭 복제(흉내)·다른 화면에서의 복제(흉내)·탭 닫고 새 방문: 보일 수 없는 보관값을 쓰지 않음(다시 로그인)', async (cx, ck) => {
         const A = await cx.page();
         const r = await doLogin(cx, A, 'std');
         ck('원래 창: 로그인, 일정 화면', r.schedule);
@@ -908,9 +962,9 @@ async function buildCases() {
         };
         const foreign = async (name, child, mark) => {
             const st = child ? await stateOf(child) : { state: 'other', reason: 'other' };
-            ck(`${name}: 복사돼 온 값을 버린 화면(off·foreign_window)`, st.state === 'off' && st.reason === 'foreign_window');
-            ck(`${name}: 그 창에서 나간 인증 요청 0(복사된 자격의 사용 0·갱신 0)`, authCount(cx, mark) === 0);
-            ck(`${name}: 일정 화면 0(옛 로그인으로의 자동 진입 0), 안내`, !!child && !(await scheduleShown(child)) && (await messageOf(child)) === 'foreign');
+            ck(`${name}: 이어받지 않음(signed_out·window_unproven)`, st.state === 'signed_out' && st.reason === 'window_unproven');
+            ck(`${name}: 그 창에서 나간 인증 요청 0(복사된 자격의 사용 0·확인 0·갱신 0)`, authCount(cx, mark) === 0);
+            ck(`${name}: 일정 화면 0(자동 진입 0)·로그인 화면·안내`, !!child && !(await scheduleShown(child)) && (await loginShown(child)) && (await messageOf(child)) === 'unproven');
             ck(`${name}: 그 창의 사본(새 모듈의 값·currentUser)이 지워짐`, !!child && (await sessionKeys(child)).every((k) => !k.startsWith('tr_auth_v1') && k !== 'currentUser'));
         };
         let mark = cx.records.length;
@@ -942,21 +996,20 @@ async function buildCases() {
         ck('원래 창: 로그인·currentUser·작성 중 값이 그대로', stA.state === 'signed_in' && (await userJson(A)) === userA && (await A.evaluate(() => window.sessionStorage.getItem('zz_b3b_draft'))) === '작성 중' && (await scheduleShown(A)));
         ck('창 사이 통로로 오간 것 0', !cx.events.includes('broadcast'));
         for (const c of [c1, c2, c3, omr, dup]) if (c) await c.close().catch(() => {});
-        // 원래 창의 새로 고침: 이 창의 것
+        // 원래 창의 새로 고침: 같은 탭에서 바로 앞 문서를 갈아 낀 문서 — 이어받는다
         await A.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
-        ck('원래 창의 새로 고침: 다시 확인한 뒤 일정 화면(이 창의 것)', await until(A, SCHEDULE, 20000) && (await stateOf(A)).state === 'signed_in');
-        // 모듈을 싣지 않는 화면에 있는 동안 복제(흉내)된 탭이 먼저 돌아오면 그쪽이 이어받고, 원래 탭은 이어받지 못한다(갱신하는 창은 하나)
-        await A.goto(ON + '/mypage.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
-        await sleep(600);
-        const got = cx.context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
-        await A.evaluate("window.open('index.html', '__b3bDup')").catch(() => {});
-        const first = await got;
-        ck('다른 화면에서 복제(흉내): 먼저 돌아온 쪽이 이어받음', !!first && await until(first, SCHEDULE, 20000) && (await stateOf(first)).state === 'signed_in');
+        ck('원래 창의 새로 고침: 다시 확인한 뒤 일정 화면(이어받음)', await until(A, SCHEDULE, 20000) && (await stateOf(A)).state === 'signed_in');
+        // 모듈을 싣지 않는 화면에 있는 동안 복제(흉내)된 탭: 복제본이 먼저 돌아오든 원본이 나중에 돌아오든 어느 쪽도 이어받지 않는다
+        await A.goto(ON + '/__b3b/blank', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await sleep(1500);
+        mark = cx.records.length;
+        const first = await openChild(A, "window.open('/index.html', '__b3bDup')");
+        await foreign('다른 화면에서 복제(흉내) — 먼저 돌아온 복제본', first, mark);
         await A.goto(ON + '/index.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
         await settled(A, 20000);
-        await sleep(600);
-        const late = await stateOf(A);
-        ck('다른 화면에서 복제(흉내): 나중에 돌아온 쪽은 이어받지 못함(off·foreign_window)', late.state === 'off' && late.reason === 'foreign_window' && !(await scheduleShown(A)));
+        await sleep(1200);
+        await foreign('다른 화면에서 복제(흉내) — 나중에 돌아온 원본', A, mark);
+        ck('다른 화면에서 복제(흉내): 돌아온 뒤 그 로그인으로 나간 요청 0(갱신 포함)', authCount(cx, mark) === 0);
         // 마지막 탭을 닫고 새로 방문: 로그인이 남지 않는다
         await A.close().catch(() => {});
         if (first) await first.close().catch(() => {});
@@ -964,7 +1017,94 @@ async function buildCases() {
         await N.goto(ON + '/index.html', { waitUntil: 'domcontentloaded' });
         await settled(N, 20000);
         await sleep(500);
-        ck('탭을 닫고 새로 방문: 로그인 없음(signed_out·로그인 화면·탭 단위 저장값 없음)', (await stateOf(N)).state === 'signed_out' && (await loginShown(N)) && !(await scheduleShown(N)) && (await sessionKeys(N)).every((k) => !k.startsWith('tr_auth_v1') && k !== 'currentUser'));
+        const stN = await stateOf(N);
+        ck('탭을 닫고 새로 방문: 로그인 없음(signed_out·로그인 화면·탭 단위 저장값 없음)', stN.state === 'signed_out' && stN.reason === null && (await loginShown(N)) && !(await scheduleShown(N)) && (await sessionKeys(N)).every((k) => !k.startsWith('tr_auth_v1') && k !== 'currentUser'));
+        ck('쓰기 전송 0', phase(cx, 0).writesSent === 0);
+    });
+
+    // ---- NM. 켜진 화면인데 인증 모듈 파일을 받지 못함: 닫는 쪽(옛 로그인·저장된 값의 복원으로 가지 않는다) ----
+    await runCase('NM', '켜진 화면인데 인증 모듈 파일을 받지 못함: 로그인 화면과 안내만(옛 로그인·복원·authReady·Sentry 사용자 지정·업무 요청 0)', async (cx, ck) => {
+        // Sentry 대역(이 경우에만): 사용자를 지정하는 호출을 센다(값은 보지 않는다). 실제 Sentry 스크립트는 화면의 내용 보안 정책이 막는다
+        await cx.context.addInitScript(() => {
+            window.__b3bSentryUser = 0;
+            window.__b3bAuthReady = 0;
+            window.Sentry = new Proxy({}, { get: (t, k) => (k === 'setUser' ? (u) => { if (u) window.__b3bSentryUser++; } : () => ({})) });
+            window.addEventListener('authReady', () => { window.__b3bAuthReady++; }, true);
+        });
+        const closedChecks = async (name, page, mark) => {
+            const ph = phase(cx, mark);
+            ck(`${name}: 로그인 화면·안내(로그인 기능을 불러오지 못했습니다)·일정 화면 0`, (await loginShown(page)) && !(await scheduleShown(page)) && (await messageOf(page)) === 'unavailable');
+            ck(`${name}: 인증 모듈이 없음(파일을 받지 못함)`, (await page.evaluate(() => typeof window.EonAuth)) === 'undefined' && (cx.withheld || 0) >= 1);
+            ck(`${name}: 시험 프로젝트로 가는 요청 0(시도 포함 — 인증·회원 표·표 읽기·쓰기)`, cx.records.slice(mark).filter((r) => r.where === 'test-project').length === 0 && ph.businessTried === 0);
+            ck(`${name}: authReady 0·Sentry 사용자 지정 0·currentUser 0`, (await page.evaluate(() => [window.__b3bAuthReady, window.__b3bSentryUser])).every((n) => n === 0) && (await userJson(page)) === null);
+        };
+        // (1) 먼저 보통의 새 로그인으로 들어간다(모듈을 받는다)
+        const page = await cx.page();
+        const r = await doLogin(cx, page, 'std');
+        ck('먼저: 새 로그인으로 일정 화면', r.schedule);
+        // (2) 그 탭을 새로 고치는데 모듈 파일을 받지 못한다: 앞의 currentUser 로 화면·요청이 나가지 않는다
+        cx.withholdModule = true;
+        await page.evaluate(() => { window.__b3bSentryUser = 0; });
+        let mark = cx.records.length;
+        await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+        await until(page, "typeof handleLogin === 'function' && !!document.getElementById('loginBtn')", 20000);
+        await sleep(2500);
+        const during = await marks(page);
+        await closedChecks('로그인돼 있던 탭의 새로 고침', page, mark);
+        ck('로그인돼 있던 탭의 새로 고침: 화면을 읽는 도중에도 currentUser 가 없고 일정 화면이 한 번도 보이지 않음', !!during && during.userWhileLoading === false && during.userAt < 0 && during.scheduleAt < 0);
+        // 로그인 버튼(옛 길의 값·맞는 값·빈 값): 요청 0
+        for (const [name, email, pw] of [['옛 길의 값', vault.get('EMAIL_std'), vault.get('LEGACY_PW')], ['맞는 값', vault.get('EMAIL_std'), vault.get('PW')], ['빈 값', '', '']]) {
+            mark = cx.records.length;
+            await page.fill('#studentEmail', email);
+            await page.fill('#studentPassword', pw);
+            await page.click('#loginBtn');
+            await sleep(1500);
+            await closedChecks(`닫힌 화면의 로그인 버튼(${name})`, page, mark);
+        }
+        // (3) 새 브라우저 탭의 첫 방문에서 모듈을 받지 못한다
+        const p2 = await cx.page();
+        mark = cx.records.length;
+        await p2.goto(ON + '/index.html', { waitUntil: 'domcontentloaded' });
+        await until(p2, "typeof handleLogin === 'function' && !!document.getElementById('loginBtn')", 20000);
+        await sleep(2000);
+        await closedChecks('첫 방문', p2, mark);
+        await p2.close().catch(() => {});
+        // (4) 다시 모듈을 받는 새로 고침: 닫힌 화면은 쥔 적이 없으므로 이어받지 못한다 → 다시 로그인(자동 진입 0)
+        cx.withholdModule = false;
+        mark = cx.records.length;
+        await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+        await settled(page, 20000);
+        await sleep(1500);
+        const st = await stateOf(page);
+        ck('그 뒤 모듈을 받은 새로 고침: 이어받지 않음(signed_out·window_unproven)·인증 요청 0·일정 화면 0', st.state === 'signed_out' && st.reason === 'window_unproven' && authCount(cx, mark) === 0 && !(await scheduleShown(page)));
+        ck('쓰기 전송 0', phase(cx, 0).writesSent === 0);
+    });
+
+    // ---- BC. 공식 클라이언트의 창 사이 통로: 자격 전달 0, 닫지 못하면 클라이언트를 쓰지 않는다(자동 갱신 0) ----
+    await runCase('BC', '공식 클라이언트의 창 사이 통로(BroadcastChannel): 자격 전달 0, 닫지 못하면 클라이언트를 쓰지 않음(로그인·자동 갱신 0)', async (cx, ck) => {
+        // (1) 보통의 화면: 로그인·로그아웃 동안 같은 출처의 다른 창이 그 통로에서 받은 것 0
+        const listener = await cx.page();
+        await listener.goto(ON + '/__b3b/blank', { waitUntil: 'domcontentloaded' });
+        await sleep(300);
+        const page = await cx.page();
+        const r = await doLogin(cx, page, 'std');
+        ck('로그인: 일정 화면', r.schedule);
+        ck('이 브라우저에 창 사이 통로(BroadcastChannel)가 있음(통로가 있는 환경에서 잰 것)', await page.evaluate(() => typeof BroadcastChannel === 'function'));
+        await page.evaluate(() => window.logout());
+        await until(page, "window.EonAuth.state() === 'signed_out'", 15000);
+        await sleep(800);
+        ck('로그인·로그아웃 동안 다른 창이 그 통로에서 받은 것 0(자격 전달 0)', !cx.events.includes('broadcast'));
+        await page.close().catch(() => {});
+        // (2) 통로를 닫을 수 없는 브라우저(닫기가 예외를 낸다): 클라이언트를 쓰지 않는다 — 로그인 요청 0·갱신 0
+        await cx.context.addInitScript(() => { try { BroadcastChannel.prototype.close = function () { throw new Error('zz-cannot-close'); }; } catch (e) {} });
+        const p2 = await cx.page();
+        const mark = cx.records.length;
+        const bad = await doLogin(cx, p2, 'std');
+        const st = await stateOf(p2);
+        ck('닫지 못함: 로그인되지 않음(안내·일정 화면 0)', !bad.schedule && st.state !== 'signed_in' && ['unavailable', 'error'].includes(bad.message));
+        await sleep(2500);
+        ck('닫지 못함: 인증 요청 0(로그인·확인·갱신·종료)', authCount(cx, mark) === 0);
+        ck('닫지 못함: 이 탭에 로그인 상태가 저장되지 않음', (await sessionKeys(p2)).every((k) => k !== 'tr_auth_v1' && k !== 'currentUser'));
         ck('쓰기 전송 0', phase(cx, 0).writesSent === 0);
     });
 
@@ -1000,6 +1140,7 @@ async function main() {
     for (const site of [siteOn, siteOff]) {
         const scan = site.core.scan();
         if (scan.repoSwitch !== 'off') stop('저장소의 스위치 값이 꺼짐이 아니다');
+        if (scan.repoPageSwitch !== 'off') stop('저장소의 화면 머리 스위치 값이 꺼짐이 아니다');
         site.core.counts.sdk = 0;
         site.core.counts.authModule = 0;
     }
@@ -1018,8 +1159,9 @@ async function main() {
     decide = makeDecider({
         selfOrigins: [ON, OFF], anonKey: ANON, issuer: ISSUER,
         memberEmails: () => (vault.armed() ? KEYS.map((k) => vault.get('EMAIL_' + k)) : []),
-        // 표 요청은 이번 실행의 합성 행으로 좁힌다(보관함이 열리고 합성 자료의 목록을 받기 전에는 회원 표·쓰기를 전부 막는다)
-        synthetic: () => (vault.armed() && SYN ? Object.assign({ emails: KEYS.map((k) => vault.get('EMAIL_' + k)) }, SYN.flat) : null),
+        // 업무 요청은 예행이 통과하고(보관함) 합성 자료의 목록을 확인한 뒤에만 가른다 — 그 전에는 전부 막는다.
+        // 그 뒤에는 요청마다 화면(켜짐·꺼짐)과 지금 돌리는 그 합성 학생으로 가른다(handleRoute 가 넘긴다)
+        ready: () => vault.armed() && !!SYN,
     });
     if (FAKE) fakeOperator();
     console.log(`  켜짐 ${ON}   꺼짐 ${OFF}   제어 포트 ${control.port}`);
@@ -1042,7 +1184,7 @@ async function main() {
         // 예행(P)은 언제나 먼저 돈다. P 의 판정이 전부 참이 아니면 뒤의 경우를 하나도 시작하지 않는다(보관함도 열리지 않는다)
         seq = await runSequence({
             preflight: async () => { await first.run(); return results.find((r) => r.id === 'P'); },
-            cases: rest, vault, board,
+            cases: rest, vault, board, halted: () => HALT,
         });
     } catch (e) {
         stopped = '실행 도중 예외';
@@ -1050,9 +1192,10 @@ async function main() {
         await browser.close().catch(() => {});
     }
     if (seq.stopped === 'preflight') stopped = '차단의 예행(P)이 통과하지 못해 뒤의 경우를 시작하지 않음';
+    if (seq.stopped === 'unsafe' || HALT) stopped = '안전 조건을 어긴 요청이 나와(전송 전에 막음) 그 경우를 끝내고 뒤의 경우를 시작하지 않음';
     // 브레인방이 건 DB 변경이 남아 있을 수 있으면 "원복 확인"을 받기 전에는 끝내지 않는다
     if (board.pendingRevert && seq.stopped !== 'revert') await confirmRevert(board);
-    if (board.pendingRevert) stopped = '원복 확인을 받지 못함 — 시험 프로젝트의 합성 행·점검·로그인 기록을 직접 확인해 되돌릴 것';
+    if (board.pendingRevert) stopped = (stopped ? stopped + ' / ' : '') + '원복 확인을 받지 못함 — 시험 프로젝트의 합성 행·점검·로그인 기록을 직접 확인해 되돌릴 것';
 
     const sinkTotal = siteOn.core.counts.sink + siteOff.core.counts.sink;
     const required = results.filter((r) => r.required);
@@ -1072,6 +1215,7 @@ async function main() {
         note: FAKE ? '가짜 서버를 상대로 돌린 결과다 — 실제 서버·실제 응답의 증거가 아니다' : '시험 프로젝트를 상대로 돌린 결과',
         overall: overall ? 'pass' : 'not-pass',
         stopped,
+        haltedByUnsafeRequest: HALT,                        // 안전 조건을 어긴 요청이 나와 멈췄는가
         notRun,
         totals,
         independentEvidence: {
@@ -1112,7 +1256,7 @@ async function main() {
     siteOn.server.close();
     siteOff.server.close();
     if (board.leftovers.length) console.log(`  브레인방이 만든 것이 남아 있을 수 있음: ${board.leftovers.map((x) => x.kind + '(' + x.account + ')').join(', ')}`);
-    if (!process.exitCode) process.exitCode = seq.stopped === 'preflight' ? 4 : (stopped ? 3 : (overall ? 0 : 1));
+    if (!process.exitCode) process.exitCode = seq.stopped === 'preflight' ? 4 : (board.pendingRevert ? 3 : (HALT ? 6 : (stopped ? 3 : (overall ? 0 : 1))));
     setTimeout(() => process.exit(process.exitCode), 300);
 }
 

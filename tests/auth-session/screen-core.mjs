@@ -96,18 +96,33 @@ export async function confirmRevert(board, tries = 3) {
 //   preflight(): 예행. { checks } 를 돌려준다 — 전부 참이 아니면 여기서 끝낸다(뒤의 경우는 시작하지 않고, 보관함도 열지 않는다).
 //   cases: [{ id, run() }] — run 은 자기 예외를 스스로 처리한다(여기까지 올라온 예외는 그 경우를 끝낸 것으로 본다).
 //   원복 대상이 남아 있으면 다음 경우를 시작하기 전에 원복 확인을 받는다. 받지 못하면 전체를 멈춘다.
-export async function runSequence({ preflight, cases, vault, board }) {
+//   halted(): 안전 조건을 어긴 요청이 있었는가 — 참이면 다음 경우를 시작하지 않는다(남은 원복 확인은 받는다).
+export async function runSequence({ preflight, cases, vault, board, halted }) {
     const started = [];
+    const isHalted = () => typeof halted === 'function' && halted() === true;
     const p = await preflight();
     if (!p || !allTrue(p.checks)) return { stopped: 'preflight', started };
+    if (isHalted()) return { stopped: 'unsafe', started };
     vault.arm();
     for (const c of cases) {
+        if (isHalted()) {
+            if (board.pendingRevert) await confirmRevert(board);
+            return { stopped: 'unsafe', started };
+        }
         if (board.pendingRevert && !(await confirmRevert(board))) return { stopped: 'revert', started };
         started.push(c.id);
         try { await c.run(); } catch (e) { /* 경우 하나의 실패는 그 경우의 결과로 남는다 */ }
     }
-    if (board.pendingRevert && !(await confirmRevert(board))) return { stopped: 'revert', started };
-    return { stopped: null, started };
+    if (board.pendingRevert && !(await confirmRevert(board))) return { stopped: isHalted() ? 'unsafe' : 'revert', started };
+    return { stopped: isHalted() ? 'unsafe' : null, started };
+}
+
+// 합성 명단: 실행기가 받는 이메일(환경 변수)은 정해 둔 합성 이메일과 글자까지 같아야 한다(zzb3b_<유형>@member.zzb3b.invalid)
+export const syntheticEmail = (key) => `zzb3b_${key}@member.zzb3b.invalid`;
+export function rosterOk(emails, keys) {
+    if (!emails || typeof emails !== 'object' || !Array.isArray(keys) || keys.length === 0) return false;
+    if (Object.keys(emails).length !== keys.length) return false;
+    return keys.every((k) => /^[a-z0-9]+$/.test(k) && emails[k] === syntheticEmail(k));
 }
 
 function claimsOf(token) {
