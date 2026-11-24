@@ -194,6 +194,79 @@ export const MUTANTS = [
         name: '429 를 끝난 것으로 봄(로그인 기록을 지움)', section: 'protocol', expect: /규약 대조 › 끝난 기록 → 새로 고침: 갱신 429/,
         edits: [[MOD, "        if (res.status === 429) return { kind: 'rate_limited' };", "        if (res.status === 429) return { kind: 'ended' };"]],
     },
+    // ---- 시험 도구 자신
+    {
+        name: '차단기: 회원 표 조회의 열 목록을 보지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 회원 표: (select=\*|열 목록에 password 를 섞음): 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', " && USERS_COLS.includes(q[1][1]);", ";"]],
+    },
+    {
+        name: '차단기: 회원 표 조회를 합성 이메일로 좁히지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 회원 표: 합성이 아닌 이메일: 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "syn.emails.some((e) => q[0][1] === 'eq.' + e) && USERS_COLS", "q[0][1].startsWith('eq.') && USERS_COLS"]],
+    },
+    {
+        name: '차단기: 합성 자료의 목록을 받기 전에도 회원 표 조회를 내보냄', section: 'tools', tool: 'decider', expect: /차단기 › 목록을 받기 전 › 회원 표/,
+        edits: [['tests/auth-session/request-log.mjs', "const ok = !!syn && q.length === 2 && q[0][0] === 'email' && q[1][0] === 'select' && syn.emails.some((e) => q[0][1] === 'eq.' + e)", "const ok = q.length === 2 && q[0][0] === 'email' && q[1][0] === 'select' && (!syn || syn.emails.some((e) => q[0][1] === 'eq.' + e))"]],
+    },
+    {
+        name: '차단기: 옛 길의 쓰기에서 열을 보지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기: 신청서의 (다른 열|일정표 \+ 다른 열): 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "ok = q.length === 1 && some('id', syn.appIds) && keysIn(['self_paced_schedule']);", "ok = q.length === 1 && some('id', syn.appIds);"]],
+    },
+    {
+        name: '차단기: 인증률 확정의 행을 보지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기: (인증률 확정\(합성이 아닌 행\)|학습 기록을 회원 조건으로[^:]*): 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "ok = q.length === 1 && some('id', syn.recordIds) && keysIn(['locked_auth_rate']);", "ok = keysIn(['locked_auth_rate']);"]],
+    },
+    {
+        name: '차단기: 그 밖의 쓰기를 내보냄', section: 'tools', tool: 'decider', expect: /차단기 › 쓰기: 다른 표: 막아야 하는데 내보냄/,
+        edits: [['tests/auth-session/request-log.mjs', "    return { table, write: true, blocked: ok ? [] : ['write_not_allowed'] };", "    return { table, write: true, blocked: [] };"]],
+    },
+    {
+        name: '차단기: 신청서 조회를 합성 행으로 좁히지 않음', section: 'tools', tool: 'decider', expect: /차단기 › 신청서: (조건 없음|합성이 아닌)/,
+        edits: [['tests/auth-session/request-log.mjs', "            return { table, write: false, blocked: ok ? [] : ['applications_scope'] };", "            return { table, write: false, blocked: [] };"]],
+    },
+    {
+        name: '저장 계획 검사: 행이 합성 행인지 보지 않음', section: 'tools', tool: 'core', expect: /저장 계획 검사 › 합성이 아닌 학습 기록 행: 받아들임/,
+        edits: [['tests/auth-session/screen-core.mjs', "!id || !expect.recordIds.includes(id) || ", "!id || "]],
+    },
+    {
+        name: '저장 계획 검사: 값의 모양을 보지 않음', section: 'tools', tool: 'core', expect: /저장 계획 검사 › 인증률 값/,
+        edits: [['tests/auth-session/screen-core.mjs', "            if (![0, 50, 100].includes(it.values.locked_auth_rate)) return no('rate_value');\n", '']],
+    },
+    {
+        name: '저장 계획 검사: 허용한 표인지 보지 않음', section: 'tools', tool: 'core', expect: /저장 계획 검사 › 다른 표: 받아들임/,
+        edits: [['tests/auth-session/screen-core.mjs', "        } else return no('table');", "        } else { items.push({ table: it.table, match: String(it.match), values: it.values }); }"]],
+    },
+    {
+        name: '저장 계획 검사: 허용한 열인지 보지 않음(신청서)', section: 'tools', tool: 'core', expect: /저장 계획 검사 › 신청서의 다른 열: 받아들임/,
+        edits: [['tests/auth-session/screen-core.mjs', "it.match !== 'id=eq.' + plan.applicationId || !onlyKeys(it.values, ['self_paced_schedule'])) return no('applications_row_or_column');", "it.match !== 'id=eq.' + plan.applicationId) return no('applications_row_or_column');"]],
+    },
+    {
+        name: '실행기: 예행이 실패해도 다음 경우로 감', section: 'tools', tool: 'core', expect: /실행기: 예행이 통과하지 못했는데/,
+        edits: [['tests/auth-session/screen-core.mjs', "    if (!p || !allTrue(p.checks)) return { stopped: 'preflight', started };\n", '']],
+    },
+    {
+        name: '실행기: 원복 대상의 표시를 내놓는 순간에 세우지 않음', section: 'tools', tool: 'core', expect: /실행기: (멈춤을 내놓는 순간 원복 대상으로 표시하지 않음|원복 확인을 받지 못했는데 다음 경우를 시작함)/,
+        edits: [['tests/auth-session/screen-core.mjs', "        if (needsRevert) this.pendingRevert = kind;\n", '']],
+    },
+    {
+        name: '실행기: 원복했다는 답이 아닌데 표시를 지움', section: 'tools', tool: 'core', expect: /실행기: 원복했다는 답이 아닌데 표시를 지움/,
+        edits: [['tests/auth-session/screen-core.mjs', "if (revertOf && this.pendingRevert === revertOf && body && body.reverted === true) this.pendingRevert = null;", "if (revertOf && this.pendingRevert === revertOf) this.pendingRevert = null;"]],
+    },
+    {
+        name: '실행기: 저장 계획이 검사에서 떨어져도 제어 포트로 넘김', section: 'tools', tool: 'text', expect: /실행기: 저장 계획을 검사하기 전에/,
+        edits: [['tests/auth-session/screen.mjs', "            if (!checked.ok) { cx.notes = { planRefused: checked.why }; return; }              // 넘기지 않는다\n", '']],
+    },
+    {
+        name: '실행기: 옛 길의 쓰기를 원복 대상으로 표시하지 않음', section: 'tools', tool: 'text', expect: /실행기: 옛 길의 쓰기는 원복 대상/,
+        edits: [['tests/auth-session/screen.mjs', "await pause('old-path-begin', { student: key }, { needsRevert: true });", "await pause('old-path-begin', { student: key });"]],
+    },
+    {
+        name: '로컬 서버: 운영 흔적이 남은 파일을 내줌', section: 'tools', tool: 'server', expect: /서버\([^)]*\): (운영 흔적이 남은 채 내줌|운영 주소가 박힌 파일)/,
+        edits: [['tests/auth-session/serve-core.mjs', "        if (r.residue.length) {\n            counts.refused++;", "        if (false) {\n            counts.refused++;"]],
+    },
+    {
+        name: '로컬 서버: 설정을 시험 프로젝트의 값으로 바꾸지 않음', section: 'tools', tool: 'server', expect: /서버\([^)]*\): (설정이 시험 프로젝트의 값이 아님|운영 흔적)/,
+        edits: [['tests/auth-session/rewrite.mjs', "    if (relPath === CONFIG_FILE) {", "    if (relPath === 'zz-none') {"]],
+    },
     // ---- 책·옛 방식의 값
     {
         name: '책 연결이 한 탭의 일반 로그인을 덮음', tests: ['book'], expect: /책 연결과 일반 로그인이 한 탭에: /,

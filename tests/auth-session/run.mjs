@@ -12,6 +12,9 @@ import { OLD_PATH } from './scenarios.mjs';
 import * as ON from './on-tests.mjs';
 import { MUTANTS, applyEdits } from './mutants.mjs';
 import { compareWithGolden } from './protocol.mjs';
+import { testDecider, testCore, testServer, testScreenText } from './tool-tests.mjs';
+
+const TOOLS = { decider: testDecider, core: testCore, server: testServer, text: async (m) => testScreenText(m) };
 
 const lines = [];
 const out = (s) => { lines.push(s); console.log(s); };
@@ -66,7 +69,7 @@ function sectionText() {
     const newClean = body("    sessionStorage.removeItem('courseMode');\n\n    // Sentry 사용자 정보 초기화", "    if (typeof showScreen === 'function') showScreen('loginScreen');\n}");
     if (!oldClean || !newClean || JSON.stringify(oldClean) !== JSON.stringify(newClean)) problems.push('로그아웃의 화면 정리가 옛 길과 같은 줄들이 아님');
     // 시험 파일·새 파일에 운영 주소·키의 흔적이 없는가(값은 찍지 않는다)
-    for (const p of [AUTH_FILE, SDK_FILE, 'tests/auth-session/run.mjs', 'tests/auth-session/world.mjs', 'tests/auth-session/fixtures.mjs', 'tests/auth-session/scenarios.mjs', 'tests/auth-session/on-tests.mjs', 'tests/auth-session/mutants.mjs', 'tests/auth-session/fake-rest.mjs', 'tests/auth-session/fake-supabase.mjs', 'tests/auth-session/browser.mjs', 'tests/auth-session/protocol.mjs', 'tests/auth-session/protocol-golden.json']) {
+    for (const p of [AUTH_FILE, SDK_FILE, 'tests/auth-session/run.mjs', 'tests/auth-session/world.mjs', 'tests/auth-session/fixtures.mjs', 'tests/auth-session/scenarios.mjs', 'tests/auth-session/on-tests.mjs', 'tests/auth-session/mutants.mjs', 'tests/auth-session/fake-rest.mjs', 'tests/auth-session/fake-supabase.mjs', 'tests/auth-session/browser.mjs', 'tests/auth-session/protocol.mjs', 'tests/auth-session/protocol-golden.json', 'tests/auth-session/tool-tests.mjs', 'tests/auth-session/screen.mjs', 'tests/auth-session/screen-core.mjs', 'tests/auth-session/request-log.mjs', 'tests/auth-session/serve-core.mjs', 'tests/auth-session/serve.mjs']) {
         const text = workFile(p);
         if (text === null) { problems.push(`${p}: 파일이 없음`); continue; }
         const residue = findProdResidue(text, { prodKey: PROD.key, prodUrl: p.endsWith('rewrite.mjs') ? null : PROD.url });
@@ -154,6 +157,13 @@ const proto = await compareWithGolden(workFile(AUTH_FILE), null);
 proto.problems.forEach((p) => fail('규약', p));
 out(`    - [8] 두 저장소의 모듈이 같은 규약(공홈 ${proto.golden ? proto.golden.commit : '?'} 의 js/auth-session.js 로 만든 기준표와 대조 — 같은 입력 ${proto.vectors}가지·${proto.steps}걸음의 상태·이유·요청): 어긋남 ${proto.problems.length}`);
 
+// 시험 도구 자신(브라우저 없이)
+for (const [key, title] of [['decider', '차단기의 범위 규칙(회원 표는 정확한 두 조회, 쓰기는 합성 행·허용한 열, 목록을 받기 전에는 전부 막음)'], ['core', '실행기의 판단 부분(저장 계획 검사·합성 자료의 목록·차례·보관함·원복 표시)'], ['server', '화면 시험용 로컬 서버의 몸통'], ['text', '실행기가 판단 부분을 실제로 쓰는가(글자)']]) {
+    const r = await TOOLS[key](null);
+    r.problems.forEach((p) => fail('도구', p));
+    out(`    - [8] 도구 › ${title}: 어긋남 ${r.problems.length}${r.note ? ' — ' + r.note : ''}`);
+}
+
 // 감도: 일부러 바꾼 사본
 let caught = 0;
 const mutLines = [];
@@ -167,6 +177,7 @@ for (const m of MUTANTS) {
     try {
         if (m.section === 'off') found.push(...(await sectionOff(mutate, m.only)).problems);
         if (m.section === 'static') found.push(...sectionStatic(mutate).problems);
+        if (m.section === 'tools') found.push(...(await TOOLS[m.tool](mutate)).problems);
         if (m.section === 'protocol') found.push(...(await compareWithGolden(workFile(AUTH_FILE), mutate)).problems);
         for (const name of m.tests || []) found.push(...(await ON.TESTS[name](mutate)).problems);
     } catch (e) { found.push('예외: ' + String(e && e.message)); }

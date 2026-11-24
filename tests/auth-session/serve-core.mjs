@@ -89,7 +89,7 @@ export function createCore(config) {
         'Cache-Control': 'no-cache',
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff',
-        'X-B3a-Mode': mode,
+        'X-B3b-Mode': mode,
     });
     const text = (status, body, extra) => ({ status, headers: Object.assign(baseHeaders(), { 'Content-Type': 'text/plain; charset=utf-8' }, extra || {}), body: Buffer.from(body, 'utf8') });
 
