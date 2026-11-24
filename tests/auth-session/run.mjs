@@ -11,6 +11,7 @@ import { switchValue, findProdResidue } from './rewrite.mjs';
 import { OLD_PATH } from './scenarios.mjs';
 import * as ON from './on-tests.mjs';
 import { MUTANTS, applyEdits } from './mutants.mjs';
+import { compareWithGolden } from './protocol.mjs';
 
 const lines = [];
 const out = (s) => { lines.push(s); console.log(s); };
@@ -65,7 +66,7 @@ function sectionText() {
     const newClean = body("    sessionStorage.removeItem('courseMode');\n\n    // Sentry 사용자 정보 초기화", "    if (typeof showScreen === 'function') showScreen('loginScreen');\n}");
     if (!oldClean || !newClean || JSON.stringify(oldClean) !== JSON.stringify(newClean)) problems.push('로그아웃의 화면 정리가 옛 길과 같은 줄들이 아님');
     // 시험 파일·새 파일에 운영 주소·키의 흔적이 없는가(값은 찍지 않는다)
-    for (const p of [AUTH_FILE, SDK_FILE, 'tests/auth-session/run.mjs', 'tests/auth-session/world.mjs', 'tests/auth-session/fixtures.mjs', 'tests/auth-session/scenarios.mjs', 'tests/auth-session/on-tests.mjs', 'tests/auth-session/mutants.mjs', 'tests/auth-session/fake-rest.mjs', 'tests/auth-session/fake-supabase.mjs', 'tests/auth-session/browser.mjs']) {
+    for (const p of [AUTH_FILE, SDK_FILE, 'tests/auth-session/run.mjs', 'tests/auth-session/world.mjs', 'tests/auth-session/fixtures.mjs', 'tests/auth-session/scenarios.mjs', 'tests/auth-session/on-tests.mjs', 'tests/auth-session/mutants.mjs', 'tests/auth-session/fake-rest.mjs', 'tests/auth-session/fake-supabase.mjs', 'tests/auth-session/browser.mjs', 'tests/auth-session/protocol.mjs', 'tests/auth-session/protocol-golden.json']) {
         const text = workFile(p);
         if (text === null) { problems.push(`${p}: 파일이 없음`); continue; }
         const residue = findProdResidue(text, { prodKey: PROD.key, prodUrl: p.endsWith('rewrite.mjs') ? null : PROD.url });
@@ -148,6 +149,11 @@ for (const r of onResults) {
     out(`    - ${r.name}: ${r.problems.length ? '어긋남 ' + r.problems.length : '통과'}${r.note ? ' — ' + r.note : ''}`);
 }
 
+// 두 저장소의 모듈이 같은 규약인가(공홈 4341235 의 모듈로 만든 기준표와 대조)
+const proto = await compareWithGolden(workFile(AUTH_FILE), null);
+proto.problems.forEach((p) => fail('규약', p));
+out(`    - [8] 두 저장소의 모듈이 같은 규약(공홈 ${proto.golden ? proto.golden.commit : '?'} 의 js/auth-session.js 로 만든 기준표와 대조 — 같은 입력 ${proto.vectors}가지·${proto.steps}걸음의 상태·이유·요청): 어긋남 ${proto.problems.length}`);
+
 // 감도: 일부러 바꾼 사본
 let caught = 0;
 const mutLines = [];
@@ -161,6 +167,7 @@ for (const m of MUTANTS) {
     try {
         if (m.section === 'off') found.push(...(await sectionOff(mutate, m.only)).problems);
         if (m.section === 'static') found.push(...sectionStatic(mutate).problems);
+        if (m.section === 'protocol') found.push(...(await compareWithGolden(workFile(AUTH_FILE), mutate)).problems);
         for (const name of m.tests || []) found.push(...(await ON.TESTS[name](mutate)).problems);
     } catch (e) { found.push('예외: ' + String(e && e.message)); }
     const hit = found.filter((p) => m.expect.test(p));

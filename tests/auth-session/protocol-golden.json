@@ -1,0 +1,1283 @@
+{
+ "note": "공홈의 인증 모듈을 가짜 서버로 돌려 만든 기준표다(실제 서버의 기록이 아니다). 자격·주소·이메일은 들어 있지 않다.",
+ "source": {
+  "repo": "공홈(eontoefl_official_website)",
+  "branch": "보안작업-묶음2-공홈인증",
+  "commit": "4341235",
+  "file": "js/auth-session.js",
+  "sha256": "2a0a18cf58c884bde9cfb1016e20681c88339b17c82637254d9687128879057d",
+  "bytes": 53372
+ },
+ "vectors": {
+  "로그인 → 새로 고침 → 로그아웃": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "signed_out"
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   }
+  ],
+  "틀린 비밀번호": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]"
+    ],
+    "outcome": "invalid_credentials"
+   }
+  ],
+  "차단": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "blocked",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]"
+    ],
+    "outcome": "blocked"
+   },
+   {
+    "state": "rejected",
+    "reason": "blocked",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]"
+    ]
+   }
+  ],
+  "탈퇴 처리 중": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "withdrawal_pending",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]"
+    ],
+    "outcome": "withdrawal_pending"
+   }
+  ],
+  "회원 대응 없음(이 로그인을 끝낸다)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": "no_member",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "no_member"
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   }
+  ],
+  "회원 대응 없음 + 종료의 답 없음": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "no_member",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "no_member"
+   }
+  ],
+  "allowed 거짓": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "not_allowed",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "not_allowed"
+   }
+  ],
+  "점검(503)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "maintenance",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]"
+    ],
+    "outcome": "maintenance"
+   },
+   {
+    "state": "rejected",
+    "reason": "maintenance",
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   }
+  ],
+  "my_profile 429": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "rate_limited",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]"
+    ],
+    "outcome": "rate_limited"
+   }
+  ],
+  "my_profile 응답 없음": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]"
+    ],
+    "outcome": "error"
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   }
+  ],
+  "my_profile 응답 모양이 다름": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "unexpected",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]"
+    ],
+    "outcome": "error"
+   }
+  ],
+  "my_site_access 500": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "unexpected",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "error"
+   }
+  ],
+  "my_site_access 응답 없음": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "error"
+   }
+  ],
+  "끝난 기록 → 새로 고침: session_expired": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "expired",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   }
+  ],
+  "끝난 기록 → 새로 고침: session_not_found": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "expired",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "끝난 기록 → 새로 고침: refresh_token_not_found": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "끝난 기록 → 새로 고침: refresh_token_already_used": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "끝난 기록 → 새로 고침: 갱신 429": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "rate_limited",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "끝난 기록 → 새로 고침: 갱신 5xx": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "끝난 기록 → 새로 고침: 갱신의 답 없음": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "끝난 기록 → 다시 확인(recheck)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "expired",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "만료된 JWT 로 새로 고침(갱신 성공)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=refresh_token [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   }
+  ],
+  "만료된 JWT 로 새로 고침(갱신의 답 없음)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "network",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   }
+  ],
+  "로그아웃의 답 없음": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "logout_unknown",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "unknown"
+   },
+   {
+    "state": "rejected",
+    "reason": "logout_unknown",
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   }
+  ],
+  "로그아웃 5xx": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "logout_unknown",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "unknown"
+   }
+  ],
+  "로그아웃 429": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "logout_unknown",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "unknown"
+   }
+  ],
+  "로그아웃 401": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "logout_unknown",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "unknown"
+   }
+  ],
+  "로그아웃 403(코드 없음)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "logout_unknown",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "unknown"
+   }
+  ],
+  "이미 끝난 기록의 로그아웃(403·session_not_found)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "signed_out"
+   }
+  ],
+  "다른 계정으로 다시 로그인(앞의 것을 먼저 끝낸다)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-B",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]",
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-B",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   }
+  ],
+  "다시 로그인하려는데 앞의 것을 끝내지 못함": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": []
+   },
+   {
+    "state": "rejected",
+    "reason": "logout_unknown",
+    "profile": null,
+    "access": null,
+    "reqs": [
+     "POST /auth/v1/logout?scope=local [member]"
+    ],
+    "outcome": "previous_unknown"
+   }
+  ],
+  "시간이 지나 갱신(1시간 10분)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=refresh_token [anon]"
+    ]
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   }
+  ],
+  "로그인 뒤 다시 확인(recheck)": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /auth/v1/token?grant_type=password [anon]",
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ],
+    "outcome": "signed_in"
+   },
+   {
+    "state": "signed_in",
+    "reason": null,
+    "profile": "m-A",
+    "access": "{\"allowed\":true,\"is_admin\":false}",
+    "reqs": [
+     "POST /rest/v1/rpc/my_profile [member]",
+     "POST /rest/v1/rpc/my_site_access [member]"
+    ]
+   }
+  ],
+  "로그인 전 로그아웃": [
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": []
+   },
+   {
+    "state": "signed_out",
+    "reason": null,
+    "profile": null,
+    "access": null,
+    "reqs": [],
+    "outcome": "signed_out"
+   }
+  ]
+ }
+}

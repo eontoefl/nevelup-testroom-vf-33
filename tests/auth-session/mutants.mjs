@@ -177,6 +177,23 @@ export const MUTANTS = [
         name: '차례표에 로그인 기록의 자격을 적음', tests: ['sameAsOld'], expect: /브라우저 단위 저장소에 차례표 말고 다른 것이 있음/,
         edits: [[MOD, "            reg[att.sid] = { claim: claim, at: Date.now() };\n            writeRegistry(reg);\n            return true;", "            reg[att.sid] = { claim: claim + ':' + storedSession().refreshToken, at: Date.now() };\n            writeRegistry(reg);\n            return true;"]],
     },
+    // ---- 공홈의 모듈과 같은 규약
+    {
+        name: '끝남의 코드를 넓힘(refresh_token_not_found 도 끝난 것으로)', section: 'protocol', expect: /규약 대조 › 끝난 기록 → 새로 고침: refresh_token_not_found/,
+        edits: [[MOD, "    const ENDED_CODES = ['session_not_found', 'session_expired'];", "    const ENDED_CODES = ['session_not_found', 'session_expired', 'refresh_token_not_found'];"]],
+    },
+    {
+        name: '로그아웃의 결과를 보지 않음(실패·모름도 끝낸 것으로)', section: 'protocol', expect: /규약 대조 › 로그아웃/,
+        edits: [[MOD, "        if (!ended) return 'unknown';             // 실패·모름: 끝냈다고 하지 않는다. 다시 보내지도 않는다\n", '']],
+    },
+    {
+        name: '결과를 모르는 갱신을 다시 보냄', section: 'protocol', expect: /규약 대조 › [^:]*갱신의 답 없음/,
+        edits: [[MOD, "            if (unknownRefresh.indexOf(refreshToken) >= 0) return Promise.reject(EonAuthError('refresh_unknown'));\n", '']],
+    },
+    {
+        name: '429 를 끝난 것으로 봄(로그인 기록을 지움)', section: 'protocol', expect: /규약 대조 › 끝난 기록 → 새로 고침: 갱신 429/,
+        edits: [[MOD, "        if (res.status === 429) return { kind: 'rate_limited' };", "        if (res.status === 429) return { kind: 'ended' };"]],
+    },
     // ---- 책·옛 방식의 값
     {
         name: '책 연결이 한 탭의 일반 로그인을 덮음', tests: ['book'], expect: /책 연결과 일반 로그인이 한 탭에: /,
