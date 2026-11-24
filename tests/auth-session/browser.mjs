@@ -73,6 +73,8 @@ export class FakeTab {
         this.page = null;
         this.sessionLog = [];
         this.closed = false;
+        this.opened = 0;                        // 이 탭이 연 문서의 수
+        this.restored = false;                  // 복제·되살리기로 생긴 탭인가(첫 읽기의 탐색 종류가 back_forward)
     }
 
     // 지금 화면을 떠난다(새로 고침·이동·닫기): pagehide 를 먼저 알린다
@@ -87,8 +89,13 @@ export class FakeTab {
     open(opts) {
         // 실제 브라우저의 차례: 새 문서의 탐색이 시작되고(timeOrigin) → 앞 문서가 내려가고(pagehide) → 새 문서의 스크립트가 돈다
         const began = this.browser.now;
+        // 브라우저가 그 문서에 주는 탐색 종류: 살아 있던 같은 화면을 갈아 끼면 reload, 복제·되살린 탭의 첫 읽기는 back_forward, 그 밖은 navigate
+        // (브레인방이 실제 Chromium 에서 잰 값대로. 시험이 opts.navType 으로 직접 정할 수도 있다)
+        const prev = this.page && !this.page.closed ? this.page : null;
+        const navType = opts.navType || (prev && prev.pageFile === opts.pageFile ? 'reload' : (this.restored && this.opened === 0 ? 'back_forward' : 'navigate'));
+        this.opened++;
         this.leave();
-        this.page = new FakePage(this.browser, this, Object.assign({ timeOrigin: began }, opts));
+        this.page = new FakePage(this.browser, this, Object.assign({ timeOrigin: began }, opts, { navType }));
         this.browser.pages.push(this.page);
         return this.page;
     }
@@ -115,6 +122,8 @@ export class FakePage {
         this.locks = opts.locks !== false;          // navigator.locks 를 줄 것인가
         this.timeOrigin = typeof opts.timeOrigin === 'number' ? opts.timeOrigin : browser.now;      // 이 문서의 탐색이 시작된 시각
         this.noTimeOrigin = opts.noTimeOrigin === true;                                             // (오래된 브라우저) 그 값을 주지 않는다
+        this.navType = opts.navType || 'navigate';                                                  // 브라우저가 이 문서에 준 탐색 종류
+        this.noNavType = opts.noNavType === true;                                                   // 탐색 종류를 주지 않는 브라우저
         this._buildDom(opts.ids || []);
         this._buildContext();
     }
@@ -236,7 +245,10 @@ export class FakePage {
             atob, btoa, queueMicrotask, structuredClone, Intl,
             crypto: globalThis.crypto,
             innerWidth: 1280,
-            performance: this.noTimeOrigin ? { now: () => browser.now - page.timeOrigin } : { timeOrigin: this.timeOrigin, now: () => browser.now - page.timeOrigin },
+            performance: Object.assign(this.noTimeOrigin ? {} : { timeOrigin: this.timeOrigin }, {
+                now: () => browser.now - page.timeOrigin,
+                getEntriesByType: (kind) => (kind === 'navigation' && !page.noNavType ? [{ entryType: 'navigation', type: page.navType }] : []),
+            }),
             __now: () => browser.now,
             __rec: (entry) => { page.rec(JSON.parse(JSON.stringify(entry))); },
         });
@@ -345,8 +357,11 @@ export class FakeBrowser {
     }
 
     // 탭 복제: 탭 단위 저장값과 창 이름이 복사된다(연 창은 없다)
-    duplicate(from, name) {
-        return this.newTab(name, { session: from.session, windowName: from.windowName, opener: null });
+    //   keepName: 창 이름까지 복사하는 브라우저인가(잰 Chromium 은 복사하지 않았다 — 시험은 둘 다 본다. 기본은 복사하는 쪽)
+    duplicate(from, name, { keepName = true } = {}) {
+        const tab = this.newTab(name, { session: from.session, windowName: keepName ? from.windowName : '', opener: null });
+        tab.restored = true;
+        return tab;
     }
 
     setTimer(page, fn, ms, repeat) {

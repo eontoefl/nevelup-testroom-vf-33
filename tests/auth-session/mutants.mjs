@@ -151,12 +151,32 @@ export const MUTANTS = [
         edits: [[MOD, "            if (own !== 'mine') {\n                if (!discardCopy()) { setState('off', 'foreign_window'); return; }\n                unproven = true;\n                hasStored = false;\n            }\n", '']],
     },
     {
-        name: '놓은 시각을 보지 않음(다른 화면에 다녀온 값·되살린 탭·다른 화면에서 복제된 탭도 받음 — 먼저 온 쪽이 이어받음)', tests: ['windows'], expect: /(닫은 탭 복원|다른 화면에서 복제된 탭|같은 탭이 다른 화면에 다녀옴)[^:]*: 다시 로그인으로 끝나지 않음/,
-        edits: [[MOD, "        if (began === null || typeof nowMs !== 'number' || !(h.at >= began - INPLACE_SLACK_MS && h.at <= nowMs + INPLACE_SLACK_MS)) return Promise.resolve('foreign');\n", '']],
+        name: '놓은 시각을 보지 않음(탐색 종류만 맞으면 받음 — 모듈 없이 읽힌 복제본·되살린 탭의 새로 고침이 이어받음)', tests: ['windows'], expect: /(모듈 없이 읽힌 뒤 새로 고침 › (다른 화면에 있는 원본의 복제본|닫은 탭을 되살림)[^:]*|한 겹 › 앞서는 시각[^:]*): (다시 로그인으로 끝나지 않음|그 문서가 인증 요청을 보냄)/,
+        edits: [[MOD, "        if (began === null || typeof nowMs !== 'number' || !(h.at >= began && h.at <= nowMs)) return Promise.resolve('foreign');\n", '']],
     },
     {
-        name: '놓은 시각의 폭을 넓게 봄(닫자마자 되살린 탭을 받음)', tests: ['windows'], expect: /닫은 탭 복원\(300ms 뒤\): 다시 로그인으로 끝나지 않음/,
-        edits: [[MOD, 'const INPLACE_SLACK_MS = 100;', 'const INPLACE_SLACK_MS = 1000;']],
+        name: '앞서는 시각을 받아 줌(놓은 시각이 탐색 시작보다 100ms 앞서도 통과)', tests: ['windows'], expect: /한 겹 › 앞서는 시각\((1ms|50ms)\): (다시 로그인으로 끝나지 않음|그 문서가 인증 요청을 보냄)/,
+        edits: [[MOD, "!(h.at >= began && h.at <= nowMs)", "!(h.at >= began - 100 && h.at <= nowMs)"]],
+    },
+    {
+        name: '지금보다 뒤의 시각을 받아 줌', tests: ['windows'], expect: /한 겹 › 지금보다 뒤의 시각: /,
+        edits: [[MOD, "!(h.at >= began && h.at <= nowMs)", "!(h.at >= began)"]],
+    },
+    {
+        name: '탐색 종류를 보지 않음(복제·되살린 탭의 첫 읽기·다른 화면에서 돌아온 읽기도 받음)', tests: ['windows'], expect: /한 겹 › 탐색 종류\((back_forward|navigate)[^:]*: (다시 로그인으로 끝나지 않음|그 문서가 인증 요청을 보냄)/,
+        edits: [[MOD, "        if (navType() !== 'reload') return Promise.resolve('foreign');\n", '']],
+    },
+    {
+        name: '탐색 종류를 읽지 못하면 새로 고침으로 침', tests: ['windows'], expect: /(한 겹 › 탐색 종류\(읽지 못함\)|탐색 종류를 주지 않는 브라우저의 새로 고침): /,
+        edits: [[MOD, "            return typeof v === 'string' ? v : null;\n        } catch (e) { return null; }\n    }\n    // 승계가 한 번임을", "            return typeof v === 'string' ? v : 'reload';\n        } catch (e) { return 'reload'; }\n    }\n    // 승계가 한 번임을"]],
+    },
+    {
+        name: '탐색 종류가 back_forward 여도 받음(되살린 탭)', tests: ['windows'], expect: /(한 겹 › 탐색 종류\(back_forward|같은 화면의 뒤로 가기)[^:]*: /,
+        edits: [[MOD, "        if (navType() !== 'reload') return Promise.resolve('foreign');", "        if (navType() !== 'reload' && navType() !== 'back_forward') return Promise.resolve('foreign');"]],
+    },
+    {
+        name: '잠금이 없어도 이어받음(쓴 뒤에 다시 읽는 것으로 대신)', tests: ['windows'], expect: /(한 겹 › 잠금 없음|잠금을 쓸 수 없는 브라우저의 새로 고침): /,
+        edits: [[MOD, "        if (!hasLocks()) return Promise.resolve('foreign');\n        let locked = null;\n        try {\n            locked = window.navigator.locks.request('tr_auth_v1:claims', function () {", "        let locked = null;\n        try {\n            locked = (hasLocks() ? window.navigator.locks.request.bind(window.navigator.locks) : function (n, fn) { return Promise.resolve().then(fn); })('tr_auth_v1:claims', function () {"]],
     },
     {
         name: '탐색이 시작된 시각을 모르는데도 이어받음', tests: ['windows'], expect: /탐색이 시작된 시각을 주지 않는 브라우저의 새로 고침: 다시 로그인으로 끝나지 않음/,
@@ -167,7 +187,7 @@ export const MUTANTS = [
         edits: [[MOD, "        if (!mem || !c || !h || h.sid !== c.sid || h.sid !== mem.sid || h.claim !== mem.claim || h.doc !== DOC_ID || h.state !== 'released') return Promise.resolve('foreign');", "        if (!mem || !c || !h || h.sid !== c.sid) return Promise.resolve('foreign');"]],
     },
     {
-        name: '되살아난 문서를 새로 읽힌 문서의 규칙으로 가림(메모리 없이 — 다른 문서가 쥔 값도 받음)', tests: ['windows'], expect: /되살아난 문서\(다른 문서가 쥔 값\): 쓰지 않는 쪽이 아님/,
+        name: '되살아난 문서를 새로 읽힌 문서의 규칙으로 가림(메모리로 보지 않음 — 되살아난 같은 문서가 이어받지 못함)', tests: ['windows'], expect: /보관됐다가 되살아난 같은 문서: 이어받지 못함/,
         edits: [[MOD, "            try { own = await reclaimAlive(); } catch (e) { own = 'foreign'; }", "            try { own = await claimStored(); } catch (e) { own = 'foreign'; }"]],
     },
     {
@@ -204,7 +224,7 @@ export const MUTANTS = [
     },
     {
         name: '차례표를 읽지 못해도 이어받음', tests: ['windows'], expect: /차례표를 쓸 수 없음: 다음 화면이 이어받음/,
-        edits: [[MOD, "            if (!reg || !reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';\n            mineClaim = randomId();\n            reg[c.sid] = { claim: mineClaim, at: Date.now() };\n            writeRegistry(reg);\n            return locked ? 'locked' : 'unlocked';", "            if (!reg) { mineClaim = null; return 'skip'; }\n            if (!reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';\n            mineClaim = randomId();\n            reg[c.sid] = { claim: mineClaim, at: Date.now() };\n            writeRegistry(reg);\n            return locked ? 'locked' : 'unlocked';"], [MOD, "            if (how === 'foreign') return 'foreign';\n            const finish = function () {", "            if (how === 'foreign') return 'foreign';\n            if (how === 'skip') { holding = true; return 'mine'; }\n            const finish = function () {"]],
+        edits: [[MOD, "                if (!reg || !reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';      // 다른 문서가 먼저 이어받았다(또는 모른다)", "                if (!reg) { writeHolder({ v: 1, sid: c.sid, claim: h.claim, state: 'held', doc: DOC_ID, name: name }); holding = true; return 'mine'; }\n                if (!reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';"]],
     },
     {
         name: '사본을 지우지 못한 화면에서도 로그인 요청을 보냄', tests: ['windows'], expect: /사본을 지우지 못함: 그 화면에서 요청을 보냄/,

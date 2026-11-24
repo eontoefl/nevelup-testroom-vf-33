@@ -502,8 +502,8 @@ async function testWindows(mutate) {
         audit(w, c, label);
     }
 
-    // ---- 5. 같은 탭에서 바로 앞 문서를 갈아 낀 문서(새로 고침): 이어받는다 — 갱신도 된다
-    for (const locks of [true, false]) {
+    // ---- 5. 같은 탭의 새로 고침(탐색 종류 reload, 앞 문서가 탐색 시작 뒤에 놓음, 잠금 있음): 이어받는다 — 갱신도 된다
+    for (const locks of [true]) {
         const label = `같은 탭의 새로 고침${locks ? '' : '(잠금을 쓸 수 없는 브라우저)'}`;
         const { w, tab: A } = await newLogin(mutate, 'std', { locks });
         const userA = A.session.get('currentUser');
@@ -527,6 +527,24 @@ async function testWindows(mutate) {
         const page = await w.open(A, 'index.html', { noTimeOrigin: true });
         await w.browser.advance(2000);
         unusedCopy('탐색이 시작된 시각을 주지 않는 브라우저의 새로 고침', w, A, page, storedA, m);
+    }
+    // 새로 고침인데 근거 하나가 없다: 탐색 종류를 주지 않는 브라우저 / 잠금을 쓸 수 없는 브라우저(승계가 한 번임을 보일 수 없다) /
+    // 같은 화면으로 가는 링크(탐색 종류가 navigate) → 보일 수 없다 → 다시 로그인(인증 요청 0)
+    for (const [name, opts] of [
+        ['탐색 종류를 주지 않는 브라우저의 새로 고침', { noNavType: true }],
+        ['잠금을 쓸 수 없는 브라우저의 새로 고침', { locks: false }],
+        ['같은 화면으로 가는 링크(탐색 종류 navigate)', { navType: 'navigate' }],
+        ['같은 화면의 뒤로 가기(새로 읽힘 — 탐색 종류 back_forward)', { navType: 'back_forward' }],
+    ]) {
+        const { w, tab: A } = await newLogin(mutate, 'std', { locks: opts.locks });
+        const storedA = A.session.get('tr_auth_v1');
+        await w.browser.advance(1000);
+        const m = markOf(w);
+        const page = await w.open(A, 'index.html', opts);
+        await w.browser.advance(2000);
+        unusedCopy(name, w, A, page, storedA, m);
+        await w.browser.advance(2.2 * HOURS);
+        c.ok(w.auth.log.slice(m.at).length === 0, `${name}: 그 뒤 그 로그인으로 요청을 보냄(갱신 포함)`);
     }
 
     // ---- 6. 같은 탭이 모듈을 싣지 않는 화면에 다녀옴: 복제된 탭과 가를 근거가 없다 → 다시 로그인(그 화면에서 로그인하면 된다)
@@ -660,7 +678,7 @@ async function testWindows(mutate) {
         A.page.closed = true;                 // pagehide 없이 사라짐
         A.page = null;
         const m = markOf(w);
-        const p2 = await w.open(A, 'index.html');
+        const p2 = await w.open(A, 'index.html', { navType: 'reload' });       // 탐색 종류는 새로 고침이어도
         await w.browser.advance(2000);
         unusedCopy('앞 문서가 놓지 못함', w, A, p2, storedA, m);
     }
@@ -689,54 +707,102 @@ async function testWindows(mutate) {
         await w.submit(pc, emailOf('fast'), AUTH_PW);
         c.ok(w.auth.log.length === before && lastMessage(pc) === MSG.foreign, '사본을 지우지 못함: 그 화면에서 요청을 보냄');
     }
-    // ---- 15. 한 겹만 남긴 경우: 놓은 시각까지 맞는 사본(탐색 도중에 복사된 것처럼 시험이 표식을 고친다) — 남은 조건 하나하나가 막는가
+    // ---- 15. 한 겹만 남긴 경우: 다른 조건은 전부 맞춘 사본(탐색 종류 reload, 놓은 시각 = 탐색 시작, 창 이름 같음, 연 창 아님, 차례표 일치, 잠금 있음 —
+    //         시험이 표식을 고친다) — 남은 조건 하나하나가 막는가. 맨 끝의 차례표 시험에서 "전부 맞춘 사본은 이어받는다"를 대조로 본다
     const forge = (w, T, patch) => {
         const h = JSON.parse(T.session.get('tr_auth_v1:holder'));
-        T.session.set('tr_auth_v1:holder', JSON.stringify(Object.assign({}, h, { state: 'released', at: w.browser.now }, patch || {})));
+        const p = Object.assign({}, patch || {});
+        const at = w.browser.now + (p.atDelta || 0);
+        delete p.atDelta;
+        T.session.set('tr_auth_v1:holder', JSON.stringify(Object.assign({}, h, { state: 'released', at }, p)));
     };
-    for (const [name, make, patch] of [
-        ['연 창', (w, A) => w.browser.newTab('C', { session: A.session, windowName: A.windowName, opener: A }), null],
-        ['창 이름', (w, A) => w.browser.newTab('C', { session: A.session, windowName: 'omrCard', opener: null }), null],
-        ['쥠 표식', (w, A) => w.browser.duplicate(A, 'C'), { state: 'held' }],
+    const RELOAD = { navType: 'reload' };
+    const dupOf = (w, A) => w.browser.duplicate(A, 'C');
+    for (const [name, make, patch, opts] of [
+        ['연 창', (w, A) => w.browser.newTab('C', { session: A.session, windowName: A.windowName, opener: A }), null, RELOAD],
+        ['창 이름', (w, A) => w.browser.newTab('C', { session: A.session, windowName: 'omrCard', opener: null }), null, RELOAD],
+        ['창 이름(복사되지 않는 브라우저의 복제본)', (w, A) => w.browser.duplicate(A, 'C', { keepName: false }), null, RELOAD],
+        ['쥠 표식', dupOf, { state: 'held' }, RELOAD],
+        ['탐색 종류(back_forward — 복제·되살린 탭의 첫 읽기)', dupOf, null, { navType: 'back_forward' }],
+        ['탐색 종류(navigate — 다른 화면에서 돌아옴)', dupOf, null, { navType: 'navigate' }],
+        ['탐색 종류(읽지 못함)', dupOf, null, { navType: 'reload', noNavType: true }],
+        ['앞서는 시각(1ms)', dupOf, { atDelta: -1 }, RELOAD],
+        ['앞서는 시각(50ms)', dupOf, { atDelta: -50 }, RELOAD],
+        ['지금보다 뒤의 시각', dupOf, { atDelta: 5000 }, RELOAD],
+        ['잠금 없음', dupOf, null, { navType: 'reload', locks: false }],
     ]) {
-        const { w, tab: A } = await newLogin(mutate, 'std');
+        const { w, tab: A, page: pa } = await newLogin(mutate, 'std');
         const storedA = A.session.get('tr_auth_v1');
+        A.session.set('zz_draft_answer', '작성 중');
         await w.browser.advance(1000);
         const C = make(w, A);
         forge(w, C, patch);
         const m = markOf(w);
-        const pc = await w.open(C, 'index.html');
+        const pc = await w.open(C, 'index.html', opts);
         await w.browser.advance(2000);
         unusedCopy(`한 겹 › ${name}`, w, C, pc, storedA, m);
+        c.ok(st(pa) === 'signed_in' && A.session.get('zz_draft_answer') === '작성 중' && A.session.get('tr_auth_v1') === storedA, `한 겹 › ${name}: 원본의 로그인·작성 중인 값이 달라짐`);
     }
-    // 차례표: 놓은 시각까지 맞는 같은 값을 든 두 탭 — 둘 다 이어받는 일은 없다(먼저 온 쪽이 차례를 새로 뽑는다)
-    for (const locks of [true, false]) {
-        const { w, tab: A } = await newLogin(mutate, 'std', { locks });
+    // 차례표: 전부 맞춘 같은 값을 든 두 탭 — 먼저 온 쪽이 잠금 안에서 차례를 새로 뽑는다. 둘 다 이어받는 일은 없다
+    {
+        const { w, tab: A } = await newLogin(mutate, 'std');
         await w.open(A, 'book.html');
         await w.browser.advance(3000);
         const C = w.browser.duplicate(A, 'C');
         forge(w, C);
-        const p1 = await w.open(C, 'index.html', { locks });
+        const p1 = await w.open(C, 'index.html', RELOAD);
         await w.browser.advance(2000);
+        c.ok(st(p1) === 'signed_in', `한 겹 › 대조: 조건을 전부 맞춘 사본인데 이어받지 못함 — 위의 한 겹 시험들이 무엇을 막는지 알 수 없다(${st(p1)}·${why(p1)})`);
         forge(w, A);
-        const p2 = await w.open(A, 'index.html', { locks });
+        const p2 = await w.open(A, 'index.html', RELOAD);
         await w.browser.advance(2000);
-        c.ok([p1, p2].filter((p) => st(p) === 'signed_in').length <= 1 && st(p2) === 'signed_out' && why(p2) === 'window_unproven', `한 겹 › 차례표${locks ? '' : '(잠금 없음)'}: 같은 값을 든 두 탭이 다 이어받음(${st(p1)}·${st(p2)})`);
+        c.ok(st(p2) === 'signed_out' && why(p2) === 'window_unproven', `한 겹 › 차례표: 같은 값을 든 두 탭이 다 이어받음(${st(p1)}·${st(p2)})`);
     }
-    // 같은 순간에 연 두 탭(놓은 시각까지 맞는 값): 둘 다 이어받는 일은 없다
-    for (const locks of [true, false]) {
-        const { w, tab: A } = await newLogin(mutate, 'std', { locks });
+    // 같은 순간에 연 두 탭(전부 맞춘 값): 둘 다 이어받는 일은 없다
+    {
+        const { w, tab: A } = await newLogin(mutate, 'std');
         await w.open(A, 'book.html');
         await w.browser.advance(3000);
         const C = w.browser.duplicate(A, 'C');
         forge(w, C);
         forge(w, A);
-        const p1 = await w.open(A, 'index.html', { noIdle: true, locks });
-        const p2 = await w.open(C, 'index.html', { noIdle: true, locks });
+        const p1 = await w.open(A, 'index.html', { noIdle: true, navType: 'reload' });
+        const p2 = await w.open(C, 'index.html', { noIdle: true, navType: 'reload' });
         await w.browser.advance(3000);
-        c.ok([p1, p2].filter((p) => st(p) === 'signed_in').length <= 1, `한 겹 › 차례표 › 같은 순간${locks ? '' : '(잠금 없음)'}: 둘 다 이어받음(${st(p1)}·${st(p2)})`);
+        c.ok([p1, p2].filter((p) => st(p) === 'signed_in').length === 1, `한 겹 › 차례표 › 같은 순간: 이어받은 쪽이 하나가 아님(${st(p1)}·${st(p2)})`);
     }
-    return { problems: c.problems, note: '살아 있는 원본의 사본 다섯 × 잠금 유무, 다른 화면에서의 복제(복제본 먼저·원본 먼저 × 잠금 유무), 절전 중인 원본, 닫은 탭 복원 셋, 새로 고침(이어받음), 다른 화면에 다녀옴(다시 로그인), 되살아난 같은 문서, 재사용, 새 창의 화면 = 기준, 복제본의 새 로그인, 닫고 새 방문, 놓지 못함, 차례표 불가, 지우지 못함, 한 겹만 남긴 경우(연 창·창 이름·쥠 표식·차례표)' };
+
+    // ---- 16. 복제본·되살린 탭이 첫 읽기에서 모듈을 받지 못한 뒤 새로 고침: 사본이 지워지지 않은 채 탐색 종류가 reload 가 된다.
+    //          그래도 그 문서의 인증 요청 0·갱신 0·자동 진입 0(요청 기록으로 잰다), 원본의 작성 중인 값 불변
+    for (const keepName of [true, false]) {
+        for (const [name, prep] of [
+            ['살아 있는 원본의 복제본(쥠이 복사됨)', async (w, A) => w.browser.duplicate(A, 'C', { keepName })],
+            ['다른 화면에 있는 원본의 복제본(놓음이 복사됨)', async (w, A) => { await w.open(A, 'book.html'); await w.browser.advance(20 * 1000); return w.browser.duplicate(A, 'C', { keepName }); }],
+            ['닫은 탭을 되살림(놓음이 복사됨)', async (w, A) => { A.close(); await w.browser.advance(1500); return w.browser.duplicate(A, 'C', { keepName }); }],
+        ]) {
+            const label = `모듈 없이 읽힌 뒤 새로 고침 › ${name}${keepName ? '' : ' — 창 이름은 복사되지 않음'}`;
+            const { w, tab: A, page: pa } = await newLogin(mutate, 'std');
+            const storedA = A.session.get('tr_auth_v1');
+            A.session.set('zz_draft_answer', '작성 중');
+            await w.browser.advance(1000);
+            const C = await prep(w, A);
+            const m = markOf(w);
+            const closed = await w.open(C, 'index.html', { missing: ['js/auth-session.js'] });
+            await w.browser.advance(3000);
+            c.ok(C.session.get('tr_auth_v1') === storedA && lastMessage(closed) === MSG.unavailable && !hasSchedule(closed) && w.auth.log.length === m.at, `${label}: 시험이 "사본이 남은 닫힌 화면"을 만들지 못함`);
+            const page = await w.open(C, 'index.html');                 // 새로 고침(같은 탭·같은 화면)
+            c.ok(page.evaluate("performance.getEntriesByType('navigation')[0].type") === 'reload', `${label}: 시험의 탐색 종류가 reload 가 아님`);
+            await w.browser.advance(3000);
+            unusedCopy(label, w, C, page, storedA, m);
+            await w.browser.advance(2.2 * HOURS);
+            const later = w.auth.log.slice(m.at);
+            c.ok(later.every((e) => e.page === 'A'), `${label}: 복제본이 그 로그인으로 요청을 보냄(갱신 포함 ${later.filter((e) => e.page !== 'A').length}건)`);
+            c.ok(A.session.get('zz_draft_answer') === '작성 중', `${label}: 원본의 작성 중인 값이 달라짐`);
+            if (name.startsWith('살아 있는')) c.ok(st(pa) === 'signed_in' && later.some((e) => e.route + e.search === R.refresh) && [...w.auth.sessions.values()].filter((s) => s.alive).length === 1, `${label}: 원본의 로그인·갱신이 막힘(${st(pa)}·${why(pa)})`);
+            audit(w, c, label);
+        }
+    }
+    return { problems: c.problems, note: '살아 있는 원본의 사본 다섯 × 잠금 유무, 다른 화면에서의 복제(복제본 먼저·원본 먼저 × 잠금 유무), 절전 중인 원본, 닫은 탭 복원 셋, 새로 고침(이어받음), 다른 화면에 다녀옴(다시 로그인), 되살아난 같은 문서, 재사용, 새 창의 화면 = 기준, 복제본의 새 로그인, 닫고 새 방문, 놓지 못함, 차례표 불가, 지우지 못함, 근거 하나가 없는 새로 고침 넷, 한 겹만 남긴 경우 11가지(연 창·창 이름·쥠 표식·탐색 종류·앞서는 시각·잠금 없음) + 차례표, 모듈 없이 읽힌 복제본·되살린 탭의 새로 고침 6가지' };
 }
 
 // 켜진 화면인데 인증 모듈이 없다(파일을 받지 못함·꺼짐이라고 답함): 옛 로그인으로 가지 않고 닫는다.

@@ -126,7 +126,7 @@ export function makeWorld({ variant, mutate, students, tables } = {}) {
     w.open = async (tab, pageFile, opts = {}) => {
         const html = w.files(pageFile);
         if (html === null) throw new Error('없는 화면: ' + pageFile);
-        const page = tab.open({ files: w.files, pageFile, search: opts.search, hash: opts.hash, ids: pageFile === 'index.html' ? IDS : [], confirmAnswer: opts.confirmAnswer, locks: opts.locks, noTimeOrigin: opts.noTimeOrigin });
+        const page = tab.open({ files: w.files, pageFile, search: opts.search, hash: opts.hash, ids: pageFile === 'index.html' ? IDS : [], confirmAnswer: opts.confirmAnswer, locks: opts.locks, noTimeOrigin: opts.noTimeOrigin, navType: opts.navType, noNavType: opts.noNavType });
         // 화면 머리의 스위치(index.html 의 head 에 적힌 스크립트 — 다른 스크립트보다 먼저 돈다). 기준에는 없다
         const headSwitch = headSwitchOf(html);
         if (headSwitch !== null) page.run(headSwitch, pageFile + '#tr-auth-page');

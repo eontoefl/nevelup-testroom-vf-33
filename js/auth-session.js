@@ -28,11 +28,9 @@
 
     const STORAGE_KEY = 'tr_auth_v1';           // 공식 클라이언트가 로그인 상태를 두는 이름(탭 단위 저장소)
     const MARK_KEY = 'tr_auth_v1:user';         // "이 currentUser 는 새 로그인이 만들었다"는 표식(탭 단위)
-    const HOLDER_KEY = 'tr_auth_v1:holder';     // 이 보관값을 어느 문서가 쥐고 있는가(탭 단위 — 함께 복사되므로 이것만으로는 증거가 아니다)
+    const HOLDER_KEY = 'tr_auth_v1:holder';     // 이 보관값을 어느 문서가 쥐고 있는가(탭 단위 — 복사될 수 있으므로 이것만으로는 증거가 아니다)
     const REGISTRY_KEY = 'tr_auth_v1:claims';   // (브라우저 단위) 로그인 기록 번호 → 지금 쥔 쪽의 차례표. 자격은 들어 있지 않다
     const COMPAT_USER = 'currentUser';          // 화면들이 읽는 로그인 상태(아직 전환하지 않은 화면·새 창도 이 값을 읽는다)
-    const CLAIM_WAIT_MS = 150;                  // 차례표를 쓴 뒤 다른 창이 덮어썼는지 다시 보기까지(잠금을 쓸 수 없는 브라우저에서만)
-    const INPLACE_SLACK_MS = 100;               // "앞 문서가 이 문서의 탐색이 시작된 뒤에 놓았다"를 볼 때 시계의 눈금 차이로 봐 주는 폭
     const SDK_SRC = 'vendor/supabase-2.116.0.js';
     const RPC_TIMEOUT_MS = 15000;               // 기다림의 상한일 뿐이다 — 넘겨도 서버의 작업이 취소되는 것은 아니다
     const SESSION_WAIT_MS = 20000;              // 공식 클라이언트의 복원·갱신을 기다리는 상한(위와 같음)
@@ -473,20 +471,22 @@
     }
 
     // ---- 이 문서의 것인가 ----
-    // 탭 단위 저장값은 window.open 으로 연 창·복제된 탭·되살린 탭에 함께 복사된다. 복사된 갱신값으로 각자 갱신하면 두 창의 갱신이 함께 막힌다.
-    // 저장돼 있는 것(쥠 표식·창 이름·차례표)은 전부 함께 복사되므로 "먼저 온 쪽"을 고를 수는 있어도 "원래 창"임을 보이지는 못한다.
-    // 그래서 보관값으로 클라이언트를 만들기 전에, **복사되지 않는 것**으로 가린다. 이어받는 길은 둘뿐이다 — 그 밖은 쓰지 않고 다시 로그인이다.
-    //   (가) 같은 탭에서 바로 앞 문서를 갈아 낀 문서(새로 고침·같은 화면으로 이동):
-    //        앞 문서가 "놓은" 시각(pagehide)이 **이 문서의 탐색이 시작된 시각(performance.timeOrigin) 뒤**다.
-    //        브라우저는 새 문서의 탐색을 시작한 다음에 앞 문서를 내린다. 복제된 탭·되살린 탭·다른 화면에 다녀온 탭이 든 "놓음"은
-    //        그 탭의 탐색이 시작되기 전에 적힌 것이다(복사는 탐색보다 먼저 일어난다). 탐색이 시작된 시각은 저장값이 아니라 브라우저가 준다.
+    // 탭 단위 저장값은 window.open 으로 연 창·복제된 탭·되살린 탭에 복사된다. 복사된 갱신값으로 각자 갱신하면 두 창의 갱신이 함께 막힌다.
+    // 저장돼 있는 것(쥠 표식·차례표, 브라우저에 따라서는 창 이름까지)은 복사될 수 있다 — 그것으로는 "먼저 온 쪽"을 고를 수는 있어도
+    // "원래 창"임을 보이지는 못한다. 그래서 보관값으로 클라이언트를 만들기 전에 가리고, 이어받는 길은 둘뿐이다 — 그 밖은 쓰지 않고 다시 로그인이다.
+    //   (가) 새로 읽힌 문서: 아래를 **전부** 만족할 때만(하나라도 아니거나 알 수 없으면 이어받지 않는다)
+    //        a. 브라우저가 준 탐색 종류가 reload 다(새로 고침). 복제된 탭·되살린 탭의 첫 읽기와 다른 화면에서 돌아온 읽기는
+    //           navigate·back_forward 다(브레인방이 실제 Chromium 과 Edge 에서 잰 값 — 계약3B_탭소유_실측결과.md). 읽지 못하면 이어받지 않는다.
+    //        b. 쥠 표식이 "놓음"이고, 앞 문서가 놓은 시각(pagehide)이 **이 문서의 탐색이 시작된 시각(performance.timeOrigin) 뒤**다.
+    //           앞서는 쪽의 여유는 없다(잰 값은 언제나 뒤였다: +3~+16ms). 지금보다 뒤일 수도 없다.
+    //        c. 다른 창이 연 창이 아니다 / 창의 이름이 표식의 이름과 같다 / 브라우저 단위의 차례표가 표식의 차례와 같다 /
+    //           승계가 **한 번**임을 보일 수 있다(잠금 navigator.locks 안에서 차례를 새로 뽑는다 — 잠금이 없는 브라우저는 이어받지 않는다).
+    //        reload 가 탭의 신원은 아니다(복제본도 두 번째 읽기는 reload 다). 그래서 a 만으로 이어받지 않는다: 복제본이 든 표식은
+    //        "쥠"이거나(살아 있는 문서의 것을 복사) 그 문서의 탐색이 시작되기 전에 놓인 것이다(b 에서 걸린다).
     //   (나) 같은 문서가 되살아난 경우(뒤로 가기로 브라우저가 보관해 둔 화면): 이 문서가 놓을 때 쥐고 있던 것을 **메모리에** 들고 있다.
     //        새로 읽힌 문서(복제본 포함)는 그 메모리가 없다.
-    // 그 위에 지금까지의 조건도 전부 본다(하나라도 아니거나 알 수 없으면 쓰지 않는다):
-    //   다른 창이 연 창이 아니다 / 쥠 표식이 "놓음"이다(살아 있는 문서가 쥔 채로 복사된 값은 "쥠"으로 온다) /
-    //   창의 이름이 표식의 이름과 같다 / 브라우저 단위의 차례표가 표식의 차례와 같다(같으면 차례를 새로 뽑는다 — 이어받는 문서는 언제나 하나).
-    // 그래서 모듈을 싣지 않는 화면(마이페이지 등)에 다녀온 탭·닫았다가 되살린 탭은, 브라우저가 화면을 보관해 뒀다가 되살려 준 경우(나)가
-    // 아니면 다시 로그인이다 — 복제된 탭과 가를 근거가 없다.
+    // 그래서 모듈을 싣지 않는 화면(마이페이지 등)에 다녀온 탭·닫았다가 되살린 탭은 (나)가 아니면 다시 로그인이다.
+    // 창 이름이 복제된 탭에 복사되는지는 브라우저마다 다를 수 있다(잰 Chromium 에서는 복사되지 않았다). 복사되든 아니든 닫는 쪽이 되게 짰다.
     // 표식·차례표에는 갱신값·JWT 가 없다(로그인 기록 번호와 무작위 글자·시각뿐).
     const DOC_ID = randomId();
     let holding = false;
@@ -499,6 +499,19 @@
             const v = p && p.timeOrigin;
             return typeof v === 'number' && isFinite(v) && v > 0 ? v : null;
         } catch (e) { return null; }
+    }
+    // 이 문서의 탐색 종류(브라우저가 준다 — 저장값이 아니다): 'reload' · 'navigate' · 'back_forward' 등. 읽지 못하면 null — 그러면 이어받지 않는다
+    function navType() {
+        try {
+            const p = window.performance;
+            const list = p && typeof p.getEntriesByType === 'function' ? p.getEntriesByType('navigation') : null;
+            const v = list && list.length === 1 && list[0] ? list[0].type : null;
+            return typeof v === 'string' ? v : null;
+        } catch (e) { return null; }
+    }
+    // 승계가 한 번임을 보일 수 있는 잠금이 있는가
+    function hasLocks() {
+        try { return !!(window.navigator && window.navigator.locks && typeof window.navigator.locks.request === 'function'); } catch (e) { return false; }
     }
 
     function randomId() {
@@ -543,7 +556,8 @@
         const c = heldClaims();
         return !!h && !!c && h.state === 'held' && h.doc === DOC_ID && h.sid === c.sid;
     }
-    // 차례표를 한 번에 보고 쓰기: 잠금(navigator.locks)을 쓸 수 있으면 그 안에서, 없으면 쓴 뒤에 다시 본다
+    // 차례표를 한 번에 보고 쓰기: 잠금(navigator.locks)을 쓸 수 있으면 그 안에서, 없으면 그냥(새 로그인을 적을 때·되살아난 같은 문서가 다시 쥘 때).
+    // 새로 읽힌 문서의 승계(claimStored)는 이 함수를 쓰지 않는다 — 잠금이 없으면 이어받지 않는다
     function underLock(fn) {
         try {
             if (window.navigator && window.navigator.locks && typeof window.navigator.locks.request === 'function') {
@@ -591,33 +605,32 @@
         if (opened) return Promise.resolve('foreign');
         if (h.state !== 'released') return Promise.resolve('foreign');
         if (!h.name || h.name !== name) return Promise.resolve('foreign');
-        // 앞 문서가 이 문서의 탐색이 시작된 뒤에(그리고 지금보다 앞서) 놓았는가 — 아니면 복사돼 왔거나 다른 화면에 다녀온 값이다
+        // a. 브라우저가 준 탐색 종류가 새로 고침인가 — 아니거나 읽지 못하면 이어받지 않는다
+        if (navType() !== 'reload') return Promise.resolve('foreign');
+        // b. 앞 문서가 이 문서의 탐색이 시작된 뒤에(그리고 지금보다 뒤가 아니게) 놓았는가 — 앞서는 여유는 없다
         const began = navStart();
         let nowMs = null;
         try { nowMs = Date.now(); } catch (e) { nowMs = null; }
-        if (began === null || typeof nowMs !== 'number' || !(h.at >= began - INPLACE_SLACK_MS && h.at <= nowMs + INPLACE_SLACK_MS)) return Promise.resolve('foreign');
-        let mineClaim = null;
-        return underLock(function (locked) {
-            const reg = readRegistry();
-            if (!reg || !reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';
-            mineClaim = randomId();
-            reg[c.sid] = { claim: mineClaim, at: Date.now() };
-            writeRegistry(reg);
-            return locked ? 'locked' : 'unlocked';
-        }).then(function (how) {
-            if (how === 'foreign') return 'foreign';
-            const finish = function () {
+        if (began === null || typeof nowMs !== 'number' || !(h.at >= began && h.at <= nowMs)) return Promise.resolve('foreign');
+        // c. 승계가 한 번임을 보일 수 없으면(잠금 없음) 이어받지 않는다
+        if (!hasLocks()) return Promise.resolve('foreign');
+        let locked = null;
+        try {
+            locked = window.navigator.locks.request('tr_auth_v1:claims', function () {
                 const reg = readRegistry();
-                if (!reg || !reg[c.sid] || reg[c.sid].claim !== mineClaim) return 'foreign';     // 다른 창이 먼저 이어받았다
-                const again = heldClaims();
-                if (!same(again, c)) return 'foreign';
+                if (!reg || !reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';      // 다른 문서가 먼저 이어받았다(또는 모른다)
+                const mineClaim = randomId();
+                reg[c.sid] = { claim: mineClaim, at: Date.now() };
+                writeRegistry(reg);
+                const wrote = readRegistry();
+                if (!wrote || !wrote[c.sid] || wrote[c.sid].claim !== mineClaim) return 'foreign';
+                if (!same(heldClaims(), c)) return 'foreign';
                 writeHolder({ v: 1, sid: c.sid, claim: mineClaim, state: 'held', doc: DOC_ID, name: name });
                 holding = true;
                 return 'mine';
-            };
-            if (how === 'locked') return finish();
-            return new Promise(function (resolve) { setTimeout(function () { resolve(finish()); }, CLAIM_WAIT_MS); });
-        }, function () { return 'foreign'; });
+            });
+        } catch (e) { return Promise.resolve('foreign'); }
+        return Promise.resolve(locked).then(function (v) { return v === 'mine' ? 'mine' : 'foreign'; }, function () { return 'foreign'; });
     }
     // (나) 되살아난 같은 문서: 이 문서가 놓을 때 쥐고 있던 것(메모리)이 지금 저장된 표식·차례표와 같을 때만 다시 쥔다
     function reclaimAlive() {
