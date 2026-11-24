@@ -37,7 +37,7 @@ const RUN = WANT === 'all' ? VARIANTS : WANT.split(',');
 if (!RUN.every((v) => VARIANTS.includes(v))) stop('--variant 는 base·frame·multi·all');
 const OUT_DIR = path.resolve(arg('--out', path.join(ROOT, 'tests', 'exp-3d0', '.run')));
 const REFRESH_SEC = Number(arg('--refresh-sec', '200'));          // 가짜 서버가 내주는 로그인의 수명(짧게 — 갱신이 실제로 일어나게)
-const ONLY_PHASE = arg('--phase', null);                           // (점검용) 1~6 가운데 일부만: 예 --phase 1,3
+const ONLY_PHASE = arg('--phase', null);                           // (점검용) 1~7 가운데 일부만: 예 --phase 1,3
 
 const pwPath = process.env.B3B_PLAYWRIGHT;
 const chromePath = process.env.B3B_CHROMIUM;
@@ -592,6 +592,33 @@ async function measure(variant) {
             pushStep('5.2', '잠금이 없는 브라우저(흉내): 새로 고침', await rowsOf(cx, '원본', P, m5));
             await cx.context.close().catch(() => {});
             cx = null;
+        }
+        // ================= 7. 뒤로·앞으로 가는 순간의 복제 =================
+        if (phaseOn(7)) {
+            for (const [label, noBfcache] of [['화면 보관 켜짐', false], ['화면 보관 꺼짐', true]]) {
+                cx = await openBrowser({ noBfcache });
+                const P = await cx.context.newPage();
+                await P.goto(site.origin + '/index.html', { waitUntil: 'domcontentloaded' });
+                await login(cx, P, 'std');
+                await goMypage(cx, P);
+                await typeDraft(P);
+                let m7 = cx.records.length;
+                const d1 = await duplicate(cx, site.origin + (variant === 'frame' ? '/index.html' : '/mypage.html'), { whileDoing: () => traverse(cx, P, -1) });
+                await sleep(1500);
+                await quiet(cx, [P, d1]);
+                pushStep('7.1', `뒤로 가는 순간의 탭 복제(${label})`, [...await rowsOf(cx, '원본', P, m7), ...await rowsOf(cx, '복제본', d1, m7)]);
+                m7 = cx.records.length;
+                if (d1) { await d1.reload({ waitUntil: 'domcontentloaded' }).catch(() => {}); await sleep(800); await quiet(cx, [d1, P]); }
+                pushStep('7.2', `그 복제본의 새로 고침(${label})`, [...await rowsOf(cx, '원본', P, m7), ...await rowsOf(cx, '복제본', d1, m7)]);
+                if (d1) await d1.close().catch(() => {});
+                m7 = cx.records.length;
+                const d2 = await duplicate(cx, site.origin + '/index.html', { whileDoing: () => traverse(cx, P, +1) });
+                await sleep(1500);
+                await quiet(cx, [P, d2]);
+                pushStep('7.3', `앞으로 가는 순간의 탭 복제(${label})`, [...await rowsOf(cx, '원본', P, m7), ...await rowsOf(cx, '복제본', d2, m7)]);
+                await cx.context.close().catch(() => {});
+                cx = null;
+            }
         }
         // ================= 6. 화면 보관(뒤로 가기용 보관)이 꺼진 브라우저 =================
         if (phaseOn(6)) {

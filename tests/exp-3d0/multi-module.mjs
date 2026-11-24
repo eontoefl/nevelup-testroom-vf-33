@@ -156,6 +156,9 @@ export function patchModuleForMulti(source) {
     // 모듈은 화면의 값(currentUser)을 저장된 그대로 읽는다(마이페이지에서는 화면 스크립트의 읽기를 연결 조각이 가린다 — 모듈까지 가려지면 남은 값을 지우지 못한다)
     t = once(t, "        const user = store.getItem(COMPAT_USER);\n        let mark = null;",
         "        const user = (typeof window.__trRawGetItem === 'function' ? window.__trRawGetItem : store.getItem).call(store, COMPAT_USER);      // [실험 (나)]\n        let mark = null;", '화면의 값 읽기');
+    // 진단: 창 이름·쥠 표식에서 멈췄을 때, 나머지 근거(의도·activation)는 맞았는가를 이름으로 남긴다(판정은 바꾸지 않는다)
+    t = once(t, "        if (h.state !== 'released') return Promise.resolve('foreign');\n        if (!h.name || h.name !== name) return Promise.resolve('foreign');\n",
+        "        if (h.state !== 'released') { why('new:holder_not_released'); return Promise.resolve('foreign'); }\n        if (!h.name || h.name !== name) { why('new:window_name'); if (navType() !== 'reload' && arrivalIntent(c, false)) why('diag:only_window_name_stopped_it'); return Promise.resolve('foreign'); }\n", '진단');
     // 새로 읽힌 문서: 새로 고침이 아니면 의도로 가린다
     t = once(t, "        if (navType() !== 'reload') return Promise.resolve('foreign');\n",
         "        if (navType() !== 'reload') return claimByIntent(c, h, name);          // [실험 (나)] 새로 고침이 아닌 읽기: 의도·activation·놓은 시각·한 번의 승계\n", '탐색 종류');
