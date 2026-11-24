@@ -228,7 +228,11 @@ async function startControl() {
 
 // 멈춤(장부는 screen-core.mjs): kind 는 정해 둔 이름, info 는 비밀이 아닌 식별값(로그인 기록 번호·계정 이름표).
 //   needsRevert 인 멈춤은 내놓는 순간 원복 대상으로 표시된다. revertOf 인 멈춤은 본문 { "reverted": true } 를 받아야 그 표시를 지운다.
-const pause = (kind, info, opts) => board.open(kind, info, opts);
+// 안전 조건을 어긴 요청이 나온 뒤에는 새 일을 시키는 멈춤을 내놓지 않는다(되돌리는 멈춤만 내놓는다 — DB 에 남기지 않으려고)
+const pause = (kind, info, opts) => {
+    if (HALT && !(opts && opts.revertOf)) return Promise.reject(new Error('안전 조건을 어긴 요청이 나와 멈춤'));
+    return board.open(kind, info, opts);
+};
 
 // ---------------------------------------------------------------------------
 // --fake: 가짜 서버와, 브레인방 구실을 하는 가짜 조작자(제어 포트로 답한다)

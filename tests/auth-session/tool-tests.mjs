@@ -343,6 +343,7 @@ export function testScreenText(mutate) {
         ['요청마다 화면(켜짐·꺼짐)과 지금의 합성 학생을 차단기에 넘김', 'pageMode: pageModeOf(r), student: studentOf(cx) });'],
         ['안전 조건을 어긴 요청이 나오면 멈춤을 세움', 'if (rec.unsafe) { cx.unsafe = (cx.unsafe || 0) + 1; HALT = true;'],
         ['멈춤을 차례에 넘김', 'cases: rest, vault, board, halted: () => HALT,'],
+        ['위반 뒤에는 새 일을 시키는 멈춤을 내놓지 않음', 'if (HALT && !(opts && opts.revertOf)) return Promise.reject('],
         ['이메일을 합성 명단과 대조', "if (!rosterOk(EMAIL, KEYS)) stop('합성 이메일이 정해 둔 명단"],
         ['옛 길의 쓰기는 원복 대상', "await pause('old-path-begin', { student: key }, { needsRevert: true });"],
         ['옛 길의 원복은 확인을 받음', "await pause('old-path-reset', { student: key }, { revertOf: 'old-path-begin' });"],
