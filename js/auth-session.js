@@ -1,7 +1,7 @@
 // =====================================================================
 // 테스트룸 인증 모듈 (보안작업 묶음2 계약 3B) — 전역 하나: window.EonAuth
 // 공홈의 인증 모듈(계약 3A, 공홈 브랜치 보안작업-묶음2-공홈인증 4341235 의 js/auth-session.js)과 같은 규약이다.
-// 다른 곳은 넷뿐이다: (1) 보관은 탭 단위(sessionStorage) (2) 복사돼 온 보관값을 쓰지 않는다(이 창의 것인지 먼저 가린다)
+// 다른 곳은 넷뿐이다: (1) 보관은 탭 단위(sessionStorage) (2) 이 문서의 것임을 보일 수 없는 보관값은 쓰지 않는다(먼저 가린다 — 아니면 다시 로그인)
 // (3) 화면이 읽는 값은 currentUser 이고 그 값은 화면(js/auth.js)이 수강 조회 뒤에 만든다 (4) 설정은 SUPABASE_CONFIG 에서 읽는다.
 //
 // * 새 로그인 스위치가 꺼져 있으면 이 파일은 아무것도 하지 않는다:
@@ -11,6 +11,8 @@
 //   로그인·갱신·로그아웃, rpc/my_profile, rpc/my_site_access. 그 밖의 업무 요청은 지금 쓰는 자격 그대로다.
 // * 창 사이로 갱신값·JWT 를 보내지 않는다. 다른 창과 나누는 것은 "로그인 기록 번호 → 지금 쥔 쪽의 차례표"(무작위 글자)뿐이다.
 // * 이 파일은 index.html 에서만 실린다(js/auth.js 바로 앞). 설정(js/supabase-client.js)은 쓸 때 읽는다.
+// * 켜짐은 두 스위치가 다 켜졌을 때뿐이다: 이 파일의 스위치와 화면 머리의 스위치(window.TR_AUTH_PAGE — index.html 의 head).
+//   화면만 켜져 있고 이 파일이 없거나 꺼져 있으면 화면(js/auth.js)이 닫는 쪽으로 간다(옛 로그인으로 가지 않는다).
 // =====================================================================
 (function () {
     'use strict';
@@ -20,7 +22,9 @@
     // 주소의 꼬리표·저장소의 값·쿠키로 켜는 길은 없다.
     const EON_AUTH_SWITCH = 'off';
 
-    const ON = EON_AUTH_SWITCH === 'on';
+    // 화면 머리의 스위치(index.html 의 head 가 정한다 — 이 파일과 독립). 둘 다 켜졌을 때만 켜짐이다
+    const PAGE_ON = (function () { try { return window.TR_AUTH_PAGE === 'on'; } catch (e) { return false; } })();
+    const ON = EON_AUTH_SWITCH === 'on' && PAGE_ON;
 
     const STORAGE_KEY = 'tr_auth_v1';           // 공식 클라이언트가 로그인 상태를 두는 이름(탭 단위 저장소)
     const MARK_KEY = 'tr_auth_v1:user';         // "이 currentUser 는 새 로그인이 만들었다"는 표식(탭 단위)
@@ -28,6 +32,7 @@
     const REGISTRY_KEY = 'tr_auth_v1:claims';   // (브라우저 단위) 로그인 기록 번호 → 지금 쥔 쪽의 차례표. 자격은 들어 있지 않다
     const COMPAT_USER = 'currentUser';          // 화면들이 읽는 로그인 상태(아직 전환하지 않은 화면·새 창도 이 값을 읽는다)
     const CLAIM_WAIT_MS = 150;                  // 차례표를 쓴 뒤 다른 창이 덮어썼는지 다시 보기까지(잠금을 쓸 수 없는 브라우저에서만)
+    const INPLACE_SLACK_MS = 100;               // "앞 문서가 이 문서의 탐색이 시작된 뒤에 놓았다"를 볼 때 시계의 눈금 차이로 봐 주는 폭
     const SDK_SRC = 'vendor/supabase-2.116.0.js';
     const RPC_TIMEOUT_MS = 15000;               // 기다림의 상한일 뿐이다 — 넘겨도 서버의 작업이 취소되는 것은 아니다
     const SESSION_WAIT_MS = 20000;              // 공식 클라이언트의 복원·갱신을 기다리는 상한(위와 같음)
@@ -467,17 +472,34 @@
         safeCall(fn);
     }
 
-    // ---- 이 창의 것인가 ----
-    // 탭 단위 저장값은 window.open 으로 연 창과 복제된 탭에 함께 복사된다. 복사된 갱신값으로 각자 갱신하면 두 창의 갱신이 함께 막힌다.
-    // 그래서 보관값으로 클라이언트를 만들기 전에 가린다. 아래가 전부 맞을 때만 "이 창의 것"이다 — 하나라도 아니거나 알 수 없으면 쓰지 않는다.
-    //   (1) 다른 창이 연 창이 아니다(window.opener 없음)
-    //   (2) 쥠 표식이 "놓음"이다 — 앞 문서가 떠나면서(pagehide) 놓은 것이다. 살아 있는 문서가 쥔 채로 복사된 값은 "쥠"으로 온다
-    //   (3) 창의 이름이 쥠 표식의 이름과 같다(window.open 으로 연 창은 이름이 다르다)
-    //   (4) 브라우저 단위의 차례표가 이 표식의 차례와 같다 — 같으면 차례를 새로 뽑아 적는다. 같은 값을 든 다른 탭이 먼저 이어받았으면
-    //       차례가 달라져 있다. 그래서 한 로그인 기록을 이어받는 문서는 언제나 하나다.
-    // 표식·차례표에는 갱신값·JWT 가 없다(로그인 기록 번호와 무작위 글자뿐).
+    // ---- 이 문서의 것인가 ----
+    // 탭 단위 저장값은 window.open 으로 연 창·복제된 탭·되살린 탭에 함께 복사된다. 복사된 갱신값으로 각자 갱신하면 두 창의 갱신이 함께 막힌다.
+    // 저장돼 있는 것(쥠 표식·창 이름·차례표)은 전부 함께 복사되므로 "먼저 온 쪽"을 고를 수는 있어도 "원래 창"임을 보이지는 못한다.
+    // 그래서 보관값으로 클라이언트를 만들기 전에, **복사되지 않는 것**으로 가린다. 이어받는 길은 둘뿐이다 — 그 밖은 쓰지 않고 다시 로그인이다.
+    //   (가) 같은 탭에서 바로 앞 문서를 갈아 낀 문서(새로 고침·같은 화면으로 이동):
+    //        앞 문서가 "놓은" 시각(pagehide)이 **이 문서의 탐색이 시작된 시각(performance.timeOrigin) 뒤**다.
+    //        브라우저는 새 문서의 탐색을 시작한 다음에 앞 문서를 내린다. 복제된 탭·되살린 탭·다른 화면에 다녀온 탭이 든 "놓음"은
+    //        그 탭의 탐색이 시작되기 전에 적힌 것이다(복사는 탐색보다 먼저 일어난다). 탐색이 시작된 시각은 저장값이 아니라 브라우저가 준다.
+    //   (나) 같은 문서가 되살아난 경우(뒤로 가기로 브라우저가 보관해 둔 화면): 이 문서가 놓을 때 쥐고 있던 것을 **메모리에** 들고 있다.
+    //        새로 읽힌 문서(복제본 포함)는 그 메모리가 없다.
+    // 그 위에 지금까지의 조건도 전부 본다(하나라도 아니거나 알 수 없으면 쓰지 않는다):
+    //   다른 창이 연 창이 아니다 / 쥠 표식이 "놓음"이다(살아 있는 문서가 쥔 채로 복사된 값은 "쥠"으로 온다) /
+    //   창의 이름이 표식의 이름과 같다 / 브라우저 단위의 차례표가 표식의 차례와 같다(같으면 차례를 새로 뽑는다 — 이어받는 문서는 언제나 하나).
+    // 그래서 모듈을 싣지 않는 화면(마이페이지 등)에 다녀온 탭·닫았다가 되살린 탭은, 브라우저가 화면을 보관해 뒀다가 되살려 준 경우(나)가
+    // 아니면 다시 로그인이다 — 복제된 탭과 가를 근거가 없다.
+    // 표식·차례표에는 갱신값·JWT 가 없다(로그인 기록 번호와 무작위 글자·시각뿐).
     const DOC_ID = randomId();
     let holding = false;
+    let lastHeld = null;        // 이 문서가 놓을 때 쥐고 있던 것(메모리에만 — 복사되지 않는다): { sid, claim }
+
+    // 이 문서의 탐색이 시작된 시각(브라우저가 준다). 모르면 null — 그러면 이어받지 않는다
+    function navStart() {
+        try {
+            const p = window.performance;
+            const v = p && p.timeOrigin;
+            return typeof v === 'number' && isFinite(v) && v > 0 ? v : null;
+        } catch (e) { return null; }
+    }
 
     function randomId() {
         const a = new Uint8Array(16);
@@ -490,7 +512,7 @@
         try {
             const h = JSON.parse(window.sessionStorage.getItem(HOLDER_KEY));
             if (h && h.v === 1 && typeof h.sid === 'string' && typeof h.claim === 'string' && typeof h.doc === 'string' &&
-                typeof h.name === 'string' && (h.state === 'held' || h.state === 'released')) return h;
+                typeof h.name === 'string' && (h.state === 'held' || (h.state === 'released' && typeof h.at === 'number' && isFinite(h.at)))) return h;
         } catch (e) { /* 아래 */ }
         return null;
     }
@@ -550,7 +572,7 @@
             return true;
         }).then(function (v) { return v === true; }, function () { return false; });
     }
-    // 저장돼 있던 보관값이 이 창의 것인가: 'none'(저장된 것이 없음) / 'mine' / 'foreign'(아니거나 알 수 없음)
+    // (가) 새로 읽힌 문서: 저장돼 있던 보관값을 이어받아도 되는가. 'none'(저장된 것이 없음) / 'mine' / 'foreign'(보일 수 없거나 알 수 없음)
     function claimStored() {
         let raw = null;
         try { raw = window.sessionStorage.getItem(STORAGE_KEY); } catch (e) { return Promise.resolve('foreign'); }
@@ -569,6 +591,11 @@
         if (opened) return Promise.resolve('foreign');
         if (h.state !== 'released') return Promise.resolve('foreign');
         if (!h.name || h.name !== name) return Promise.resolve('foreign');
+        // 앞 문서가 이 문서의 탐색이 시작된 뒤에(그리고 지금보다 앞서) 놓았는가 — 아니면 복사돼 왔거나 다른 화면에 다녀온 값이다
+        const began = navStart();
+        let nowMs = null;
+        try { nowMs = Date.now(); } catch (e) { nowMs = null; }
+        if (began === null || typeof nowMs !== 'number' || !(h.at >= began - INPLACE_SLACK_MS && h.at <= nowMs + INPLACE_SLACK_MS)) return Promise.resolve('foreign');
         let mineClaim = null;
         return underLock(function (locked) {
             const reg = readRegistry();
@@ -592,13 +619,39 @@
             return new Promise(function (resolve) { setTimeout(function () { resolve(finish()); }, CLAIM_WAIT_MS); });
         }, function () { return 'foreign'; });
     }
-    // 이 문서가 떠난다: 쥠 표식을 "놓음"으로(같은 탭의 다음 문서가 이어받을 수 있게). 차례는 그대로 둔다
+    // (나) 되살아난 같은 문서: 이 문서가 놓을 때 쥐고 있던 것(메모리)이 지금 저장된 표식·차례표와 같을 때만 다시 쥔다
+    function reclaimAlive() {
+        let raw = null;
+        try { raw = window.sessionStorage.getItem(STORAGE_KEY); } catch (e) { return Promise.resolve('foreign'); }
+        if (raw === null) return Promise.resolve('none');
+        const mem = lastHeld;
+        let c = null;
+        let h = null;
+        try {
+            c = heldClaims();
+            h = readHolder();
+        } catch (e) { return Promise.resolve('foreign'); }
+        if (!mem || !c || !h || h.sid !== c.sid || h.sid !== mem.sid || h.claim !== mem.claim || h.doc !== DOC_ID || h.state !== 'released') return Promise.resolve('foreign');
+        return underLock(function () {
+            const reg = readRegistry();
+            if (!reg || !reg[c.sid] || reg[c.sid].claim !== mem.claim) return 'foreign';
+            if (!same(heldClaims(), c)) return 'foreign';
+            writeHolder({ v: 1, sid: c.sid, claim: mem.claim, state: 'held', doc: DOC_ID, name: h.name });
+            holding = true;
+            lastHeld = null;
+            return 'mine';
+        }).then(function (v) { return v === 'mine' ? 'mine' : 'foreign'; }, function () { return 'foreign'; });
+    }
+    // 이 문서가 떠난다: 쥠 표식을 "놓음"으로 바꾸고 놓은 시각을 적는다(바로 다음 문서가 이어받을 수 있게). 차례는 그대로 둔다
     function releaseHold() {
         if (!holding) return;
         holding = false;
         try {
             const h = readHolder();
-            if (h && h.doc === DOC_ID && h.state === 'held') writeHolder({ v: 1, sid: h.sid, claim: h.claim, state: 'released', doc: h.doc, name: h.name });
+            if (h && h.doc === DOC_ID && h.state === 'held') {
+                lastHeld = { sid: h.sid, claim: h.claim };
+                writeHolder({ v: 1, sid: h.sid, claim: h.claim, state: 'released', doc: h.doc, name: h.name, at: Date.now() });
+            }
         } catch (e) { /* 놓지 못하면 다음 문서는 이어받지 못한다(쓰지 않는 쪽) */ }
     }
     // 그 로그인 기록이 끝났다: 표식과 차례표에서 지운다(이 문서가 쥔 것일 때만)
@@ -614,8 +667,10 @@
             }
         } catch (e) { /* 남아도 자격이 아니다 */ }
     }
-    // 복사돼 온 값: 읽지 않고 이 창의 사본만 지운다(서버로 보내는 것 없음). 이 화면에서는 꺼짐과 같은 동작을 한다
+    // 이 문서의 것임을 보일 수 없는 값: 읽지 않고 이 탭의 사본만 지운다(서버로 보내는 것 없음 — 차례표도 건드리지 않는다).
+    // 돌려주는 값: 지워져서 이 탭에 저장된 로그인이 없음을 확인했는가
     function discardCopy() {
+        let gone = false;
         try {
             const store = window.sessionStorage;
             store.removeItem(STORAGE_KEY);
@@ -623,11 +678,18 @@
             store.removeItem(STORAGE_KEY + '-code-verifier');
             store.removeItem(HOLDER_KEY);
             store.removeItem(MARK_KEY);
-        } catch (e) { /* 지우지 못해도 쓰지 않는다 */ }
+            gone = store.getItem(STORAGE_KEY) === null && store.getItem(HOLDER_KEY) === null;
+        } catch (e) { gone = false; }
         holding = false;
+        lastHeld = null;
         verified = null;
         lastRejected = null;
         client = null;
+        return gone;
+    }
+    // 지우지 못했거나(또는 되살아난 문서가 이어받지 못했으면) 이 화면에서는 아무것도 하지 않는다(로그인도 보내지 않는다 — 새로 고침 뒤에)
+    function closeWindow() {
+        discardCopy();
         setState('off', 'foreign_window');
     }
 
@@ -954,13 +1016,20 @@
         // 저장된 새 방식의 로그인이 없으면 기다릴 것이 없다 → 바로 "로그인 전"
         let hasStored = true;
         try { hasStored = window.sessionStorage.getItem(STORAGE_KEY) !== null; } catch (e) { hasStored = true; }
-        if (!hasStored) { clearCompat(null); setState('signed_out', null); }
+        let unproven = false;
         if (hasStored) {
-            // 클라이언트를 만들기 전에: 이 보관값이 이 창에서 만들어진 것인가. 아니거나 알 수 없으면 읽지 않는다
+            // 클라이언트를 만들기 전에: 이 보관값이 이 문서의 것임을 보일 수 있는가. 보일 수 없으면 읽지 않는다 —
+            // 이 탭의 사본을 지우고(확인까지) "로그인 전"으로 간다: 확인·갱신·자동 진입 없이 로그인 화면이다(이 화면에서 다시 로그인할 수 있다).
             let own = 'foreign';
             try { own = await claimStored(); } catch (e) { own = 'foreign'; }
-            if (own !== 'mine') { discardCopy(); return; }
+            if (own !== 'mine') {
+                if (!discardCopy()) { setState('off', 'foreign_window'); return; }
+                unproven = true;
+                hasStored = false;
+            }
         }
+        const outReason = unproven ? 'window_unproven' : null;
+        if (!hasStored) { clearCompat(null); setState('signed_out', outReason); }
         const beganLoad = hasStored ? heldClaims() : null;     // 기다리기 전에: 이 탭이 복원하려던 기록
         try {
             if (!ORIGIN || !ANON) throw EonAuthError('config');
@@ -988,7 +1057,8 @@
         const beganRead = heldClaims();            // 기다리기 전에: 이 탭이 복원하려던 기록
         const cur = await readSession();
         if (cur.error) { failedRead(beganRead); return; }
-        if (!cur.session) { clearCompat(null); setState('signed_out', null); return; }
+        if (!cur.session) { clearCompat(null); setState('signed_out', outReason); return; }
+        if (unproven) { closeWindow(); return; }      // 지운 뒤인데 저장된 로그인이 다시 보인다: 쓰지 않는다
         await settle(cur.session, 'restore');
     }
 
@@ -1002,7 +1072,7 @@
 
     function signIn(email, password) {
         return enqueue(async function () {
-            if (state === 'off') return { outcome: 'off' };        // 복사돼 온 값을 버린 화면: 이 화면에서는 로그인하지 않는다(새로 고침 뒤에)
+            if (state === 'off') return { outcome: 'off' };        // 사본을 지우지 못했거나 되살아난 문서가 이어받지 못한 화면: 이 화면에서는 로그인하지 않는다(새로 고침 뒤에)
             if (!client) return { outcome: 'error' };
             // 책 전용 상태·옛 방식의 로그인 상태가 있으면 인증 요청을 보내기 전에 멈춘다(덮어쓰지 않는다)
             let slot;
@@ -1171,15 +1241,15 @@
     // 이 문서가 떠난다(새로 고침·다른 화면으로 이동·탭 닫기·보관): 쥔 것을 놓는다
     window.addEventListener('pagehide', function () { releaseHold(); });
 
-    // 뒤로 가기로 보관된 화면이 되살아나면: 먼저 로그인 전 모양으로 돌리고, 보관값이 여전히 이 창의 것인지 다시 가린 뒤 다시 확인한다
+    // 뒤로 가기로 보관된 화면이 되살아나면: 먼저 로그인 전 모양으로 돌리고, 이 문서가 놓을 때 쥐고 있던 그것인지(메모리로) 다시 가린 뒤 다시 확인한다
     window.addEventListener('pageshow', function (ev) {
         if (!ev || !ev.persisted || state === 'off') return;
         displayHold = true;
         redraw(true);
         enqueue(async function () {
             let own = 'foreign';
-            try { own = await claimStored(); } catch (e) { own = 'foreign'; }
-            if (own === 'foreign') { discardCopy(); return; }
+            try { own = await reclaimAlive(); } catch (e) { own = 'foreign'; }
+            if (own === 'foreign') { closeWindow(); return; }
         }).then(function () { return state === 'off' ? null : recheck(); }).then(function () {}, function () {}).then(function () {
             displayHold = false;
             redraw(true);

@@ -85,8 +85,10 @@ export class FakeTab {
 
     // 이 탭에 화면을 연다(앞의 화면은 떠난다)
     open(opts) {
+        // 실제 브라우저의 차례: 새 문서의 탐색이 시작되고(timeOrigin) → 앞 문서가 내려가고(pagehide) → 새 문서의 스크립트가 돈다
+        const began = this.browser.now;
         this.leave();
-        this.page = new FakePage(this.browser, this, opts);
+        this.page = new FakePage(this.browser, this, Object.assign({ timeOrigin: began }, opts));
         this.browser.pages.push(this.page);
         return this.page;
     }
@@ -111,6 +113,8 @@ export class FakePage {
         this.hash = opts.hash || '';
         this.pageFile = opts.pageFile;
         this.locks = opts.locks !== false;          // navigator.locks 를 줄 것인가
+        this.timeOrigin = typeof opts.timeOrigin === 'number' ? opts.timeOrigin : browser.now;      // 이 문서의 탐색이 시작된 시각
+        this.noTimeOrigin = opts.noTimeOrigin === true;                                             // (오래된 브라우저) 그 값을 주지 않는다
         this._buildDom(opts.ids || []);
         this._buildContext();
     }
@@ -232,6 +236,7 @@ export class FakePage {
             atob, btoa, queueMicrotask, structuredClone, Intl,
             crypto: globalThis.crypto,
             innerWidth: 1280,
+            performance: this.noTimeOrigin ? { now: () => browser.now - page.timeOrigin } : { timeOrigin: this.timeOrigin, now: () => browser.now - page.timeOrigin },
             __now: () => browser.now,
             __rec: (entry) => { page.rec(JSON.parse(JSON.stringify(entry))); },
         });

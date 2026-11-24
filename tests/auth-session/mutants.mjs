@@ -16,8 +16,13 @@ export function applyEdits(edits, problems) {
     };
 }
 
-const GATE_LOGIN = "    if (_trAuthOn()) return _trHandleLogin(event);   // 새 로그인(스위치가 켜졌을 때만). 꺼짐이면 아래 그대로\n";
-const GATE_START = "    if (_trAuthOn() && !_trBookOnlySaved()) { _trStart(); return; }\n";
+const HTML = 'index.html';
+const GATE_LOGIN = "    if (_trPageOn()) return _trHandleLogin(event);   // 새 로그인(화면의 스위치가 켜졌을 때만). 꺼짐이면 아래 그대로\n";
+const GATE_START = "    if (_trPageOn() && !_trBookOnlySaved()) { _trStart(); return; }\n";
+// 화면 머리의 스크립트가 앞의 currentUser 를 치우는 줄
+const HEAD_REMOVE = "            if (m && m.v === 1 && u && typeof u === 'object' && u.id === m.id && u.programType !== 'book_only') s.removeItem('currentUser');\n";
+const HEAD_SWITCH = "        var TR_AUTH_PAGE_SWITCH = 'off';";
+const UNPROVEN = /(새 창 › [^:]*|닫은 탭 복원[^:]*|다른 화면에서 복제된 탭[^:]*|같은 탭이 다른 화면에 다녀옴): (복사된 자격으로 요청을 보냄|다시 로그인으로 끝나지 않음|그 문서가 인증 요청을 보냄)/;
 const PRE_REMOVE = "        if (readSlot().kind === 'ours') window.sessionStorage.removeItem(COMPAT_USER);\n";
 
 export const MUTANTS = [
@@ -62,7 +67,7 @@ export const MUTANTS = [
     },
     {
         name: '켜짐에서 빈 값 로그인의 길이 남음', tests: ['outcomes'], expect: /빈 값\(둘 다\): (안내가 기대와 다름|화면을 열었거나)/,
-        edits: [[AUTH, GATE_LOGIN, "    if (_trAuthOn() && (document.getElementById('studentEmail').value.trim() || document.getElementById('studentPassword').value.trim())) return _trHandleLogin(event);\n"]],
+        edits: [[AUTH, GATE_LOGIN, "    if (_trPageOn() && (document.getElementById('studentEmail').value.trim() || document.getElementById('studentPassword').value.trim())) return _trHandleLogin(event);\n"]],
     },
     // ---- 실패와 "없음"
     {
@@ -105,11 +110,15 @@ export const MUTANTS = [
     // ---- 준비 신호
     {
         name: '저장된 currentUser 만 보고 화면을 엶(재확인 전에)', tests: ['readyGate'], expect: /준비 신호 › 새로 고침: 다시 확인하기 전에 (표시·currentUser 가 나옴|표 요청을 보냄)/,
-        edits: [[AUTH, GATE_START, ''], [MOD, PRE_REMOVE, '']],
+        edits: [[AUTH, GATE_START, ''], [MOD, PRE_REMOVE, ''], [HTML, HEAD_REMOVE, '']],
     },
     {
-        name: '다시 확인하기 전에 저장된 currentUser 를 치우지 않음', tests: ['readyGate'], expect: /준비 신호 › 새로 고침: 다시 확인하기 전에 표시·currentUser 가 나옴/,
-        edits: [[MOD, PRE_REMOVE, '']],
+        name: '다시 확인하기 전에 저장된 currentUser 를 치우지 않음(화면 머리·모듈 둘 다)', tests: ['readyGate'], expect: /준비 신호 › 새로 고침: 다시 확인하기 전에 표시·currentUser 가 나옴/,
+        edits: [[MOD, PRE_REMOVE, ''], [HTML, HEAD_REMOVE, '']],
+    },
+    {
+        name: '화면 머리에서 앞의 currentUser 를 치우지 않음(모듈이 실릴 때까지 다른 스크립트가 읽을 수 있다)', tests: ['closed'], expect: /화면 머리의 스크립트가 앞의 currentUser 를 치우지 않음/,
+        edits: [[HTML, HEAD_REMOVE, '']],
     },
     {
         name: '수강 조회 전에 일정 화면을 엶', tests: ['readyGate'], expect: /준비 신호 › 수강 조회 중: 조회가 끝나기 전에/,
@@ -138,23 +147,59 @@ export const MUTANTS = [
     },
     // ---- 새 창·복제
     {
-        name: '복사돼 온 값으로 클라이언트를 만듦(가리지 않음)', tests: ['windows'], expect: /새 창 › [^:]*: (복사된 자격으로 요청을 보냄|복사돼 온 값을 버린 화면이 아님)/,
-        edits: [[MOD, "            if (own !== 'mine') { discardCopy(); return; }\n        }\n        const beganLoad", "        }\n        const beganLoad"]],
+        name: '보일 수 없는 값으로 클라이언트를 만듦(가리지 않음)', tests: ['windows'], expect: UNPROVEN,
+        edits: [[MOD, "            if (own !== 'mine') {\n                if (!discardCopy()) { setState('off', 'foreign_window'); return; }\n                unproven = true;\n                hasStored = false;\n            }\n", '']],
     },
     {
-        name: '쥠 표식을 보지 않음(살아 있는 문서가 쥔 값도 받음)', tests: ['windows'], expect: /새 창 › 탭 복제: /,
+        name: '놓은 시각을 보지 않음(다른 화면에 다녀온 값·되살린 탭·다른 화면에서 복제된 탭도 받음 — 먼저 온 쪽이 이어받음)', tests: ['windows'], expect: /(닫은 탭 복원|다른 화면에서 복제된 탭|같은 탭이 다른 화면에 다녀옴)[^:]*: 다시 로그인으로 끝나지 않음/,
+        edits: [[MOD, "        if (began === null || typeof nowMs !== 'number' || !(h.at >= began - INPLACE_SLACK_MS && h.at <= nowMs + INPLACE_SLACK_MS)) return Promise.resolve('foreign');\n", '']],
+    },
+    {
+        name: '놓은 시각의 폭을 넓게 봄(닫자마자 되살린 탭을 받음)', tests: ['windows'], expect: /닫은 탭 복원\(300ms 뒤\): 다시 로그인으로 끝나지 않음/,
+        edits: [[MOD, 'const INPLACE_SLACK_MS = 100;', 'const INPLACE_SLACK_MS = 1000;']],
+    },
+    {
+        name: '탐색이 시작된 시각을 모르는데도 이어받음', tests: ['windows'], expect: /탐색이 시작된 시각을 주지 않는 브라우저의 새로 고침: 다시 로그인으로 끝나지 않음/,
+        edits: [[MOD, "            return typeof v === 'number' && isFinite(v) && v > 0 ? v : null;", "            return typeof v === 'number' && isFinite(v) && v > 0 ? v : 0;"]],
+    },
+    {
+        name: '되살아난 문서: 메모리에 든 것과 견주지 않음', tests: ['windows'], expect: /되살아난 문서\(다른 문서가 쥔 값\): 쓰지 않는 쪽이 아님/,
+        edits: [[MOD, "        if (!mem || !c || !h || h.sid !== c.sid || h.sid !== mem.sid || h.claim !== mem.claim || h.doc !== DOC_ID || h.state !== 'released') return Promise.resolve('foreign');", "        if (!mem || !c || !h || h.sid !== c.sid) return Promise.resolve('foreign');"]],
+    },
+    {
+        name: '되살아난 문서를 새로 읽힌 문서의 규칙으로 가림(메모리 없이 — 다른 문서가 쥔 값도 받음)', tests: ['windows'], expect: /되살아난 문서\(다른 문서가 쥔 값\): 쓰지 않는 쪽이 아님/,
+        edits: [[MOD, "            try { own = await reclaimAlive(); } catch (e) { own = 'foreign'; }", "            try { own = await claimStored(); } catch (e) { own = 'foreign'; }"]],
+    },
+    {
+        name: '사본을 지웠는지 확인하지 않고 클라이언트를 만듦', tests: ['windows'], expect: /사본을 지우지 못함: (닫는 쪽이 아님|그 화면에서 요청을 보냄)/,
+        edits: [[MOD, "            gone = store.getItem(STORAGE_KEY) === null && store.getItem(HOLDER_KEY) === null;", '            gone = true;']],
+    },
+    {
+        name: '켜진 화면인데 모듈이 없으면 옛 로그인으로 감(모듈이 있어야 켜진 화면으로 봄)', tests: ['closed'], expect: /모듈을 받지 못함 › [^:]*: (로그인 화면과 안내가 아님|요청을 보냄|옛 길의 요청|currentUser·준비 신호가 섬|Sentry 에 사용자를 지정함)/,
+        edits: [[AUTH, "    try { return window.TR_AUTH_PAGE === 'on'; } catch (e) { return false; }\n}\n\n// 인증 모듈이 실려 있고", "    try { return window.TR_AUTH_PAGE === 'on' && _trModuleOk(); } catch (e) { return false; }\n}\n\n// 인증 모듈이 실려 있고"]],
+    },
+    {
+        name: '화면만 켜져 있어도 모듈이 꺼짐이면 옛 로그인으로 감', tests: ['closed'], expect: /화면만 켜짐\(모듈은 꺼짐\)[^:]*: (로그인 화면과 안내가 아님|요청을 보냄|옛 길의 요청)/,
+        edits: [[AUTH, "    try { return window.TR_AUTH_PAGE === 'on'; } catch (e) { return false; }\n}\n\n// 인증 모듈이 실려 있고", "    try { return window.TR_AUTH_PAGE === 'on' && (!window.EonAuth || window.EonAuth.isOn() === true); } catch (e) { return false; }\n}\n\n// 인증 모듈이 실려 있고"]],
+    },
+    {
+        name: '모듈의 스위치만 켜져도 모듈이 돎(화면은 꺼짐)', tests: ['closed'], expect: /모듈만 켜짐\(화면은 꺼짐\): 인증 모듈·새 길이 켜짐/,
+        edits: [[MOD, "    const ON = EON_AUTH_SWITCH === 'on' && PAGE_ON;", "    const ON = EON_AUTH_SWITCH === 'on';"]],
+    },
+    {
+        name: '쥠 표식을 보지 않음(살아 있는 문서가 쥔 값도 받음)', tests: ['windows'], expect: /한 겹 › 쥠 표식: /,
         edits: [[MOD, "        if (h.state !== 'released') return Promise.resolve('foreign');\n", '']],
     },
     {
-        name: '연 창인지 보지 않음', tests: ['windows'], expect: /새 창 › 연 창\(이름까지 같게 만든 경우[^:]*: 복사돼 온 값을 씀/,
+        name: '연 창인지 보지 않음', tests: ['windows'], expect: /한 겹 › 연 창: /,
         edits: [[MOD, "        if (opened) return Promise.resolve('foreign');\n", '']],
     },
     {
-        name: '창 이름을 보지 않음', tests: ['windows'], expect: /새 창 › 다른 화면에서 연[^:]*: 복사돼 온 값을 씀/,
+        name: '창 이름을 보지 않음', tests: ['windows'], expect: /한 겹 › 창 이름: /,
         edits: [[MOD, "        if (!h.name || h.name !== name) return Promise.resolve('foreign');\n", '']],
     },
     {
-        name: '차례표를 보지 않음(같은 값을 든 두 탭이 다 이어받음)', tests: ['windows'], expect: /다른 화면에서 복제된 탭\([^)]*\): 이어받은 쪽이 하나가 아님/,
+        name: '차례표를 보지 않음(같은 값을 든 두 탭이 다 이어받음)', tests: ['windows'], expect: /한 겹 › 차례표[^:]*: /,
         edits: [[MOD, "            if (!reg || !reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';", "            if (!reg) return 'foreign';"]],
     },
     {
@@ -162,11 +207,11 @@ export const MUTANTS = [
         edits: [[MOD, "            if (!reg || !reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';\n            mineClaim = randomId();\n            reg[c.sid] = { claim: mineClaim, at: Date.now() };\n            writeRegistry(reg);\n            return locked ? 'locked' : 'unlocked';", "            if (!reg) { mineClaim = null; return 'skip'; }\n            if (!reg[c.sid] || reg[c.sid].claim !== h.claim) return 'foreign';\n            mineClaim = randomId();\n            reg[c.sid] = { claim: mineClaim, at: Date.now() };\n            writeRegistry(reg);\n            return locked ? 'locked' : 'unlocked';"], [MOD, "            if (how === 'foreign') return 'foreign';\n            const finish = function () {", "            if (how === 'foreign') return 'foreign';\n            if (how === 'skip') { holding = true; return 'mine'; }\n            const finish = function () {"]],
     },
     {
-        name: '버린 화면에서도 로그인 요청을 보냄', tests: ['windows'], expect: /새 창 › [^:]*: 버린 화면에서 로그인 요청을 보냄/,
-        edits: [[MOD, "            if (state === 'off') return { outcome: 'off' };        // 복사돼 온 값을 버린 화면: 이 화면에서는 로그인하지 않는다(새로 고침 뒤에)\n            if (!client) return { outcome: 'error' };", "            if (!client) { loadConfig(); const sdk = await loadSdk(); client = new sdk.AuthClient({ url: ORIGIN + '/auth/v1', headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }, storageKey: STORAGE_KEY, storage: scopedStorage, persistSession: true, autoRefreshToken: false, detectSessionInUrl: false, fetch: guardedFetch }); closeBroadcast(client); }"]],
+        name: '사본을 지우지 못한 화면에서도 로그인 요청을 보냄', tests: ['windows'], expect: /사본을 지우지 못함: 그 화면에서 요청을 보냄/,
+        edits: [[MOD, "            if (state === 'off') return { outcome: 'off' };        // 사본을 지우지 못했거나 되살아난 문서가 이어받지 못한 화면: 이 화면에서는 로그인하지 않는다(새로 고침 뒤에)\n            if (!client) return { outcome: 'error' };", "            if (!client) { loadConfig(); const sdk = await loadSdk(); client = new sdk.AuthClient({ url: ORIGIN + '/auth/v1', headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }, storageKey: STORAGE_KEY, storage: scopedStorage, persistSession: true, autoRefreshToken: false, detectSessionInUrl: false, fetch: guardedFetch }); closeBroadcast(client); }"]],
     },
     {
-        name: '떠날 때 쥔 것을 놓지 않음(원래 탭의 새로 고침이 이어받지 못함)', tests: ['windows'], expect: /원래 탭[^›]* › 새로 고침: 이 창의 것으로 보지 않음/,
+        name: '떠날 때 쥔 것을 놓지 않음(같은 탭의 새로 고침이 이어받지 못함)', tests: ['windows'], expect: /같은 탭의 새로 고침[^:]*: 이어받지 못함/,
         edits: [[MOD, "    window.addEventListener('pagehide', function () { releaseHold(); });", "    window.addEventListener('pagehide', function () {});"]],
     },
     {
@@ -274,7 +319,7 @@ export const MUTANTS = [
     },
     {
         name: '책 전용 상태로 첫 화면에 와도 새 로그인의 길을 탐', tests: ['book'], expect: /책 › 책 전용 상태로 첫 화면\(켜짐\): 화면 동작이 기준과 다름/,
-        edits: [[AUTH, GATE_START, "    if (_trAuthOn()) { _trStart(); return; }\n"]],
+        edits: [[AUTH, GATE_START, "    if (_trPageOn()) { _trStart(); return; }\n"]],
     },
     {
         name: '옛 방식의 값이 있어도 로그인 요청을 보냄', tests: ['book'], expect: /옛 방식의 값이 남은 탭: 로그인이 그 값을 덮었거나 인증 요청을 보냄/,
@@ -299,8 +344,12 @@ export const MUTANTS = [
         edits: [[AUTH, GATE_LOGIN, "    if (window.EonAuth) return _trHandleLogin(event);\n"]],
     },
     {
-        name: '꺼짐: 저장소의 스위치가 켜져 있음', section: 'off', only: /^(로그인 › 정규 Fast|저장된 값 없이 첫 화면)$/, expect: /꺼짐 › [^:]*: (기준과 다름|인증 모듈의 흔적)/,
-        edits: [[MOD, "    const EON_AUTH_SWITCH = 'off';", "    const EON_AUTH_SWITCH = 'on';"]],
+        name: '꺼짐: 저장소의 두 스위치가 켜져 있음', section: 'off', only: /^(로그인 › 정규 Fast|저장된 값 없이 첫 화면)$/, expect: /꺼짐 › [^:]*: (기준과 다름|인증 모듈의 흔적)/,
+        edits: [[MOD, "    const EON_AUTH_SWITCH = 'off';", "    const EON_AUTH_SWITCH = 'on';"], [HTML, HEAD_SWITCH, "        var TR_AUTH_PAGE_SWITCH = 'on';"]],
+    },
+    {
+        name: '꺼짐: 저장소의 화면 머리 스위치만 켜져 있음', section: 'off', only: /^(로그인 › 정규 Fast|저장된 값 없이 첫 화면)$/, expect: /꺼짐 › [^:]*: 기준과 다름/,
+        edits: [[HTML, HEAD_SWITCH, "        var TR_AUTH_PAGE_SWITCH = 'on';"]],
     },
     {
         name: '꺼짐: 인증 모듈이 탭 단위 저장소에 무언가 씀', section: 'off', only: /^저장된 값 없이 첫 화면$/, expect: /꺼짐 › [^:]*: (기준과 다름|새 모듈의 저장 이름이 생김)/,

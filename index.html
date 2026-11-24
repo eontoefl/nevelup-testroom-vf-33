@@ -8,6 +8,24 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>내벨업 테스트룸 - Level Up Test Room</title>
+    <!-- 새 로그인 스위치(화면 쪽 — 보안작업 묶음2 계약 3B). 저장소의 값은 꺼짐('off')이다. 꺼짐이면 아래는 아무것도 하지 않는다.
+         인증 모듈(js/auth-session.js)의 스위치와 둘 다 켜져야 새 로그인이 돈다. 이 값만 켜져 있고 모듈이 없으면 화면은 닫는 쪽으로 간다. -->
+    <script id="tr-auth-page">
+    (function () {
+        var TR_AUTH_PAGE_SWITCH = 'off';
+        var v = TR_AUTH_PAGE_SWITCH === 'on' ? 'on' : 'off';
+        try { Object.defineProperty(window, 'TR_AUTH_PAGE', { value: v, writable: false, configurable: false }); } catch (e) { window.TR_AUTH_PAGE = v; }
+        if (v !== 'on') return;
+        // 켜진 화면: 새 로그인이 만든 currentUser(표식이 있는 값)는 다시 확인되기 전에 어떤 스크립트도 읽지 못하게 먼저 치워 둔다.
+        // (인증 모듈 파일을 받지 못해도 돈다. 책 전용 상태·옛 방식의 값은 건드리지 않는다. 확인 뒤에 화면이 다시 만든다.)
+        try {
+            var s = window.sessionStorage;
+            var m = JSON.parse(s.getItem('tr_auth_v1:user'));
+            var u = JSON.parse(s.getItem('currentUser'));
+            if (m && m.v === 1 && u && typeof u === 'object' && u.id === m.id && u.programType !== 'book_only') s.removeItem('currentUser');
+        } catch (e) { /* 읽지 못하면 그대로 둔다 — 화면은 확인된 뒤에만 연다 */ }
+    })();
+    </script>
     <!-- Sentry Error Monitoring & Session Replay -->
     <script
       src="https://js.sentry-cdn.com/9808cf61ad1ab17e40cf6249d4030b9b.min.js"

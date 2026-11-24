@@ -6,7 +6,7 @@
 // * 응답마다 내용 보안 정책을 붙여, 브라우저의 연결·폼 제출이 자기 자신과 시험 프로젝트 출처로만 가게 한다.
 // * 이 서버는 바깥으로 요청을 보내지 않는다. 기록에는 머리글·본문을 남기지 않는다.
 
-import { TEST_URL, transformForServe, switchValue, AUTH_FILE } from './rewrite.mjs';
+import { TEST_URL, transformForServe, switchValue, pageSwitchValue, AUTH_FILE, PAGE_FILE } from './rewrite.mjs';
 
 // 읽기 전용 정적 자원의 허용 목록(index.html 이 실제로 쓰는 글꼴·아이콘·그림만. 소리·영상·바깥 스크립트는 허용하지 않는다)
 export const STATIC_ALLOW = {
@@ -109,7 +109,8 @@ export function createCore(config) {
             if (r.residue.length) refused.push({ file: rel, residue: r.residue }); else servable++;
         }
         const auth = config.readFile(AUTH_FILE);
-        return { refused, servable, repoSwitch: auth ? switchValue(auth.toString('utf8')) : null };
+        const pageFile = config.readFile(PAGE_FILE);
+        return { refused, servable, repoSwitch: auth ? switchValue(auth.toString('utf8')) : null, repoPageSwitch: pageFile ? pageSwitchValue(pageFile.toString('utf8')) : null };
     }
 
     // request: { method, url(경로와 꼬리표), body(Buffer|null) }

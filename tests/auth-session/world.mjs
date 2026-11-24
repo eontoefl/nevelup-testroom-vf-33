@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { FakeBrowser } from './browser.mjs';
 import { FakeSupabase, readFakeJwt } from './fake-supabase.mjs';
 import { FakeRest } from './fake-rest.mjs';
-import { TEST_URL, CONFIG_FILE, AUTH_FILE, readProdConfig, rewriteConfig, rewriteSwitch } from './rewrite.mjs';
+import { TEST_URL, CONFIG_FILE, AUTH_FILE, PAGE_FILE, readProdConfig, rewriteConfig, rewriteSwitch, rewritePageSwitch } from './rewrite.mjs';
 import { STUDENTS, authAccount } from './fixtures.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -55,6 +55,7 @@ export function provider(variant, mutate) {
         if (variant.test) {
             if (p === CONFIG_FILE) text = rewriteConfig(text, { testUrl: TEST_URL, testKey: FAKE_ANON });
             if (p === AUTH_FILE) text = rewriteSwitch(text, 'on');
+            if (p === PAGE_FILE) text = rewritePageSwitch(text, 'on');
         }
         return mutate ? mutate(p, text) : text;
     };
@@ -71,6 +72,11 @@ export function pageScripts(html) {
         if (KEEP.includes(src)) out.push(src);
     }
     return out;
+}
+// 화면 머리의 스위치 스크립트(없으면 null)
+export function headSwitchOf(html) {
+    const m = html.match(/<script id="tr-auth-page">([\s\S]*?)<\/script>/);
+    return m ? m[1] : null;
 }
 // 화면이 싣는 정적 파일 전부(주소 그대로)
 export function staticRefs(html) {
@@ -120,10 +126,15 @@ export function makeWorld({ variant, mutate, students, tables } = {}) {
     w.open = async (tab, pageFile, opts = {}) => {
         const html = w.files(pageFile);
         if (html === null) throw new Error('없는 화면: ' + pageFile);
-        const page = tab.open({ files: w.files, pageFile, search: opts.search, hash: opts.hash, ids: pageFile === 'index.html' ? IDS : [], confirmAnswer: opts.confirmAnswer, locks: opts.locks });
+        const page = tab.open({ files: w.files, pageFile, search: opts.search, hash: opts.hash, ids: pageFile === 'index.html' ? IDS : [], confirmAnswer: opts.confirmAnswer, locks: opts.locks, noTimeOrigin: opts.noTimeOrigin });
+        // 화면 머리의 스위치(index.html 의 head 에 적힌 스크립트 — 다른 스크립트보다 먼저 돈다). 기준에는 없다
+        const headSwitch = headSwitchOf(html);
+        if (headSwitch !== null) page.run(headSwitch, pageFile + '#tr-auth-page');
+        if (opts.afterHead) await opts.afterHead(page);
         if (pageFile === 'index.html') page.run(GLUE, 'glue');
         for (const src of pageScripts(html)) {
-            const source = w.files(src);
+            const source = (opts.missing || []).includes(src) ? null : w.files(src);
+            if (source === null && (opts.missing || []).includes(src)) { page.rec({ t: 'script-missing', src }); continue; }      // 그 파일을 받지 못한 화면
             if (source === null) throw new Error('없는 스크립트: ' + src);
             page.rec({ t: 'run-script', src });
             page.run(source, src);

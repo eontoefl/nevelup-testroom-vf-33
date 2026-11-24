@@ -28,7 +28,7 @@ function isCorrectionActiveNow(programInfo, timezone) {
 
 // 로그인 처리
 async function handleLogin(event) {
-    if (_trAuthOn()) return _trHandleLogin(event);   // 새 로그인(스위치가 켜졌을 때만). 꺼짐이면 아래 그대로
+    if (_trPageOn()) return _trHandleLogin(event);   // 새 로그인(화면의 스위치가 켜졌을 때만). 꺼짐이면 아래 그대로
     event.preventDefault();
     
     console.log('🔐 handleLogin 호출됨');
@@ -329,8 +329,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 새 로그인(스위치가 켜졌을 때만, 책 화면·책 전용 상태 제외): 저장된 currentUser 만 보고 화면을 열지 않는다
-    if (_trAuthOn() && !_trBookOnlySaved()) { _trStart(); return; }
+    // 새 로그인(화면의 스위치가 켜졌을 때만, 책 화면·책 전용 상태 제외): 저장된 currentUser 만 보고 화면을 열지 않는다
+    if (_trPageOn() && !_trBookOnlySaved()) { _trStart(); return; }
 
     const savedUser = sessionStorage.getItem('currentUser');
     
@@ -397,7 +397,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // 로그아웃 함수
 function logout() {
-    if (_trAuthOn()) { _trLogout(); return; }   // 새 로그인(스위치가 켜졌을 때만). 꺼짐이면 아래 그대로
+    if (_trPageOn()) { _trLogout(); return; }   // 새 로그인(화면의 스위치가 켜졌을 때만). 꺼짐이면 아래 그대로
     if (confirm('로그아웃 하시겠습니까?')) {
         currentUser = null;
         sessionStorage.removeItem('currentUser');
@@ -608,7 +608,9 @@ console.log('✅ auth.js v2 (Supabase) 로드 완료');
 
 // =====================================================================
 // 새 로그인(인증 모듈 js/auth-session.js) — 스위치가 켜졌을 때만 타는 길 (보안작업 묶음2 계약 3B)
-//   꺼짐이면 위의 코드가 그대로 돈다. 아래의 함수는 켜졌을 때만 불린다(_trAuthOn 만 예외 — 스위치를 가른다).
+//   꺼짐이면 위의 코드가 그대로 돈다. 아래의 함수는 켜졌을 때만 불린다(_trPageOn 만 예외 — 스위치를 가른다).
+//   "켜진 화면인가"는 화면 머리의 스위치로 안다(인증 모듈 파일과 독립). 켜진 화면인데 모듈이 없거나 켜짐이라고 답하지 않으면
+//   옛 로그인으로 가지 않고 닫는다(_trClosed).
 //   책 화면(book.html·commentary.html)·답안 카드 창은 이 길을 타지 않는다(인증 모듈을 싣지 않는다).
 //   흐름: 인증 모듈 로그인 → signed_in(같은 로그인 기록의 my_profile ok + my_site_access.allowed 참)
 //         → 수강 조회(기존 선택 규칙 그대로, 실패와 "없음"을 구분) → currentUser → 일정 화면.
@@ -630,11 +632,32 @@ function _trIsBookPage() {
     return p.includes('book.html') || p.includes('commentary.html');
 }
 
-// 새 로그인 스위치가 켜진 화면인가(인증 모듈이 실려 있고 켜짐이라고 답할 때만. 책 화면 제외)
-function _trAuthOn() {
+// 이 화면이 "새 로그인이 켜진 화면"인가 — 화면 머리의 스위치(index.html head 의 window.TR_AUTH_PAGE)로 안다.
+// 인증 모듈 파일을 받았는지와 상관없다. 책 화면(book.html·commentary.html)에는 그 스위치가 없다 — 언제나 꺼짐(기준 그대로).
+function _trPageOn() {
+    if (_trIsBookPage()) return false;
+    try { return window.TR_AUTH_PAGE === 'on'; } catch (e) { return false; }
+}
+
+// 인증 모듈이 실려 있고 켜짐이라고 답하는가
+function _trModuleOk() {
     try {
-        return !!window.EonAuth && typeof window.EonAuth.isOn === 'function' && window.EonAuth.isOn() === true && !_trIsBookPage();
+        return !!window.EonAuth && typeof window.EonAuth.isOn === 'function' && window.EonAuth.isOn() === true;
     } catch (e) { return false; }
+}
+
+// 켜진 화면인데 인증 모듈이 없다(파일을 받지 못함·실행 실패·꺼짐이라고 답함): 닫는 쪽.
+// 옛 로그인·저장된 currentUser 복원으로 가지 않는다. 일정 화면·authReady·Sentry 사용자 지정·표 요청 0 — 로그인 화면과 안내만.
+function _trClosed() {
+    _trV2.seq++;
+    _trV2.ready = false;
+    _trV2.attempt = null;
+    _trV2.plan = null;
+    _trV2.result = 'unavailable';
+    currentUser = null;
+    if (typeof showScreen === 'function') showScreen('loginScreen');
+    showLoginError(_TR_MSG.unavailable);
+    resetLoginBtn();
 }
 
 // 이 탭에 저장된 값이 책 전용 상태인가(그 길은 켜짐에서도 기준 그대로 돈다)
@@ -999,6 +1022,7 @@ var _TR_MSG = {
     unknown_state: '로그인 상태를 확인하지 못했습니다. 잠시 뒤 새로 고침해 주세요.',
     logout_unknown: '로그아웃을 확인하지 못했습니다. 잠시 뒤 다시 시도해주세요.',
     foreign_window: '이 창에서는 다른 창의 로그인 상태를 쓰지 않습니다. 새로 고침한 뒤 다시 로그인해 주세요.',
+    window_unproven: '로그인 상태를 이어받지 못했습니다. 다시 로그인해 주세요.',
     unavailable: '로그인 기능을 불러오지 못했습니다. 새로 고침해 주세요.',
     error: '로그인 중 오류가 발생했습니다. 다시 시도해주세요.'
 };
@@ -1079,6 +1103,7 @@ function _trBind() {
 
 // 화면이 열릴 때(DOMContentLoaded): 저장된 currentUser 만 보고 화면을 열지 않는다. 인증 모듈이 다시 확인한 뒤에만.
 async function _trStart() {
+    if (!_trModuleOk()) { _trClosed(); return; }
     _trBind();
     if (typeof showScreen === 'function') showScreen('loginScreen');
     var state;
@@ -1090,6 +1115,7 @@ async function _trStart() {
 // 로그인 버튼(켜짐): 빈 값 로그인·999999·회원 표 조회·비밀번호 열 조회를 타지 않는다
 async function _trHandleLogin(event) {
     event.preventDefault();
+    if (!_trModuleOk()) { _trClosed(); return; }
     _trBind();
 
     const emailInput = document.getElementById('studentEmail');
@@ -1134,6 +1160,7 @@ async function _trHandleLogin(event) {
 
 // 로그아웃(켜짐): 인증 모듈의 로그아웃(이 로그인만) + 지금 하는 화면 상태 정리. 서버가 끝났다고 답했을 때만 끝낸 것으로 본다
 async function _trLogout() {
+    if (!_trModuleOk()) { _trClosed(); return; }
     if (!confirm('로그아웃 하시겠습니까?')) return;
     var r;
     try { r = await window.EonAuth.signOut(); } catch (e) { r = { outcome: 'error' }; }
@@ -1147,8 +1174,8 @@ async function _trLogout() {
     showLoginError(_trMessageFor(r && r.outcome === 'changed' ? 'session_changed' : 'logout_unknown'));
 }
 
-// 시험이 읽는 값(화면에 보이지 않는다): 준비 신호와 저장 계획. 켜졌을 때만 둔다
-if (_trAuthOn()) {
+// 시험이 읽는 값(화면에 보이지 않는다): 준비 신호와 저장 계획. 켜진 화면에만 둔다
+if (_trPageOn()) {
     window.trLoginV2 = {
         ready: function () { return _trV2.ready === true; },
         result: function () { return _trV2.result; },

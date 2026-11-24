@@ -45,6 +45,7 @@ function makeRig(kind, moduleSource, mutate) {
     rig.mark = 0;
     rig.open = async () => {
         const page = rig.tab.open({ files: (p) => (p === 'vendor/supabase-2.116.0.js' ? sdk : null), pageFile: 'index.html', ids: [] });
+        page.sandbox.TR_AUTH_PAGE = 'on';              // 화면 머리의 스위치(테스트룸의 모듈은 둘 다 켜져야 켜진다)
         page.run(glue, 'glue');
         page.run(source, 'js/auth-session.js');
         await page.domContentLoaded();

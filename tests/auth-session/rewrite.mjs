@@ -9,6 +9,7 @@ export const TEST_URL = `https://${TEST_REF}.supabase.co`;
 export const CONFIG_FILE = 'js/supabase-client.js';
 export const AUTH_FILE = 'js/auth-session.js';
 export const OMR_FILE = 'omr-card.html';
+export const PAGE_FILE = 'index.html';
 
 // js/supabase-client.js 의 SUPABASE_CONFIG = { url: '…', anonKey: '…' }
 const URL_LINE = /^( *)url: '([^']*)',(\r?)$/m;
@@ -17,6 +18,8 @@ const KEY_LINE = /^( *)anonKey: '([^']*)'(\r?)$/m;
 const OMR_URL_LINE = /^( *)var SUPABASE_URL = '([^']*)';(\r?)$/m;
 const OMR_KEY_LINE = /^( *)var SUPABASE_(?:ANON_)?KEY = '([^']*)';(\r?)$/m;
 const SWITCH_LINE = /^( *)const EON_AUTH_SWITCH = '(off|on)';(\r?)$/m;
+// index.html 의 head: 화면 쪽 스위치(인증 모듈 파일과 독립)
+const PAGE_SWITCH_LINE = /^( *)var TR_AUTH_PAGE_SWITCH = '(off|on)';(\r?)$/m;
 
 const countMatches = (text, re) => (text.match(new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g')) || []).length;
 
@@ -71,6 +74,20 @@ export function switchValue(text) {
     return m && countMatches(text, SWITCH_LINE) === 1 ? m[2] : null;
 }
 
+// 화면 머리의 스위치: 저장소의 값은 'off' 여야 한다. mode 가 'on' 일 때만 내주는 사본에서 'on' 으로 바꾼다.
+export function rewritePageSwitch(text, mode) {
+    exactlyOne(text, PAGE_SWITCH_LINE, 'TR_AUTH_PAGE_SWITCH');
+    if (text.match(PAGE_SWITCH_LINE)[2] !== 'off') throw new Error('저장소의 화면 스위치 값이 꺼짐이 아니다');
+    if (mode === 'off') return text;
+    if (mode !== 'on') throw new Error('mode 는 on 또는 off');
+    return text.replace(PAGE_SWITCH_LINE, (m, indent, v, cr) => `${indent}var TR_AUTH_PAGE_SWITCH = 'on';${cr}`);
+}
+
+export function pageSwitchValue(text) {
+    const m = text.match(PAGE_SWITCH_LINE);
+    return m && countMatches(text, PAGE_SWITCH_LINE) === 1 ? m[2] : null;
+}
+
 const JWT_SHAPE = /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g;
 
 // 응답 본문에 운영 ref·운영 주소·운영 키(또는 시험 프로젝트의 것이 아닌 Supabase 키)가 남아 있는가.
@@ -103,6 +120,9 @@ export function transformForServe(relPath, buffer, { mode, testUrl, testKey, pro
     } else if (relPath === AUTH_FILE) {
         body = Buffer.from(rewriteSwitch(buffer.toString('utf8'), mode), 'utf8');
         if (mode === 'on') changed.push('새 로그인 스위치 → 켜짐');
+    } else if (relPath === PAGE_FILE) {
+        body = Buffer.from(rewritePageSwitch(buffer.toString('utf8'), mode), 'utf8');
+        if (mode === 'on') changed.push('화면 머리의 스위치 → 켜짐');
     }
     return { body, residue: findProdResidue(body, { prodKey, prodUrl }), changed };
 }
